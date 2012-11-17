@@ -1,0 +1,4 @@
+[node alRemapFloat]
+	desc				STRING		"Remap float node"
+	maya.name			STRING		"alRemapFloat"
+	maya.classification	STRING		"shader/utility"

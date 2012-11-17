@@ -1,0 +1,14 @@
+global proc AEalRemapFloatTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+	
+	editorTemplate  -label "Input" -addControl "input";
+	editorTemplate  -label "Input min" -addControl "inputMin";
+	editorTemplate  -label "Input max" -addControl "inputMax";
+	editorTemplate  -label "Output min" -addControl "outputMin";
+	editorTemplate  -label "Output max" -addControl "outputMax";
+	
+	editorTemplate -addExtraControls;
+	
+	editorTemplate -endScrollLayout;
+}
