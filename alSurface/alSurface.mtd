@@ -1,0 +1,8 @@
+[node alSurface]
+	desc						STRING		"Anders Langlands surface shader"
+	maya.name				STRING		"aiAlSurface"
+	maya.classification	STRING		"shader/surface"
+	
+	[attr diffuseScale]
+		softMin				FLOAT			0
+		softMax				FLOAT			0

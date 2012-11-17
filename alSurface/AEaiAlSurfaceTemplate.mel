@@ -1,0 +1,60 @@
+print( "LOADING ASHDKASHDASJDAKSJDHAKSDHAKSJDASJDKH!!!!" );
+
+global proc bumpControlNew(string $attr)
+{
+	setUITemplate -pst "attributeEditorTemplate";
+	attrNavigationControlGrp -label "Bump mapping" -at $attr "bumpControl";
+	setUITemplate -ppt;
+}
+
+global proc bumpControlReplace(string $attr)
+{
+	attrNavigationControlGrp -e -at $attr "bumpControl";
+}
+
+global proc AEaiAlSurfaceTemplate( string $n )
+{
+	editorTemplate -beginScrollLayout;
+		AEswatchDisplay $n;
+	
+	editorTemplate -beginLayout "Diffuse" -collapse 0;
+		
+		editorTemplate -label "Scale" -addControl "diffuseScale";
+		editorTemplate  -label "Color"-addControl "diffuseColor";
+		
+		editorTemplate -beginLayout "SSS";
+			editorTemplate -beginLayout "Multi";
+				editorTemplate  -label "Mix" -addControl "sssMix";
+				editorTemplate  -label "Distance" -addControl "sssRadius";
+				editorTemplate  -label "Color" -addControl "sssRadiusColor";
+				editorTemplate -label "Unit" -addControl "sssScale" ;
+			editorTemplate -endLayout;
+			editorTemplate -beginLayout "Single";
+				editorTemplate  -label "Scale" -addControl "ssScale";
+				editorTemplate -label "Distance" -addControl "ssRadius" ;
+				editorTemplate -label "Color" -addControl "ssRadiusColor" ;
+				
+			editorTemplate -endLayout;
+		editorTemplate -endLayout;
+		
+	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Specular 1" -collapse 0;
+		editorTemplate  -label "Scale" -addControl "specular1Scale" ;
+		editorTemplate -label "Color" -addControl "specular1Color";
+		editorTemplate -label "Roughness" -addControl "specular1Roughness" ;
+		editorTemplate  -label "IOR" -addControl "specular1Ior";
+	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Specular 2" -collapse 1;
+	
+	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Bump";
+		editorTemplate -callCustom "bumpControlNew" "bumpControlReplace" "normalCamera";
+	editorTemplate -endLayout;
+		
+	editorTemplate -addExtraControls;	
+		
+	editorTemplate -endScrollLayout;
+}
