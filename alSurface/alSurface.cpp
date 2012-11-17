@@ -19,8 +19,6 @@
 
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd);
 
-#define SSS_OCTREE
-
 #define GlossyMISBRDF AiCookTorranceMISBRDF
 #define GlossyMISPDF AiCookTorranceMISPDF
 #define GlossyMISSample AiCookTorranceMISSample
