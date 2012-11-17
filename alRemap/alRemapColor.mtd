@@ -1,0 +1,4 @@
+[node alRemapColor]
+	desc				STRING		"Remap color node"
+	maya.name			STRING		"alRemapColor"
+	maya.classification	STRING		"shader/utility"

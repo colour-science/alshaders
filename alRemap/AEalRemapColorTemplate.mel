@@ -1,0 +1,14 @@
+global proc AEalRemapFloatTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+	AEswatchDisplay $n;
+	
+	editorTemplate  -label "Input" -addControl "input";
+	editorTemplate  -label "Gamma" -addControl "gamma";
+	editorTemplate  -label "Exposure" -addControl "exposure";
+
+	
+	editorTemplate -addExtraControls;
+	
+	editorTemplate -endScrollLayout;
+}

@@ -1,6 +1,7 @@
 global proc AEalRemapFloatTemplate(string $n)
 {
 	editorTemplate -beginScrollLayout;
+	AEswatchDisplay $n;
 	
 	editorTemplate  -label "Input" -addControl "input";
 	editorTemplate  -label "Input min" -addControl "inputMin";
