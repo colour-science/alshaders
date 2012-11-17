@@ -1,0 +1,4 @@
+[node alCombineFloat]
+	desc				STRING		"Combine float node"
+	maya.name			STRING		"alCombineFloat"
+	maya.classification	STRING		"shader/utility"

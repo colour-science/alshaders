@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 project(alShaders)
 
+set(CMAKE_BUILD_TYPE RELEASE)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 set(ARNOLD_VERSION 4.0.10.2)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 include_directories(${ARNOLD_ROOT}/include)
@@ -16,6 +19,7 @@ include_directories(common)
 
 add_subdirectory(alSurface)
 add_subdirectory(alRemap)
+add_subdirectory(alCombine)
 
 
 
