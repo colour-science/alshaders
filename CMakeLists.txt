@@ -15,6 +15,7 @@ set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
 include_directories(common)
 
 add_subdirectory(alSurface)
+add_subdirectory(alRemap)
 
 
 
