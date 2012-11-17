@@ -126,7 +126,7 @@ inline float fresnel(float cosi, float etai)
    return (pl*pl+pp*pp)*0.5f;
 }
 
-inline AtRGB sqrt( AtRGB c )
+inline AtRGB sqrt(AtRGB c)
 {
 	c.r = sqrtf(c.r);
 	c.g = sqrtf(c.g);
@@ -134,11 +134,19 @@ inline AtRGB sqrt( AtRGB c )
 	return c;
 }
 
-inline AtRGB exp( AtRGB c )
+inline AtRGB exp(AtRGB c)
 {
 	c.r = expf(c.r);
 	c.g = expf(c.g);
 	c.b = expf(c.b);
+	return c;
+}
+
+inline AtRGB pow(AtRGB c, float e)
+{
+	c.r = powf(c.r, e);
+	c.g = powf(c.g, e);
+	c.b = powf(c.b, e);
 	return c;
 }
 
