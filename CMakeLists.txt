@@ -4,6 +4,7 @@ project(alShaders)
 
 set(CMAKE_BUILD_TYPE RELEASE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 
 set(ARNOLD_VERSION 4.0.10.2)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
