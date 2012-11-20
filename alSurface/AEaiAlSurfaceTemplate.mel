@@ -50,6 +50,14 @@ global proc AEaiAlSurfaceTemplate( string $n )
 	
 	editorTemplate -endLayout;
 	
+	editorTemplate -beginLayout "Transmission" -collapse 0;
+		editorTemplate  -label "Scale" -addControl "transmissionScale" ;
+		editorTemplate -label "Color" -addControl "transmissionColor";
+		editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1";
+		editorTemplate -label "Roughness" -addControl "transmissionRoughness" ;
+		editorTemplate  -label "IOR" -addControl "transmissionIor";
+	editorTemplate -endLayout;
+	
 	editorTemplate -beginLayout "Bump";
 		editorTemplate -callCustom "bumpControlNew" "bumpControlReplace" "normalCamera";
 	editorTemplate -endLayout;

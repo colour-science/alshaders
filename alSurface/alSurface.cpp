@@ -1,11 +1,3 @@
-/*
- * alSurface.cpp
- *
- *  Created on: Mar 6, 2011
- *      Author: anders
- */
-
-
 #include <ai.h>
 #include <cstring>
 #include <iostream>
@@ -16,8 +8,11 @@
 
 #include "alUtil.h"
 #include "alMIS.h"
+#include "Refraction.h"
+#include "alSurface.h"
+#include "Shadows.h"
 
-AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd);
+AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
 #define GlossyMISBRDF AiCookTorranceMISBRDF
 #define GlossyMISPDF AiCookTorranceMISPDF
@@ -50,6 +45,17 @@ enum alSurfaceParams
    p_specular1Color,
    p_specular1Roughness,
    p_specular1Ior,
+   p_specular2Scale,
+   p_specular2Color,
+   p_specular2Roughness,
+   p_specular2Ior,
+
+   // transmission
+   p_transmissionScale,
+   p_transmissionColor,
+   p_transmissionLinkToSpecular1,
+   p_transmissionRoughness,
+   p_transmissionIor,
 
    // Bump
    p_bump
@@ -76,6 +82,19 @@ node_parameters
    AiParameterFLT( "specular1Roughness", 0.3f );
    AiParameterFLT( "specular1Ior", 1.4f );
 
+   AiParameterFLT( "specular2Scale", 1.0f );
+  AiParameterRGB( "specular2Color", 1.0f, 1.0f, 1.0f );
+  AiParameterFLT( "specular2Roughness", 0.3f );
+  AiParameterFLT( "specular2Ior", 1.4f );
+
+
+  AiParameterFLT( "transmissionScale", 0.0f );
+    AiParameterRGB( "transmissionColor", 1.0f, 1.0f, 1.0f );
+    AiParameterBOOL("transmissionLinkToSpecular1", true);
+    AiParameterFLT( "transmissionRoughness", 0.1f );
+    AiParameterFLT( "transmissionIor", 1.4f );
+
+
    AiParameterRGB( "normalCamera", .0f, .0f, .0f);
 }
 
@@ -91,25 +110,13 @@ node_loader
    return TRUE;
 }
 
-struct ShaderData
-{
-   AtSampler* diffuse_sampler;
-   AtSampler* glossy_sampler;
-   AtInt GI_diffuse_depth;
-   AtInt GI_reflection_depth;
-   AtInt GI_refraction_depth;
-   AtInt GI_glossy_depth;
-   AtInt GI_diffuse_samples;
-   AtInt GI_glossy_samples;
-	AtCritSec cs;
-};
-
 node_initialize
 {
    ShaderData *data = (ShaderData*) AiMalloc(sizeof(ShaderData));
    AiNodeSetLocalData(node,data);
    data->diffuse_sampler = NULL;
    data->glossy_sampler = NULL;
+   data->refraction_sampler = NULL;
 };
 
 node_finish
@@ -119,7 +126,8 @@ node_finish
 		ShaderData* data = (ShaderData*) AiNodeGetLocalData(node);
 
 		AiSamplerDestroy(data->diffuse_sampler);
-   	AiSamplerDestroy(data->glossy_sampler);
+		AiSamplerDestroy(data->glossy_sampler);
+		AiSamplerDestroy(data->refraction_sampler);
 
 		AiFree((void*) data);
 		AiNodeSetLocalData(node, NULL);
@@ -143,6 +151,7 @@ node_update
    AiSamplerDestroy(data->glossy_sampler);
    data->diffuse_sampler = AiSampler( data->GI_diffuse_samples, 2);
    data->glossy_sampler = AiSampler( data->GI_glossy_samples, 2);
+   data->refraction_sampler = AiSampler(AiNodeGetInt(options, "GI_refraction_samples"), 2);
 };
 
 
@@ -150,12 +159,6 @@ shader_evaluate
 {
    ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
-	if (sg->Rt & AI_RAY_SHADOW)
-	{
-		// shadow ray. early out
-		// TODO: handle opacity here
-		return;
-	}
 
    // Evaluate bump;
    AtVector N_orig;
@@ -178,6 +181,31 @@ shader_evaluate
 	float ssRadius = AiShaderEvalParamFlt( p_ssRadius );
 	float ssScale = AiShaderEvalParamFlt( p_ssScale );
 
+	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionScale);
+
+	AtFloat transmissionRoughness;
+	AtFloat transmissionIor;
+	bool transmissionLinkToSpecular1 = AiShaderEvalParamBool(p_transmissionLinkToSpecular1);
+	if (transmissionLinkToSpecular1)
+	{
+		transmissionRoughness = roughness;
+		transmissionIor = ior;
+	}
+	else
+	{
+		transmissionRoughness = AiShaderEvalParamFlt(p_transmissionRoughness);
+		transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
+	}
+
+	if (sg->Rt & AI_RAY_SHADOW)
+	{
+
+	   //Kettle_shadows(fresnel(costheta, 1.0f/1.5f), 1.0f, false, AI_RGB_WHITE, sg, node);
+		float costheta = AiV3Dot(sg->Nf, -sg->Rd);
+		sg->out_opacity = fresnel(costheta, 1.0f/transmissionIor);
+		return;
+	}
+
    // Initialize result temporaries
    AtRGB result_diffuseDirect = AI_RGB_BLACK;
    AtRGB result_glossyDirect = AI_RGB_BLACK;
@@ -185,11 +213,13 @@ shader_evaluate
    AtRGB result_glossyIndirect = AI_RGB_BLACK;
    AtRGB result_sss = AI_RGB_BLACK;
 	AtRGB result_ss = AI_RGB_BLACK;
+	AtColor	result_transmission = AI_RGB_BLACK;
    // Set up flags to early out of calculations based on where we are in the ray tree
    bool do_diffuse = true;
    bool do_glossy = true;
 	bool do_ss = true;
 	bool do_sss = true;
+	bool do_transmission = true;
    AtInt glossy_samples = data->GI_glossy_samples;
    AtInt diffuse_samples = data->GI_diffuse_samples;
 
@@ -220,6 +250,11 @@ shader_evaluate
 	{
 		do_sss = false;
 		sssMix = 0.0f;
+	}
+
+	if (sg->Rr_diff >  0 || maxh(transmissionColor) < 0.01)
+	{
+		do_transmission = false;
 	}
 
 	AtRGB E = AI_RGB_BLACK; // for disk integration
@@ -360,6 +395,12 @@ shader_evaluate
 	result_diffuseIndirect *= (1-sssMix);
 	result_sss *= sssMix;
 
+	// Refraction
+	if (do_transmission)
+	{
+		microfacetRefraction(sg, data, transmissionIor, transmissionRoughness, result_transmission);
+	}
+
 	if (sg->Rt & AI_RAY_CAMERA)
 	{
 		// write AOVs
@@ -378,5 +419,6 @@ shader_evaluate
                      +result_glossyDirect
                      +result_diffuseIndirect
                      +result_glossyIndirect
-							+result_ss;
+							+result_ss
+							+result_transmission;
 }

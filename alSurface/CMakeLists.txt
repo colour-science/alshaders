@@ -1,6 +1,6 @@
 set(SHADER alSurface)
 
-set(SRC ${SHADER}.cpp ../common/alUtil.cpp)
+set(SRC ${SHADER}.cpp Refraction.cpp ../common/alUtil.cpp)
 set(MTD ${SHADER}.mtd)
 set(MEL AEai${SHADER}Template.mel)
 
