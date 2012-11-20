@@ -204,12 +204,12 @@ shader_evaluate
 		transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
 	}
 
-	AtRGB absorption = AI_RGB_WHITE;
+	AtRGB absorption = AI_RGB_BLACK;
 	if (AiShaderEvalParamBool(p_absorptionEnable))
 	{
-		absorption = AI_RGB_WHITE - AiShaderEvalParamRGB(p_absorptionColor);
+		absorption = (AI_RGB_WHITE - AiShaderEvalParamRGB(p_absorptionColor));
+		absorption = max(rgb(AI_EPSILON), absorption) * AiShaderEvalParamFlt(p_absorptionDensity);
 	}
-	absorption *= AiShaderEvalParamFlt(p_absorptionDensity);
 
 	if (sg->Rt & AI_RAY_SHADOW)
 	{

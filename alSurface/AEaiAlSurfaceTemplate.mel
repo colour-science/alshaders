@@ -59,7 +59,7 @@ global proc AEaiAlSurfaceTemplate( string $n )
 		editorTemplate -beginLayout "Absorption";
 			editorTemplate  -label "Enable" -addControl "absorptionEnable";
 			editorTemplate  -label "Color" -addControl "absorptionColor";
-			editorTemplate  -label "Density" -addControl "absorptionDepth";
+			editorTemplate  -label "Density" -addControl "absorptionDensity";
 		editorTemplate -endLayout;
 	editorTemplate -endLayout;
 	
