@@ -1,7 +1,7 @@
 #include "alUtil.h"
 #include <ai.h>
 
-AI_SHADER_NODE_EXPORT_METHODS(alRemapColorMtd);
+AI_SHADER_NODE_EXPORT_METHODS(alRemapColorMtd)
 
 enum alRemapParams
 {
