@@ -68,11 +68,17 @@ static void micro_refract_integrate (AtColor &result, AtBoolean &entering, AtFlo
                         AtFloat cosHO = AiV3Dot(mf, omega_out);
                         AtFloat Ht2 = rf_IOR * cosHI + cosHO;
                         Ht2 *= Ht2;
-                        AtVector mfn = AiV3Normalize(mf);
-                        AtVector oin = AiV3Normalize(omega_in);
-                        AiV3Neg(oin, oin);
+                        AtVector mfn = mf;
+                        AtVector oin = omega_in;
+                        float eta = rf_IOR;
+                        if (AiV3Dot(mfn, oin) < 0.0f)
+                        {
+                        	AiV3Neg(oin, oin);
+                        	eta = 1.0f/eta;
+                        }
                         float chi = AiV3Dot(mfn, oin);
-                        float kt =  1.0f - fresnel(chi,rf_IOR);
+                        float kt =  1.0f - fresnel(chi,eta);
+                        //float kt = 1.0f;
                         AtFloat brdf = (fabsf(cosHI * cosHO) * (rf_IOR * rf_IOR) * (G * D)) / (fabsf(cosNO * Ht2)+(AtFloat)AI_EPSILON); // epsilon to avoid divide by zero errors at air like IOR values
                         // eq. 38 and eq. 17
                         AtFloat pdf = pm * (rf_IOR * rf_IOR) * fabsf(cosHI) / (Ht2+(AtFloat)AI_EPSILON); // epsilon to avoid divide by zero errors at air like IOR values
@@ -133,7 +139,7 @@ void microfacetRefraction(AtShaderGlobals *sg,
         AtInt           rf_brdf                         = 0; //= (AtInt)AiShaderEvalParamFlt(p_rf_brdf);
         //AtFloat         rf_roughness           			= = AiShaderEvalParamFlt(p_rf_roughness);
         // we exponent roughness here, it's too sensitive.
-        rf_roughness = powf(rf_roughness, 2.0f);
+        //rf_roughness = powf(rf_roughness, 2.0f);
         AtBoolean       do_rf_env                       = false;
         AtColor         rf_exitCol;
         AtColor         rf_exitCol_swatch       		= AI_RGB_BLACK; //= AiShaderEvalParamRGB(p_rf_exitCol);

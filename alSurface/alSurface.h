@@ -13,5 +13,6 @@ struct ShaderData
    AtInt GI_glossy_depth;
    AtInt GI_diffuse_samples;
    AtInt GI_glossy_samples;
+   AtInt GI_refraction_samples;
    AtCritSec cs;
 };

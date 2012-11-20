@@ -56,6 +56,9 @@ enum alSurfaceParams
    p_transmissionLinkToSpecular1,
    p_transmissionRoughness,
    p_transmissionIor,
+   p_absorptionEnable,
+   p_absorptionDepth,
+   p_absorptionColor,
 
    // Bump
    p_bump
@@ -87,12 +90,14 @@ node_parameters
   AiParameterFLT( "specular2Roughness", 0.3f );
   AiParameterFLT( "specular2Ior", 1.4f );
 
-
-  AiParameterFLT( "transmissionScale", 0.0f );
-    AiParameterRGB( "transmissionColor", 1.0f, 1.0f, 1.0f );
-    AiParameterBOOL("transmissionLinkToSpecular1", true);
-    AiParameterFLT( "transmissionRoughness", 0.1f );
-    AiParameterFLT( "transmissionIor", 1.4f );
+ AiParameterFLT("transmissionScale", 0.0f );
+	AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
+	AiParameterBOOL("transmissionLinkToSpecular1", true);
+	AiParameterFLT("transmissionRoughness", 0.1f );
+	AiParameterFLT("transmissionIor", 1.4f );
+	AiParameterBOOL("absorptionEnable", false);
+	AiParameterFLT("absorptionDepth", 1.0f);
+	AiParameterRGB("absorptionColor", 1.0f, 1.0f, 1.0f);
 
 
    AiParameterRGB( "normalCamera", .0f, .0f, .0f);
@@ -149,8 +154,9 @@ node_update
    // setup samples
    AiSamplerDestroy(data->diffuse_sampler);
    AiSamplerDestroy(data->glossy_sampler);
-   data->diffuse_sampler = AiSampler( data->GI_diffuse_samples, 2);
-   data->glossy_sampler = AiSampler( data->GI_glossy_samples, 2);
+   AiSamplerDestroy(data->refraction_sampler);
+   data->diffuse_sampler = AiSampler(data->GI_diffuse_samples, 2);
+   data->glossy_sampler = AiSampler(data->GI_glossy_samples, 2);
    data->refraction_sampler = AiSampler(AiNodeGetInt(options, "GI_refraction_samples"), 2);
 };
 
@@ -194,8 +200,16 @@ shader_evaluate
 	else
 	{
 		transmissionRoughness = AiShaderEvalParamFlt(p_transmissionRoughness);
+		transmissionRoughness *= transmissionRoughness;
 		transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
 	}
+
+	AtRGB absorption = AI_RGB_WHITE;
+	if (AiShaderEvalParamBool(p_absorptionEnable))
+	{
+		absorption = AI_RGB_WHITE - AiShaderEvalParamRGB(p_absorptionColor);
+	}
+	absorption *= AiShaderEvalParamFlt(p_absorptionDepth);
 
 	if (sg->Rt & AI_RAY_SHADOW)
 	{
@@ -227,19 +241,13 @@ shader_evaluate
 	{
       do_diffuse = false;
    }
-   else if ( sg->Rr_diff > 0 )
-   {
-      diffuse_samples = 1;
-   }
+
 
    if (sg->Rr_gloss > data->GI_glossy_depth || sg->Rr_diff > 0 || maxh(specular1Color) < 0.01)
    {
       do_glossy = false;
    }
-   else if ( sg->Rr_gloss )
-   {
-      glossy_samples = 1;
-   }
+
 
 	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 0 || ssScale < 0.01f )
 	{
@@ -329,7 +337,7 @@ shader_evaluate
          AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
          AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
          AtInt count=0;
-         while(AiSamplerGetSample(sampit, samples) && count < glossy_samples )
+         while(AiSamplerGetSample(sampit, samples))
          {
             wi = GlossyMISSample(mis, samples[0], samples[1]);
             if (AiV3Dot(wi,sg->Nf) > 0.0f)
@@ -352,7 +360,7 @@ shader_evaluate
          AtSamplerIterator* sampit = AiSamplerIterator(data->diffuse_sampler, sg);
          AiMakeRay( &wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg );
          AtInt count=0;
-         while(AiSamplerGetSample(sampit, samples) && count < diffuse_samples)
+         while(AiSamplerGetSample(sampit, samples))
          {
             Imath::V3f wi_im = cosineSampleHemisphere(samples[0], samples[1]);
             Imath::V3f N_im( sg->N.x, sg->N.y, sg->N.z );

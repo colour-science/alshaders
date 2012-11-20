@@ -56,6 +56,11 @@ global proc AEaiAlSurfaceTemplate( string $n )
 		editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1";
 		editorTemplate -label "Roughness" -addControl "transmissionRoughness" ;
 		editorTemplate  -label "IOR" -addControl "transmissionIor";
+		editorTemplate -beginLayout "Absorption";
+			editorTemplate  -label "Enable" -addControl "absorptionEnable";
+			editorTemplate  -label "Color" -addControl "absorptionEnable";
+			editorTemplate  -label "Depth" -addControl "absorptionDepth";
+		editorTemplate -endLayout;
 	editorTemplate -endLayout;
 	
 	editorTemplate -beginLayout "Bump";
