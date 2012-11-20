@@ -7,6 +7,7 @@ void microfacetRefraction(AtShaderGlobals *sg,
 							const ShaderData *data,
 							const AtFloat rf_IOR,
 							AtFloat rf_roughness,
+							AtRGB absorption,
 							AtColor &refr_result);
 
 

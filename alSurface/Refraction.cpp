@@ -132,6 +132,7 @@ void microfacetRefraction(AtShaderGlobals *sg,
                                   const ShaderData *data,
                                   const AtFloat rf_IOR,
                                   AtFloat rf_roughness,
+                                  AtRGB absorption,
                                   AtColor &refr_result)
 {
         AtInt           max_refract                     = data->GI_refraction_depth;
@@ -285,25 +286,26 @@ void microfacetRefraction(AtShaderGlobals *sg,
                         rf_exitCol *= rf_exitCol_swatch;
 
                 // process transmission, only do when inside a volume (entering)
-                /*
-                if (AiShaderEvalParamBool(p_rf_useTrans) && entering && (do_rf_env == false))
+
+                if (maxh(absorption)>0.0f && entering && (do_rf_env == false))
                 {
-                        AtColor rf_transCol     = AiShaderEvalParamRGB(p_rf_transCol);
+                    /*
+                	AtColor rf_transCol     = AiShaderEvalParamRGB(p_rf_transCol);
                         // invert absorbtion colour (nicety for artists)
                         rf_transCol.r = 1.0f - rf_transCol.r;
                         rf_transCol.g = 1.0f - rf_transCol.g;
                         rf_transCol.b = 1.0f - rf_transCol.b;
+*/
+                        //AtColor absorbance;
+                        //AiColorScale(absorbance, rf_transCol, -z_rf * AiShaderEvalParamFlt(p_rf_transExp));
+                		AtRGB transmittance;
+                		transmittance.r = expf(absorption.r * -z_rf);
+                		transmittance.g = expf(absorption.g * -z_rf);
+                		transmittance.b = expf(absorption.b * -z_rf);
 
-                        AtColor absorbance;
-                        AiColorScale(absorbance, rf_transCol, -z_rf * AiShaderEvalParamFlt(p_rf_transExp));
-
-                        absorbance.r = expf( absorbance.r );
-                        absorbance.g = expf( absorbance.g );
-                        absorbance.b = expf( absorbance.b );
-
-                        refr_result *= absorbance;
+                        refr_result *= transmittance;
                 }
-                */
+
         }
 
         // set env colour if relavent

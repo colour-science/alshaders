@@ -57,7 +57,7 @@ enum alSurfaceParams
    p_transmissionRoughness,
    p_transmissionIor,
    p_absorptionEnable,
-   p_absorptionDepth,
+   p_absorptionDensity,
    p_absorptionColor,
 
    // Bump
@@ -96,7 +96,7 @@ node_parameters
 	AiParameterFLT("transmissionRoughness", 0.1f );
 	AiParameterFLT("transmissionIor", 1.4f );
 	AiParameterBOOL("absorptionEnable", false);
-	AiParameterFLT("absorptionDepth", 1.0f);
+	AiParameterFLT("absorptionDensity", 1.0f);
 	AiParameterRGB("absorptionColor", 1.0f, 1.0f, 1.0f);
 
 
@@ -209,7 +209,7 @@ shader_evaluate
 	{
 		absorption = AI_RGB_WHITE - AiShaderEvalParamRGB(p_absorptionColor);
 	}
-	absorption *= AiShaderEvalParamFlt(p_absorptionDepth);
+	absorption *= AiShaderEvalParamFlt(p_absorptionDensity);
 
 	if (sg->Rt & AI_RAY_SHADOW)
 	{
@@ -406,7 +406,7 @@ shader_evaluate
 	// Refraction
 	if (do_transmission)
 	{
-		microfacetRefraction(sg, data, transmissionIor, transmissionRoughness, result_transmission);
+		microfacetRefraction(sg, data, transmissionIor, transmissionRoughness, absorption, result_transmission);
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)
