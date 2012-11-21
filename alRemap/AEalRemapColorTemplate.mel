@@ -5,7 +5,14 @@ global proc AEalRemapFloatTemplate(string $n)
 	
 	editorTemplate  -label "Input" -addControl "input";
 	editorTemplate  -label "Gamma" -addControl "gamma";
+	editorTemplate  -label "Saturation" -addControl "saturation";
+	editorTemplate  -label "Hue offset" -addControl "hueOffset";
+	editorTemplate  -label -addControl "contrast";
+	editorTemplate  -label -addControl "contrastPivot";
+	editorTemplate  -label -addControl "contrastSoftClip" -label "Soft clip";
+	editorTemplate  -label -addControl "scale";
 	editorTemplate  -label "Exposure" -addControl "exposure";
+	editorTemplate  -label -addControl "mask";
 
 	
 	editorTemplate -addExtraControls;
