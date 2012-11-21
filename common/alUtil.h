@@ -67,7 +67,7 @@ inline float maxh(const AtRGB& c)
 
 inline float minh(const AtRGB& c)
 {
-   return std::max(std::max(c.r, c.g ), c.b);
+   return std::min(std::min(c.r, c.g ), c.b);
 }
 
 inline AtRGB max(const AtRGB& c1, const AtRGB& c2)
@@ -162,6 +162,123 @@ inline AtRGB rgb(float r, float g, float b)
 	AtRGB c;
 	c.r = r; c.g = g; c.b = b;
 	return c;
+}
+
+inline float luminance(const AtRGB& c)
+{
+	return c.r*0.212671 + c.g*0.715160 + c.b*0.072169;
+}
+
+inline float luminance(float f)
+{
+	return f;
+}
+
+template <typename T>
+inline T contrast(T input, float contrast, float pivot, float softClip)
+{
+	float xmin = std::max(0.0f, (pivot * (contrast-1.0f)/contrast));
+	float xmax = std::min(1.0f, ((1.0f-pivot * (1.0f-contrast))/contrast));
+
+	float xl = (pivot - xmin) * softClip + xmin;
+	float al = contrast * xl + pivot * (1.0f-contrast);
+	float gl = contrast * xl / al;
+	float xh = xmax - (xmax-pivot) * softClip;
+	float ah = 1.0f - (contrast*xh + pivot * (1.0f-contrast));
+	float gh = contrast * (1.0f-xh) / ah;
+
+	float lum = luminance(input);
+	if (softClip > 0.0f)
+	{
+		lum = clamp(lum, 0.0f, 1.0f);
+	}
+
+	float result;
+	if (softClip != 0 && lum < xl)
+	{
+		result = (al * pow(lum/xl, gl)) / lum;
+	}
+	else if (softClip != 0.0f && lum > xh)
+	{
+		result = (1.0f - ah * pow((1.0f-lum)/(1-xh), gh)) / lum;
+	}
+	else
+	{
+		result = (contrast*lum + pivot * (1.0f-contrast)) / lum;
+	}
+	result = std::max(0.0f, result);
+
+	return result * input;
+}
+
+inline AtRGB rgb2hsv(AtRGB rgb)
+{
+	float mn = minh(rgb);
+	float mx = maxh(rgb);
+	float chroma = mx - mn;
+	float h, s, v;
+	v = mx;
+	if (v > 0.0f)
+	{
+		s = chroma / mx;
+	}
+	else
+	{
+		s = 0.0f;
+	}
+
+	if (s <= 0.0f)
+	{
+		h = 0.0f;
+	}
+	else
+	{
+		if (rgb.r >= mx)
+		{
+			h = (rgb.g - rgb.b) / chroma;
+		}
+		else if (rgb.g >= mx)
+		{
+			h = 2.0f + (rgb.b - rgb.r) / chroma;
+		}
+		else
+		{
+			h = 4.0f + (rgb.r - rgb.g) / chroma;
+		}
+		h /= 6.0f;
+		if (h < 0.0f) h += 1.0f;
+	}
+	return AiColorCreate(h,s,v);
+}
+
+inline AtRGB hsv2rgb(AtRGB hsv)
+{
+	if (hsv.g == 0.0f)
+	{
+		return AiColorCreate(hsv.b, hsv.b, hsv.b);
+	}
+	else
+	{
+		float h = 6.0f * (hsv.r - floorf(hsv.r));
+		const float& s = hsv.g;
+		const float& v = hsv.b;
+		int hi = int(hi);
+		float f = h - hi;
+		float p = v * (1.0f - s);
+		float q = v * (1.0f - s*f);
+		float t = v * (1.0f - s*(1.0f-f));
+
+		switch(hi)
+		{
+		case 0: return AiColorCreate(v, t, p);
+		case 1: return AiColorCreate(q, v, p);
+		case 2: return AiColorCreate(p, v, t);
+		case 3: return AiColorCreate(p, q, v);
+		case 4: return AiColorCreate(t, p, v);
+		default: return AiColorCreate(v, p, q);
+		}
+	}
+
 }
 
 // For the sake of simplicity we limit eta to 1.3 so cache A here
