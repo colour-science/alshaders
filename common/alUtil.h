@@ -177,6 +177,8 @@ inline float luminance(float f)
 template <typename T>
 inline T contrast(T input, float contrast, float pivot, float softClip)
 {
+	if (contrast == 1.0f) return input;
+
 	float xmin = std::max(0.0f, (pivot * (contrast-1.0f)/contrast));
 	float xmax = std::min(1.0f, ((1.0f-pivot * (1.0f-contrast))/contrast));
 
