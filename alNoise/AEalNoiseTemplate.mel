@@ -1,0 +1,22 @@
+source "alRemap.mel";
+
+global proc AEalNoiseTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+	AEswatchDisplay $n;
+	
+	editorTemplate -addControl "space";
+	editorTemplate -addControl "octaves";
+	editorTemplate -addControl "distortion";
+	editorTemplate -addControl "lacunarity";
+	editorTemplate -addControl "time";
+	
+	alRemapControls($n);
+	
+	editorTemplate -addControl "color1";
+	editorTemplate -addControl "color2";
+	
+	editorTemplate -endScrollLayout;
+	
+	editorTemplate -addExtraControls;
+}

@@ -1,0 +1,26 @@
+source "alRemap.mel";
+
+global proc AEalCellNoiseTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+	
+	AEswatchDisplay $n;
+	
+	editorTemplate -addControl "space";
+	editorTemplate -addControl "octaves";
+	editorTemplate -addControl "lacunarity";	
+	editorTemplate -addControl "randomness";
+	editorTemplate -addControl "mode";
+	editorTemplate -label "Shape" -addControl "mynkowskiShape";
+	
+	alRemapControls($n);
+	
+	editorTemplate -addControl "color1";
+	editorTemplate -addControl "color2";
+	
+	editorTemplate -endScrollLayout;
+	
+	editorTemplate -addExtraControls;
+	
+	
+}
