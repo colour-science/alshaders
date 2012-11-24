@@ -12,6 +12,13 @@ global proc bumpControlReplace(string $attr)
 	attrNavigationControlGrp -e -at $attr "bumpControl";
 }
 
+global proc alSurfaceTransmissionControls(string $n)
+{
+	int $checked = `getAttr ($n+".transmissionLinkToSpecular1")`;
+	editorTemplate -dimControl $n "transmissionRoughness" $checked;
+	editorTemplate -dimControl $n "transmissionIor" $checked;
+}
+
 global proc AEaiAlSurfaceTemplate( string $n )
 {
 	editorTemplate -beginScrollLayout;
@@ -53,9 +60,11 @@ global proc AEaiAlSurfaceTemplate( string $n )
 	editorTemplate -beginLayout "Transmission" -collapse 0;
 		editorTemplate  -label "Scale" -addControl "transmissionScale" ;
 		editorTemplate -label "Color" -addControl "transmissionColor";
-		editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1";
-		editorTemplate -label "Roughness" -addControl "transmissionRoughness" ;
-		editorTemplate  -label "IOR" -addControl "transmissionIor";
+		editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1" "alSurfaceTransmissionControls";
+			editorTemplate -label "Roughness" -addControl "transmissionRoughness";
+			editorTemplate -dimControl $n "transmissionRoughness" 1;
+			editorTemplate  -label "IOR" -addControl "transmissionIor" ;
+			editorTemplate -dimControl $n "transmissionIor" 1;
 		editorTemplate -beginLayout "Absorption";
 			editorTemplate  -label "Enable" -addControl "absorptionEnable";
 			editorTemplate  -label "Color" -addControl "absorptionColor";
