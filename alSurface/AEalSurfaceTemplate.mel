@@ -19,7 +19,7 @@ global proc alSurfaceTransmissionControls(string $n)
 	editorTemplate -dimControl $n "transmissionIor" $checked;
 }
 
-global proc AEaiAlSurfaceTemplate( string $n )
+global proc AEalSurfaceTemplate( string $n )
 {
 	editorTemplate -beginScrollLayout;
 		AEswatchDisplay $n;
