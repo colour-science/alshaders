@@ -59,9 +59,6 @@ enum alSurfaceParams
 	p_absorptionEnable,
 	p_absorptionDensity,
 	p_absorptionColor,
-
-	// Bump
-	p_bump
 };
 
 node_parameters
@@ -98,8 +95,6 @@ node_parameters
 	AiParameterBOOL("absorptionEnable", false);
 	AiParameterFLT("absorptionDensity", 1.0f);
 	AiParameterRGB("absorptionColor", 1.0f, 1.0f, 1.0f);
-
-	//AiParameterRGB( "normalCamera", .0f, .0f, .0f);
 }
 
 
