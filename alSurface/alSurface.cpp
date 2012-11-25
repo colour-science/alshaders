@@ -99,7 +99,7 @@ node_parameters
 	AiParameterFLT("absorptionDensity", 1.0f);
 	AiParameterRGB("absorptionColor", 1.0f, 1.0f, 1.0f);
 
-	AiParameterRGB( "normalCamera", .0f, .0f, .0f);
+	//AiParameterRGB( "normalCamera", .0f, .0f, .0f);
 }
 
 
