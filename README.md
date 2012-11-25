@@ -1,5 +1,6 @@
 # alShaders project by Anders Langlands
-# For any questions, email anderslanglands+alshaders@gmail.com
+
+For any questions, email anderslanglands+alshaders@gmail.com
 
 Copyright (c) 2012, Anders Langlands.
 All rights reserved.
