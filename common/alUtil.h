@@ -7,6 +7,36 @@
 
 #include <ai.h>
 
+#define IMPORTANCE_EPS 0.01
+
+// concentricSampleDisk and cosineSampleHemisphere lifted from PBRT
+/*
+Copyright (c) 1998-2012, Matt Pharr and Greg Humphreys.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+* Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+* Neither the name of Sony Pictures Imageworks nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 inline void concentricSampleDisk(float u1, float u2, float& dx, float& dy)
 {
     float r, theta;
@@ -112,18 +142,86 @@ inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
    return r;
 }
 
-inline float fresnel(float cosi, float etai)
+inline AtFloat fresnel(AtFloat cosi, AtFloat etai)
 {
-   if (cosi >= 1.0f) return 0.0f; // FIXME : return normal reflectance
-   float sint = etai * sqrtf(1.0f-cosi*cosi);
-   if ( sint >= 1.0f ) return 1.0f;
+	if (cosi >= 1.0f) return 0.0f;
+	AtFloat sint = etai * sqrtf(1.0f-cosi*cosi);
+	if ( sint >= 1.0f ) return 1.0f;
 
-   float cost = sqrtf(1.0f-sint*sint);
-   float pl =     (cosi - (etai * cost))
-               /  (cosi + (etai * cost));
-   float pp =    ((etai * cosi) - cost)
-               / ((etai * cosi) + cost);
-   return (pl*pl+pp*pp)*0.5f;
+	AtFloat cost = sqrtf(1.0f-sint*sint);
+	AtFloat pl =	(cosi - (etai * cost))
+					/ (cosi + (etai * cost));
+	AtFloat pp =	((etai * cosi) - cost)
+					/ ((etai * cosi) + cost);
+	return (pl*pl+pp*pp)*0.5f;
+}
+
+// Stolen wholesale from OSL:
+// http://code.google.com/p/openshadinglanguage
+/*
+Copyright (c) 2009-2010 Sony Pictures Imageworks Inc., et al.
+All Rights Reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+* Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+* Neither the name of Sony Pictures Imageworks nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+inline AtFloat fresnel(AtFloat eta, const AtVector& N, const AtVector& I, AtVector& R, AtVector& T, bool& is_inside)
+{
+	AtFloat c = AiV3Dot(N,I);
+	AtFloat neta;
+    AtVector Nn;
+    // compute reflection
+    R = (2 * c) * N - I;
+    // check which side of the surface we are on
+    if (c > 0) {
+        // we are on the outside of the surface, going in
+        neta = 1 / eta;
+        Nn   = N;
+        is_inside = false;
+    } else {
+        // we are inside the surface,
+        c  = -c;
+        neta = eta;
+        Nn   = -N;
+        is_inside = true;
+    }
+    R = (2 * c) * Nn - I;
+    float arg = 1 - (neta * neta * (1 - (c * c)));
+    if (arg < 0) {
+        T.x = T.y = T.z;
+        return 1; // total internal reflection
+    } else {
+        float dnp = sqrtf(arg);
+        float nK = (neta * c) - dnp;
+        T = -(neta * I) + (nK * Nn);
+        // compute Fresnel terms
+        float cosTheta1 = c; // N.R
+        float cosTheta2 = -AiV3Dot(Nn,T);
+        float pPara = (cosTheta1 - eta * cosTheta2) / (cosTheta1 + eta * cosTheta2);
+        float pPerp = (eta * cosTheta1 - cosTheta2) / (eta * cosTheta1 + cosTheta2);
+        return 0.5f * (pPara * pPara + pPerp * pPerp);
+    }
 }
 
 inline AtRGB sqrt(AtRGB c)
