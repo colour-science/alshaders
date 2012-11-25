@@ -1,5 +1,4 @@
 #include "alUtil.h"
-#include "Refraction.h"
 
 AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, const AtVector& X, const AtVector& Y,
 										const AtVector& wo, AtSampler* sampler, AtFloat roughness, AtFloat eta,

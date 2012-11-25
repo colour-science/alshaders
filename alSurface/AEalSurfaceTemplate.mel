@@ -29,6 +29,11 @@ global proc AEalSurfaceTemplate( string $n )
 		editorTemplate -label "Scale" -addControl "diffuseScale";
 		editorTemplate  -label "Color"-addControl "diffuseColor";
 		
+		editorTemplate -beginLayout "Emission";
+			editorTemplate -label "Scale" -addControl "emissionScale";
+			editorTemplate  -label "Color"-addControl "emissionColor";
+		editorTemplate -endLayout;
+		
 		editorTemplate -beginLayout "SSS";
 			editorTemplate -beginLayout "Multi";
 				editorTemplate  -label "Mix" -addControl "sssMix";
@@ -54,10 +59,13 @@ global proc AEalSurfaceTemplate( string $n )
 	editorTemplate -endLayout;
 	
 	editorTemplate -beginLayout "Specular 2" -collapse 1;
-	
+		editorTemplate  -label "Scale" -addControl "specular2Scale" ;
+		editorTemplate -label "Color" -addControl "specular2Color";
+		editorTemplate -label "Roughness" -addControl "specular2Roughness" ;
+		editorTemplate  -label "IOR" -addControl "specular2Ior";
 	editorTemplate -endLayout;
 	
-	editorTemplate -beginLayout "Transmission" -collapse 0;
+	editorTemplate -beginLayout "Transmission" -collapse 1;
 		editorTemplate  -label "Scale" -addControl "transmissionScale" ;
 		editorTemplate -label "Color" -addControl "transmissionColor";
 		editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1" "alSurfaceTransmissionControls";

@@ -29,6 +29,8 @@ enum alSurfaceParams
 	// diffuse
 	p_diffuseScale=0,
 	p_diffuseColor,
+	p_emissionScale,
+	p_emissionColor,
 
 	// sss
 	p_sssMix,
@@ -65,29 +67,31 @@ enum alSurfaceParams
 
 node_parameters
 {
-	AiParameterFLT( "diffuseScale", 1.0f );
-	AiParameterRGB( "diffuseColor", 0.18f, 0.18f, 0.18f );
+	AiParameterFLT("diffuseScale", 1.0f );
+	AiParameterRGB("diffuseColor", 0.18f, 0.18f, 0.18f );
+	AiParameterFLT("emissionScale", 0.0f );
+	AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
-	AiParameterFLT( "sssMix", 0.0f );
-	AiParameterFLT( "sssRadius", 3.6f );
-	AiParameterRGB( "sssRadiusColor", .439f, .156f, .078f );
+	AiParameterFLT("sssMix", 0.0f );
+	AiParameterFLT("sssRadius", 3.6f );
+	AiParameterRGB("sssRadiusColor", .439f, .156f, .078f );
 	AiMetaDataSetBool(mds, "sssRadiusColor", "always_linear", true);  // no inverse-gamma correction
-	AiParameterFLT( "sssScale", 10.0f );
+	AiParameterFLT("sssScale", 10.0f );
 
-	AiParameterFLT( "ssScale", 0.0f );
-	AiParameterFLT( "ssRadius", 3.6f );
-	AiParameterRGB( "ssRadiusColor", .439f, .156f, .078f );
+	AiParameterFLT("ssScale", 0.0f );
+	AiParameterFLT("ssRadius", 3.6f );
+	AiParameterRGB("ssRadiusColor", .439f, .156f, .078f );
 	AiMetaDataSetBool(mds, "ssRadiusColor", "always_linear", true);  // no inverse-gamma correction
 
-	AiParameterFLT( "specular1Scale", 1.0f );
-	AiParameterRGB( "specular1Color", 1.0f, 1.0f, 1.0f );
-	AiParameterFLT( "specular1Roughness", 0.3f );
-	AiParameterFLT( "specular1Ior", 1.4f );
+	AiParameterFLT("specular1Scale", 1.0f );
+	AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
+	AiParameterFLT("specular1Roughness", 0.3f );
+	AiParameterFLT("specular1Ior", 1.4f );
 
-	AiParameterFLT( "specular2Scale", 1.0f );
-	AiParameterRGB( "specular2Color", 1.0f, 1.0f, 1.0f );
-	AiParameterFLT( "specular2Roughness", 0.3f );
-	AiParameterFLT( "specular2Ior", 1.4f );
+	AiParameterFLT("specular2Scale", 1.0f );
+	AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
+	AiParameterFLT("specular2Roughness", 0.3f );
+	AiParameterFLT("specular2Ior", 1.4f );
 
 	AiParameterFLT("transmissionScale", 0.0f );
 	AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
@@ -169,6 +173,7 @@ shader_evaluate
 
 	// Initialize parameter temporaries
 	AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseScale );
+	AtColor emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionScale);
 	AtFloat sssMix = AiShaderEvalParamFlt( p_sssMix );
 	AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
 	float sssRadius = AiShaderEvalParamFlt( p_sssRadius );
@@ -223,6 +228,7 @@ shader_evaluate
 	AtRGB result_sss = AI_RGB_BLACK;
 	AtRGB result_ss = AI_RGB_BLACK;
 	AtColor	result_transmission = AI_RGB_BLACK;
+	AtColor result_emission = AI_RGB_BLACK;
 	// Set up flags to early out of calculations based on where we are in the ray tree
 	bool do_diffuse = true;
 	bool do_glossy = true;
@@ -287,7 +293,6 @@ shader_evaluate
 		brdfd.eta = eta;
 		brdfd.V = wo;
 		brdfd.N = sg->N;
-
 
 		// Light loop
 		AiLightsPrepare(sg);
@@ -369,6 +374,9 @@ shader_evaluate
 
 	} // if (do_diffuse || do_glossy)
 
+	// Emission
+	result_emission = emissionColor;
+
 	// Diffusion multiple scattering
 	if ( do_sss )
 	{
@@ -409,6 +417,7 @@ shader_evaluate
 		AiAOVSetRGB(sg, "specularIndirect", result_glossyIndirect);
 		AiAOVSetRGB(sg, "singleScatter", result_ss);
 		AiAOVSetRGB(sg, "transmission", result_transmission);
+		AiAOVSetRGB(sg, "emission", result_emission);
 	}
 
 	// Sum final result from temporaries
@@ -419,5 +428,6 @@ shader_evaluate
 					+result_diffuseIndirect
 					+result_glossyIndirect
 					+result_ss
-					+result_transmission;
+					+result_transmission
+					+result_emission;
 }
