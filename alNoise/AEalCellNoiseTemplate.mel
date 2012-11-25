@@ -6,17 +6,26 @@ global proc AEalCellNoiseTemplate(string $n)
 	
 	AEswatchDisplay $n;
 	
-	editorTemplate -addControl "space";
+	editorTemplate -ann "The space to calculate the noise in. This will be ignored if the P parameter is connected" 
+					-addControl "space";
 	editorTemplate -addControl "octaves";
 	editorTemplate -addControl "lacunarity";	
 	editorTemplate -addControl "randomness";
-	editorTemplate -addControl "mode";
-	editorTemplate -label "Shape" -addControl "mynkowskiShape";
+	
+	editorTemplate -collapse 0 -beginLayout "Feature weights";
+		editorTemplate -label "F1" -addControl "f1w";
+		editorTemplate -label "F2" -addControl "f2w";
+		editorTemplate -label "F3" -addControl "f3w";
+		editorTemplate -label "F4" -addControl "f4w";
+		editorTemplate -label "Shape" -addControl "mynkowskiShape";
+	editorTemplate -endLayout;
 	
 	alRemapControls($n);
 	
 	editorTemplate -addControl "color1";
 	editorTemplate -addControl "color2";
+	
+	editorTemplate -ann "If connected, this point will be used to evaluate the noise function" -addControl "P";
 	
 	editorTemplate -endScrollLayout;
 	
