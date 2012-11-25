@@ -1,0 +1,20 @@
+===== Features =====
+- Library: Add imagefile shader
+- Library: Add fresnel shader
+- Library: Add blackbody shader
+- Library: Add multifractal shader
+- Library: Add sky shader
+- alSurface: Add transparency support
+- alSurface: Add specular2 support
+- alSurface: Add data AOVs
+- alSurface: Add support for environment escape to specular and transmission
+
+
+===== Bugs =====
+- alSurface: transmission absorption does not currently affect shadows
+
+
+===== Optimizations =====
+- alSurface: Investigate optimizations of microfacet transmission
+- alSurface: Add faster control path for perfect specular reflection/refraction
+- alSurface: Investigate adding max-distance controls 

@@ -1,0 +1,14 @@
+This project uses CMake >= 2.8 to build. It has been tested on Mac OS X 10.7 only. It *should* work without modification
+on Linux. You're on your own with Windows.
+
+In order to set it up to build in your environment, edit the top-level CMakeLists.txt and set ARNOLD_ROOT to point to 
+the root of your Arnold installation (in order to find the include files and libai.so), then set MTOA_ROOT to point to
+the root of your MtoA installation if you want to install the shaders and AEtemplates there. If you want to install the
+shaders and AEtemplates somewhere else, set MTOA_SHADERS and MTOA_SCRIPTS appropriately.
+
+Once those variables are set, cd to the top-level alShaders directory (assuming that's where you cloned it to), then:
+> mkdir build
+> cd build
+> cmake ..
+> make
+> make install
