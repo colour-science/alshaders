@@ -7,8 +7,8 @@
 #include <OpenEXR/ImathMatrixAlgo.h>
 
 #include "alUtil.h"
-#include "alMIS.h"
-#include "Refraction.h"
+#include "MIS.h"
+#include "BeckmannMicrofacet.h"
 #include "alSurface.h"
 #include "Shadows.h"
 
@@ -59,6 +59,8 @@ enum alSurfaceParams
 	p_absorptionEnable,
 	p_absorptionDensity,
 	p_absorptionColor,
+
+	p_bump
 };
 
 node_parameters
@@ -258,24 +260,15 @@ shader_evaluate
 		do_transmission = false;
 	}
 
-	AtRGB E = AI_RGB_BLACK; // for disk integration
+	// build a local frame for sampling
+	AtVector U, V;
+	AiBuildLocalFramePolar(&U, &V, &sg->N);
+
+	AtVector wo = -sg->Rd;
 
 	// Begin illumination calculation
 	if ( do_diffuse || do_glossy )
 	{
-		AtVector U, V;
-		if (!AiV3IsZero(sg->dPdu) && !AiV3IsZero(sg->dPdv))
-		{
-			// tangents available, use them
-			U = sg->dPdu;
-			V = sg->dPdv;
-		}
-		else
-		{
-			// no tangents given, compute a pair
-			AiBuildLocalFramePolar(&U, &V, &sg->Nf);
-		}
-
 		// Create the BRDF data structures for MIS
 		void* mis;
 		mis = GlossyMISCreateData(sg,&U,&V,roughness,roughness);
@@ -283,7 +276,7 @@ shader_evaluate
 		brdfw.brdf_data = mis;
 		brdfw.sg = sg;
 		brdfw.eta = eta;
-		brdfw.V = -sg->Rd;
+		brdfw.V = wo;
 		brdfw.N = sg->N;
 
 		void* dmis;
@@ -292,7 +285,7 @@ shader_evaluate
 		brdfd.brdf_data = dmis;
 		brdfd.sg = sg;
 		brdfd.eta = eta;
-		brdfd.V = -sg->Rd;
+		brdfd.V = wo;
 		brdfd.N = sg->N;
 
 
@@ -303,7 +296,6 @@ shader_evaluate
 			if (do_diffuse)
 			{
 				AtRGB Li = AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap);
-				E += Li;
 				result_diffuseDirect += Li*diffuseColor;
 			}
 			if (do_glossy)
@@ -320,7 +312,7 @@ shader_evaluate
 		AtVector wi;
 		AtScrSample scrs;
 		AtVector H;
-		float kr=1;
+		float kr=1, kt=1;
 
 		if (do_glossy)
 		{
@@ -334,11 +326,14 @@ shader_evaluate
 				if (AiV3Dot(wi,sg->Nf) > 0.0f)
 				{
 					wi_ray.dir = wi;
-					AiTrace(&wi_ray, &scrs);
 					AiV3Normalize(H, wi+brdfw.V);
 					kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
-					result_glossyIndirect +=
-					scrs.color*GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr * specular1Color;
+					if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+					{
+						AiTrace(&wi_ray, &scrs);
+						result_glossyIndirect +=
+						scrs.color*GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr * specular1Color;
+					}
 				}
 				count++;
 			}
@@ -359,14 +354,16 @@ shader_evaluate
 				rm.multDirMatrix(wi_im,wi_im);
 				wi.x = wi_im.x;wi.y=wi_im.y;wi.z=wi_im.z;
 				wi_ray.dir = wi;
-				AiTrace(&wi_ray, &scrs);
 				AiV3Normalize(H, wi+brdfw.V);
-				kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
-				result_diffuseIndirect += scrs.color*(1-kr) * AI_ONEOVERPI;
+				kt = 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
+				if (kt > IMPORTANCE_EPS)
+				{
+					AiTrace(&wi_ray, &scrs);
+					result_diffuseIndirect += scrs.color * kt * AI_ONEOVERPI;
+				}
 				count++;
 			}
 			if (count) result_diffuseIndirect /= float(count);
-			E += result_diffuseIndirect;
 			result_diffuseIndirect *= diffuseColor;
 		} // if (do_diffuse)
 
@@ -397,27 +394,30 @@ shader_evaluate
 	// Refraction
 	if (do_transmission)
 	{
-		microfacetRefraction(sg, data, transmissionIor, transmissionRoughness, absorption, result_transmission);
+		//microfacetRefraction(sg, data, transmissionIor, transmissionRoughness, absorption, result_transmission);
+		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
+																transmissionRoughness, transmissionIor, absorption);
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)
 	{
 		// write AOVs
-		AiAOVSetRGB(sg, "aovDiffuseDirect", result_diffuseDirect);
-		AiAOVSetRGB(sg, "aovSubsurface", result_sss);
-		AiAOVSetRGB(sg, "aovSpecularDirect", result_glossyDirect);
-		AiAOVSetRGB(sg, "aovDiffuseIndirect", result_diffuseIndirect);
-		AiAOVSetRGB(sg, "aovSpecularIndirect", result_glossyIndirect);
-		AiAOVSetRGB(sg, "aovSingleScatter", result_ss);
+		AiAOVSetRGB(sg, "diffuseDirect", result_diffuseDirect);
+		AiAOVSetRGB(sg, "multiScatter", result_sss);
+		AiAOVSetRGB(sg, "specularDirect", result_glossyDirect);
+		AiAOVSetRGB(sg, "diffuseIndirect", result_diffuseIndirect);
+		AiAOVSetRGB(sg, "specularIndirect", result_glossyIndirect);
+		AiAOVSetRGB(sg, "singleScatter", result_ss);
+		AiAOVSetRGB(sg, "transmission", result_transmission);
 	}
 
 	// Sum final result from temporaries
 	//
-	sg->out.RGB =  	result_diffuseDirect
-	+result_sss
-	+result_glossyDirect
-	+result_diffuseIndirect
-	+result_glossyIndirect
-	+result_ss
-	+result_transmission;
+	sg->out.RGB =  	 result_diffuseDirect
+					+result_sss
+					+result_glossyDirect
+					+result_diffuseIndirect
+					+result_glossyIndirect
+					+result_ss
+					+result_transmission;
 }
