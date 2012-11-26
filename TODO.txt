@@ -13,7 +13,8 @@
 
 ===== Bugs =====
 - alSurface: transmission absorption does not currently affect shadows
-- alRemapColor: RGB/HSV/RGB transform is proper borked 
+- alRemapColor: RGB/HSV/RGB transform is proper borked
+- Library: Work out why remap controls MEL UI is screwed
 
 
 ===== Optimizations =====
