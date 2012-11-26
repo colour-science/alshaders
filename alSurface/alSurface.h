@@ -6,6 +6,7 @@ struct ShaderData
 {
    AtSampler* diffuse_sampler;
    AtSampler* glossy_sampler;
+   AtSampler* glossy2_sampler;
    AtSampler* refraction_sampler;
    AtInt GI_diffuse_depth;
    AtInt GI_reflection_depth;

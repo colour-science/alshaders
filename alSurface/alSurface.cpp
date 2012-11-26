@@ -121,6 +121,7 @@ node_initialize
 	AiNodeSetLocalData(node,data);
 	data->diffuse_sampler = NULL;
 	data->glossy_sampler = NULL;
+	data->glossy2_sampler = NULL;
 	data->refraction_sampler = NULL;
 };
 
@@ -132,6 +133,7 @@ node_finish
 
 		AiSamplerDestroy(data->diffuse_sampler);
 		AiSamplerDestroy(data->glossy_sampler);
+		AiSamplerDestroy(data->glossy2_sampler);
 		AiSamplerDestroy(data->refraction_sampler);
 
 		AiFree((void*) data);
@@ -154,9 +156,11 @@ node_update
 	// setup samples
 	AiSamplerDestroy(data->diffuse_sampler);
 	AiSamplerDestroy(data->glossy_sampler);
+	AiSamplerDestroy(data->glossy2_sampler);
 	AiSamplerDestroy(data->refraction_sampler);
 	data->diffuse_sampler = AiSampler(data->GI_diffuse_samples, 2);
 	data->glossy_sampler = AiSampler(data->GI_glossy_samples, 2);
+	data->glossy2_sampler = AiSampler(data->GI_glossy_samples, 2);
 	data->refraction_sampler = AiSampler(AiNodeGetInt(options, "GI_refraction_samples"), 2);
 };
 
@@ -179,10 +183,15 @@ shader_evaluate
 	float sssRadius = AiShaderEvalParamFlt( p_sssRadius );
 	float sssScale = AiShaderEvalParamFlt( p_sssScale );
 	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Scale );
+	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Scale );
 	AtFloat roughness = AiShaderEvalParamFlt( p_specular1Roughness );
 	roughness *= roughness;
+	AtFloat roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
+	roughness2 *= roughness2;
 	AtFloat ior = AiShaderEvalParamFlt( p_specular1Ior );
 	AtFloat eta = 1.0f / ior;
+	AtFloat ior2 = AiShaderEvalParamFlt( p_specular2Ior );
+	AtFloat eta2 = 1.0f / ior2;
 
 	AtRGB ssRadiusColor = AiShaderEvalParamRGB( p_ssRadiusColor );
 	float ssRadius = AiShaderEvalParamFlt( p_ssRadius );
@@ -223,8 +232,10 @@ shader_evaluate
 	// Initialize result temporaries
 	AtRGB result_diffuseDirect = AI_RGB_BLACK;
 	AtRGB result_glossyDirect = AI_RGB_BLACK;
+	AtRGB result_glossy2Direct = AI_RGB_BLACK;
 	AtRGB result_diffuseIndirect = AI_RGB_BLACK;
 	AtRGB result_glossyIndirect = AI_RGB_BLACK;
+	AtRGB result_glossy2Indirect = AI_RGB_BLACK;
 	AtRGB result_sss = AI_RGB_BLACK;
 	AtRGB result_ss = AI_RGB_BLACK;
 	AtColor	result_transmission = AI_RGB_BLACK;
@@ -232,23 +243,28 @@ shader_evaluate
 	// Set up flags to early out of calculations based on where we are in the ray tree
 	bool do_diffuse = true;
 	bool do_glossy = true;
+	bool do_glossy2 = true;
 	bool do_ss = true;
 	bool do_sss = true;
 	bool do_transmission = true;
 	AtInt glossy_samples = data->GI_glossy_samples;
 	AtInt diffuse_samples = data->GI_diffuse_samples;
 
-	if ( sg->Rr_diff > data->GI_diffuse_depth || maxh(diffuseColor) < 0.01 )
+	if ( sg->Rr_diff > data->GI_diffuse_depth || maxh(diffuseColor) < IMPORTANCE_EPS)
 	{
 		do_diffuse = false;
 	}
 
 
-	if (sg->Rr_gloss > data->GI_glossy_depth || sg->Rr_diff > 0 || maxh(specular1Color) < 0.01)
+	if (sg->Rr_gloss > data->GI_glossy_depth || sg->Rr_diff > 0 || maxh(specular1Color) < IMPORTANCE_EPS)
 	{
 		do_glossy = false;
 	}
 
+	if (sg->Rr_gloss > data->GI_glossy_depth || sg->Rr_diff > 0 || maxh(specular2Color) < IMPORTANCE_EPS)
+	{
+		do_glossy2 = false;
+	}
 
 	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 0 || ssScale < 0.01f )
 	{
@@ -273,7 +289,7 @@ shader_evaluate
 	AtVector wo = -sg->Rd;
 
 	// Begin illumination calculation
-	if ( do_diffuse || do_glossy )
+	if (do_diffuse || do_glossy || do_glossy2)
 	{
 		// Create the BRDF data structures for MIS
 		void* mis;
@@ -284,6 +300,15 @@ shader_evaluate
 		brdfw.eta = eta;
 		brdfw.V = wo;
 		brdfw.N = sg->N;
+
+		void* mis2;
+		mis2 = GlossyMISCreateData(sg,&U,&V,roughness2,roughness2);
+		BrdfData_wrap brdfw2;
+		brdfw2.brdf_data = mis2;
+		brdfw2.sg = sg;
+		brdfw2.eta = eta2;
+		brdfw2.V = wo;
+		brdfw2.N = sg->N;
 
 		void* dmis;
 		dmis = AiOrenNayarMISCreateData(sg, 0.0f);
@@ -309,6 +334,12 @@ shader_evaluate
 				AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
 				*specular1Color;
 			}
+			if (do_glossy2)
+			{
+				result_glossy2Direct +=
+				AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+				*specular2Color;
+			}
 		}
 
 		// Sample BRDFS
@@ -319,9 +350,9 @@ shader_evaluate
 		AtVector H;
 		float kr=1, kt=1;
 
+		glossy_samples *= glossy_samples;
 		if (do_glossy)
 		{
-			glossy_samples *= glossy_samples;
 			AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
 			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
 			AtInt count=0;
@@ -344,6 +375,32 @@ shader_evaluate
 			}
 			if (count) result_glossyIndirect /= float(count);
 		} // if (do_glossy)
+
+		if (do_glossy2)
+		{
+			AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
+			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
+			AtInt count=0;
+			while(AiSamplerGetSample(sampit, samples))
+			{
+				wi = GlossyMISSample(mis, samples[0], samples[1]);
+				if (AiV3Dot(wi,sg->Nf) > 0.0f)
+				{
+					wi_ray.dir = wi;
+					AiV3Normalize(H, wi+brdfw2.V);
+					kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
+					kr *= 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
+					if (kr*kt > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+					{
+						AiTrace(&wi_ray, &scrs);
+						result_glossy2Indirect +=
+						scrs.color*GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * specular2Color;
+					}
+				}
+				count++;
+			}
+			if (count) result_glossy2Indirect /= float(count);
+		} // if (do_glossy2)
 
 		if ( do_diffuse )
 		{
@@ -413,8 +470,10 @@ shader_evaluate
 		AiAOVSetRGB(sg, "diffuseDirect", result_diffuseDirect);
 		AiAOVSetRGB(sg, "multiScatter", result_sss);
 		AiAOVSetRGB(sg, "specularDirect", result_glossyDirect);
+		AiAOVSetRGB(sg, "specular2Direct", result_glossy2Direct);
 		AiAOVSetRGB(sg, "diffuseIndirect", result_diffuseIndirect);
 		AiAOVSetRGB(sg, "specularIndirect", result_glossyIndirect);
+		AiAOVSetRGB(sg, "specular2Indirect", result_glossy2Indirect);
 		AiAOVSetRGB(sg, "singleScatter", result_ss);
 		AiAOVSetRGB(sg, "transmission", result_transmission);
 		AiAOVSetRGB(sg, "emission", result_emission);
@@ -425,8 +484,10 @@ shader_evaluate
 	sg->out.RGB =  	 result_diffuseDirect
 					+result_sss
 					+result_glossyDirect
+					+result_glossy2Direct
 					+result_diffuseIndirect
 					+result_glossyIndirect
+					+result_glossy2Indirect
 					+result_ss
 					+result_transmission
 					+result_emission;
