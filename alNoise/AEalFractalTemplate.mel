@@ -1,15 +1,20 @@
 source "alRemap.mel";
 
-global proc AEalNoiseTemplate(string $n)
+global proc AEalFractalTemplate(string $n)
 {
 	editorTemplate -beginScrollLayout;
 	AEswatchDisplay $n;
 	
 	editorTemplate -addControl "space";
+	editorTemplate -addControl "frequency";
+	editorTemplate -addControl "time";
 	editorTemplate -addControl "octaves";
 	editorTemplate -addControl "distortion";
 	editorTemplate -addControl "lacunarity";
-	editorTemplate -addControl "time";
+	editorTemplate -addControl "gain";
+	editorTemplate -addControl "turbulent";
+	editorTemplate -addControl "ridged";
+	editorTemplate -addControl "ridgeOffset";
 	
 	alRemapControls($n);
 	

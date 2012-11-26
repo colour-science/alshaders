@@ -1,4 +1,0 @@
-[node alNoise]
-	desc				STRING		"Procedural noise node"
-	maya.name			STRING		"alNoise"
-	maya.classification	STRING		"shader/utility"

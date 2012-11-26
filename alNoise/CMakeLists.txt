@@ -1,4 +1,4 @@
-set(SHADERS alNoise alCellNoise)
+set(SHADERS alFractal alCellNoise)
 
 foreach(SHADER ${SHADERS})
 	set(SRC ${SHADER}.cpp ../common/alUtil.cpp)
