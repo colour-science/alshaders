@@ -100,6 +100,10 @@ shader_evaluate
 			P.y = sg->v;
 			P.z = 0.0f;
 			break;
+		case NS_PREF:
+			if (!AiUDataGetPnt("Pref", &P))
+				P = sg->Po;
+			break;
 		default:
 			P = sg->P;
 			break;
