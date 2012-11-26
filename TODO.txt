@@ -5,7 +5,7 @@
 - Library: Add multifractal shader
 - Library: Add sky shader
 - alSurface: Add transparency support
-- alSurface: Add specular2 support
+- alSurface: Investigate Weidlich multi-layered model - weidlich_2007_almfs-paper.pdf
 - alSurface: Add data AOVs
 - alSurface: Add support for environment escape to specular and transmission
 
