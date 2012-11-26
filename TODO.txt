@@ -4,6 +4,7 @@
 - Library: Add blackbody shader
 - Library: Add multifractal shader
 - Library: Add sky shader
+- Library: Add cloth shader based on Irwan "Specular Reflection from Woven Cloth"
 - alSurface: Add transparency support
 - alSurface: Investigate Weidlich multi-layered model - weidlich_2007_almfs-paper.pdf
 - alSurface: Add data AOVs
@@ -12,6 +13,7 @@
 
 ===== Bugs =====
 - alSurface: transmission absorption does not currently affect shadows
+- alRemapColor: RGB/HSV/RGB transform is proper borked 
 
 
 ===== Optimizations =====

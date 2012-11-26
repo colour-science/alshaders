@@ -1,6 +1,9 @@
 # alShaders Arnold shader library 
 # by Anders Langlands
 
+# See BUILD_INSTRUCTIONS.txt for how to build
+# See TODO.txt for upcoming features and bug fixes
+
 For any questions, please email anderslanglands+alshaders@gmail.com
 
 Copyright (c) 2012, Anders Langlands.
