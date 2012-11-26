@@ -1,4 +1,4 @@
 [node alCombineColor]
 	desc				STRING		"Combine color node"
 	maya.name			STRING		"alCombineColor"
-	maya.classification	STRING		"shader/utility"
+	maya.classification	STRING		"shader/surface"

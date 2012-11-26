@@ -8,7 +8,6 @@ global proc alRemapClampControl(string $n)
 
 global proc alRemapControls(string $n)
 {
-	setUITemplate -pst attributeEditorTemplate;
 	editorTemplate -beginLayout "Remap";
 		editorTemplate  -label "Input min" -addControl "inputMin";
 		editorTemplate  -label "Input max" -addControl "inputMax";
@@ -24,5 +23,4 @@ global proc alRemapControls(string $n)
 			editorTemplate -addControl "clampMax" -label "Max";
 		editorTemplate -endLayout;
 	editorTemplate -endLayout;
-	setUITemplate -ppt;
 }

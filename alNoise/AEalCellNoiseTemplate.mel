@@ -8,6 +8,7 @@ global proc AEalCellNoiseTemplate(string $n)
 	
 	editorTemplate -ann "The space to calculate the noise in. This will be ignored if the P parameter is connected" 
 					-addControl "space";
+	editorTemplate -addControl "frequency";
 	editorTemplate -addControl "octaves";
 	editorTemplate -addControl "lacunarity";	
 	editorTemplate -addControl "randomness";
