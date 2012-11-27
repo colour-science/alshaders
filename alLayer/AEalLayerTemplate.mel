@@ -1,0 +1,13 @@
+global proc AEalLayerTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+	AEswatchDisplay $n;
+	
+	editorTemplate -addControl "layer1";
+	editorTemplate -addControl "layer2";
+	editorTemplate -addControl "mix";
+	
+	editorTemplate -endScrollLayout;
+	
+	editorTemplate -addExtraControls;
+}

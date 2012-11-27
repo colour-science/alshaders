@@ -18,9 +18,16 @@ set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
 
 include_directories(common)
 
-add_subdirectory(alSurface)
-add_subdirectory(alRemap)
-add_subdirectory(alCombine)
-add_subdirectory(alNoise)
-add_subdirectory(common)
+set(SUBDIRECTORIES 
+		alSurface
+		alRemap
+		alCombine
+		alNoise
+		alLayer
+		common
+)
+
+foreach(SUBDIR ${SUBDIRECTORIES})
+	add_subdirectory(${SUBDIR})
+endforeach()
 

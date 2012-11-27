@@ -1,0 +1,4 @@
+[node alLayer]
+	desc					STRING		"Layered shader for mixing two surface shaders"
+	maya.name				STRING		"alLayer"
+	maya.classification		STRING		"shader/surface"
