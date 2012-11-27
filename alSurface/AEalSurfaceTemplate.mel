@@ -27,7 +27,8 @@ global proc AEalSurfaceTemplate( string $n )
 	editorTemplate -beginLayout "Diffuse" -collapse 0;
 		
 		editorTemplate -label "Scale" -addControl "diffuseScale";
-		editorTemplate  -label "Color"-addControl "diffuseColor";
+		editorTemplate  -label "Color" -addControl "diffuseColor";
+		editorTemplate  -label "Roughness" -addControl "diffuseRoughness";
 		
 		editorTemplate -beginLayout "Emission";
 			editorTemplate -label "Scale" -addControl "emissionScale";

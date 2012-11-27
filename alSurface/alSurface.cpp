@@ -29,6 +29,7 @@ enum alSurfaceParams
 	// diffuse
 	p_diffuseScale=0,
 	p_diffuseColor,
+	p_diffuseRoughness,
 	p_emissionScale,
 	p_emissionColor,
 
@@ -69,6 +70,7 @@ node_parameters
 {
 	AiParameterFLT("diffuseScale", 1.0f );
 	AiParameterRGB("diffuseColor", 0.18f, 0.18f, 0.18f );
+	AiParameterFLT("diffuseRoughness", 0.0f );
 	AiParameterFLT("emissionScale", 0.0f );
 	AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
@@ -177,11 +179,12 @@ shader_evaluate
 
 	// Initialize parameter temporaries
 	AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseScale );
-	AtColor emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionScale);
+	AtFloat diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
+	AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionScale);
 	AtFloat sssMix = AiShaderEvalParamFlt( p_sssMix );
 	AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
-	float sssRadius = AiShaderEvalParamFlt( p_sssRadius );
-	float sssScale = AiShaderEvalParamFlt( p_sssScale );
+	AtFloat sssRadius = AiShaderEvalParamFlt( p_sssRadius );
+	AtFloat sssScale = AiShaderEvalParamFlt( p_sssScale );
 	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Scale );
 	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Scale );
 	AtFloat roughness = AiShaderEvalParamFlt( p_specular1Roughness );
@@ -194,8 +197,8 @@ shader_evaluate
 	AtFloat eta2 = 1.0f / ior2;
 
 	AtRGB ssRadiusColor = AiShaderEvalParamRGB( p_ssRadiusColor );
-	float ssRadius = AiShaderEvalParamFlt( p_ssRadius );
-	float ssScale = AiShaderEvalParamFlt( p_ssScale );
+	AtFloat ssRadius = AiShaderEvalParamFlt( p_ssRadius );
+	AtFloat ssScale = AiShaderEvalParamFlt( p_ssScale );
 
 	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionScale);
 
@@ -311,7 +314,7 @@ shader_evaluate
 		brdfw2.N = sg->N;
 
 		void* dmis;
-		dmis = AiOrenNayarMISCreateData(sg, 0.0f);
+		dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
 		BrdfData_wrap brdfd;
 		brdfd.brdf_data = dmis;
 		brdfd.sg = sg;
@@ -368,12 +371,13 @@ shader_evaluate
 					{
 						AiTrace(&wi_ray, &scrs);
 						result_glossyIndirect +=
-						scrs.color*GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr * specular1Color;
+						scrs.color*GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
 					}
 				}
 				count++;
 			}
 			if (count) result_glossyIndirect /= float(count);
+			result_glossyIndirect *= specular1Color;
 		} // if (do_glossy)
 
 		if (do_glossy2)
@@ -383,45 +387,46 @@ shader_evaluate
 			AtInt count=0;
 			while(AiSamplerGetSample(sampit, samples))
 			{
-				wi = GlossyMISSample(mis, samples[0], samples[1]);
+				wi = GlossyMISSample(mis2, samples[0], samples[1]);
 				if (AiV3Dot(wi,sg->Nf) > 0.0f)
 				{
 					wi_ray.dir = wi;
 					AiV3Normalize(H, wi+brdfw2.V);
 					kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
 					kr *= 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
-					if (kr*kt > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+					if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
 					{
 						AiTrace(&wi_ray, &scrs);
 						result_glossy2Indirect +=
-						scrs.color*GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * specular2Color;
+						scrs.color*GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr;
 					}
 				}
 				count++;
 			}
 			if (count) result_glossy2Indirect /= float(count);
+			result_glossy2Indirect *= specular2Color;
 		} // if (do_glossy2)
 
 		if ( do_diffuse )
 		{
 			diffuse_samples *= diffuse_samples;
 			AtSamplerIterator* sampit = AiSamplerIterator(data->diffuse_sampler, sg);
-			AiMakeRay( &wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg );
+			AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
 			AtInt count=0;
 			while(AiSamplerGetSample(sampit, samples))
 			{
-				Imath::V3f wi_im = cosineSampleHemisphere(samples[0], samples[1]);
-				Imath::V3f N_im( sg->N.x, sg->N.y, sg->N.z );
-				Imath::M44f rm = rotationMatrix(Imath::V3f(0,1,0),N_im);
-				rm.multDirMatrix(wi_im,wi_im);
-				wi.x = wi_im.x;wi.y=wi_im.y;wi.z=wi_im.z;
-				wi_ray.dir = wi;
-				AiV3Normalize(H, wi+brdfw.V);
-				kt = 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
-				if (kt > IMPORTANCE_EPS)
+				wi = AiOrenNayarMISSample(dmis, samples[0], samples[1]);
+				if (AiV3Dot(wi,sg->Nf) > 0.0f)
 				{
-					AiTrace(&wi_ray, &scrs);
-					result_diffuseIndirect += scrs.color * kt * AI_ONEOVERPI;
+					wi_ray.dir = wi;
+					AiV3Normalize(H, wi+brdfd.V);
+					kt = 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
+					if (kt > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+					{
+						AiTrace(&wi_ray, &scrs);
+						result_diffuseIndirect +=
+						scrs.color*AiOrenNayarMISBRDF(dmis, &wi) / AiOrenNayarMISPDF(dmis, &wi) * kt;
+					}
 				}
 				count++;
 			}
