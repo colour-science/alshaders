@@ -44,7 +44,7 @@ node_parameters
 	AiParameterFLT("time", 0.0f);
 	AiParameterINT("octaves", 8);
 	AiParameterFLT("distortion", 0.0f);
-	AiParameterFLT("lacunarity", 2.0f);
+	AiParameterFLT("lacunarity", 2.121f);
 	AiParameterFLT("gain", 0.5f);
 	AiParameterBOOL("turbulent", false);
 	AiParameterBOOL("ridged", false);

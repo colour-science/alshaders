@@ -43,7 +43,7 @@ node_parameters
 	AiParameterFLT("frequency", 1.0f);
 	AiParameterINT("octaves", 1);
 	AiParameterFLT("randomness", 1.0f);
-	AiParameterFLT("lacunarity", 1.92f);
+	AiParameterFLT("lacunarity", 2.121f);
 	AiParameterFlt("f1w", -1.0f);
 	AiParameterFlt("f2w", 1.0f);
 	AiParameterFlt("f3w", 0.0f);
