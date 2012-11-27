@@ -137,7 +137,7 @@ shader_evaluate
 		if (distortion != 0.0f)
 			PP += distortion * AiVNoise3(P, 1, 0, 0);
 		v = AiPerlin3(PP);
-		if (turbulent) v = fabsf(v);
+		if (turbulent) v = fabs(v);
 		if (ridged)
 		{
 			v = ridgeOffset - v;

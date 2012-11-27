@@ -1,5 +1,7 @@
 #include "Remap.h"
 #include <ai.h>
+#include <cmath>
+#include <cstring>
 
 AI_SHADER_NODE_EXPORT_METHODS(alCellNoise)
 
@@ -62,7 +64,7 @@ node_loader
    node->output_type = AI_TYPE_RGB;
    node->name        = "alCellNoise";
    node->node_type   = AI_NODE_SHADER;
-   strcpy(node->version, AI_VERSION);
+   ::strcpy(node->version, AI_VERSION);
    return TRUE;
 }
 
@@ -140,8 +142,8 @@ shader_evaluate
 		AtFloat ims = 1.0f / ms;
 		for (int i=0; i < 4; ++i)
 		{
-			F[i] = powf(fabsf(delta[i].x), ms) + powf(fabsf(delta[i].y), ms) + powf(fabsf(delta[i].z), ms);
-			F[i] = powf(F[i], ims);
+			F[i] = pow(fabs(delta[i].x), ms) + pow(fabs(delta[i].y), ms) + pow(fabs(delta[i].z), ms);
+			F[i] = pow(F[i], ims);
 		}
 	}
 

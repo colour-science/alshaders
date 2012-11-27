@@ -66,7 +66,7 @@ void Kettle_shadows(const float fresnel,
 					do_absorb = true;
 					// set entering state for previous
 					AiStateSetMsgBool("s_hit_entering", false);
-					rf_transCol	= rf_transCol;
+					//rf_transCol	= rf_transCol;
 				}
 
 				if (do_absorb)
@@ -81,9 +81,9 @@ void Kettle_shadows(const float fresnel,
 
 					//AiColorScale(absorbance, rf_transCol, -distance * AiShaderEvalParamFlt(p_rf_transExp));
 
-					absorbance.r = expf( absorbance.r );
-					absorbance.g = expf( absorbance.g );
-					absorbance.b = expf( absorbance.b );
+					absorbance.r = exp( absorbance.r );
+					absorbance.g = exp( absorbance.g );
+					absorbance.b = exp( absorbance.b );
 
 					// invert resulting absorption colour for opacity composite
 					absorbance = 1.0f - absorbance;
