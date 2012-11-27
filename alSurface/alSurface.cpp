@@ -90,7 +90,7 @@ node_parameters
 	AiParameterFLT("specular1Roughness", 0.3f );
 	AiParameterFLT("specular1Ior", 1.4f );
 
-	AiParameterFLT("specular2Scale", 1.0f );
+	AiParameterFLT("specular2Scale", 0.0f );
 	AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
 	AiParameterFLT("specular2Roughness", 0.3f );
 	AiParameterFLT("specular2Ior", 1.4f );
@@ -226,7 +226,6 @@ shader_evaluate
 
 	if (sg->Rt & AI_RAY_SHADOW)
 	{
-		//Kettle_shadows(fresnel(costheta, 1.0f/1.5f), 1.0f, false, AI_RGB_WHITE, sg, node);
 		float costheta = AiV3Dot(sg->Nf, -sg->Rd);
 		sg->out_opacity = fresnel(costheta, 1.0f/transmissionIor);
 		return;
@@ -328,22 +327,25 @@ shader_evaluate
 		{
 			if (do_diffuse)
 			{
-				AtRGB Li = AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap);
-				result_diffuseDirect += Li*diffuseColor;
+				result_diffuseDirect +=
+				AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap);
 			}
 			if (do_glossy)
 			{
 				result_glossyDirect +=
-				AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-				*specular1Color;
+				AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
 			}
 			if (do_glossy2)
 			{
 				result_glossy2Direct +=
-				AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-				*specular2Color;
+				AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
 			}
 		}
+
+		// Multiply by the colors
+		result_diffuseDirect *= diffuseColor;
+		result_glossyDirect *= specular1Color;
+		result_glossy2Direct *= specular2Color;
 
 		// Sample BRDFS
 		double samples[2];
