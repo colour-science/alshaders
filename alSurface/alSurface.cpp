@@ -268,6 +268,12 @@ shader_evaluate
 		do_glossy2 = false;
 	}
 
+	if (sg->Rr_gloss > 0 && do_glossy)
+	{
+		roughness *= powf(0.5f, sg->Rr_gloss);
+		roughness2 *= powf(0.5f, sg->Rr_gloss);
+	}
+
 	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 0 || ssScale < 0.01f )
 	{
 		do_ss = false;
@@ -366,6 +372,7 @@ shader_evaluate
 				wi = GlossyMISSample(mis, samples[0], samples[1]);
 				if (AiV3Dot(wi,sg->Nf) > 0.0f)
 				{
+					// get half-angle vector for fresnel
 					wi_ray.dir = wi;
 					AiV3Normalize(H, wi+brdfw.V);
 					kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
@@ -394,7 +401,9 @@ shader_evaluate
 				{
 					wi_ray.dir = wi;
 					AiV3Normalize(H, wi+brdfw2.V);
+					// add the fresnel for this layer
 					kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
+					// attenuate by the fresnel from the layer above
 					kr *= 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
 					if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
 					{
@@ -422,6 +431,9 @@ shader_evaluate
 				{
 					wi_ray.dir = wi;
 					AiV3Normalize(H, wi+brdfd.V);
+					// attenuate by the fresnel of the top layer
+					// we'll assume for now that the specular2 layer does not have a significant attenuation on this
+					// layer (it's supposed to be more of a 'mix').
 					kt = 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
 					if (kt > IMPORTANCE_EPS) // only trace a ray if it's going to matter
 					{
