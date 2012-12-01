@@ -226,8 +226,15 @@ shader_evaluate
 
 	if (sg->Rt & AI_RAY_SHADOW)
 	{
-		float costheta = AiV3Dot(sg->Nf, -sg->Rd);
-		sg->out_opacity = fresnel(costheta, 1.0f/transmissionIor);
+		if (maxh(transmissionColor) > 0.0f)
+		{
+			float costheta = AiV3Dot(sg->Nf, -sg->Rd);
+			sg->out_opacity = fresnel(costheta, 1.0f/transmissionIor);
+		}
+		else
+		{
+			sg->out_opacity = 1.0f;
+		}
 		return;
 	}
 
