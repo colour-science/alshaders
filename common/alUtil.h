@@ -404,5 +404,6 @@ inline std::ostream& operator<<( std::ostream& os, AtVector v )
    return os;
 }
 
+// TODO: make this better
 #define M_RAN_INVM32 2.32830643653869628906e-010
 inline double random(AtUInt32 ui) { return ui * M_RAN_INVM32; }
