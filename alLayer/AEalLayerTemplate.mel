@@ -7,6 +7,8 @@ global proc AEalLayerTemplate(string $n)
 	editorTemplate -addControl "layer2";
 	editorTemplate -addControl "mix";
 	
+	editorTemplate -addControl "debug";
+	
 	editorTemplate -addExtraControls;
 	
 	editorTemplate -endScrollLayout;

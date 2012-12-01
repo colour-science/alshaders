@@ -7,7 +7,25 @@ enum alLayerParams
 {
 	p_layer1,
 	p_layer2,
-	p_mix
+	p_mix,
+	p_debug
+};
+
+enum DebugModes
+{
+	kOff = 0,
+	kLayer1,
+	kLayer2,
+	kMixer
+};
+
+static const char* debugModeNames[] =
+{
+	"off",
+	"layer1",
+	"layer2",
+	"mixer",
+	NULL
 };
 
 node_parameters
@@ -15,6 +33,7 @@ node_parameters
 	AiParameterRGB("layer1", 0.0f, 0.0f, 0.0f);
 	AiParameterRGB("layer2", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("mix", 0.0f);
+	AiParameterEnum("debug", kOff, debugModeNames);
 }
 
 node_loader
@@ -48,19 +67,31 @@ shader_evaluate
 	AtRGB result = AI_RGB_BLACK;
 	
 	AtFloat mix = AiShaderEvalParamFlt(p_mix);
-	if (mix >= (1.0f-IMPORTANCE_EPS))
+	int debug = AiShaderEvalParamEnum(p_debug);
+	if (debug == kMixer)
 	{
-		result = AiShaderEvalParamRGB(p_layer2);
-	}
-	else if (mix <= IMPORTANCE_EPS)
-	{
-		result = AiShaderEvalParamRGB(p_layer1);
+		result = AiColorCreate(mix, mix, mix);
 	}
 	else
 	{
-		AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
-		AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
-		result = lerp(layer1, layer2, mix);
+		if (debug == kLayer1) mix = 0.0f;
+		else if (debug == kLayer2) mix = 1.0f;
+
+
+		if (mix >= (1.0f-IMPORTANCE_EPS))
+		{
+			result = AiShaderEvalParamRGB(p_layer2);
+		}
+		else if (mix <= IMPORTANCE_EPS)
+		{
+			result = AiShaderEvalParamRGB(p_layer1);
+		}
+		else
+		{
+			AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
+			AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
+			result = lerp(layer1, layer2, mix);
+		}
 	}
 
 	sg->out.RGB = result;
