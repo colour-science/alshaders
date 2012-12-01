@@ -502,6 +502,20 @@ shader_evaluate
 		AiAOVSetRGB(sg, "singleScatter", result_ss);
 		AiAOVSetRGB(sg, "transmission", result_transmission);
 		AiAOVSetRGB(sg, "emission", result_emission);
+
+		// write data AOVs
+		AtPoint Pref;
+		if (!AiUDataGetPnt("Pref", &Pref))
+			Pref = sg->Po;
+		AtRGB position = AiColorCreate(sg->P.x, sg->P.y, sg->P.z);
+		AtRGB referenceposition = AiColorCreate(Pref.x, Pref.y, Pref.z);
+		AiAOVSetRGB(sg, "position", position);
+		AiAOVSetRGB(sg, "referenceposition", referenceposition);
+		AtRGB normal = AiColorCreate(sg->Nf.x, sg->Nf.y, sg->Nf.z);
+		AiAOVSetRGB(sg, "normal", normal);
+		AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
+		AiAOVSetRGB(sg, "uv", uv);
+		AtRGB depth = AiColorCreate(sg->Rl, AiV3Dot(sg->Nf, wo), 0.0f);
 	}
 
 	// Sum final result from temporaries
