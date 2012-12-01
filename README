@@ -1,6 +1,7 @@
+===============================
 alShaders Arnold shader library
 =============================== 
-by Anders Langlands
+by `Anders Langlands <http://twitter.com/anderslanglands>`_
 
 # See BUILD_INSTRUCTIONS.txt for how to build
 # See TODO.txt for upcoming features and bug fixes
@@ -12,6 +13,7 @@ Copyright
 This software is released under the MIT licence
 
 Copyright (c) 2012 Anders Langlands
+
 Permission is hereby granted, free of charge, to any person obtaining a copy of 
 this software and associated documentation files (the "Software"), to deal in 
 the Software without restriction, including without limitation the rights to 
