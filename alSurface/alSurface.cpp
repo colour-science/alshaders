@@ -231,6 +231,12 @@ shader_evaluate
 		return;
 	}
 
+	// clamp roughnesses
+	// TODO: fall back to single-ray solution when roughness is 0
+	roughness = std::max(0.0001f, roughness);
+	roughness2 = std::max(0.0001f, roughness2);
+	transmissionRoughness = std::max(0.0001f, transmissionRoughness);
+
 	// Initialize result temporaries
 	AtRGB result_diffuseDirect = AI_RGB_BLACK;
 	AtRGB result_glossyDirect = AI_RGB_BLACK;
