@@ -21,7 +21,9 @@ global proc AEalFractalTemplate(string $n)
 	editorTemplate -addControl "color1";
 	editorTemplate -addControl "color2";
 	
+	editorTemplate -addExtraControls;
+	
 	editorTemplate -endScrollLayout;
 	
-	editorTemplate -addExtraControls;
+	
 }
