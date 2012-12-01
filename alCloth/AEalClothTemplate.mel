@@ -1,0 +1,11 @@
+global proc AEalClothTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+			AEswatchDisplay $n;
+	
+	editorTemplate -addControl "Preset";
+	editorTemplate -addControl "Scale";
+			
+	editorTemplate -addExtraControls;
+	editorTemplate -endScrollLayout;
+}

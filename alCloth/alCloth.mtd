@@ -1,0 +1,4 @@
+[node alCloth]
+	desc					STRING		"Irawan & Marschner cloth shader"
+	maya.name				STRING		"alCloth"
+	maya.classification		STRING		"shader/surface"
