@@ -24,6 +24,7 @@ set(SUBDIRECTORIES
 		alCombine
 		alNoise
 		alLayer
+		alCloth
 		common
 )
 
