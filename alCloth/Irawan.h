@@ -155,7 +155,8 @@ struct WeavePattern
 		dWeftUmaxOverDWarp(0), dWeftUmaxOverDWeft(0),
 		fineness(0), period(0), repeatU(1.0f), repeatV(1.0f) { }
 
-	inline WeavePattern(const std::string& name_, AtFloat tileWidth_, AtFloat tileHeight_, AtFloat alpha_, AtFloat beta_, AtFloat ss_,  AtFloat hWidth_, AtFloat warpArea_,
+	inline WeavePattern(const std::string& name_, AtFloat tileWidth_, AtFloat tileHeight_, AtFloat alpha_, AtFloat beta_,
+						AtFloat ss_,  AtFloat hWidth_, AtFloat warpArea_,
 							AtFloat weftArea_, AtFloat fineness_, AtFloat repeatU_, AtFloat repeatV_, AtFloat dWarpdWarp,
 							AtFloat dWarpdWeft, AtFloat dWeftdWarp, AtFloat dWeftdWeft,
 							AtFloat period_)
@@ -289,6 +290,12 @@ public:
 		_repeatV = repeatV;
 	}
 
+	void setColors(AtRGB warpColor, AtRGB weftColor)
+	{
+		_warpColor = warpColor;
+		_weftColor = weftColor;
+	}
+
 	// Transform a world-space direction into the local shading coordinate system, where the normal, _n is the z axis
 	// This isn't how we generally do things in Arnold but it will make the rest of the implementation a lot easier...
 	inline AtVector worldToLocal(const AtVector& v)
@@ -414,6 +421,8 @@ private:
 	AtFloat _specularNormalization;
 	AtFloat _repeatU;
 	AtFloat _repeatV;
+	AtRGB _warpColor;
+	AtRGB _weftColor;
 };
 
 // utility function for creating preset weave patterns

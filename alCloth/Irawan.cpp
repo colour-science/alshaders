@@ -77,10 +77,12 @@ AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFlo
 	AtFloat kappa = yarn.kappa;
 
 	AtFloat dUmaxOverDWarp, dUmaxOverDWeft;
+	AtRGB ks;
 	if (type == Yarn::kWarp)
 	{
 		dUmaxOverDWarp = _pattern.dWarpUmaxOverDWarp;
 		dUmaxOverDWeft = _pattern.dWarpUmaxOverDWeft;
+		ks = _warpColor;
 	}
 	else
 	{ // type == EWeft
@@ -96,6 +98,7 @@ AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFlo
 		tmp = om_r.x;
 		om_r.x = -om_r.y;
 		om_r.y = tmp;
+		ks = _weftColor;
 	}
 
 	// Correlated (Perlin) noise.
@@ -159,14 +162,12 @@ AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFlo
 		intensityVariation = std::min(-logf(xi), (AtFloat) 10.0f);
 	}
 
-
-
 	// if m_initialization is true, we are running an initialization pass to find the integral of the
 	// specular reflectance under uniform diffuse illumination, which we'll use to normalize the specular
 	// result during shading evaluation
 
 	if (!_initialization)
-		result = yarn.ks * (intensityVariation * integrand * _specularNormalization);
+		result = ks * (intensityVariation * integrand * _specularNormalization);
 	else
 		result = AI_RGB_WHITE * (intensityVariation * integrand);
 
@@ -188,7 +189,7 @@ AtFloat IrawanBRDF::pdf(const AtVector& wi, const AtVector& wo) const
 		return 0.0f;
 
 	// No good sampling strategy so we're using cosine hemisphere sampling
-	return squareToCosineHemispherePdf(wo);
+	return squareToCosineHemispherePdf(wi);
 }
 
 AtVector IrawanBRDF::sample(AtFloat r0, AtFloat r1) const
@@ -316,7 +317,8 @@ AtFloat IrawanBRDF::evalFilamentIntegrand(AtFloat u, AtFloat v, const AtVector& 
  */
 AtFloat IrawanBRDF::evalStapleIntegrand(AtFloat u, AtFloat v, const AtVector& om_i,
 		const AtVector& om_r, AtFloat alpha, AtFloat beta, AtFloat psi,
-		AtFloat umax, AtFloat kappa, AtFloat w, AtFloat l) const {
+		AtFloat umax, AtFloat kappa, AtFloat w, AtFloat l) const
+{
 	// w * sin(umax) < l
 	if (w * std::sin(umax) >= l)
 		return 0.0f;
@@ -349,7 +351,7 @@ AtFloat IrawanBRDF::evalStapleIntegrand(AtFloat u, AtFloat v, const AtVector& om
 
 		// R is radius of curvature.
 		AtFloat R = radiusOfCurvature(std::abs(u), umax, kappa, w, l);
-
+		R = fabs(R);
 		// G is geometry factor.
 		AtFloat a = 0.5f * w;
 		AtVector om_i_plus_om_r(om_i + om_r);
@@ -462,8 +464,22 @@ AtFloat IrawanBRDF::seeliger(AtFloat cos_th1, AtFloat cos_th2, AtFloat sg_a, AtF
 
 WeavePattern* createDenimPreset()
 {
-	WeavePattern* wv = new WeavePattern("denim", 3, 6, 0.01f, 4.0f, 0.0f, 0.5f, 5.0f, 1.0f, 3.0f, 50, 50,
-											0, 0, 0, 0, 0);
+	WeavePattern* wv = new WeavePattern(
+			"denim",
+			3,			// tileWidth
+			6,			// tileHeight
+			0.01f,		// alpha
+			4.0f,		// beta
+			0.0f,		// ss
+			0.5f,		// hWidth
+			5.0f,		// warpArea
+			1.0f,		// weftArea
+			3.0f,		// fineness
+			50, 50,		// repeatU, repeatV
+			0, 0, 0, 0,	// dWarpdWarp, dWarpdWeft, dWeftdWarp, dWeftdWeft
+			0			// period
+	);
+
 	AtUInt32 patterns[] =
 	{
 		1, 3, 8,

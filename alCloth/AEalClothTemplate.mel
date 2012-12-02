@@ -3,8 +3,20 @@ global proc AEalClothTemplate(string $n)
 	editorTemplate -beginScrollLayout;
 			AEswatchDisplay $n;
 	
-	editorTemplate -addControl "Preset";
-	editorTemplate -addControl "Scale";
+	editorTemplate -addControl "preset";
+	editorTemplate -addControl "repeatU";
+	editorTemplate -addControl "repeatV";
+	
+	
+	editorTemplate -beginLayout "Diffuse" -collapse 0;
+		
+	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Specular" -collapse 0;
+		editorTemplate -label "Scale" -addControl "specularScale";
+		editorTemplate -addControl "warpColor";
+		editorTemplate -addControl "weftColor";
+	editorTemplate -endLayout;
 			
 	editorTemplate -addExtraControls;
 	editorTemplate -endScrollLayout;
