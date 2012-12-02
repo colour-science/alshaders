@@ -182,7 +182,7 @@ AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFlo
 	else
 		result *= (_pattern.warpArea + _pattern.weftArea) / _pattern.weftArea;
 
-	resultDiffuse = kd * fabsf(cosTheta(wo));
+	resultDiffuse = kd * fabsf(cosTheta(wo)) * AI_ONEOVERPI;
 
 	return result * fabsf(cosTheta(wo));
 
@@ -357,7 +357,7 @@ AtFloat IrawanBRDF::evalStapleIntegrand(AtFloat u, AtFloat v, const AtVector& om
 
 		// R is radius of curvature.
 		AtFloat R = radiusOfCurvature(std::abs(u), umax, kappa, w, l);
-		R = fabs(R);
+
 		// G is geometry factor.
 		AtFloat a = 0.5f * w;
 		AtVector om_i_plus_om_r(om_i + om_r);
@@ -433,7 +433,7 @@ AtFloat IrawanBRDF::radiusOfCurvature(AtFloat u, AtFloat umax, AtFloat kappa, At
 		AtFloat t = tanf(u);
 		R = 2 * ahat * powf(1 + t * t, (AtFloat) 1.5f);
 	}
-	return R;
+	return fabs(R);
 }
 
 // von Mises Distribution
