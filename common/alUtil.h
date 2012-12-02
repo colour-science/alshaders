@@ -463,3 +463,15 @@ inline AtFloat sampleTEAFloat(AtUInt32 v0, AtUInt32 v1, int rounds = 4) {
 // TODO: make this better
 #define M_RAN_INVM32 2.32830643653869628906e-010
 inline double random(AtUInt32 ui) { return ui * M_RAN_INVM32; }
+
+/// S-shaped smoothly varying interpolation between two values
+inline AtFloat smoothstep(AtFloat min, AtFloat max, AtFloat value)
+{
+	AtFloat v = clamp((value - min) / (max - min), 0.0f, 1.0f);
+    return v * v * (-2.0f * v  + 3.0f);
+}
+
+inline AtFloat safe_acos(AtFloat value)
+{
+	return acosf(std::min(1.0f, std::max(-1.0f, value)));
+}
