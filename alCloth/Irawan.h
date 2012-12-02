@@ -290,10 +290,12 @@ public:
 		_repeatV = repeatV;
 	}
 
-	void setColors(AtRGB warpColor, AtRGB weftColor)
+	void setColors(AtRGB warpDiffuseColor, AtRGB weftDiffuseColor, AtRGB warpSpecularColor, AtRGB weftSpecularColor)
 	{
-		_warpColor = warpColor;
-		_weftColor = weftColor;
+		_warpDiffuseColor = warpDiffuseColor;
+		_weftDiffuseColor = weftDiffuseColor;
+		_warpSpecularColor = warpSpecularColor;
+		_weftSpecularColor = weftSpecularColor;
 	}
 
 	// Transform a world-space direction into the local shading coordinate system, where the normal, _n is the z axis
@@ -348,7 +350,7 @@ public:
 
 
 	// Evaluate the BRDF for the given pair of directions
-	AtRGB eval(const AtVector& wi, const AtVector& wo, AtFloat u, AtFloat v) const;
+	AtRGB eval(const AtVector& wi, const AtVector& wo, AtFloat u, AtFloat v, AtRGB& resultDiffuse) const;
 
 	// Calculate the PDF for the given pair of directions
 	AtFloat pdf(const AtVector& wi, const AtVector& wo) const;
@@ -421,8 +423,10 @@ private:
 	AtFloat _specularNormalization;
 	AtFloat _repeatU;
 	AtFloat _repeatV;
-	AtRGB _warpColor;
-	AtRGB _weftColor;
+	AtRGB _warpSpecularColor;
+	AtRGB _weftSpecularColor;
+	AtRGB _warpDiffuseColor;
+	AtRGB _weftDiffuseColor;
 };
 
 // utility function for creating preset weave patterns

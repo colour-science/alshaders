@@ -17,11 +17,14 @@ struct ShaderData
 enum alClothParams
 {
 	p_preset = 0,
+	p_diffuseScale,
 	p_specularScale,
 	p_repeatU,
 	p_repeatV,
-	p_warpColor,
-	p_weftColor
+	p_warpDiffuseColor,
+	p_weftDiffuseColor,
+	p_warpSpecularColor,
+	p_weftSpecularColor
 };
 
 const char* presetNames[] =
@@ -38,11 +41,14 @@ const char* presetNames[] =
 node_parameters
 {
 	AiParameterENUM("preset", 0, presetNames);
+	AiParameterFLT("diffuseScale", 1.0f );
 	AiParameterFLT("specularScale", 1.0f );
 	AiParameterFLT("repeatU", 10.0f );
 	AiParameterFLT("repeatV", 10.0f );
-	AiParameterRGB("warpColor", 0.6f, 0.6f, 0.6f);
-	AiParameterRGB("weftColor", 0.6f, 0.6f, 0.6f);
+	AiParameterRGB("warpDiffuseColor", 0.6f, 0.6f, 0.6f);
+	AiParameterRGB("weftDiffuseColor", 0.6f, 0.6f, 0.6f);
+	AiParameterRGB("warpSpecularColor", 0.6f, 0.6f, 0.6f);
+	AiParameterRGB("weftSpecularColor", 0.6f, 0.6f, 0.6f);
 }
 
 node_loader
@@ -100,11 +106,14 @@ shader_evaluate
 {
 	ShaderData* data = (ShaderData*) AiNodeGetLocalData(node);
 
+	AtFloat diffuseScale = AiShaderEvalParamFlt(p_diffuseScale);
 	AtFloat specularScale = AiShaderEvalParamFlt(p_specularScale);
 	AtFloat repeatU = AiShaderEvalParamFlt(p_repeatU);
 	AtFloat repeatV = AiShaderEvalParamFlt(p_repeatV);
-	AtRGB warpColor = AiShaderEvalParamRGB(p_warpColor);
-	AtRGB weftColor = AiShaderEvalParamRGB(p_weftColor);
+	AtRGB warpDiffuseColor = AiShaderEvalParamRGB(p_warpDiffuseColor);
+	AtRGB weftDiffuseColor = AiShaderEvalParamRGB(p_weftDiffuseColor);
+	AtRGB warpSpecularColor = AiShaderEvalParamRGB(p_warpSpecularColor);
+	AtRGB weftSpecularColor = AiShaderEvalParamRGB(p_weftSpecularColor);
 
 	IrawanBRDF& iw = *(data->irawan);
 
@@ -121,25 +130,28 @@ shader_evaluate
 
 	iw.setFrame(sg->Nf, U, V);
 	iw.setRepeat(repeatU, repeatV);
-	iw.setColors(warpColor, weftColor);
+	iw.setColors(warpDiffuseColor, weftDiffuseColor, warpSpecularColor, weftSpecularColor);
 
 	AtVector wo = iw.worldToLocal(-sg->Rd);
 
 	// initialize accumulators
+	AtRGB result_diffuseDirect = AI_RGB_BLACK;
+	AtRGB result_diffuseIndirect = AI_RGB_BLACK;
 	AtRGB result_specularDirect = AI_RGB_BLACK;
 	AtRGB result_specularIndirect = AI_RGB_BLACK;
 
 	// Light loop
 	AiLightsPrepare(sg);
-
+	AtRGB tempDiffuse;
 	while(AiLightsGetSample(sg))
 	{
 		AtVector wi = iw.worldToLocal(sg->Ld);
 
 		if (do_glossy)
 		{
-			result_specularDirect += sg->Li * iw.eval(wi, wo, sg->u, sg->v) * sg->we * AiV3Dot(sg->Nf, sg->Ld)
+			result_specularDirect += sg->Li * iw.eval(wi, wo, sg->u, sg->v, tempDiffuse) * sg->we * AiV3Dot(sg->Nf, sg->Ld)
 						*specularScale;
+			result_diffuseDirect += sg->Li * tempDiffuse * sg->we * AiV3Dot(sg->Nf, sg->Ld) * diffuseScale;
 		}
 	}
 
@@ -159,16 +171,19 @@ shader_evaluate
 			wi = iw.localToWorld(wi_l);
 			wi_ray.dir = wi;
 			AiTrace(&wi_ray, &scrs);
-			result_specularIndirect += scrs.color * iw.eval(wi_l, wo, sg->u, sg->v);
+			result_specularIndirect += scrs.color * iw.eval(wi_l, wo, sg->u, sg->v, tempDiffuse);
+			result_diffuseIndirect += scrs.color * tempDiffuse;
 														// only doing cosine hemisphere sampling
 														// so we can leave this out for now
 														// * fabs(wi_l.z) / iw.pdf(wi_l, wo);
 			count++;
 		}
 		result_specularIndirect /= count;
+		result_diffuseIndirect /= count;
 	}
 
-	sg->out.RGB = result_specularDirect + result_specularIndirect;
+	sg->out.RGB = result_diffuseDirect + result_diffuseIndirect +
+					result_specularDirect + result_specularIndirect;
 }
 
 

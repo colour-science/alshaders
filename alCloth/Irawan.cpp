@@ -7,11 +7,12 @@ IrawanBRDF::IrawanBRDF(const WeavePattern& pattern)
 	AtUInt32 ns = 100000;
 	AtRGB result = AI_RGB_BLACK;
 	_initialization = true;
+	AtRGB tmp;
 	for (AtUInt32 i=0; i < ns; ++i)
 	{
 		AtVector wi = squareToCosineHemisphere(drand48(), drand48());
 		AtVector wo = squareToCosineHemisphere(drand48(), drand48());
-		result += eval(wi, wo, drand48(), drand48()) / cosTheta(wo);
+		result += eval(wi, wo, drand48(), drand48(), tmp) / cosTheta(wo);
 	}
 	_initialization = false;
 
@@ -21,8 +22,9 @@ IrawanBRDF::IrawanBRDF(const WeavePattern& pattern)
 		_specularNormalization = AtFloat(ns) / (maxh(result) * AI_PI);
 }
 
-AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFloat vv) const
+AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFloat vv, AtRGB& resultDiffuse) const
 {
+	resultDiffuse = AI_RGB_BLACK;
 	// Make sure we're in the right hemisphere for the cloth
 	// return black otherwise
 	if (cosTheta(wi) <= 0 || cosTheta(wo) <= 0)
@@ -77,12 +79,13 @@ AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFlo
 	AtFloat kappa = yarn.kappa;
 
 	AtFloat dUmaxOverDWarp, dUmaxOverDWeft;
-	AtRGB ks;
+	AtRGB ks, kd;
 	if (type == Yarn::kWarp)
 	{
 		dUmaxOverDWarp = _pattern.dWarpUmaxOverDWarp;
 		dUmaxOverDWeft = _pattern.dWarpUmaxOverDWeft;
-		ks = _warpColor;
+		ks = _warpSpecularColor;
+		kd = _warpDiffuseColor;
 	}
 	else
 	{ // type == EWeft
@@ -98,7 +101,8 @@ AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFlo
 		tmp = om_r.x;
 		om_r.x = -om_r.y;
 		om_r.y = tmp;
-		ks = _weftColor;
+		ks = _weftSpecularColor;
+		kd = _weftDiffuseColor;
 	}
 
 	// Correlated (Perlin) noise.
@@ -177,6 +181,8 @@ AtRGB IrawanBRDF::eval(const AtVector& wi, const AtVector& wo, AtFloat uu, AtFlo
 		result *= (_pattern.warpArea + _pattern.weftArea) / _pattern.warpArea;
 	else
 		result *= (_pattern.warpArea + _pattern.weftArea) / _pattern.weftArea;
+
+	resultDiffuse = kd * fabsf(cosTheta(wo));
 
 	return result * fabsf(cosTheta(wo));
 

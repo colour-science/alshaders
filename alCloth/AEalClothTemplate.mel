@@ -9,13 +9,15 @@ global proc AEalClothTemplate(string $n)
 	
 	
 	editorTemplate -beginLayout "Diffuse" -collapse 0;
-		
+		editorTemplate -label "Scale" -addControl "diffuseScale";
+		editorTemplate -label "Warp color" -addControl "warpDiffuseColor";
+		editorTemplate -label "Weft color" -addControl "weftDiffuseColor";
 	editorTemplate -endLayout;
 	
 	editorTemplate -beginLayout "Specular" -collapse 0;
 		editorTemplate -label "Scale" -addControl "specularScale";
-		editorTemplate -addControl "warpColor";
-		editorTemplate -addControl "weftColor";
+		editorTemplate -label "Warp color" -addControl "warpSpecularColor";
+		editorTemplate -label "Weft color" -addControl "weftSpecularColor";
 	editorTemplate -endLayout;
 			
 	editorTemplate -addExtraControls;
