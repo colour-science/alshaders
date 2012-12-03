@@ -48,10 +48,12 @@ enum alSurfaceParams
 	p_specular1Color,
 	p_specular1Roughness,
 	p_specular1Ior,
+	p_specular1RoughnessDepthScale,
 	p_specular2Scale,
 	p_specular2Color,
 	p_specular2Roughness,
 	p_specular2Ior,
+	p_specular2RoughnessDepthScale,
 
 	// transmission
 	p_transmissionScale,
@@ -59,6 +61,7 @@ enum alSurfaceParams
 	p_transmissionLinkToSpecular1,
 	p_transmissionRoughness,
 	p_transmissionIor,
+	p_transmissionRoughnessDepthScale,
 	p_transmissionEnableCaustics,
 	p_absorptionEnable,
 	p_absorptionDensity,
@@ -90,17 +93,20 @@ node_parameters
 	AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
 	AiParameterFLT("specular1Roughness", 0.3f );
 	AiParameterFLT("specular1Ior", 1.4f );
+	AiParameterFLT("specular1RoughnessDepthScale", 1.0f);
 
 	AiParameterFLT("specular2Scale", 0.0f );
 	AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
 	AiParameterFLT("specular2Roughness", 0.3f );
 	AiParameterFLT("specular2Ior", 1.4f );
+	AiParameterFLT("specular2RoughnessDepthScale", 1.0f);
 
 	AiParameterFLT("transmissionScale", 0.0f );
 	AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
 	AiParameterBOOL("transmissionLinkToSpecular1", true);
 	AiParameterFLT("transmissionRoughness", 0.1f );
 	AiParameterFLT("transmissionIor", 1.4f );
+	AiParameterFLT("transmissionRoughnessDepthScale", 1.0f);
 	AiParameterBOOL("transmissionEnableCaustics", true);
 	AiParameterBOOL("absorptionEnable", false);
 	AiParameterFLT("absorptionDensity", 1.0f);
@@ -204,6 +210,10 @@ shader_evaluate
 
 	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionScale);
 
+	AtFloat specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
+	AtFloat specular2RoughnessDepthScale = AiShaderEvalParamFlt(p_specular2RoughnessDepthScale);
+	AtFloat transmissionRoughnessDepthScale = AiShaderEvalParamFlt(p_transmissionRoughnessDepthScale);
+
 	AtFloat transmissionRoughness;
 	AtFloat transmissionIor;
 	bool transmissionLinkToSpecular1 = AiShaderEvalParamBool(p_transmissionLinkToSpecular1);
@@ -292,8 +302,12 @@ shader_evaluate
 
 	if (sg->Rr_gloss > 0 && do_glossy)
 	{
-		roughness *= powf(0.5f, sg->Rr_gloss);
-		roughness2 *= powf(0.5f, sg->Rr_gloss);
+		roughness *= powf(specular1RoughnessDepthScale, sg->Rr_gloss);
+		roughness2 *= powf(specular2RoughnessDepthScale, sg->Rr_gloss);
+	}
+	if (sg->Rr_refr > 0 && do_transmission)
+	{
+		transmissionRoughness *= powf(transmissionRoughnessDepthScale, sg->Rr_refr);
 	}
 
 	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 0 || ssScale < 0.01f )

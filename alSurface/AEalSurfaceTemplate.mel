@@ -57,6 +57,9 @@ global proc AEalSurfaceTemplate( string $n )
 		editorTemplate -label "Color" -addControl "specular1Color";
 		editorTemplate -label "Roughness" -addControl "specular1Roughness" ;
 		editorTemplate  -label "IOR" -addControl "specular1Ior";
+		editorTemplate -beginLayout "Advanced";
+			editorTemplate -label "Roughness depth scale" -addControl "specular1RoughnessDepthScale";
+		editorTemplate -endLayout;	
 	editorTemplate -endLayout;
 	
 	editorTemplate -beginLayout "Specular 2" -collapse 1;
@@ -64,6 +67,9 @@ global proc AEalSurfaceTemplate( string $n )
 		editorTemplate -label "Color" -addControl "specular2Color";
 		editorTemplate -label "Roughness" -addControl "specular2Roughness" ;
 		editorTemplate  -label "IOR" -addControl "specular2Ior";
+		editorTemplate -beginLayout "Advanced";
+			editorTemplate -label "Roughness depth scale" -addControl "specular2RoughnessDepthScale";
+		editorTemplate -endLayout;
 	editorTemplate -endLayout;
 	
 	editorTemplate -beginLayout "Transmission" -collapse 1;
@@ -80,6 +86,7 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate  -label "Density" -addControl "absorptionDensity";
 		editorTemplate -endLayout;
 		editorTemplate -beginLayout "Advanced";
+			editorTemplate -label "Roughness depth scale" -addControl "transmissionRoughnessDepthScale";
 			editorTemplate -label "Enable caustics" -addControl "transmissionEnableCaustics";
 		editorTemplate -endLayout;
 	editorTemplate -endLayout;
