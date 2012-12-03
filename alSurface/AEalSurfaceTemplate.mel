@@ -79,6 +79,9 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate  -label "Color" -addControl "absorptionColor";
 			editorTemplate  -label "Density" -addControl "absorptionDensity";
 		editorTemplate -endLayout;
+		editorTemplate -beginLayout "Advanced";
+			editorTemplate -label "Enable caustics" -addControl "transmissionEnableCaustics";
+		editorTemplate -endLayout;
 	editorTemplate -endLayout;
 	
 	editorTemplate -beginLayout "Bump";

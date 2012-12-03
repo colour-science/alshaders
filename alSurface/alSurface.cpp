@@ -59,6 +59,7 @@ enum alSurfaceParams
 	p_transmissionLinkToSpecular1,
 	p_transmissionRoughness,
 	p_transmissionIor,
+	p_transmissionEnableCaustics,
 	p_absorptionEnable,
 	p_absorptionDensity,
 	p_absorptionColor,
@@ -100,6 +101,7 @@ node_parameters
 	AiParameterBOOL("transmissionLinkToSpecular1", true);
 	AiParameterFLT("transmissionRoughness", 0.1f );
 	AiParameterFLT("transmissionIor", 1.4f );
+	AiParameterBOOL("transmissionEnableCaustics", true);
 	AiParameterBOOL("absorptionEnable", false);
 	AiParameterFLT("absorptionDensity", 1.0f);
 	AiParameterRGB("absorptionColor", 1.0f, 1.0f, 1.0f);
@@ -216,6 +218,7 @@ shader_evaluate
 		transmissionRoughness *= transmissionRoughness;
 		transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
 	}
+	bool transmissionEnableCaustics = AiShaderEvalParamBool(p_transmissionEnableCaustics);
 
 	AtRGB absorption = AI_RGB_BLACK;
 	if (AiShaderEvalParamBool(p_absorptionEnable))
@@ -271,12 +274,18 @@ shader_evaluate
 	}
 
 
-	if (sg->Rr_gloss > data->GI_glossy_depth || sg->Rr_diff > 0 || maxh(specular1Color) < IMPORTANCE_EPS)
+	if (sg->Rr_gloss > data->GI_glossy_depth
+				|| sg->Rr_diff > 0										// disable glossy->diffuse caustics
+				|| maxh(specular1Color) < IMPORTANCE_EPS				// skip evaluations that aren't important
+				|| (sg->Rr_refr > 1 && !transmissionEnableCaustics))	// disable glossy->transmitted caustics
 	{
 		do_glossy = false;
 	}
 
-	if (sg->Rr_gloss > data->GI_glossy_depth || sg->Rr_diff > 0 || maxh(specular2Color) < IMPORTANCE_EPS)
+	if (sg->Rr_gloss > data->GI_glossy_depth
+			|| sg->Rr_diff > 0										// disable glossy->diffuse caustics
+			|| maxh(specular2Color) < IMPORTANCE_EPS				// skip evaluations that aren't important
+			|| (sg->Rr_refr > 1 && !transmissionEnableCaustics))	// disable glossy->transmitted caustics
 	{
 		do_glossy2 = false;
 	}
