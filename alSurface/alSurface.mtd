@@ -4,5 +4,9 @@
 	maya.classification		STRING		"shader/surface"
 	
 	[attr diffuseScale]
-		softMin				FLOAT			0
-		softMax				FLOAT			0
+		min				FLOAT			0
+		max				FLOAT			1
+		desc 			STRING 			"diffuse"
+	[attr diffuseRoughness]
+		min				FLOAT			0
+		softmax			FLOAT			1
