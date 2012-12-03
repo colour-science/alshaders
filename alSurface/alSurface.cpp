@@ -43,17 +43,21 @@ enum alSurfaceParams
 	p_ssRadius,
 	p_ssRadiusColor,
 
+	p_diffuseExtraSamples,
+
 	// specular
 	p_specular1Scale,
 	p_specular1Color,
 	p_specular1Roughness,
 	p_specular1Ior,
 	p_specular1RoughnessDepthScale,
+	p_specular1ExtraSamples,
 	p_specular2Scale,
 	p_specular2Color,
 	p_specular2Roughness,
 	p_specular2Ior,
 	p_specular2RoughnessDepthScale,
+	p_specular2ExtraSamples,
 
 	// transmission
 	p_transmissionScale,
@@ -63,6 +67,7 @@ enum alSurfaceParams
 	p_transmissionIor,
 	p_transmissionRoughnessDepthScale,
 	p_transmissionEnableCaustics,
+	p_transmissionExtraSamples,
 	p_absorptionEnable,
 	p_absorptionDensity,
 	p_absorptionColor,
@@ -89,17 +94,21 @@ node_parameters
 	AiParameterRGB("ssRadiusColor", .439f, .156f, .078f );
 	AiMetaDataSetBool(mds, "ssRadiusColor", "always_linear", true);  // no inverse-gamma correction
 
+	AiParameterINT("diffuseExtraSamples", 0);
+
 	AiParameterFLT("specular1Scale", 1.0f );
 	AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
 	AiParameterFLT("specular1Roughness", 0.3f );
 	AiParameterFLT("specular1Ior", 1.4f );
 	AiParameterFLT("specular1RoughnessDepthScale", 1.0f);
+	AiParameterINT("specular1ExtraSamples", 0);
 
 	AiParameterFLT("specular2Scale", 0.0f );
 	AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
 	AiParameterFLT("specular2Roughness", 0.3f );
 	AiParameterFLT("specular2Ior", 1.4f );
 	AiParameterFLT("specular2RoughnessDepthScale", 1.0f);
+	AiParameterINT("specular2ExtraSamples", 0);
 
 	AiParameterFLT("transmissionScale", 0.0f );
 	AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
@@ -108,6 +117,7 @@ node_parameters
 	AiParameterFLT("transmissionIor", 1.4f );
 	AiParameterFLT("transmissionRoughnessDepthScale", 1.0f);
 	AiParameterBOOL("transmissionEnableCaustics", true);
+	AiParameterINT("transmissionExtraSamples", 0);
 	AiParameterBOOL("absorptionEnable", false);
 	AiParameterFLT("absorptionDensity", 1.0f);
 	AiParameterRGB("absorptionColor", 1.0f, 1.0f, 1.0f);
@@ -168,10 +178,10 @@ node_update
 	AiSamplerDestroy(data->glossy_sampler);
 	AiSamplerDestroy(data->glossy2_sampler);
 	AiSamplerDestroy(data->refraction_sampler);
-	data->diffuse_sampler = AiSampler(data->GI_diffuse_samples, 2);
-	data->glossy_sampler = AiSampler(data->GI_glossy_samples, 2);
-	data->glossy2_sampler = AiSampler(data->GI_glossy_samples, 2);
-	data->refraction_sampler = AiSampler(AiNodeGetInt(options, "GI_refraction_samples"), 2);
+	data->diffuse_sampler = AiSampler(data->GI_diffuse_samples+params[p_diffuseExtraSamples].INT, 2);
+	data->glossy_sampler = AiSampler(data->GI_glossy_samples+params[p_specular1ExtraSamples].INT, 2);
+	data->glossy2_sampler = AiSampler(data->GI_glossy_samples+params[p_specular2ExtraSamples].INT, 2);
+	data->refraction_sampler = AiSampler(AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT, 2);
 };
 
 
