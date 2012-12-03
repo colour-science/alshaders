@@ -1,0 +1,17 @@
+/*!
+
+\page alSurface
+
+\section Overview
+
+alSurface is a physically plausible, catch-all surface shader designed to represent all common surface types, with the exception of hair.
+
+\section Parameters
+
+- Diffuse:
+	- Scale: An overall multiplier on the strength of the diffuse-reflected light
+	- Color: Color of the diffuse-reflected light
+	- Roughness: Oren-Nayar roughness parameter. Higher values flatten the shading and make the surface appear flatter
+
+
+*/

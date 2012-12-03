@@ -1,0 +1,15 @@
+/*!
+
+\mainpage
+
+\tableofcontents
+
+\section Overview
+
+alShaders is a collection of shading nodes for Solidangle's Arnold that (will one day) form a complete, production-ready shader library.
+
+\section Shaders
+
+\subpage alSurface
+
+*/
