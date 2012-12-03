@@ -189,7 +189,6 @@ shader_evaluate
 {
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
-
 	// Evaluate bump;
 	AtVector N_orig;
 	AtVector Nf_orig;
