@@ -44,13 +44,15 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate -endLayout;
 			editorTemplate -beginLayout "Single";
 				editorTemplate  -label "Scale" -addControl "ssScale";
-				editorTemplate -label "Distance" -addControl "ssRadius" ;
-				editorTemplate -label "Color" -addControl "ssRadiusColor" ;
+				editorTemplate -label "Distance" -addControl "ssRadius";
+				editorTemplate -label "Color" -addControl "ssRadiusColor";
+				editorTemplate -label "Direction" -addControl "ssDirection";
 			editorTemplate -endLayout;
 		editorTemplate -endLayout;
 		
 		editorTemplate -beginLayout "Advanced";
 			editorTemplate -label "Extra samples" -addControl "diffuseExtraSamples";
+			editorTemplate -label "Enable caustics" -addControl "diffuseEnableCaustics";
 		editorTemplate -endLayout;			
 	editorTemplate -endLayout;
 	
@@ -92,7 +94,7 @@ global proc AEalSurfaceTemplate( string $n )
 		editorTemplate -beginLayout "Advanced";
 			editorTemplate -label "Roughness depth scale" -addControl "transmissionRoughnessDepthScale";
 			editorTemplate -label "Extra samples" -addControl "transmissionExtraSamples";
-			editorTemplate -label "Enable caustics" -addControl "transmissionEnableCaustics";
+			editorTemplate -label "Enable internal reflections" -addControl "transmissionEnableCaustics";
 		editorTemplate -endLayout;
 	editorTemplate -endLayout;
 	

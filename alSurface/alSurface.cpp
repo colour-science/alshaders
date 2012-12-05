@@ -42,8 +42,10 @@ enum alSurfaceParams
 	p_ssScale,
 	p_ssRadius,
 	p_ssRadiusColor,
+	p_ssDirection,
 
 	p_diffuseExtraSamples,
+	p_diffuseEnableCaustics,
 
 	// specular
 	p_specular1Scale,
@@ -93,8 +95,10 @@ node_parameters
 	AiParameterFLT("ssRadius", 3.6f );
 	AiParameterRGB("ssRadiusColor", .439f, .156f, .078f );
 	AiMetaDataSetBool(mds, "ssRadiusColor", "always_linear", true);  // no inverse-gamma correction
+	AiParameterFLT("ssDirection", 0.0f);
 
 	AiParameterINT("diffuseExtraSamples", 0);
+	AiParameterBOOL("diffuseEnableCaustics", false);
 
 	AiParameterFLT("specular1Scale", 1.0f );
 	AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
@@ -197,6 +201,7 @@ shader_evaluate
 	// Initialize parameter temporaries
 	AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseScale );
 	AtFloat diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
+	bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
 	AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionScale);
 	AtFloat sssMix = AiShaderEvalParamFlt( p_sssMix );
 	AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
@@ -216,6 +221,7 @@ shader_evaluate
 	AtRGB ssRadiusColor = AiShaderEvalParamRGB( p_ssRadiusColor );
 	AtFloat ssRadius = AiShaderEvalParamFlt( p_ssRadius );
 	AtFloat ssScale = AiShaderEvalParamFlt( p_ssScale );
+	AtFloat ssDirection = AiShaderEvalParamFlt(p_ssDirection);
 
 	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionScale);
 
@@ -294,7 +300,7 @@ shader_evaluate
 
 
 	if (sg->Rr_gloss > data->GI_glossy_depth
-				|| sg->Rr_diff > 0										// disable glossy->diffuse caustics
+				|| (sg->Rr_diff > 0)			// disable glossy->diffuse caustics
 				|| maxh(specular1Color) < IMPORTANCE_EPS				// skip evaluations that aren't important
 				|| (sg->Rr_refr > 1 && !transmissionEnableCaustics))	// disable glossy->transmitted caustics
 	{
@@ -302,7 +308,7 @@ shader_evaluate
 	}
 
 	if (sg->Rr_gloss > data->GI_glossy_depth
-			|| sg->Rr_diff > 0										// disable glossy->diffuse caustics
+			|| (sg->Rr_diff > 0)			// disable glossy->diffuse caustics
 			|| maxh(specular2Color) < IMPORTANCE_EPS				// skip evaluations that aren't important
 			|| (sg->Rr_refr > 1 && !transmissionEnableCaustics))	// disable glossy->transmitted caustics
 	{
@@ -319,7 +325,7 @@ shader_evaluate
 		transmissionRoughness *= powf(transmissionRoughnessDepthScale, sg->Rr_refr);
 	}
 
-	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 0 || ssScale < 0.01f )
+	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 0 || sg->Rr_refr > 0 || ssScale < IMPORTANCE_EPS )
 	{
 		do_ss = false;
 	}
@@ -330,7 +336,7 @@ shader_evaluate
 		sssMix = 0.0f;
 	}
 
-	if (sg->Rr_diff >  0 || maxh(transmissionColor) < 0.01)
+	if ((sg->Rr_diff > 0) || maxh(transmissionColor) < IMPORTANCE_EPS)
 	{
 		do_transmission = false;
 	}
@@ -508,11 +514,15 @@ shader_evaluate
 	if (do_ss)
 	{
 		AtRGB sigma_s_prime, sigma_a;
-		alphaInversion( ssRadiusColor*ssRadius, ssRadius, sigma_s_prime, sigma_a );
+		alphaInversion(ssRadiusColor*ssRadius, ssRadius, sigma_s_prime, sigma_a);
 		AtRGB sigma_t_prime = (sigma_s_prime+sigma_a);
 		AtRGB mfp = AI_RGB_WHITE / sigma_t_prime;
 		AtRGB alpha_prime = sigma_s_prime / sigma_t_prime;
-		result_ss = AiSSSTraceSingleScatter(sg,AI_RGB_WHITE,mfp,0.0f,1.3) / brdf(alpha_prime) * ssScale;
+		AtVector T;
+		AiRefract(&wo, &(sg->N), &T, 1.0, ior);
+		float costheta = AiV3Dot(-T, sg->N);
+		float kt = 1.0f - fresnel(AiV3Dot(sg->N, wo), eta);
+		result_ss = AiSSSTraceSingleScatter(sg,AI_RGB_WHITE,mfp,ssDirection,1.3) * ssScale * kt;
 	}
 
 	// blend sss and direct diffuse
