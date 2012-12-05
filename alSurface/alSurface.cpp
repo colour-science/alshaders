@@ -87,7 +87,7 @@ node_parameters
 	AiParameterFLT("sssRadius", 3.6f );
 	AiParameterRGB("sssRadiusColor", .439f, .156f, .078f );
 	AiMetaDataSetBool(mds, "sssRadiusColor", "always_linear", true);  // no inverse-gamma correction
-	AiParameterFLT("sssScale", 10.0f );
+	AiParameterFLT("sssScale", 1.0f );
 
 	AiParameterFLT("ssScale", 0.0f );
 	AiParameterFLT("ssRadius", 3.6f );
@@ -501,7 +501,7 @@ shader_evaluate
 	// Diffusion multiple scattering
 	if ( do_sss )
 	{
-		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor) * diffuseColor;
+		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssScale) * diffuseColor;
 	}
 
 	// Single-scattering
