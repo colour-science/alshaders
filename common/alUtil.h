@@ -7,7 +7,7 @@
 
 #include <ai.h>
 
-#define IMPORTANCE_EPS 0.01
+#define IMPORTANCE_EPS 0.01f
 
 // concentricSampleDisk and cosineSampleHemisphere lifted from PBRT
 /*
@@ -385,7 +385,7 @@ inline float A(float eta)
 	return (1 + Fdr)/(1 - Fdr);
 }
 
-inline AtRGB brdf( const AtRGB& _alpha_prime )
+inline AtRGB bssrdfbrdf( const AtRGB& _alpha_prime )
 {
 	AtRGB sq = sqrt( 3.0f * (AI_RGB_WHITE - _alpha_prime) );
 	return _alpha_prime * 0.5f * (AI_RGB_WHITE + exp( -(A(1.3f)*rgb(4.0f/3.0f)*sq ) )) * exp( -sq );

@@ -40,6 +40,9 @@ enum alSurfaceParams
 	p_sssScale,
 
 	p_ssScale,
+	p_ssTargetDistance,
+	p_ssTargetColor,
+	p_ssSpecifyCoefficients,
 	p_ssScattering,
 	p_ssAbsorption,
 	p_ssUnitScale,
@@ -93,6 +96,9 @@ node_parameters
 	AiParameterFLT("sssScale", 1.0f );
 
 	AiParameterFLT("ssScale", 0.0f );
+	AiParameterFLT("ssTargetDistance", 3.6f);
+	AiParameterRGB("ssTargetColor", .439f, .156f, .078f);
+	AiParameterBOOL("ssSpecifyCoefficients", false);
 	AiParameterRGB("ssScattering", 1.0f, 1.0f, 1.0f);
 	AiParameterRGB("ssAbsorption", 1.0f, 1.0f, 1.0f);
 	AiParameterFLT("ssUnitScale", 1.0f);
@@ -224,9 +230,32 @@ shader_evaluate
 	AtFloat ssUnitScale = AiShaderEvalParamFlt( p_ssUnitScale );
 	AtFloat ssScale = AiShaderEvalParamFlt( p_ssScale );
 	AtFloat ssDirection = AiShaderEvalParamFlt(p_ssDirection);
+	AtFloat ssTargetDistance = AiShaderEvalParamFlt(p_ssTargetDistance);
+	AtRGB ssTargetColor = AiShaderEvalParamRGB(p_ssTargetColor);
+	bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
 
-	// precalculate extinction coefficient as we'll need it for shadows etc.
-	AtRGB sigma_t = (ssScattering + ssAbsorption) * ssUnitScale;
+	// precalculate scattering coefficients as we'll need them for shadows etc.
+	AtRGB sigma_t = AI_RGB_BLACK;
+	AtRGB sigma_s = AI_RGB_BLACK;
+	AtRGB sigma_a = AI_RGB_BLACK;
+	if (ssScale > IMPORTANCE_EPS)
+	{
+		if (ssSpecifyCoefficients)
+		{
+			sigma_s = ssScattering * ssUnitScale;
+			sigma_a = ssAbsorption * ssUnitScale;
+			sigma_t = sigma_s + sigma_a;
+		}
+		else
+		{
+			// do alpha inversion to construct scattering parameters
+			AtRGB sigma_s_prime;
+			// magic number of 0.125f comes from trying to estimate a matching mean free path to Arnold's cubic
+			// scattering kernel, since 0.5 = (x/d)^-3
+			alphaInversion(ssTargetColor*ssTargetDistance*0.125f, ssTargetDistance*0.125f, sigma_s_prime, sigma_a);
+			sigma_s = sigma_s_prime / (1.0f - ssDirection);
+		}
+	}
 
 	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionScale);
 
@@ -388,11 +417,6 @@ shader_evaluate
 	if (sg->Rr_refr > 0 && do_transmission)
 	{
 		transmissionRoughness *= powf(transmissionRoughnessDepthScale, sg->Rr_refr);
-	}
-
-	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 0 || sg->Rr_refr > 0 || ssScale < IMPORTANCE_EPS )
-	{
-		do_ss = false;
 	}
 
 	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 1 || sssMix < 0.01f || !do_diffuse )
@@ -575,33 +599,6 @@ shader_evaluate
 		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssScale) * diffuseColor;
 	}
 
-	// Single-scattering
-	if (do_ss)
-	{
-		/*
-		AtRGB sigma_s_prime, sigma_a;
-		alphaInversion(ssRadiusColor*ssRadius, ssRadius, sigma_s_prime, sigma_a);
-		AtRGB sigma_t_prime = (sigma_s_prime+sigma_a);
-		AtRGB mfp = AI_RGB_WHITE / sigma_t_prime;
-		AtRGB alpha_prime = sigma_s_prime / sigma_t_prime;
-		AtVector T;
-		AiRefract(&wo, &(sg->N), &T, 1.0, ior);
-		float costheta = AiV3Dot(-T, sg->N);
-		float kt = 1.0f - fresnel(AiV3Dot(sg->N, wo), eta);
-		result_ss = AiSSSTraceSingleScatter(sg,AI_RGB_WHITE,mfp,ssDirection,ior) * ssScale * kt;
-		*/
-
-		AtRGB sigma_s_prime = ssScattering*(1.0f-ssDirection);
-		AtRGB sigma_t_prime = (sigma_s_prime + ssAbsorption)*ssUnitScale;
-
-		AtRGB mfp = AI_RGB_WHITE / sigma_t_prime;
-		AtVector T;
-		AiRefract(&wo, &(sg->N), &T, 1.0, ior);
-		float costheta = AiV3Dot(-T, sg->N);
-		float kt = 1.0f - fresnel(AiV3Dot(sg->N, wo), eta);
-		result_ss = AiSSSTraceSingleScatter(sg,brdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,ior) * ssScale * kt;
-	}
-
 	// blend sss and direct diffuse
 	result_diffuseDirect *= (1-sssMix);
 	result_diffuseIndirect *= (1-sssMix);
@@ -610,9 +607,10 @@ shader_evaluate
 	// Refraction
 	if (do_transmission)
 	{
-		//microfacetRefraction(sg, data, transmissionIor, transmissionRoughness, absorption, result_transmission);
 		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
-																transmissionRoughness, transmissionIor, sigma_t);
+																transmissionRoughness, transmissionIor,
+																sigma_s, sigma_a,
+																ssDirection, ssScale, result_ss);
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)

@@ -26,9 +26,11 @@ global proc AEalSurfaceTemplate( string $n )
 	
 	editorTemplate -beginLayout "Diffuse" -collapse 0;
 		
-		editorTemplate -label "Scale" -addControl "diffuseScale";
-		editorTemplate  -label "Color" -addControl "diffuseColor";
-		editorTemplate  -label "Roughness" -addControl "diffuseRoughness";
+		editorTemplate -beginLayout "Reflection" -collapse 0;
+			editorTemplate -label "Scale" -addControl "diffuseScale";
+			editorTemplate  -label "Color" -addControl "diffuseColor";
+			editorTemplate  -label "Roughness" -addControl "diffuseRoughness";
+		editorTemplate -endLayout;
 		
 		editorTemplate -beginLayout "Emission";
 			editorTemplate -label "Scale" -addControl "emissionScale";
@@ -36,19 +38,10 @@ global proc AEalSurfaceTemplate( string $n )
 		editorTemplate -endLayout;
 		
 		editorTemplate -beginLayout "SSS";
-			editorTemplate -beginLayout "Multi";
 				editorTemplate  -label "Mix" -addControl "sssMix";
 				editorTemplate  -label "Distance" -addControl "sssRadius";
 				editorTemplate  -label "Color" -addControl "sssRadiusColor";
 				editorTemplate -label "Unit scale" -addControl "sssScale" ;
-			editorTemplate -endLayout;
-			editorTemplate -beginLayout "Single";
-				editorTemplate  -label "Scale" -addControl "ssScale";
-				editorTemplate -label "Scattering" -addControl "ssScattering";
-				editorTemplate -label "Absorption" -addControl "ssAbsorption";
-				editorTemplate -label "Unit scale" -addControl "ssUnitScale";
-				editorTemplate -label "Direction" -addControl "ssDirection";
-			editorTemplate -endLayout;
 		editorTemplate -endLayout;
 		
 		editorTemplate -beginLayout "Advanced";
@@ -87,10 +80,15 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate -dimControl $n "transmissionRoughness" 1;
 			editorTemplate  -label "IOR" -addControl "transmissionIor" ;
 			editorTemplate -dimControl $n "transmissionIor" 1;
-		editorTemplate -beginLayout "Absorption";
-			editorTemplate  -label "Enable" -addControl "absorptionEnable";
-			editorTemplate  -label "Color" -addControl "absorptionColor";
-			editorTemplate  -label "Density" -addControl "absorptionDensity";
+		editorTemplate -beginLayout "Scattering";
+			editorTemplate -label "Scale" -addControl "ssScale";
+			editorTemplate -label "Distance" -addControl "ssTargetDistance";
+			editorTemplate -label "Color" -addControl "ssTargetColor";
+			editorTemplate -label "Specify coefficients" -addControl "ssSpecifyCoefficients";
+			editorTemplate -label "Scattering" -addControl "ssScattering";
+			editorTemplate -label "Absorption" -addControl "ssAbsorption";
+			editorTemplate -label "Unit scale" -addControl "ssUnitScale";
+			editorTemplate -label "Direction" -addControl "ssDirection";
 		editorTemplate -endLayout;
 		editorTemplate -beginLayout "Advanced";
 			editorTemplate -label "Roughness depth scale" -addControl "transmissionRoughnessDepthScale";
