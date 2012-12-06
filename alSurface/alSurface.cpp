@@ -40,8 +40,9 @@ enum alSurfaceParams
 	p_sssScale,
 
 	p_ssScale,
-	p_ssRadius,
-	p_ssRadiusColor,
+	p_ssScattering,
+	p_ssAbsorption,
+	p_ssUnitScale,
 	p_ssDirection,
 
 	p_diffuseExtraSamples,
@@ -92,9 +93,9 @@ node_parameters
 	AiParameterFLT("sssScale", 1.0f );
 
 	AiParameterFLT("ssScale", 0.0f );
-	AiParameterFLT("ssRadius", 3.6f );
-	AiParameterRGB("ssRadiusColor", .439f, .156f, .078f );
-	AiMetaDataSetBool(mds, "ssRadiusColor", "always_linear", true);  // no inverse-gamma correction
+	AiParameterRGB("ssScattering", 1.0f, 1.0f, 1.0f);
+	AiParameterRGB("ssAbsorption", 1.0f, 1.0f, 1.0f);
+	AiParameterFLT("ssUnitScale", 1.0f);
 	AiParameterFLT("ssDirection", 0.0f);
 
 	AiParameterINT("diffuseExtraSamples", 0);
@@ -218,8 +219,9 @@ shader_evaluate
 	AtFloat ior2 = AiShaderEvalParamFlt( p_specular2Ior );
 	AtFloat eta2 = 1.0f / ior2;
 
-	AtRGB ssRadiusColor = AiShaderEvalParamRGB( p_ssRadiusColor );
-	AtFloat ssRadius = AiShaderEvalParamFlt( p_ssRadius );
+	AtRGB ssScattering = AiShaderEvalParamRGB(p_ssScattering);
+	AtRGB ssAbsorption = AiShaderEvalParamRGB(p_ssAbsorption);
+	AtFloat ssUnitScale = AiShaderEvalParamFlt( p_ssUnitScale );
 	AtFloat ssScale = AiShaderEvalParamFlt( p_ssScale );
 	AtFloat ssDirection = AiShaderEvalParamFlt(p_ssDirection);
 
@@ -511,8 +513,10 @@ shader_evaluate
 	}
 
 	// Single-scattering
+	AtRGB sigma_t = (ssScattering + ssAbsorption) * ssUnitScale;
 	if (do_ss)
 	{
+		/*
 		AtRGB sigma_s_prime, sigma_a;
 		alphaInversion(ssRadiusColor*ssRadius, ssRadius, sigma_s_prime, sigma_a);
 		AtRGB sigma_t_prime = (sigma_s_prime+sigma_a);
@@ -522,7 +526,18 @@ shader_evaluate
 		AiRefract(&wo, &(sg->N), &T, 1.0, ior);
 		float costheta = AiV3Dot(-T, sg->N);
 		float kt = 1.0f - fresnel(AiV3Dot(sg->N, wo), eta);
-		result_ss = AiSSSTraceSingleScatter(sg,AI_RGB_WHITE,mfp,ssDirection,1.3) * ssScale * kt;
+		result_ss = AiSSSTraceSingleScatter(sg,AI_RGB_WHITE,mfp,ssDirection,ior) * ssScale * kt;
+		*/
+
+		AtRGB sigma_s_prime = ssScattering*(1.0f-ssDirection);
+		AtRGB sigma_t_prime = (sigma_s_prime + ssAbsorption)*ssUnitScale;
+
+		AtRGB mfp = AI_RGB_WHITE / sigma_t_prime;
+		AtVector T;
+		AiRefract(&wo, &(sg->N), &T, 1.0, ior);
+		float costheta = AiV3Dot(-T, sg->N);
+		float kt = 1.0f - fresnel(AiV3Dot(sg->N, wo), eta);
+		result_ss = AiSSSTraceSingleScatter(sg,brdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,ior) * ssScale * kt;
 	}
 
 	// blend sss and direct diffuse
@@ -535,7 +550,7 @@ shader_evaluate
 	{
 		//microfacetRefraction(sg, data, transmissionIor, transmissionRoughness, absorption, result_transmission);
 		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
-																transmissionRoughness, transmissionIor, absorption);
+																transmissionRoughness, transmissionIor, sigma_t);
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)

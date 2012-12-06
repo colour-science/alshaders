@@ -40,12 +40,13 @@ global proc AEalSurfaceTemplate( string $n )
 				editorTemplate  -label "Mix" -addControl "sssMix";
 				editorTemplate  -label "Distance" -addControl "sssRadius";
 				editorTemplate  -label "Color" -addControl "sssRadiusColor";
-				editorTemplate -label "Unit" -addControl "sssScale" ;
+				editorTemplate -label "Unit scale" -addControl "sssScale" ;
 			editorTemplate -endLayout;
 			editorTemplate -beginLayout "Single";
 				editorTemplate  -label "Scale" -addControl "ssScale";
-				editorTemplate -label "Distance" -addControl "ssRadius";
-				editorTemplate -label "Color" -addControl "ssRadiusColor";
+				editorTemplate -label "Scattering" -addControl "ssScattering";
+				editorTemplate -label "Absorption" -addControl "ssAbsorption";
+				editorTemplate -label "Unit scale" -addControl "ssUnitScale";
 				editorTemplate -label "Direction" -addControl "ssDirection";
 			editorTemplate -endLayout;
 		editorTemplate -endLayout;
