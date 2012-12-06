@@ -225,6 +225,9 @@ shader_evaluate
 	AtFloat ssScale = AiShaderEvalParamFlt( p_ssScale );
 	AtFloat ssDirection = AiShaderEvalParamFlt(p_ssDirection);
 
+	// precalculate extinction coefficient as we'll need it for shadows etc.
+	AtRGB sigma_t = (ssScattering + ssAbsorption) * ssUnitScale;
+
 	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionScale);
 
 	AtFloat specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
@@ -256,15 +259,75 @@ shader_evaluate
 
 	if (sg->Rt & AI_RAY_SHADOW)
 	{
-		if (maxh(transmissionColor) > 0.0f)
+		// if the object is transmissive and
+		AtRGB outOpacity = AI_RGB_WHITE;
+		if (maxh(transmissionColor))
 		{
-			float costheta = AiV3Dot(sg->Nf, -sg->Rd);
-			sg->out_opacity = fresnel(costheta, 1.0f/transmissionIor);
+			// check transmission through the surface
+			AtFloat costheta = AiV3Dot(sg->Nf, -sg->Rd);
+			AtFloat kt = 1.0f - fresnel(costheta, 1.0f/transmissionIor);
+			if (kt >= IMPORTANCE_EPS) // else surface is fully reflective
+			{
+				if (maxh(sigma_t) > 0.0f)
+				{
+					AtPoint alsPreviousIntersection;
+					AtRGB als_sigma_t = sigma_t;
+					if (AiStateGetMsgPnt("alsPreviousIntersection", &alsPreviousIntersection))
+					{
+						AiStateGetMsgRGB("alsPrevious_sigma_t", &als_sigma_t);
+						bool doExtinction = false;
+						if (AiV3Dot(sg->N, sg->Rd) < 0.0f)
+						{
+							// ray is entering a closed volume
+							bool alsInside;
+							AiStateGetMsgBool("alsInside", &alsInside);
+							if (alsInside)
+							{
+								// ray is entering an embedded volume
+								doExtinction = true;
+							}
+							else
+							{
+								// shouldn't get here
+							}
+
+						}
+						else
+						{
+							// ray is exiting a closed volume
+							doExtinction = true;
+						}
+
+						if (doExtinction)
+						{
+							AtFloat z = AiV3Dist(sg->P, alsPreviousIntersection);
+							outOpacity.r = expf(-z * als_sigma_t.r);
+							outOpacity.g = expf(-z * als_sigma_t.g);
+							outOpacity.b = expf(-z * als_sigma_t.b);
+							outOpacity = 1.0f - (outOpacity*kt);
+						}
+
+					}
+					else
+					{
+						// first intersection
+						// tell the next shader invocation that we're now inside the surface and what our extinction
+						// coefficient is
+						AiStateSetMsgRGB("alsPrevious_sigma_t", sigma_t);
+						AiStateSetMsgBool("alsInside", true);
+					}
+				}
+				else // no extinction, shadows are fresnel only.
+				{
+					AiStateSetMsgRGB("alsPrevious_sigma_t", AI_RGB_BLACK);
+					outOpacity = 1.0f - kt;
+				}
+			}
 		}
-		else
-		{
-			sg->out_opacity = 1.0f;
-		}
+
+		// store intersection position
+		AiStateSetMsgPnt("alsPreviousIntersection", sg->P);
+		sg->out_opacity = outOpacity;
 		return;
 	}
 
@@ -513,7 +576,6 @@ shader_evaluate
 	}
 
 	// Single-scattering
-	AtRGB sigma_t = (ssScattering + ssAbsorption) * ssUnitScale;
 	if (do_ss)
 	{
 		/*
