@@ -116,6 +116,11 @@ inline AtRGB min(const AtRGB& c1, const AtRGB& c2)
 	return c;
 }
 
+inline int clamp(int a, int mn, int mx)
+{
+	return std::min(std::max(a, mn), mx);
+}
+
 inline float clamp(float a, float mn, float mx)
 {
 	return std::min(std::max(a, mn), mx);
