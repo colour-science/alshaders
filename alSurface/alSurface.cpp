@@ -40,7 +40,7 @@ enum alSurfaceParams
 	p_sssScale,
 
 	p_ssScale,
-	p_ssTargetDistance,
+	p_ssScatteriness,
 	p_ssTargetColor,
 	p_ssSpecifyCoefficients,
 	p_ssScattering,
@@ -96,7 +96,7 @@ node_parameters
 	AiParameterFLT("sssScale", 1.0f );
 
 	AiParameterFLT("ssScale", 0.0f );
-	AiParameterFLT("ssTargetDistance", 3.6f);
+	AiParameterFLT("ssScatteriness", 0.5f);
 	AiParameterRGB("ssTargetColor", .439f, .156f, .078f);
 	AiParameterBOOL("ssSpecifyCoefficients", false);
 	AiParameterRGB("ssScattering", 1.0f, 1.0f, 1.0f);
@@ -230,7 +230,7 @@ shader_evaluate
 	AtFloat ssUnitScale = AiShaderEvalParamFlt( p_ssUnitScale );
 	AtFloat ssScale = AiShaderEvalParamFlt( p_ssScale );
 	AtFloat ssDirection = AiShaderEvalParamFlt(p_ssDirection);
-	AtFloat ssTargetDistance = AiShaderEvalParamFlt(p_ssTargetDistance);
+	AtFloat ssScatteriness = AiShaderEvalParamFlt(p_ssScatteriness);
 	AtRGB ssTargetColor = AiShaderEvalParamRGB(p_ssTargetColor);
 	bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
 
@@ -248,12 +248,10 @@ shader_evaluate
 		}
 		else
 		{
-			// do alpha inversion to construct scattering parameters
-			AtRGB sigma_s_prime;
-			// magic number of 0.125f comes from trying to estimate a matching mean free path to Arnold's cubic
-			// scattering kernel, since 0.5 = (x/d)^-3
-			alphaInversion(ssTargetColor*ssTargetDistance*0.125f, ssTargetDistance*0.125f, sigma_s_prime, sigma_a);
-			sigma_s = sigma_s_prime / (1.0f - ssDirection);
+			sigma_s = sigma_a = AI_RGB_WHITE - ssTargetColor;
+			sigma_s *= ssScatteriness * ssUnitScale;
+			sigma_a *= (1.0f - ssScatteriness) * ssUnitScale;
+			sigma_t = sigma_s + sigma_a;
 		}
 	}
 

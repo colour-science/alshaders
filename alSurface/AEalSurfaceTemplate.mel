@@ -82,7 +82,7 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate -dimControl $n "transmissionIor" 1;
 		editorTemplate -beginLayout "Scattering";
 			editorTemplate -label "Scale" -addControl "ssScale";
-			editorTemplate -label "Distance" -addControl "ssTargetDistance";
+			editorTemplate -label "Distance" -addControl "ssScatteriness";
 			editorTemplate -label "Color" -addControl "ssTargetColor";
 			editorTemplate -label "Specify coefficients" -addControl "ssSpecifyCoefficients";
 			editorTemplate -label "Scattering" -addControl "ssScattering";
