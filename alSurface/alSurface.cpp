@@ -200,6 +200,7 @@ shader_evaluate
 	AtRGB bump = AiShaderEvalParamRGB( p_bump );
 
 	// Initialize parameter temporaries
+	// TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
 	AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
 	AtFloat diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
 	bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
