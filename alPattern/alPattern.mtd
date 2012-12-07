@@ -1,0 +1,4 @@
+[node alPattern]
+	desc					STRING		""
+	maya.name				STRING		"alPattern"
+	maya.classification		STRING		"shader/surface"

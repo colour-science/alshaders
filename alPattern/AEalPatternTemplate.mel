@@ -1,0 +1,21 @@
+source "alRemap.mel";
+
+global proc AEalPatternTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+	AEswatchDisplay $n;
+	
+	editorTemplate -addControl "space";
+	editorTemplate -addControl "shape";
+	editorTemplate -addControl "frequency";
+	editorTemplate -addControl "offset";
+
+	alRemapControls($n);
+	
+	editorTemplate -addControl "color1";
+	editorTemplate -addControl "color2";
+
+	editorTemplate -addExtraControls;
+
+	editorTemplate -endScrollLayout;
+}
