@@ -1,5 +1,3 @@
-#include <ai.h>
-#include <cstring>
 #include <iostream>
 #include <ai_sampler.h>
 #include <OpenEXR/ImathVec.h>
@@ -27,38 +25,38 @@ AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 enum alSurfaceParams
 {
 	// diffuse
-	p_diffuseScale=0,
+	p_diffuseStrength=0,
 	p_diffuseColor,
 	p_diffuseRoughness,
-	p_emissionScale,
+	p_emissionStrength,
 	p_emissionColor,
 
 	// sss
 	p_sssMix,
 	p_sssRadius,
 	p_sssRadiusColor,
-	p_sssScale,
+	p_sssStrength,
 
-	p_ssScale,
-	p_ssScatteriness,
+	p_ssStrength,
+	p_ssBalance,
 	p_ssTargetColor,
 	p_ssSpecifyCoefficients,
 	p_ssScattering,
 	p_ssAbsorption,
-	p_ssUnitScale,
+	p_ssDensityScale,
 	p_ssDirection,
 
 	p_diffuseExtraSamples,
 	p_diffuseEnableCaustics,
 
 	// specular
-	p_specular1Scale,
+	p_specular1Strength,
 	p_specular1Color,
 	p_specular1Roughness,
 	p_specular1Ior,
 	p_specular1RoughnessDepthScale,
 	p_specular1ExtraSamples,
-	p_specular2Scale,
+	p_specular2Strength,
 	p_specular2Color,
 	p_specular2Roughness,
 	p_specular2Ior,
@@ -66,7 +64,7 @@ enum alSurfaceParams
 	p_specular2ExtraSamples,
 
 	// transmission
-	p_transmissionScale,
+	p_transmissionStrength,
 	p_transmissionColor,
 	p_transmissionLinkToSpecular1,
 	p_transmissionRoughness,
@@ -74,54 +72,52 @@ enum alSurfaceParams
 	p_transmissionRoughnessDepthScale,
 	p_transmissionEnableCaustics,
 	p_transmissionExtraSamples,
-	p_absorptionEnable,
-	p_absorptionDensity,
-	p_absorptionColor,
+
 
 	p_bump
 };
 
 node_parameters
 {
-	AiParameterFLT("diffuseScale", 1.0f );
+	AiParameterFLT("diffuseStrength", 1.0f );
 	AiParameterRGB("diffuseColor", 0.18f, 0.18f, 0.18f );
 	AiParameterFLT("diffuseRoughness", 0.0f );
-	AiParameterFLT("emissionScale", 0.0f );
+	AiParameterFLT("emissionStrength", 0.0f );
 	AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
 	AiParameterFLT("sssMix", 0.0f );
 	AiParameterFLT("sssRadius", 3.6f );
 	AiParameterRGB("sssRadiusColor", .439f, .156f, .078f );
 	AiMetaDataSetBool(mds, "sssRadiusColor", "always_linear", true);  // no inverse-gamma correction
-	AiParameterFLT("sssScale", 1.0f );
+	AiParameterFLT("sssStrength", 1.0f );
 
-	AiParameterFLT("ssScale", 0.0f );
-	AiParameterFLT("ssScatteriness", 0.5f);
+	AiParameterFLT("ssStrength", 0.0f );
+	AiParameterFLT("ssBalance", 0.5f);
 	AiParameterRGB("ssTargetColor", .439f, .156f, .078f);
 	AiParameterBOOL("ssSpecifyCoefficients", false);
 	AiParameterRGB("ssScattering", 1.0f, 1.0f, 1.0f);
 	AiParameterRGB("ssAbsorption", 1.0f, 1.0f, 1.0f);
-	AiParameterFLT("ssUnitScale", 1.0f);
+	AiParameterFLT("ssDensityScale", 1.0f);
 	AiParameterFLT("ssDirection", 0.0f);
 
 	AiParameterINT("diffuseExtraSamples", 0);
 	AiParameterBOOL("diffuseEnableCaustics", false);
 
-	AiParameterFLT("specular1Scale", 1.0f );
+	AiParameterFLT("specular1Strength", 1.0f );
 	AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
 	AiParameterFLT("specular1Roughness", 0.3f );
 	AiParameterFLT("specular1Ior", 1.4f );
 	AiParameterFLT("specular1RoughnessDepthScale", 1.0f);
 	AiParameterINT("specular1ExtraSamples", 0);
 
-	AiParameterFLT("specular2Scale", 0.0f );
+	AiParameterFLT("specular2Strength", 0.0f );
 	AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
 	AiParameterFLT("specular2Roughness", 0.3f );
 	AiParameterFLT("specular2Ior", 1.4f );
 	AiParameterFLT("specular2RoughnessDepthScale", 1.0f);
 	AiParameterINT("specular2ExtraSamples", 0);
 
-	AiParameterFLT("transmissionScale", 0.0f );
+	AiParameterFLT("transmissionStrength", 0.0f );
 	AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
 	AiParameterBOOL("transmissionLinkToSpecular1", true);
 	AiParameterFLT("transmissionRoughness", 0.1f );
@@ -129,9 +125,7 @@ node_parameters
 	AiParameterFLT("transmissionRoughnessDepthScale", 1.0f);
 	AiParameterBOOL("transmissionEnableCaustics", true);
 	AiParameterINT("transmissionExtraSamples", 0);
-	AiParameterBOOL("absorptionEnable", false);
-	AiParameterFLT("absorptionDensity", 1.0f);
-	AiParameterRGB("absorptionColor", 1.0f, 1.0f, 1.0f);
+
 }
 
 
@@ -206,16 +200,16 @@ shader_evaluate
 	AtRGB bump = AiShaderEvalParamRGB( p_bump );
 
 	// Initialize parameter temporaries
-	AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseScale );
+	AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
 	AtFloat diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
 	bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
-	AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionScale);
+	AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
 	AtFloat sssMix = AiShaderEvalParamFlt( p_sssMix );
 	AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
 	AtFloat sssRadius = AiShaderEvalParamFlt( p_sssRadius );
-	AtFloat sssScale = AiShaderEvalParamFlt( p_sssScale );
-	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Scale );
-	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Scale );
+	AtFloat sssStrength = AiShaderEvalParamFlt( p_sssStrength );
+	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
+	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
 	AtFloat roughness = AiShaderEvalParamFlt( p_specular1Roughness );
 	roughness *= roughness;
 	AtFloat roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
@@ -227,10 +221,10 @@ shader_evaluate
 
 	AtRGB ssScattering = AiShaderEvalParamRGB(p_ssScattering);
 	AtRGB ssAbsorption = AiShaderEvalParamRGB(p_ssAbsorption);
-	AtFloat ssUnitScale = AiShaderEvalParamFlt( p_ssUnitScale );
-	AtFloat ssScale = AiShaderEvalParamFlt( p_ssScale );
+	AtFloat ssDensityScale = AiShaderEvalParamFlt( p_ssDensityScale );
+	AtFloat ssStrength = AiShaderEvalParamFlt( p_ssStrength );
 	AtFloat ssDirection = AiShaderEvalParamFlt(p_ssDirection);
-	AtFloat ssScatteriness = AiShaderEvalParamFlt(p_ssScatteriness);
+	AtFloat ssBalance = AiShaderEvalParamFlt(p_ssBalance);
 	AtRGB ssTargetColor = AiShaderEvalParamRGB(p_ssTargetColor);
 	bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
 
@@ -238,24 +232,24 @@ shader_evaluate
 	AtRGB sigma_t = AI_RGB_BLACK;
 	AtRGB sigma_s = AI_RGB_BLACK;
 	AtRGB sigma_a = AI_RGB_BLACK;
-	if (ssScale > IMPORTANCE_EPS)
+	if (ssStrength > IMPORTANCE_EPS)
 	{
 		if (ssSpecifyCoefficients)
 		{
-			sigma_s = ssScattering * ssUnitScale;
-			sigma_a = ssAbsorption * ssUnitScale;
+			sigma_s = ssScattering * ssDensityScale;
+			sigma_a = ssAbsorption * ssDensityScale;
 			sigma_t = sigma_s + sigma_a;
 		}
 		else
 		{
 			sigma_s = sigma_a = AI_RGB_WHITE - ssTargetColor;
-			sigma_s *= ssScatteriness * ssUnitScale;
-			sigma_a *= (1.0f - ssScatteriness) * ssUnitScale;
+			sigma_s *= ssBalance * ssDensityScale;
+			sigma_a *= (1.0f - ssBalance) * ssDensityScale;
 			sigma_t = sigma_s + sigma_a;
 		}
 	}
 
-	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionScale);
+	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
 
 	AtFloat specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
 	AtFloat specular2RoughnessDepthScale = AiShaderEvalParamFlt(p_specular2RoughnessDepthScale);
@@ -277,13 +271,8 @@ shader_evaluate
 	}
 	bool transmissionEnableCaustics = AiShaderEvalParamBool(p_transmissionEnableCaustics);
 
-	AtRGB absorption = AI_RGB_BLACK;
-	if (AiShaderEvalParamBool(p_absorptionEnable))
-	{
-		absorption = (AI_RGB_WHITE - AiShaderEvalParamRGB(p_absorptionColor));
-		absorption = max(rgb(AI_EPSILON), absorption) * AiShaderEvalParamFlt(p_absorptionDensity);
-	}
-
+	// if it's a shadow ray, handle shadow colouring through absorption
+	// algorithm based heavily on the example in Kettle
 	if (sg->Rt & AI_RAY_SHADOW)
 	{
 		// if the object is transmissive and
@@ -385,7 +374,7 @@ shader_evaluate
 	AtInt glossy_samples = data->GI_glossy_samples;
 	AtInt diffuse_samples = data->GI_diffuse_samples;
 
-	if ( sg->Rr_diff > data->GI_diffuse_depth || maxh(diffuseColor) < IMPORTANCE_EPS)
+	if ( sg->Rr_diff > data->GI_diffuse_depth || maxh(diffuseColor) < IMPORTANCE_EPS || sssMix == 1.0f)
 	{
 		do_diffuse = false;
 	}
@@ -594,7 +583,7 @@ shader_evaluate
 	// Diffusion multiple scattering
 	if ( do_sss )
 	{
-		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssScale) * diffuseColor;
+		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssStrength) * diffuseColor;
 	}
 
 	// blend sss and direct diffuse
@@ -608,7 +597,7 @@ shader_evaluate
 		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
 																transmissionRoughness, transmissionIor,
 																sigma_s, sigma_a,
-																ssDirection, ssScale, result_ss);
+																ssDirection, ssStrength, result_ss);
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)

@@ -3,7 +3,7 @@
 	maya.name				STRING		"alSurface"
 	maya.classification		STRING		"shader/surface"
 	
-	[attr diffuseScale]
+	[attr diffuseStrength]
 		min					FLOAT			0
 		max					FLOAT			1
 		
@@ -11,7 +11,7 @@
 		min					FLOAT			0
 		softmax				FLOAT			1
 		
-	[attr emissionScale]
+	[attr emissionStrength]
 		min					FLOAT			0
 		softmax				FLOAT			1
 		
@@ -23,7 +23,7 @@
 		min					FLOAT			0
 		softMax				FLOAT			10
 		
-	[attr specular1Scale]
+	[attr specular1Strength]
 		min					FLOAT			0
 		max					FLOAT			1
 		
@@ -31,7 +31,7 @@
 		min					FLOAT			0
 		max					FLOAT			1
 		
-	[attr specular2Scale]
+	[attr specular2Strength]
 		min					FLOAT			0
 		max					FLOAT			1
 		
@@ -39,11 +39,23 @@
 		min					FLOAT			0
 		max					FLOAT			1
 		
-	[attr transmissionScale]
+	[attr transmissionStrength]
 		min					FLOAT			0
 		max					FLOAT			1
 		
 	[attr transmissionRoughness]
 		min					FLOAT			0
 		max					FLOAT			1
+		
+	[attr ssStrength]
+		min					FLOAT			0
+		max					FLOAT 			1
+		
+	[attr ssBalance]
+		min					FLOAT			0
+		max					FLOAT 			1
+		
+	[attr ssDirection]
+		min					FLOAT			-1
+		max					FLOAT 			1
 		
