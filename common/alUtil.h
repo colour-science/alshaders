@@ -314,74 +314,61 @@ inline T contrast(T input, float contrast, float pivot, float softClip)
 	return result * input;
 }
 
-inline AtRGB rgb2hsv(AtRGB rgb)
+// Adapted from OSL. See copyright notice above.
+inline AtRGB rgb2hsv (AtRGB rgb)
 {
-	float mn = minh(rgb);
-	float mx = maxh(rgb);
-	float chroma = mx - mn;
-	float h, s, v;
-	v = mx;
-	if (v > 0.0f)
-	{
-		s = chroma / mx;
-	}
+	AtFloat r = rgb.r, g = rgb.g, b = rgb.b;
+	AtFloat mincomp = std::min(r, std::min(g, b));
+	AtFloat maxcomp = std::max(r, std::max(g, b));
+	AtFloat delta = maxcomp - mincomp;  // chroma
+	AtFloat h, s, v;
+	v = maxcomp;
+	if (maxcomp > 0)
+		s = delta / maxcomp;
+	else s = 0;
+	if (s <= 0)
+		h = 0;
 	else
 	{
-		s = 0.0f;
+		if      (r >= maxcomp) h = (g-b) / delta;
+		else if (g >= maxcomp) h = 2 + (b-r) / delta;
+		else                   h = 4 + (r-g) / delta;
+		h /= 6;
+		if (h < 0)
+			h += 1;
 	}
-
-	if (s <= 0.0f)
-	{
-		h = 0.0f;
-	}
-	else
-	{
-		if (rgb.r >= mx)
-		{
-			h = (rgb.g - rgb.b) / chroma;
-		}
-		else if (rgb.g >= mx)
-		{
-			h = 2.0f + (rgb.b - rgb.r) / chroma;
-		}
-		else
-		{
-			h = 4.0f + (rgb.r - rgb.g) / chroma;
-		}
-		h /= 6.0f;
-		if (h < 0.0f) h += 1.0f;
-	}
-	return AiColorCreate(h,s,v);
+	return AiColorCreate(h, s, v);
 }
 
-inline AtRGB hsv2rgb(AtRGB hsv)
+// Adapted from OSL. See copyright notice above.
+inline AtRGB hsv2rgb (const AtRGB& hsv)
 {
-	if (hsv.g == 0.0f)
+    AtFloat h = hsv.r;
+    AtFloat s = hsv.g;
+    AtFloat v = hsv.b;
+
+	if (s < 0.0001f)
 	{
-		return AiColorCreate(hsv.b, hsv.b, hsv.b);
+		return AiColorCreate(v, v, v);
 	}
 	else
 	{
-		float h = 6.0f * (hsv.r - floorf(hsv.r));
-		const float& s = hsv.g;
-		const float& v = hsv.b;
-		int hi = int(hi);
-		float f = h - hi;
-		float p = v * (1.0f - s);
-		float q = v * (1.0f - s*f);
-		float t = v * (1.0f - s*(1.0f-f));
-
-		switch(hi)
+		h = 6.0f * (h - floorf(h));  // expand to [0..6)
+		AtInt hi = (int) h;
+		AtFloat f = h - hi;
+		AtFloat p = v * (1.0f-s);
+		AtFloat q = v * (1.0f-s*f);
+		AtFloat t = v * (1.0f-s*(1.0f-f));
+		switch (hi)
 		{
-		case 0: return AiColorCreate(v, t, p);
-		case 1: return AiColorCreate(q, v, p);
-		case 2: return AiColorCreate(p, v, t);
-		case 3: return AiColorCreate(p, q, v);
-		case 4: return AiColorCreate(t, p, v);
-		default: return AiColorCreate(v, p, q);
+		case 0 : return AiColorCreate (v, t, p);
+		case 1 : return AiColorCreate (q, v, p);
+		case 2 : return AiColorCreate (p, v, t);
+		case 3 : return AiColorCreate (p, q, v);
+		case 4 : return AiColorCreate (t, p, v);
+		default: return AiColorCreate (v, p, q);
 		}
 	}
-
 }
 
 // For the sake of simplicity we limit eta to 1.3 so cache A here
