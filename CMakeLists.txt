@@ -26,6 +26,7 @@ set(SUBDIRECTORIES
 		alLayer
 		alPattern
 		common
+		krint
 )
 
 foreach(SUBDIR ${SUBDIRECTORIES})
