@@ -271,7 +271,9 @@ shader_evaluate
 	}
 
 
-	if (sg->Rr_gloss > data->GI_glossy_depth || sg->Rr_diff > 0 || maxh(specular1Color) < IMPORTANCE_EPS)
+	if (sg->Rr_gloss > data->GI_glossy_depth 
+		|| sg->Rr_diff > 0 
+		|| maxh(specular1Color) < IMPORTANCE_EPS)
 	{
 		do_glossy = false;
 	}
