@@ -213,7 +213,7 @@ inline AtFloat fresnel(AtFloat eta, const AtVector& N, const AtVector& I, AtVect
     R = (2 * c) * Nn - I;
     float arg = 1 - (neta * neta * (1 - (c * c)));
     if (arg < 0) {
-        T.x = T.y = T.z;
+        T.x = T.y = T.z = 0.0f;
         return 1; // total internal reflection
     } else {
         float dnp = sqrtf(arg);
