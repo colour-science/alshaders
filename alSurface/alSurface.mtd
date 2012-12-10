@@ -1,8 +1,61 @@
 [node alSurface]
-	desc					STRING		"Anders Langlands's surface shader"
+	desc					STRING		"All-purpose, physically plausible surface shader"
 	maya.name				STRING		"alSurface"
 	maya.classification		STRING		"shader/surface"
 	
-	[attr diffuseScale]
-		softMin				FLOAT			0
-		softMax				FLOAT			0
+	[attr diffuseStrength]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr diffuseRoughness]
+		min					FLOAT			0
+		softmax				FLOAT			1
+		
+	[attr emissionStrength]
+		min					FLOAT			0
+		softmax				FLOAT			1
+		
+	[attr sssMix]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr sssRadius]
+		min					FLOAT			0
+		softMax				FLOAT			10
+		
+	[attr specular1Strength]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr specular1Roughness]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr specular2Strength]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr specular2Roughness]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr transmissionStrength]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr transmissionRoughness]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr ssStrength]
+		min					FLOAT			0
+		max					FLOAT 			1
+		
+	[attr ssBalance]
+		min					FLOAT			0
+		max					FLOAT 			1
+		
+	[attr ssDirection]
+		min					FLOAT			-1
+		max					FLOAT 			1
+		

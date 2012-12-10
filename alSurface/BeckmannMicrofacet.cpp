@@ -2,7 +2,8 @@
 
 AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, const AtVector& X, const AtVector& Y,
 										const AtVector& wo, AtSampler* sampler, AtFloat roughness, AtFloat eta,
-										AtColor absorption)
+										AtRGB sigma_s, AtRGB sigma_a, AtFloat g,
+										AtFloat ssScale, AtRGB& ss_result)
 {
 	AtFloat count = 0.0f;
 	double samples[2];
@@ -12,8 +13,11 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
 	AtScrSample sample;
 	AtVector wi, R;
 	bool inside;
-	AtColor result = AI_RGB_BLACK;
-	float z = 0.0f;
+	AtRGB result = AI_RGB_BLACK;
+	AtRGB sigma_t = sigma_s + sigma_a;
+	AtRGB sigma_s_prime = sigma_s*(1.0f-g);
+	AtRGB sigma_t_prime = (sigma_s_prime + sigma_a);
+	AtRGB mfp = AI_RGB_WHITE / sigma_t_prime;
 
 	AtSamplerIterator* sampit = AiSamplerIterator(sampler, sg);
 
@@ -66,32 +70,39 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
 
 			wi_ray.dir = wi;
 			AiTrace(&wi_ray, &sample);
-			result += sample.color * kt * brdf/pdf;
-			z += AtFloat(sample.z);
+			AtRGB transmittance = AI_RGB_WHITE;
+			if (maxh(sigma_t) > 0.0f && !inside)
+			{
+				transmittance.r = expf(-sample.z * sigma_t.r);
+				transmittance.g = expf(-sample.z * sigma_t.g);
+				transmittance.b = expf(-sample.z * sigma_t.b);
+			}
+			result += sample.color * kt * brdf/pdf * transmittance;
+
+			// single scattering
+			if (ssScale > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside)
+			{
+
+				AtVector N = sg->N;
+				sg->N = m;
+				ss_result += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,g,eta) * ssScale * kt;
+				sg->N = N;
+
+			}
+
 		}
 		else if (AiV3IsZero(wi)) // total internal reflection
 		{
 			wi_ray.dir = R;
 			AiTrace(&wi_ray, &sample);
 			result += sample.color;
-			z += AtFloat(sample.z);
 		}
 
 		count++;
 	}
 
 	result /= count;
-	z /= count;
-
-	if (maxh(absorption)>0.0f && !inside)
-	{
-			AtColor transmittance;
-			transmittance.r = expf(absorption.r * -z);
-			transmittance.g = expf(absorption.g * -z);
-			transmittance.b = expf(absorption.b * -z);
-
-			result *= transmittance;
-	}
+	ss_result /= count;
 
 	return result;
 }

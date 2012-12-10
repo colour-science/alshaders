@@ -1,19 +1,21 @@
-global proc AEalRemapFloatTemplate(string $n)
+global proc AEalRemapColorTemplate(string $n)
 {
 	editorTemplate -beginScrollLayout;
 	AEswatchDisplay $n;
 	
-	editorTemplate  -label "Input" -addControl "input";
-	editorTemplate  -label "Gamma" -addControl "gamma";
-	editorTemplate  -label "Saturation" -addControl "saturation";
-	editorTemplate  -label "Hue offset" -addControl "hueOffset";
-	editorTemplate  -label -addControl "contrast";
-	editorTemplate  -label -addControl "contrastPivot";
-	editorTemplate  -label -addControl "contrastSoftClip" -label "Soft clip";
-	editorTemplate  -label -addControl "scale";
-	editorTemplate  -label "Exposure" -addControl "exposure";
-	editorTemplate  -label -addControl "mask";
-
+	editorTemplate -addControl "input";
+	editorTemplate -addControl "gamma";
+	editorTemplate -addControl "saturation";
+	editorTemplate -addControl "hueOffset";
+	
+	editorTemplate -beginLayout "Contrast" -collapse 0; 
+		editorTemplate -addControl "contrast";
+		editorTemplate -addControl "contrastPivot";
+		editorTemplate -label "Soft clip" -addControl "contrastSoftClip";
+	editorTemplate -endLayout;
+	editorTemplate -addControl "gain";
+	editorTemplate -addControl "exposure";
+	editorTemplate -addControl "mask";
 	
 	editorTemplate -addExtraControls;
 	

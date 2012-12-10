@@ -19,6 +19,16 @@ global proc alSurfaceTransmissionControls(string $n)
 	editorTemplate -dimControl $n "transmissionIor" $checked;
 }
 
+global proc alSurfaceScatteringDimControls(string $n)
+{
+	int $checked = `getAttr ($n+".ssSpecifyCoefficients")`;
+	editorTemplate -dimControl $n "ssBalance" $checked;
+	editorTemplate -dimControl $n "ssTargetColor" $checked;
+	$checked = !$checked;
+	editorTemplate -dimControl $n "ssScattering" $checked;
+	editorTemplate -dimControl $n "ssAbsorption" $checked;
+}
+
 global proc AEalSurfaceTemplate( string $n )
 {
 	editorTemplate -beginScrollLayout;
@@ -26,60 +36,87 @@ global proc AEalSurfaceTemplate( string $n )
 	
 	editorTemplate -beginLayout "Diffuse" -collapse 0;
 		
-		editorTemplate -label "Scale" -addControl "diffuseScale";
-		editorTemplate  -label "Color" -addControl "diffuseColor";
-		editorTemplate  -label "Roughness" -addControl "diffuseRoughness";
+		editorTemplate -beginLayout "Reflection" -collapse 0;
+			editorTemplate -label "Strength" -addControl "diffuseStrength";
+			editorTemplate  -label "Color" -addControl "diffuseColor";
+			editorTemplate  -label "Roughness" -addControl "diffuseRoughness";
+		editorTemplate -endLayout;
 		
 		editorTemplate -beginLayout "Emission";
-			editorTemplate -label "Scale" -addControl "emissionScale";
+			editorTemplate -label "Strength" -addControl "emissionStrength";
 			editorTemplate  -label "Color"-addControl "emissionColor";
 		editorTemplate -endLayout;
 		
-		editorTemplate -beginLayout "SSS";
-			editorTemplate -beginLayout "Multi";
+		editorTemplate -beginLayout "Scattering";
 				editorTemplate  -label "Mix" -addControl "sssMix";
 				editorTemplate  -label "Distance" -addControl "sssRadius";
 				editorTemplate  -label "Color" -addControl "sssRadiusColor";
-				editorTemplate -label "Unit" -addControl "sssScale" ;
-			editorTemplate -endLayout;
-			editorTemplate -beginLayout "Single";
-				editorTemplate  -label "Scale" -addControl "ssScale";
-				editorTemplate -label "Distance" -addControl "ssRadius" ;
-				editorTemplate -label "Color" -addControl "ssRadiusColor" ;
-				
+				editorTemplate -label "Density scale" -addControl "sssScale" ;
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Advanced";
+			editorTemplate -label "Extra samples" -addControl "diffuseExtraSamples";
+			editorTemplate -label "Enable caustics" -addControl "diffuseEnableCaustics";
+		editorTemplate -endLayout;		
+		
+	editorTemplate -endLayout; // end Diffuse
+	
+	editorTemplate -beginLayout "Glossy" -collapse 0;
+	
+		editorTemplate -beginLayout "Reflection 1" -collapse 0;
+			editorTemplate  -label "Strength" -addControl "specular1Strength" ;
+			editorTemplate -label "Color" -addControl "specular1Color";
+			editorTemplate -label "Roughness" -addControl "specular1Roughness" ;
+			editorTemplate  -label "IOR" -addControl "specular1Ior";
+			editorTemplate -beginLayout "Advanced";
+				editorTemplate -label "Roughness depth scale" -addControl "specular1RoughnessDepthScale";
+				editorTemplate -label "Extra samples" -addControl "specular1ExtraSamples";
+			editorTemplate -endLayout;	
+		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Reflection 2" -collapse 1;
+			editorTemplate  -label "Strength" -addControl "specular2Strength" ;
+			editorTemplate -label "Color" -addControl "specular2Color";
+			editorTemplate -label "Roughness" -addControl "specular2Roughness" ;
+			editorTemplate  -label "IOR" -addControl "specular2Ior";
+			editorTemplate -beginLayout "Advanced";
+				editorTemplate -label "Roughness depth scale" -addControl "specular2RoughnessDepthScale";
+				editorTemplate -label "Extra samples" -addControl "specular2ExtraSamples";
 			editorTemplate -endLayout;
 		editorTemplate -endLayout;
 		
-	editorTemplate -endLayout;
-	
-	editorTemplate -beginLayout "Specular 1" -collapse 0;
-		editorTemplate  -label "Scale" -addControl "specular1Scale" ;
-		editorTemplate -label "Color" -addControl "specular1Color";
-		editorTemplate -label "Roughness" -addControl "specular1Roughness" ;
-		editorTemplate  -label "IOR" -addControl "specular1Ior";
-	editorTemplate -endLayout;
-	
-	editorTemplate -beginLayout "Specular 2" -collapse 1;
-		editorTemplate  -label "Scale" -addControl "specular2Scale" ;
-		editorTemplate -label "Color" -addControl "specular2Color";
-		editorTemplate -label "Roughness" -addControl "specular2Roughness" ;
-		editorTemplate  -label "IOR" -addControl "specular2Ior";
-	editorTemplate -endLayout;
-	
-	editorTemplate -beginLayout "Transmission" -collapse 1;
-		editorTemplate  -label "Scale" -addControl "transmissionScale" ;
-		editorTemplate -label "Color" -addControl "transmissionColor";
-		editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1" "alSurfaceTransmissionControls";
+		editorTemplate -beginLayout "Transmission" -collapse 1;
+			editorTemplate  -label "Strength" -addControl "transmissionStrength" ;
+			editorTemplate -label "Color" -addControl "transmissionColor";
+			editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1" 
+																"alSurfaceTransmissionControls";
 			editorTemplate -label "Roughness" -addControl "transmissionRoughness";
 			editorTemplate -dimControl $n "transmissionRoughness" 1;
 			editorTemplate  -label "IOR" -addControl "transmissionIor" ;
 			editorTemplate -dimControl $n "transmissionIor" 1;
-		editorTemplate -beginLayout "Absorption";
-			editorTemplate  -label "Enable" -addControl "absorptionEnable";
-			editorTemplate  -label "Color" -addControl "absorptionColor";
-			editorTemplate  -label "Density" -addControl "absorptionDensity";
+			
+			editorTemplate -beginLayout "Scattering";
+				editorTemplate -label "Strength" -addControl "ssStrength";
+				editorTemplate -label "Balance" -addControl "ssBalance";
+				editorTemplate -label "Color" -addControl "ssTargetColor";
+				editorTemplate -label "Density scale" -addControl "ssDensityScale";
+				editorTemplate -label "Direction" -addControl "ssDirection";
+				
+				editorTemplate -label "Specify coefficients" -addControl "ssSpecifyCoefficients" 
+																			"alSurfaceScatteringDimControls";
+				editorTemplate -label "Scattering" -addControl "ssScattering";
+				editorTemplate -label "Absorption" -addControl "ssAbsorption";
+	
+			editorTemplate -endLayout;
+			
+			editorTemplate -beginLayout "Advanced";
+				editorTemplate -label "Roughness depth scale" -addControl "transmissionRoughnessDepthScale";
+				editorTemplate -label "Extra samples" -addControl "transmissionExtraSamples";
+				editorTemplate -label "Enable internal reflections" -addControl "transmissionEnableCaustics";
+			editorTemplate -endLayout;
 		editorTemplate -endLayout;
-	editorTemplate -endLayout;
+	
+	editorTemplate -endLayout; // end Glossy
 	
 	editorTemplate -beginLayout "Bump";
 		editorTemplate -callCustom "bumpControlNew" "bumpControlReplace" "normalCamera";

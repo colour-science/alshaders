@@ -2,3 +2,19 @@
 	desc				STRING		"Remap color node"
 	maya.name			STRING		"alRemapColor"
 	maya.classification	STRING		"shader/surface"
+	
+	[attr saturation]
+		min					FLOAT			0
+		softmax				FLOAT			1
+		
+	[attr hueOffset]
+		min					FLOAT			0
+		max					FLOAT			1
+		
+	[attr contrast]
+		min					FLOAT			0
+		softmax				FLOAT			1
+		
+	[attr contrastSoftClip]
+		min					FLOAT			0
+		max					FLOAT			1

@@ -1,4 +1,4 @@
-source "alRemap.mel"
+source "alRemap.mel";
 
 global proc AEalRemapFloatTemplate(string $n)
 {
