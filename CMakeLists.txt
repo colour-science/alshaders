@@ -7,12 +7,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
 
 set(ARNOLD_VERSION 4.0.10.2)
-set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
+set(ARNOLD_ROOT /usr/people/anders-l/tools/arnold/${ARNOLD_VERSION})
 include_directories(${ARNOLD_ROOT}/include)
 link_directories(${ARNOLD_ROOT}/bin)
 
 set(MTOA_VERSION 0.20.0)
-set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
+set(MTOA_ROOT /usr/people/anders-l/tools/maya/2012/mtoa/${MTOA_VERSION})
 set(MTOA_SHADERS ${MTOA_ROOT}/shaders)
 set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
 
@@ -25,6 +25,7 @@ set(SUBDIRECTORIES
 		alNoise
 		alLayer
 		alPattern
+		alCurvature
 		common
 )
 

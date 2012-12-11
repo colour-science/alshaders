@@ -1,0 +1,20 @@
+source "alRemap.mel";
+
+global proc AEalCurvatureTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+	AEswatchDisplay $n;
+	
+	editorTemplate -addControl "samples";
+	editorTemplate -addControl "sampleOffset";
+	editorTemplate -addControl "sampleRadius";
+
+	alRemapControls($n);
+	
+	editorTemplate -addControl "color1";
+	editorTemplate -addControl "color2";
+
+	editorTemplate -addExtraControls;
+
+	editorTemplate -endScrollLayout;
+}
