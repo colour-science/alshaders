@@ -89,6 +89,18 @@ inline Imath::V3f cosineSampleHemisphere(float u1, float u2)
    return ret;
 }
 
+inline AtVector uniformSampleSphere(float u1, float u2) 
+{
+	 AtFloat z = 1.f - 2.f * u1;
+	 AtFloat r = sqrtf(std::max(0.f, 1.f - z*z));
+	 AtFloat phi = 2.f * M_PI * u2;
+	 AtFloat x = r * cosf(phi);
+	 AtFloat y = r * sinf(phi);
+	 AtVector v;
+	AiV3Create(v, x, y, z);
+	return v;
+}
+
 inline float maxh(const AtRGB& c)
 {
    return std::max(std::max(c.r, c.g), c.b);
