@@ -20,20 +20,11 @@ static const char* noiseSpaceNames[] =
 		NULL
 };
 
-static const char* noiseDimensionNames[] =
-{
-	"1",
-	"2",
-	"3",
-	"4",
-	NULL
-};
-
 enum alNoiseParams
 {
 	p_space,
 	p_frequency,
-	p_dimension,
+	p_scale,
 	p_time,
 	p_octaves,
 	p_distortion,
@@ -52,7 +43,7 @@ node_parameters
 {
 	AiParameterENUM("space", 0, noiseSpaceNames);
 	AiParameterFLT("frequency", 1.0f);
-	AiParameterENUM("dimension", 2, noiseDimensionNames);
+	AiParameterPNT("scale", 1.0f, 1.0f, 1.0f);
 	AiParameterFLT("time", 0.0f);
 	AiParameterINT("octaves", 8);
 	AiParameterFLT("distortion", 0.0f);
@@ -97,8 +88,7 @@ shader_evaluate
 {
 	int space = AiShaderEvalParamInt(p_space);
 	AtFloat frequency = AiShaderEvalParamFlt(p_frequency);
-	AtInt dimension = AiShaderEvalParamInt(p_dimension);
-	dimension = clamp(dimension+1, 1, 4);
+	AtPoint scale = AiShaderEvalParamPnt(p_scale);
 	AtFloat time = AiShaderEvalParamFlt(p_time);
 	int octaves = AiShaderEvalParamInt(p_octaves);
 	AtFloat distortion = AiShaderEvalParamFlt(p_distortion);
@@ -141,18 +131,7 @@ shader_evaluate
 
 	P *= frequency;
 
-	if (dimension == 1)
-	{
-		P.y = P.z = time = 0.0f;
-	}
-	else if (dimension == 2)
-	{
-		P.z = time = 0.0f;
-	}
-	else if (dimension == 3)
-	{
-		time = 0.0f;
-	}
+	P *= scale;
 
 	AtFloat n = 0.0f;
 	AtFloat amp = 1.0f;
