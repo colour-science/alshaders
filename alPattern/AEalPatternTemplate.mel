@@ -6,6 +6,7 @@ global proc AEalPatternTemplate(string $n)
 	AEswatchDisplay $n;
 	
 	editorTemplate -addControl "space";
+	editorTemplate -addControl "axis";
 	editorTemplate -addControl "shape";
 	editorTemplate -addControl "frequency";
 	editorTemplate -addControl "offset";
