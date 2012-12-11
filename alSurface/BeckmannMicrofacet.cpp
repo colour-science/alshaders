@@ -80,6 +80,7 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
 			result += sample.color * kt * brdf/pdf * transmittance;
 
 			// single scattering
+			
 			if (ssScale > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside)
 			{
 
@@ -89,6 +90,7 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
 				sg->N = N;
 
 			}
+			
 
 		}
 		else if (AiV3IsZero(wi)) // total internal reflection

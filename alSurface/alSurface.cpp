@@ -162,7 +162,7 @@ node_finish
 
 		AiFree((void*) data);
 		AiNodeSetLocalData(node, NULL);
-		}
+	}
 }
 
 
