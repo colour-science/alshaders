@@ -97,7 +97,14 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
 		{
 			wi_ray.dir = R;
 			AiTrace(&wi_ray, &sample);
-			result += sample.color;
+			AtRGB transmittance = AI_RGB_WHITE;
+			if (maxh(sigma_t) > 0.0f && !inside)
+			{
+				transmittance.r = expf(-sample.z * sigma_t.r);
+				transmittance.g = expf(-sample.z * sigma_t.g);
+				transmittance.b = expf(-sample.z * sigma_t.b);
+			}
+			result += sample.color * transmittance;
 		}
 
 		count++;
