@@ -34,7 +34,7 @@ enum alSurfaceParams
 	p_sssMix,
 	p_sssRadius,
 	p_sssRadiusColor,
-	p_sssStrength,
+	p_sssDensityScale,
 
 	p_ssStrength,
 	p_ssBalance,
@@ -88,7 +88,7 @@ node_parameters
 	AiParameterFLT("sssRadius", 3.6f );
 	AiParameterRGB("sssRadiusColor", .439f, .156f, .078f );
 	AiMetaDataSetBool(mds, "sssRadiusColor", "always_linear", true);  // no inverse-gamma correction
-	AiParameterFLT("sssStrength", 1.0f );
+	AiParameterFLT("sssDensityScale", 1.0f );
 
 	AiParameterFLT("ssStrength", 0.0f );
 	AiParameterFLT("ssBalance", 0.5f);
@@ -207,7 +207,7 @@ shader_evaluate
 	AtFloat sssMix = AiShaderEvalParamFlt( p_sssMix );
 	AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
 	AtFloat sssRadius = AiShaderEvalParamFlt( p_sssRadius );
-	AtFloat sssStrength = AiShaderEvalParamFlt( p_sssStrength );
+	AtFloat sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
 	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
 	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
 	AtFloat roughness = AiShaderEvalParamFlt( p_specular1Roughness );
@@ -581,10 +581,12 @@ shader_evaluate
 	result_emission = emissionColor;
 
 	// Diffusion multiple scattering
-	if ( do_sss )
+
+	if (do_sss)
 	{
-		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssStrength) * diffuseColor;
+		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor;
 	}
+
 
 	// blend sss and direct diffuse
 	result_diffuseDirect *= (1-sssMix);

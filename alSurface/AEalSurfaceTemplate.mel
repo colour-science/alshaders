@@ -51,7 +51,7 @@ global proc AEalSurfaceTemplate( string $n )
 				editorTemplate  -label "Mix" -addControl "sssMix";
 				editorTemplate  -label "Distance" -addControl "sssRadius";
 				editorTemplate  -label "Color" -addControl "sssRadiusColor";
-				editorTemplate -label "Density scale" -addControl "sssScale" ;
+				editorTemplate -label "Density scale" -addControl "sssDensityScale" ;
 		editorTemplate -endLayout;
 		
 		editorTemplate -beginLayout "Advanced";
