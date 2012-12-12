@@ -44,6 +44,7 @@ enum alSurfaceParams
 	p_ssAbsorption,
 	p_ssDensityScale,
 	p_ssDirection,
+	p_ssInScattering,
 
 	p_diffuseExtraSamples,
 	p_diffuseEnableCaustics,
@@ -98,6 +99,7 @@ node_parameters
 	AiParameterRGB("ssAbsorption", 1.0f, 1.0f, 1.0f);
 	AiParameterFLT("ssDensityScale", 1.0f);
 	AiParameterFLT("ssDirection", 0.0f);
+	AiParameterBOOL("ssInScattering", true);
 
 	AiParameterINT("diffuseExtraSamples", 0);
 	AiParameterBOOL("diffuseEnableCaustics", false);
@@ -227,6 +229,7 @@ shader_evaluate
 	AtFloat ssBalance = AiShaderEvalParamFlt(p_ssBalance);
 	AtRGB ssTargetColor = AiShaderEvalParamRGB(p_ssTargetColor);
 	bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
+	bool ssInScattering = AiShaderEvalParamBool(p_ssInScattering);
 
 	// precalculate scattering coefficients as we'll need them for shadows etc.
 	AtRGB sigma_t = AI_RGB_BLACK;
@@ -599,7 +602,7 @@ shader_evaluate
 		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
 																transmissionRoughness, transmissionIor,
 																sigma_s, sigma_a,
-																ssDirection, ssStrength, result_ss);
+																ssDirection, ssStrength, ssInScattering, result_ss);
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)
