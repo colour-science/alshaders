@@ -38,6 +38,7 @@ set(SUBDIRECTORIES
 		alLayer
 		alPattern
 		alCurvature
+		alBlackbody
 		common
 )
 
