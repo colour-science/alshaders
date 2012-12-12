@@ -87,7 +87,7 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
 				ss_result += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,g,eta) * ssScale * kt;
 				sg->N = N;
 			}
-			
+
 
 		}
 		else if (AiV3IsZero(wi)) // total internal reflection
