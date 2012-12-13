@@ -1,0 +1,9 @@
+[node alBlackbody]
+	desc					STRING		""
+	maya.name				STRING		"alBlackbody"
+	maya.classification		STRING		"shader/utility"
+	
+	[attr temperature]
+		min					FLOAT			273
+		softmax				FLOAT			10000
+		

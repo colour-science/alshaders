@@ -3,7 +3,7 @@
 AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, const AtVector& X, const AtVector& Y,
 										const AtVector& wo, AtSampler* sampler, AtFloat roughness, AtFloat eta,
 										AtRGB sigma_s, AtRGB sigma_a, AtFloat g,
-										AtFloat ssScale, AtRGB& ss_result)
+										AtFloat ssScale, bool inScattering, AtRGB& ss_result)
 {
 	AtFloat count = 0.0f;
 	double samples[2];
@@ -80,22 +80,28 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
 			result += sample.color * kt * brdf/pdf * transmittance;
 
 			// single scattering
-			if (ssScale > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside)
+			if (ssScale > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside && inScattering)
 			{
-
 				AtVector N = sg->N;
 				sg->N = m;
 				ss_result += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,g,eta) * ssScale * kt;
 				sg->N = N;
-
 			}
+
 
 		}
 		else if (AiV3IsZero(wi)) // total internal reflection
 		{
 			wi_ray.dir = R;
 			AiTrace(&wi_ray, &sample);
-			result += sample.color;
+			AtRGB transmittance = AI_RGB_WHITE;
+			if (maxh(sigma_t) > 0.0f && !inside)
+			{
+				transmittance.r = expf(-sample.z * sigma_t.r);
+				transmittance.g = expf(-sample.z * sigma_t.g);
+				transmittance.b = expf(-sample.z * sigma_t.b);
+			}
+			result += sample.color * transmittance;
 		}
 
 		count++;

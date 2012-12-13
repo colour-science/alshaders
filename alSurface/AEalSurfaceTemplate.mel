@@ -51,7 +51,7 @@ global proc AEalSurfaceTemplate( string $n )
 				editorTemplate  -label "Mix" -addControl "sssMix";
 				editorTemplate  -label "Distance" -addControl "sssRadius";
 				editorTemplate  -label "Color" -addControl "sssRadiusColor";
-				editorTemplate -label "Density scale" -addControl "sssScale" ;
+				editorTemplate -label "Density scale" -addControl "sssDensityScale" ;
 		editorTemplate -endLayout;
 		
 		editorTemplate -beginLayout "Advanced";
@@ -98,6 +98,7 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate -beginLayout "Scattering";
 				editorTemplate -label "Strength" -addControl "ssStrength";
 				editorTemplate -label "Balance" -addControl "ssBalance";
+				editorTemplate -label "In-scattering" -addControl "ssInScattering";
 				editorTemplate -label "Color" -addControl "ssTargetColor";
 				editorTemplate -label "Density scale" -addControl "ssDensityScale";
 				editorTemplate -label "Direction" -addControl "ssDirection";

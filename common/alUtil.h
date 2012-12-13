@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <algorithm>
 #include <OpenEXR/ImathVec.h>
 
@@ -86,6 +87,18 @@ inline Imath::V3f cosineSampleHemisphere(float u1, float u2)
    concentricSampleDisk(u1, u2, ret.x, ret.z);
    ret.y = sqrtf(std::max(0.0f, 1.0f - ret.x*ret.x - ret.z*ret.z));
    return ret;
+}
+
+inline AtVector uniformSampleSphere(float u1, float u2) 
+{
+	 AtFloat z = 1.f - 2.f * u1;
+	 AtFloat r = sqrtf(std::max(0.f, 1.f - z*z));
+	 AtFloat phi = 2.f * M_PI * u2;
+	 AtFloat x = r * cosf(phi);
+	 AtFloat y = r * sinf(phi);
+	 AtVector v;
+	AiV3Create(v, x, y, z);
+	return v;
 }
 
 inline float maxh(const AtRGB& c)
@@ -212,7 +225,7 @@ inline AtFloat fresnel(AtFloat eta, const AtVector& N, const AtVector& I, AtVect
     R = (2 * c) * Nn - I;
     float arg = 1 - (neta * neta * (1 - (c * c)));
     if (arg < 0) {
-        T.x = T.y = T.z;
+        T.x = T.y = T.z = 0.0f;
         return 1; // total internal reflection
     } else {
         float dnp = sqrtf(arg);

@@ -34,7 +34,7 @@ enum alSurfaceParams
 	p_sssMix,
 	p_sssRadius,
 	p_sssRadiusColor,
-	p_sssStrength,
+	p_sssDensityScale,
 
 	p_ssStrength,
 	p_ssBalance,
@@ -44,6 +44,7 @@ enum alSurfaceParams
 	p_ssAbsorption,
 	p_ssDensityScale,
 	p_ssDirection,
+	p_ssInScattering,
 
 	p_diffuseExtraSamples,
 	p_diffuseEnableCaustics,
@@ -88,7 +89,7 @@ node_parameters
 	AiParameterFLT("sssRadius", 3.6f );
 	AiParameterRGB("sssRadiusColor", .439f, .156f, .078f );
 	AiMetaDataSetBool(mds, "sssRadiusColor", "always_linear", true);  // no inverse-gamma correction
-	AiParameterFLT("sssStrength", 1.0f );
+	AiParameterFLT("sssDensityScale", 1.0f );
 
 	AiParameterFLT("ssStrength", 0.0f );
 	AiParameterFLT("ssBalance", 0.5f);
@@ -98,6 +99,7 @@ node_parameters
 	AiParameterRGB("ssAbsorption", 1.0f, 1.0f, 1.0f);
 	AiParameterFLT("ssDensityScale", 1.0f);
 	AiParameterFLT("ssDirection", 0.0f);
+	AiParameterBOOL("ssInScattering", true);
 
 	AiParameterINT("diffuseExtraSamples", 0);
 	AiParameterBOOL("diffuseEnableCaustics", false);
@@ -162,7 +164,7 @@ node_finish
 
 		AiFree((void*) data);
 		AiNodeSetLocalData(node, NULL);
-		}
+	}
 }
 
 
@@ -207,7 +209,7 @@ shader_evaluate
 	AtFloat sssMix = AiShaderEvalParamFlt( p_sssMix );
 	AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
 	AtFloat sssRadius = AiShaderEvalParamFlt( p_sssRadius );
-	AtFloat sssStrength = AiShaderEvalParamFlt( p_sssStrength );
+	AtFloat sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
 	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
 	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
 	AtFloat roughness = AiShaderEvalParamFlt( p_specular1Roughness );
@@ -227,6 +229,7 @@ shader_evaluate
 	AtFloat ssBalance = AiShaderEvalParamFlt(p_ssBalance);
 	AtRGB ssTargetColor = AiShaderEvalParamRGB(p_ssTargetColor);
 	bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
+	bool ssInScattering = AiShaderEvalParamBool(p_ssInScattering);
 
 	// precalculate scattering coefficients as we'll need them for shadows etc.
 	AtRGB sigma_t = AI_RGB_BLACK;
@@ -581,10 +584,12 @@ shader_evaluate
 	result_emission = emissionColor;
 
 	// Diffusion multiple scattering
-	if ( do_sss )
+
+	if (do_sss)
 	{
-		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssStrength) * diffuseColor;
+		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor;
 	}
+
 
 	// blend sss and direct diffuse
 	result_diffuseDirect *= (1-sssMix);
@@ -597,7 +602,7 @@ shader_evaluate
 		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
 																transmissionRoughness, transmissionIor,
 																sigma_s, sigma_a,
-																ssDirection, ssStrength, result_ss);
+																ssDirection, ssStrength, ssInScattering, result_ss);
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)

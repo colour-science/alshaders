@@ -1,15 +1,13 @@
 source "alRemap.mel";
 
-global proc AEalPatternTemplate(string $n)
+global proc AEalCurvatureTemplate(string $n)
 {
 	editorTemplate -beginScrollLayout;
 	AEswatchDisplay $n;
 	
-	editorTemplate -addControl "space";
-	editorTemplate -addControl "axis";
-	editorTemplate -addControl "shape";
-	editorTemplate -addControl "frequency";
-	editorTemplate -addControl "offset";
+	editorTemplate -addControl "samples";
+	editorTemplate -addControl "sampleOffset";
+	editorTemplate -addControl "sampleRadius";
 
 	alRemapControls($n);
 	

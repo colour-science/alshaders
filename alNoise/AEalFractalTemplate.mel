@@ -6,7 +6,7 @@ global proc AEalFractalTemplate(string $n)
 	AEswatchDisplay $n;
 	
 	editorTemplate -addControl "space";
-	editorTemplate -addControl "dimension";
+	editorTemplate -addControl "scale";
 	editorTemplate -addControl "frequency";
 	editorTemplate -addControl "time";
 	editorTemplate -addControl "octaves";

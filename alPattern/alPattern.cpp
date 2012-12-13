@@ -35,9 +35,18 @@ static const char* patternNames[] =
 	"saw"
 };
 
+static const char* axisNames[] =
+{
+	"X",
+	"Y",
+	"Z",
+	NULL
+};
+
 enum alPatternParams
 {
 	p_space,
+	p_axis,
 	p_shape,
 	p_frequency,
 	p_offset,
@@ -51,6 +60,7 @@ enum alPatternParams
 node_parameters
 {
 	AiParameterENUM("space", 0, patternSpaceNames);
+	AiParameterENUM("axis", 0, axisNames);
 	AiParameterENUM("shape", 0, patternNames);
 	AiParameterFLT("frequency", 5.0f);
 	AiParameterFLT("offset", 0.0f);
@@ -89,6 +99,7 @@ node_update
 shader_evaluate
 {
 	AtInt space = AiShaderEvalParamInt(p_space);
+	AtInt axis = AiShaderEvalParamInt(p_axis);
 	AtInt shape = AiShaderEvalParamInt(p_shape);
 	AtFloat frequency = AiShaderEvalParamFlt(p_frequency);
 	AtFloat offset = AiShaderEvalParamFlt(p_offset);
@@ -126,17 +137,20 @@ shader_evaluate
 	P *= frequency;
 
 	AtFloat result = 0.0f;
-	P.x += offset;
+	AtFloat x = P.x;
+	if (axis == 1) x = P.y;
+	else if (axis == 2) x = P.z;
+	x += offset;
 	switch (shape)
 	{
 	case PN_SINE:
-		result = sinf(P.x);
+		result = sinf(x);
 		break;
 	case PN_SQUARE:
-		result = sinf(P.x) > 0.0f ? 1.0f : 0.0f;
+		result = sinf(x) > 0.0f ? 1.0f : 0.0f;
 		break;
 	case PN_SAW:
-		result = modulo(P.x, 1.0f);
+		result = modulo(x, 1.0f);
 		break;
 	default:
 		result = 0.0f;
