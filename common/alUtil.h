@@ -11,6 +11,41 @@
 
 #define IMPORTANCE_EPS 0.01f
 
+inline AtRGB max(const AtRGB& c1, const AtRGB& c2)
+{
+	AtRGB c;
+	c.r = std::max(c1.r, c2.r);
+	c.g = std::max(c1.g, c2.g);
+	c.b = std::max(c1.b, c2.b);
+	return c;
+}
+
+inline AtRGB min(const AtRGB& c1, const AtRGB& c2)
+{
+	AtRGB c;
+	c.r = std::min(c1.r, c2.r);
+	c.g = std::min(c1.g, c2.g);
+	c.b = std::min(c1.b, c2.b);
+	return c;
+}
+
+
+inline int clamp(int a, int mn, int mx)
+{
+	return std::min(std::max(a, mn), mx);
+}
+
+inline float clamp(float a, float mn, float mx)
+{
+	return std::min(std::max(a, mn), mx);
+}
+
+inline AtRGB clamp(const AtRGB& a, const AtRGB& mn, const AtRGB& mx)
+{
+	return min(max(a, mn), mx);
+}
+
+
 // concentricSampleDisk and cosineSampleHemisphere lifted from PBRT
 /*
 Copyright (c) 1998-2012, Matt Pharr and Greg Humphreys.
@@ -101,6 +136,18 @@ inline AtVector uniformSampleSphere(float u1, float u2)
 	return v;
 }
 
+inline AtFloat sphericalTheta(const AtVector &v)
+{
+    return acosf(clamp(v.z, -1.f, 1.f));
+}
+
+
+inline AtFloat sphericalPhi(const AtVector &v)
+{
+	AtFloat p = atan2f(v.y, v.x);
+    return (p < 0.f) ? p + 2.f*AI_PI : p;
+}
+
 inline float maxh(const AtRGB& c)
 {
    return std::max(std::max(c.r, c.g), c.b);
@@ -111,38 +158,6 @@ inline float minh(const AtRGB& c)
    return std::min(std::min(c.r, c.g ), c.b);
 }
 
-inline AtRGB max(const AtRGB& c1, const AtRGB& c2)
-{
-	AtRGB c;
-	c.r = std::max(c1.r, c2.r);
-	c.g = std::max(c1.g, c2.g);
-	c.b = std::max(c1.b, c2.b);
-	return c;
-}
-
-inline AtRGB min(const AtRGB& c1, const AtRGB& c2)
-{
-	AtRGB c;
-	c.r = std::min(c1.r, c2.r);
-	c.g = std::min(c1.g, c2.g);
-	c.b = std::min(c1.b, c2.b);
-	return c;
-}
-
-inline int clamp(int a, int mn, int mx)
-{
-	return std::min(std::max(a, mn), mx);
-}
-
-inline float clamp(float a, float mn, float mx)
-{
-	return std::min(std::max(a, mn), mx);
-}
-
-inline AtRGB clamp(const AtRGB& a, const AtRGB& mn, const AtRGB& mx)
-{
-	return min(max(a, mn), mx);
-}
 
 inline float lerp(const float a, const float b, const float t)
 {

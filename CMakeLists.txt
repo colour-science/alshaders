@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 project(alShaders)
 
-set(CMAKE_BUILD_TYPE RELEASE)
+set(CMAKE_BUILD_TYPE DEBUG)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-set(CMAKE_CXX_FLAGS_DEBUG "-ggdb")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 # pre-set the arnold and mtoa versions and root paths
 set(ARNOLD_VERSION 4.0.10.2)
@@ -39,7 +39,9 @@ set(SUBDIRECTORIES
 		alPattern
 		alCurvature
 		alBlackbody
+		alIES
 		common
+		iestest
 )
 
 foreach(SUBDIR ${SUBDIRECTORIES})
