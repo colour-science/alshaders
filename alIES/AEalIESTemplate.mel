@@ -1,0 +1,11 @@
+global proc AEalIESTemplate(string $n)
+{
+	editorTemplate -beginScrollLayout;
+	AEswatchDisplay $n;
+	
+	editorTemplate -addControl "filename";
+	
+	editorTemplate -addExtraControls;
+
+	editorTemplate -endScrollLayout;
+}

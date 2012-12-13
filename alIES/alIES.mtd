@@ -1,0 +1,5 @@
+[node alIES]
+	desc					STRING		""
+	maya.name				STRING		"alIES"
+	maya.classification		STRING		"light/filter"
+		
