@@ -1,12 +1,12 @@
-#include "IES.h"
+#include "Photometric.h"
 #include "alUtil.h"
 #include <ai.h>
 
-AI_SHADER_NODE_EXPORT_METHODS(alIES)
+AI_SHADER_NODE_EXPORT_METHODS(alPhotometric)
 
 struct ShaderData
 {
-	IESData* ies;
+	PhotometricData* photometric;
 };
 
 enum alIESParams
@@ -22,9 +22,9 @@ node_parameters
 node_loader
 {
    if (i>0) return 0;
-   node->methods     = alIES;
+   node->methods     = alPhotometric;
    node->output_type = AI_TYPE_RGB;
-   node->name        = "alIES";
+   node->name        = "alPhotometric";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
    return TRUE;
@@ -33,7 +33,7 @@ node_loader
 node_initialize
 {
 	ShaderData *data = (ShaderData*) AiMalloc(sizeof(ShaderData));
-	data->ies = NULL;
+	data->photometric = NULL;
 	AiNodeSetLocalData(node,data);
 }
 
@@ -50,8 +50,8 @@ node_finish
 node_update
 {
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
-	delete data->ies;
-	data->ies = new IESData(params[p_filename].STR);
+	delete data->photometric;
+	data->photometric = new PhotometricData(params[p_filename].STR);
 }
 
 shader_evaluate
@@ -72,15 +72,10 @@ shader_evaluate
 
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
-	if (data->ies->isValid())
+	if (data->photometric->isValid())
 	{
-		float i = data->ies->lookup(phi, theta);
+		float i = data->photometric->lookup(phi, theta);
 		sg->Liu *= AiColorCreate(i,i,i);
-
-		//AtRGB red = AiColorCreate(1,0,0);
-		//AtRGB green = AiColorCreate(0,1,0);
-		//sg->Liu = AiColorLerp(i, red, green);
-		//sg->Liu = AiColorCreate(i,i,i);
 
 	}
 

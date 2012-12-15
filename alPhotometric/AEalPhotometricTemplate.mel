@@ -22,7 +22,7 @@ global proc alIESFileBrowserReplace(string $attr)
 	textField  -e -fileName `getAttr $attr` "alIESfilenameTextField";  
 }
 
-global proc AEalIESTemplate(string $n)
+global proc AEalPhotometricTemplate(string $n)
 {
 	editorTemplate -beginScrollLayout;
 	AEswatchDisplay $n;

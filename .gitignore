@@ -2,3 +2,4 @@ build
 .project
 .cproject
 local.cmake
+.DS_Store

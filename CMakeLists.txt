@@ -39,9 +39,8 @@ set(SUBDIRECTORIES
 		alPattern
 		alCurvature
 		alBlackbody
-		alIES
+		alPhotometric
 		common
-		iestest
 )
 
 foreach(SUBDIR ${SUBDIRECTORIES})

@@ -1,7 +1,7 @@
-set(SHADERS alIES)
+set(SHADERS alPhotometric)
 include_directories(/Users/anders/vfx/boost/1.43.0/include)
 foreach(SHADER ${SHADERS})
-	set(SRC ${SHADER}.cpp ../common/alUtil.cpp ../common/IES.cpp)
+	set(SRC ${SHADER}.cpp ../common/alUtil.cpp Photometric.cpp)
 	set(MTD ${SHADER}.mtd)
 	set(MEL AE${SHADER}Template.mel)
 
