@@ -1,9 +1,33 @@
+global proc alFileDialogPopup(string $attr)
+{
+	string $fn[] = `fileDialog2 -ds 1 -ff "*.ies *.IES" -fm 1`;
+	if ($fn[0] != "")
+	{
+		setAttr -type "string" $attr $fn[0];
+		textField  -e -fileName `getAttr $attr` "alIESfilenameTextField";
+	}
+}
+
+global proc alIESFileBrowserCreate(string $attr)
+{
+	rowLayout -nc 3;
+		text -l "IES File";
+		textField  -fileName `getAttr $attr` "alIESfilenameTextField";
+		symbolButton -image "navButtonBrowse.xpm" -c ("alFileDialogPopup(\"" + $attr + "\")");  
+  		setParent ..;    
+}
+
+global proc alIESFileBrowserReplace(string $attr)
+{
+	textField  -e -fileName `getAttr $attr` "alIESfilenameTextField";  
+}
+
 global proc AEalIESTemplate(string $n)
 {
 	editorTemplate -beginScrollLayout;
 	AEswatchDisplay $n;
 	
-	editorTemplate -addControl "filename";
+	editorTemplate -callCustom "alIESFileBrowserCreate" "alIESFileBrowserReplace" "filename";
 	
 	editorTemplate -addExtraControls;
 

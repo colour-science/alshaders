@@ -75,11 +75,13 @@ shader_evaluate
 	if (data->ies->isValid())
 	{
 		float i = data->ies->lookup(phi, theta);
-		sg->Liu = AiColorCreate(i,i,i);
-	}
-	else
-	{
-		sg->Liu = AiColorCreate(1,0,0);
+		sg->Liu *= AiColorCreate(i,i,i);
+
+		//AtRGB red = AiColorCreate(1,0,0);
+		//AtRGB green = AiColorCreate(0,1,0);
+		//sg->Liu = AiColorLerp(i, red, green);
+		//sg->Liu = AiColorCreate(i,i,i);
+
 	}
 
 }

@@ -8,6 +8,7 @@ class IESData
 {
 public:
 	IESData(const std::string& fn);
+	~IESData();
 
 	enum Hemisphere
 	{
@@ -27,7 +28,7 @@ public:
 	inline int index(float phi, float theta)
 	{
 		theta = fmodf(theta, _thetaMax);
-		int y = static_cast<int>(floorf(theta / _thetaMax * _yend));
+		int y = static_cast<int>(floorf(theta / _thetaMax * float(_yend)));
 		int x;
 		if (_symmetry==k0)
 		{
@@ -35,8 +36,27 @@ public:
 		}
 		else
 		{
+
+			if (_symmetry==k90)
+			{
+				if (phi > M_PI) phi -= M_PI;
+				if (phi > M_PI/2.0f && phi < M_PI)
+				{
+					phi -= M_PI/2.0f;
+					phi = (M_PI/2.0f) - phi;
+				}
+			}
+			else if (_symmetry == k180)
+			{
+				if (phi > M_PI)
+				{
+					phi -= M_PI;
+					phi = M_PI - phi;
+				}
+			}
+
 			phi = fmodf(phi, _phiMax);
-			x = static_cast<int>(floorf(phi / _phiMax * _xend));
+			x = static_cast<int>(floorf(phi / _phiMax * float(_xend)));
 		}
 
 		return y*_xend+x;
@@ -62,9 +82,6 @@ private:
 	float _thetaMax;
 	int _numV;
 	int _numH;
-	float* _anglesV;
-	float* _anglesH;
-	float* _intensities;
 	float* _data;
 	Hemisphere _hemisphere;
 	Symmetry _symmetry;
