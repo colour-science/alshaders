@@ -18,7 +18,6 @@ global proc alSurfaceTransmissionControls(string $n)
 	editorTemplate -dimControl $n "transmissionRoughness" $checked;
 	editorTemplate -dimControl $n "transmissionIor" $checked;
 }
-
 global proc alSurfaceScatteringDimControls(string $n)
 {
 	int $checked = `getAttr ($n+".ssSpecifyCoefficients")`;
@@ -34,36 +33,19 @@ global proc AEalSurfaceTemplate( string $n )
 	editorTemplate -beginScrollLayout;
 		AEswatchDisplay $n;
 	
-	editorTemplate -beginLayout "Diffuse" -collapse 0;
+	editorTemplate -beginLayout "Reflection" -collapse 0;
 		
-		editorTemplate -beginLayout "Reflection" -collapse 0;
+		editorTemplate -beginLayout "Diffuse" -collapse 0;
 			editorTemplate -label "Strength" -addControl "diffuseStrength";
 			editorTemplate  -label "Color" -addControl "diffuseColor";
 			editorTemplate  -label "Roughness" -addControl "diffuseRoughness";
+			editorTemplate -beginLayout "Advanced";
+				editorTemplate -label "Extra samples" -addControl "diffuseExtraSamples";
+				editorTemplate -label "Enable caustics" -addControl "diffuseEnableCaustics";
+			editorTemplate -endLayout;	
 		editorTemplate -endLayout;
 		
-		editorTemplate -beginLayout "Emission";
-			editorTemplate -label "Strength" -addControl "emissionStrength";
-			editorTemplate  -label "Color"-addControl "emissionColor";
-		editorTemplate -endLayout;
-		
-		editorTemplate -beginLayout "Scattering";
-				editorTemplate  -label "Mix" -addControl "sssMix";
-				editorTemplate  -label "Distance" -addControl "sssRadius";
-				editorTemplate  -label "Color" -addControl "sssRadiusColor";
-				editorTemplate -label "Density scale" -addControl "sssDensityScale" ;
-		editorTemplate -endLayout;
-		
-		editorTemplate -beginLayout "Advanced";
-			editorTemplate -label "Extra samples" -addControl "diffuseExtraSamples";
-			editorTemplate -label "Enable caustics" -addControl "diffuseEnableCaustics";
-		editorTemplate -endLayout;		
-		
-	editorTemplate -endLayout; // end Diffuse
-	
-	editorTemplate -beginLayout "Glossy" -collapse 0;
-	
-		editorTemplate -beginLayout "Reflection 1" -collapse 0;
+		editorTemplate -beginLayout "Specular 1" -collapse 0;
 			editorTemplate  -label "Strength" -addControl "specular1Strength" ;
 			editorTemplate -label "Color" -addControl "specular1Color";
 			editorTemplate -label "Roughness" -addControl "specular1Roughness" ;
@@ -74,7 +56,7 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate -endLayout;	
 		editorTemplate -endLayout;
 		
-		editorTemplate -beginLayout "Reflection 2" -collapse 1;
+		editorTemplate -beginLayout "Specular 2" -collapse 1;
 			editorTemplate  -label "Strength" -addControl "specular2Strength" ;
 			editorTemplate -label "Color" -addControl "specular2Color";
 			editorTemplate -label "Roughness" -addControl "specular2Roughness" ;
@@ -85,7 +67,10 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate -endLayout;
 		editorTemplate -endLayout;
 		
-		editorTemplate -beginLayout "Transmission" -collapse 1;
+	editorTemplate -endLayout; // endLayout Reflection
+	
+	editorTemplate -beginLayout "Transmission";
+		editorTemplate -beginLayout "Glossy" -collapse 1;
 			editorTemplate  -label "Strength" -addControl "transmissionStrength" ;
 			editorTemplate -label "Color" -addControl "transmissionColor";
 			editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1" 
@@ -116,8 +101,21 @@ global proc AEalSurfaceTemplate( string $n )
 				editorTemplate -label "Enable internal reflections" -addControl "transmissionEnableCaustics";
 			editorTemplate -endLayout;
 		editorTemplate -endLayout;
+		
+		editorTemplate -beginLayout "Diffusion";
+			editorTemplate  -label "Mix" -addControl "sssMix";
+			editorTemplate  -label "Distance" -addControl "sssRadius";
+			editorTemplate  -label "Color" -addControl "sssRadiusColor";
+			editorTemplate -label "Density scale" -addControl "sssDensityScale" ;
+		editorTemplate -endLayout;
+		
+	editorTemplate -endLayout; // endLayout Transmission
 	
-	editorTemplate -endLayout; // end Glossy
+	editorTemplate -beginLayout "Emission";
+		editorTemplate -label "Strength" -addControl "emissionStrength";
+		editorTemplate  -label "Color"-addControl "emissionColor";
+	editorTemplate -endLayout; 
+	
 	
 	editorTemplate -beginLayout "Bump";
 		editorTemplate -callCustom "bumpControlNew" "bumpControlReplace" "normalCamera";
