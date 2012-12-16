@@ -21,6 +21,8 @@ AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
 #define GlossyMISCreateData AiCookTorranceMISCreateData
 
+#define NUM_LIGHT_GROUPS 8
+
 enum alSurfaceParams
 {
 	// diffuse
@@ -170,6 +172,23 @@ node_finish
 
 node_update
 {
+	// set up AOVs
+	AiAOVRegister("diffuseDirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("diffuseIndirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("specularDirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("specularIndirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("specular2Direct", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("specular2Indirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("singleScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("transmission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("emission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("position", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("referenceposition", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("normal", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("uv", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("depth", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+
+	// store some options we'll reuse later
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 	AtNode *options   = AiUniverseGetOptions();
 	data->GI_diffuse_depth = AiNodeGetInt(options, "GI_diffuse_depth");
@@ -426,6 +445,14 @@ shader_evaluate
 
 	AtVector wo = -sg->Rd;
 
+	// prepare temporaries for light group calculation
+	AtRGB lightGroupDiffuse[NUM_LIGHT_GROUPS];
+	memset(lightGroupDiffuse, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+	AtRGB lightGroupSpecular[NUM_LIGHT_GROUPS];
+	memset(lightGroupSpecular, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+	AtRGB lightGroupSpecular2[NUM_LIGHT_GROUPS];
+	memset(lightGroupSpecular2, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+
 	// Begin illumination calculation
 	if (do_diffuse || do_glossy || do_glossy2)
 	{
@@ -459,22 +486,41 @@ shader_evaluate
 
 		// Light loop
 		AiLightsPrepare(sg);
+		AtRGB LdiffuseDirect, LspecularDirect, Lspecular2Direct;
 		while(AiLightsGetSample(sg))
 		{
+			int lightGroup;
+			// arnold returns 0 if the param doesn't exist so we'll use 1-based indices
+			lightGroup = AiNodeGetInt(sg->Lp, "lightGroup") - 1;
 			if (do_diffuse)
 			{
-				result_diffuseDirect +=
+				LdiffuseDirect =
 				AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap);
+				if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+				{
+					lightGroupDiffuse[lightGroup] += LdiffuseDirect;
+				}
+				result_diffuseDirect += LdiffuseDirect;
 			}
 			if (do_glossy)
 			{
-				result_glossyDirect +=
+				LspecularDirect =
 				AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
+				if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+				{
+					lightGroupSpecular[lightGroup] += LspecularDirect;
+				}
+				result_glossyDirect += LspecularDirect;
 			}
 			if (do_glossy2)
 			{
-				result_glossy2Direct +=
+				Lspecular2Direct =
 				AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
+				if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+				{
+					lightGroupSpecular2[lightGroup] += Lspecular2Direct;
+				}
+				result_glossy2Direct += Lspecular2Direct;
 			}
 		}
 
@@ -482,6 +528,12 @@ shader_evaluate
 		result_diffuseDirect *= diffuseColor;
 		result_glossyDirect *= specular1Color;
 		result_glossy2Direct *= specular2Color;
+		for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+		{
+			lightGroupDiffuse[i] *= diffuseColor;
+			lightGroupSpecular[i] *= specular1Color;
+			lightGroupSpecular2[i] *= specular2Color;
+		}
 
 		// Sample BRDFS
 		double samples[2];
@@ -619,6 +671,16 @@ shader_evaluate
 		AiAOVSetRGB(sg, "transmission", result_transmission);
 		AiAOVSetRGB(sg, "emission", result_emission);
 
+		// write light groups
+		AtRGB lightGroup[NUM_LIGHT_GROUPS];
+		char lightGroupName[32];
+		for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
+		{
+			lightGroup[i] = lightGroupDiffuse[i] + lightGroupSpecular[i] + lightGroupSpecular2[i];
+			sprintf(lightGroupName, "lightGroup%d", i);
+			AiAOVSetRGB(sg, lightGroupName, lightGroup[i]);
+		}
+
 		// write data AOVs
 		AtPoint Pref;
 		if (!AiUDataGetPnt("Pref", &Pref))
@@ -632,6 +694,7 @@ shader_evaluate
 		AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
 		AiAOVSetRGB(sg, "uv", uv);
 		AtRGB depth = AiColorCreate(sg->Rl, AiV3Dot(sg->Nf, wo), 0.0f);
+		AiAOVSetRGB(sg, "depth", depth);
 	}
 
 	// Sum final result from temporaries
