@@ -8,8 +8,7 @@ struct BrdfData_wrap
    float eta;
    AtVector V;
    AtVector N;
-   float kr[2];
-	mutable AtRGB E;
+   mutable float kt;
 };
 
 
@@ -40,7 +39,7 @@ AtRGB AiCookTorranceMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
    float kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
-	//float kr = 1;
+   brdfw->kt = 1.0f - kr;
    return kr *  AiCookTorranceMISBRDF(brdfw->brdf_data, indir);
 }
 
@@ -62,7 +61,8 @@ AtRGB AiOrenNayarMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    AtVector H;
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
-   float kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
+   //float kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
+   float kr = fresnel(std::max(0.0f,AiV3Dot(brdfw->N,brdfw->V)),brdfw->eta);
    return AiOrenNayarMISBRDF(brdfw->brdf_data, indir) * (1-kr);
 }
 

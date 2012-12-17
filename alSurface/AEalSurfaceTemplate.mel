@@ -1,5 +1,3 @@
-print( "LOADING ASHDKASHDASJDAKSJDHAKSDHAKSJDASJDKH!!!!" );
-
 global proc bumpControlNew(string $attr)
 {
 	setUITemplate -pst "attributeEditorTemplate";
@@ -70,7 +68,7 @@ global proc AEalSurfaceTemplate( string $n )
 	editorTemplate -endLayout; // endLayout Reflection
 	
 	editorTemplate -beginLayout "Transmission";
-		editorTemplate -beginLayout "Glossy" -collapse 1;
+		editorTemplate -beginLayout "Specular" -collapse 1;
 			editorTemplate  -label "Strength" -addControl "transmissionStrength" ;
 			editorTemplate -label "Color" -addControl "transmissionColor";
 			editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1" 

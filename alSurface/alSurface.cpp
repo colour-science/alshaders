@@ -3,6 +3,7 @@
 #include <OpenEXR/ImathVec.h>
 #include <OpenEXR/ImathMatrix.h>
 #include <OpenEXR/ImathMatrixAlgo.h>
+#include <map>
 
 #include "alUtil.h"
 #include "MIS.h"
@@ -22,6 +23,17 @@ AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 #define GlossyMISCreateData AiCookTorranceMISCreateData
 
 #define NUM_LIGHT_GROUPS 8
+static const char* lightGroupNames[NUM_LIGHT_GROUPS] =
+{
+	"lightGroup1",
+	"lightGroup2",
+	"lightGroup3",
+	"lightGroup4",
+	"lightGroup5",
+	"lightGroup6",
+	"lightGroup7",
+	"lightGroup8"
+};
 
 enum alSurfaceParams
 {
@@ -145,7 +157,7 @@ node_loader
 
 node_initialize
 {
-	ShaderData *data = (ShaderData*) AiMalloc(sizeof(ShaderData));
+	ShaderData *data = new ShaderData;
 	AiNodeSetLocalData(node,data);
 	data->diffuse_sampler = NULL;
 	data->glossy_sampler = NULL;
@@ -164,8 +176,8 @@ node_finish
 		AiSamplerDestroy(data->glossy2_sampler);
 		AiSamplerDestroy(data->refraction_sampler);
 
-		AiFree((void*) data);
 		AiNodeSetLocalData(node, NULL);
+		delete data;
 	}
 }
 
@@ -180,13 +192,19 @@ node_update
 	AiAOVRegister("specular2Direct", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("specular2Indirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("singleScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("multiScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("transmission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("emission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("position", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("referenceposition", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("normal", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("uv", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("depth", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup1", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup3", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup4", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup5", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 
 	// store some options we'll reuse later
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
@@ -207,6 +225,16 @@ node_update
 	data->glossy_sampler = AiSampler(data->GI_glossy_samples+params[p_specular1ExtraSamples].INT, 2);
 	data->glossy2_sampler = AiSampler(data->GI_glossy_samples+params[p_specular2ExtraSamples].INT, 2);
 	data->refraction_sampler = AiSampler(AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT, 2);
+
+	// Get all the light nodes in the scene and try and find their light group parameter
+	// we'll store this based on the light pointer for fast access during rendering
+	AtNodeIterator* it = AiUniverseGetNodeIterator(AI_NODE_LIGHT);
+	while (!AiNodeIteratorFinished(it))
+	{
+		AtNode* light = AiNodeIteratorGetNext(it);
+		data->lightGroups[light] = AiNodeGetInt(light, "lightGroup") - 1;
+	}
+	AiNodeIteratorDestroy(it);
 };
 
 
@@ -214,31 +242,24 @@ shader_evaluate
 {
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
-	// Evaluate bump;
-	AtVector N_orig;
-	AtVector Nf_orig;
-	AtRGB bump = AiShaderEvalParamRGB( p_bump );
-
-	// Initialize parameter temporaries
-	// TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
-	AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
-	AtFloat diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
-	bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
-	AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
-	AtFloat sssMix = AiShaderEvalParamFlt( p_sssMix );
-	AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
-	AtFloat sssRadius = AiShaderEvalParamFlt( p_sssRadius );
-	AtFloat sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
-	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
-	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
+	AtFloat ior = AiShaderEvalParamFlt( p_specular1Ior );
 	AtFloat roughness = AiShaderEvalParamFlt( p_specular1Roughness );
 	roughness *= roughness;
-	AtFloat roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
-	roughness2 *= roughness2;
-	AtFloat ior = AiShaderEvalParamFlt( p_specular1Ior );
-	AtFloat eta = 1.0f / ior;
-	AtFloat ior2 = AiShaderEvalParamFlt( p_specular2Ior );
-	AtFloat eta2 = 1.0f / ior2;
+	AtFloat transmissionRoughness;
+	AtFloat transmissionIor;
+	bool transmissionLinkToSpecular1 = AiShaderEvalParamBool(p_transmissionLinkToSpecular1);
+	if (transmissionLinkToSpecular1)
+	{
+		transmissionRoughness = roughness;
+		transmissionIor = ior;
+	}
+	else
+	{
+		transmissionRoughness = AiShaderEvalParamFlt(p_transmissionRoughness);
+		transmissionRoughness *= transmissionRoughness;
+		transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
+	}
+	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
 
 	AtRGB ssScattering = AiShaderEvalParamRGB(p_ssScattering);
 	AtRGB ssAbsorption = AiShaderEvalParamRGB(p_ssAbsorption);
@@ -270,28 +291,6 @@ shader_evaluate
 			sigma_t = sigma_s + sigma_a;
 		}
 	}
-
-	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
-
-	AtFloat specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
-	AtFloat specular2RoughnessDepthScale = AiShaderEvalParamFlt(p_specular2RoughnessDepthScale);
-	AtFloat transmissionRoughnessDepthScale = AiShaderEvalParamFlt(p_transmissionRoughnessDepthScale);
-
-	AtFloat transmissionRoughness;
-	AtFloat transmissionIor;
-	bool transmissionLinkToSpecular1 = AiShaderEvalParamBool(p_transmissionLinkToSpecular1);
-	if (transmissionLinkToSpecular1)
-	{
-		transmissionRoughness = roughness;
-		transmissionIor = ior;
-	}
-	else
-	{
-		transmissionRoughness = AiShaderEvalParamFlt(p_transmissionRoughness);
-		transmissionRoughness *= transmissionRoughness;
-		transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
-	}
-	bool transmissionEnableCaustics = AiShaderEvalParamBool(p_transmissionEnableCaustics);
 
 	// if it's a shadow ray, handle shadow colouring through absorption
 	// algorithm based heavily on the example in Kettle
@@ -368,6 +367,42 @@ shader_evaluate
 		sg->out_opacity = outOpacity;
 		return;
 	}
+
+	// Evaluate bump;
+	AtVector N_orig;
+	AtVector Nf_orig;
+	AtRGB bump = AiShaderEvalParamRGB( p_bump );
+
+	// Initialize parameter temporaries
+	// TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
+	AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
+	AtFloat diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
+	bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
+	AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
+	AtFloat sssMix = AiShaderEvalParamFlt( p_sssMix );
+	AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
+	AtFloat sssRadius = AiShaderEvalParamFlt( p_sssRadius );
+	AtFloat sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
+	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
+	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
+
+	AtFloat roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
+	roughness2 *= roughness2;
+
+	AtFloat eta = 1.0f / ior;
+	AtFloat ior2 = AiShaderEvalParamFlt( p_specular2Ior );
+	AtFloat eta2 = 1.0f / ior2;
+
+
+
+
+
+	AtFloat specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
+	AtFloat specular2RoughnessDepthScale = AiShaderEvalParamFlt(p_specular2RoughnessDepthScale);
+	AtFloat transmissionRoughnessDepthScale = AiShaderEvalParamFlt(p_transmissionRoughnessDepthScale);
+
+
+	bool transmissionEnableCaustics = AiShaderEvalParamBool(p_transmissionEnableCaustics);
 
 	// clamp roughnesses
 	// TODO: fall back to single-ray solution when roughness is 0
@@ -453,6 +488,10 @@ shader_evaluate
 	AtRGB lightGroupSpecular2[NUM_LIGHT_GROUPS];
 	memset(lightGroupSpecular2, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
 
+	// Accumulator for transmission integrated according to the specular1 brdf. Will be used to attenuate diffuse,
+	// glossy2, sss and transmission
+	AtFloat kti = 1.0f;
+
 	// Begin illumination calculation
 	if (do_diffuse || do_glossy || do_glossy2)
 	{
@@ -465,6 +504,7 @@ shader_evaluate
 		brdfw.eta = eta;
 		brdfw.V = wo;
 		brdfw.N = sg->N;
+		brdfw.kt = 1.0f;
 
 		void* mis2;
 		mis2 = GlossyMISCreateData(sg,&U,&V,roughness2,roughness2);
@@ -486,41 +526,73 @@ shader_evaluate
 
 		// Light loop
 		AiLightsPrepare(sg);
-		AtRGB LdiffuseDirect, LspecularDirect, Lspecular2Direct;
-		while(AiLightsGetSample(sg))
+		if (sg->Rt & AI_RAY_CAMERA)
 		{
-			int lightGroup;
-			// arnold returns 0 if the param doesn't exist so we'll use 1-based indices
-			lightGroup = AiNodeGetInt(sg->Lp, "lightGroup") - 1;
-			if (do_diffuse)
+			AtRGB LdiffuseDirect, LspecularDirect, Lspecular2Direct;
+			while(AiLightsGetSample(sg))
 			{
-				LdiffuseDirect =
-				AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap);
-				if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+				int lightGroup = data->lightGroups[sg->Lp];
+				if (do_glossy)
 				{
-					lightGroupDiffuse[lightGroup] += LdiffuseDirect;
+					LspecularDirect =
+					AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
+					if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+					{
+						lightGroupSpecular[lightGroup] += LspecularDirect;
+					}
+					result_glossyDirect += LspecularDirect;
 				}
-				result_diffuseDirect += LdiffuseDirect;
+				if (do_diffuse)
+				{
+					LdiffuseDirect =
+					AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+											* brdfw.kt;
+					if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+					{
+						lightGroupDiffuse[lightGroup] += LdiffuseDirect;
+					}
+					result_diffuseDirect += LdiffuseDirect;
+				}
+				if (do_glossy2)
+				{
+					Lspecular2Direct =
+					AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+											* brdfw.kt;
+					if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+					{
+						lightGroupSpecular2[lightGroup] += Lspecular2Direct;
+					}
+					result_glossy2Direct += Lspecular2Direct;
+				}
 			}
-			if (do_glossy)
+			for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
 			{
-				LspecularDirect =
-				AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
-				if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-				{
-					lightGroupSpecular[lightGroup] += LspecularDirect;
-				}
-				result_glossyDirect += LspecularDirect;
+				lightGroupDiffuse[i] *= diffuseColor;
+				lightGroupSpecular[i] *= specular1Color;
+				lightGroupSpecular2[i] *= specular2Color;
 			}
-			if (do_glossy2)
+		}
+		else
+		{
+			while(AiLightsGetSample(sg))
 			{
-				Lspecular2Direct =
-				AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
-				if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+				if (do_glossy)
 				{
-					lightGroupSpecular2[lightGroup] += Lspecular2Direct;
+					result_glossyDirect +=
+					AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
 				}
-				result_glossy2Direct += Lspecular2Direct;
+				if (do_diffuse)
+				{
+					result_diffuseDirect +=
+					AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap)
+											* brdfw.kt;
+				}
+				if (do_glossy2)
+				{
+					result_glossy2Direct +=
+					AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+											* brdfw.kt;
+				}
 			}
 		}
 
@@ -528,12 +600,7 @@ shader_evaluate
 		result_diffuseDirect *= diffuseColor;
 		result_glossyDirect *= specular1Color;
 		result_glossy2Direct *= specular2Color;
-		for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
-		{
-			lightGroupDiffuse[i] *= diffuseColor;
-			lightGroupSpecular[i] *= specular1Color;
-			lightGroupSpecular2[i] *= specular2Color;
-		}
+
 
 		// Sample BRDFS
 		double samples[2];
@@ -543,12 +610,12 @@ shader_evaluate
 		AtVector H;
 		float kr=1, kt=1;
 
-		glossy_samples *= glossy_samples;
 		if (do_glossy)
 		{
 			AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
 			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
 			AtInt count=0;
+			kti = 0.0f;
 			while(AiSamplerGetSample(sampit, samples))
 			{
 				wi = GlossyMISSample(mis, samples[0], samples[1]);
@@ -558,6 +625,7 @@ shader_evaluate
 					wi_ray.dir = wi;
 					AiV3Normalize(H, wi+brdfw.V);
 					kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
+					kti += kr;
 					if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
 					{
 						AiTrace(&wi_ray, &scrs);
@@ -568,6 +636,8 @@ shader_evaluate
 				count++;
 			}
 			if (count) result_glossyIndirect /= float(count);
+			if (count) kti /= float(count);
+			kti = 1.0f - kti;
 			result_glossyIndirect *= specular1Color;
 		} // if (do_glossy)
 
@@ -585,13 +655,11 @@ shader_evaluate
 					AiV3Normalize(H, wi+brdfw2.V);
 					// add the fresnel for this layer
 					kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
-					// attenuate by the fresnel from the layer above
-					kr *= 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
 					if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
 					{
 						AiTrace(&wi_ray, &scrs);
 						result_glossy2Indirect +=
-						scrs.color*GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr;
+						scrs.color*GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
 					}
 				}
 				count++;
@@ -602,32 +670,7 @@ shader_evaluate
 
 		if ( do_diffuse )
 		{
-			diffuse_samples *= diffuse_samples;
-			AtSamplerIterator* sampit = AiSamplerIterator(data->diffuse_sampler, sg);
-			AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
-			AtInt count=0;
-			while(AiSamplerGetSample(sampit, samples))
-			{
-				wi = AiOrenNayarMISSample(dmis, samples[0], samples[1]);
-				if (AiV3Dot(wi,sg->Nf) > 0.0f)
-				{
-					wi_ray.dir = wi;
-					AiV3Normalize(H, wi+brdfd.V);
-					// attenuate by the fresnel of the top layer
-					// we'll assume for now that the specular2 layer does not have a significant attenuation on this
-					// layer (it's supposed to be more of a 'mix').
-					kt = 1.0f - fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
-					if (kt > IMPORTANCE_EPS) // only trace a ray if it's going to matter
-					{
-						AiTrace(&wi_ray, &scrs);
-						result_diffuseIndirect +=
-						scrs.color*AiOrenNayarMISBRDF(dmis, &wi) / AiOrenNayarMISPDF(dmis, &wi) * kt;
-					}
-				}
-				count++;
-			}
-			if (count) result_diffuseIndirect /= float(count);
-			result_diffuseIndirect *= diffuseColor;
+			result_diffuseIndirect = AiOrenNayarIntegrate(&sg->Nf, sg, diffuseRoughness) * diffuseColor * kti;
 		} // if (do_diffuse)
 
 	} // if (do_diffuse || do_glossy)
@@ -636,10 +679,9 @@ shader_evaluate
 	result_emission = emissionColor;
 
 	// Diffusion multiple scattering
-
 	if (do_sss)
 	{
-		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor;
+		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor * kti;
 	}
 
 
@@ -654,7 +696,7 @@ shader_evaluate
 		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
 																transmissionRoughness, transmissionIor,
 																sigma_s, sigma_a,
-																ssDirection, ssStrength, ssInScattering, result_ss);
+																ssDirection, ssStrength, ssInScattering, result_ss) * kti;
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)
@@ -677,24 +719,15 @@ shader_evaluate
 		for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
 		{
 			lightGroup[i] = lightGroupDiffuse[i] + lightGroupSpecular[i] + lightGroupSpecular2[i];
-			sprintf(lightGroupName, "lightGroup%d", i);
-			AiAOVSetRGB(sg, lightGroupName, lightGroup[i]);
+			AiAOVSetRGB(sg, lightGroupNames[i], lightGroup[i]);
 		}
 
 		// write data AOVs
-		AtPoint Pref;
-		if (!AiUDataGetPnt("Pref", &Pref))
-			Pref = sg->Po;
-		AtRGB position = AiColorCreate(sg->P.x, sg->P.y, sg->P.z);
-		AtRGB referenceposition = AiColorCreate(Pref.x, Pref.y, Pref.z);
-		AiAOVSetRGB(sg, "position", position);
-		AiAOVSetRGB(sg, "referenceposition", referenceposition);
-		AtRGB normal = AiColorCreate(sg->Nf.x, sg->Nf.y, sg->Nf.z);
-		AiAOVSetRGB(sg, "normal", normal);
 		AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
 		AiAOVSetRGB(sg, "uv", uv);
 		AtRGB depth = AiColorCreate(sg->Rl, AiV3Dot(sg->Nf, wo), 0.0f);
 		AiAOVSetRGB(sg, "depth", depth);
+
 	}
 
 	// Sum final result from temporaries

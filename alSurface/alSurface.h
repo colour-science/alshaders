@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ai.h>
+#include <map>
 
 struct ShaderData
 {
@@ -16,4 +17,5 @@ struct ShaderData
    AtInt GI_glossy_samples;
    AtInt GI_refraction_samples;
    AtCritSec cs;
+   std::map<AtNode*, int> lightGroups;
 };

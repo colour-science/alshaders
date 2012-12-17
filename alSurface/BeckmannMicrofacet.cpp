@@ -77,7 +77,7 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
 				transmittance.g = expf(-sample.z * sigma_t.g);
 				transmittance.b = expf(-sample.z * sigma_t.b);
 			}
-			result += sample.color * kt * brdf/pdf * transmittance;
+			result += sample.color * brdf/pdf * transmittance;
 
 			// single scattering
 			if (ssScale > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside && inScattering)
