@@ -11,7 +11,6 @@ enum alRemapParams
 	p_hueOffset,
 	p_contrast,
 	p_contrastPivot,
-	p_contrastSoftClip,
 	p_gain,
 	p_exposure,
 	p_mask,
@@ -25,7 +24,6 @@ node_parameters
 	AiParameterFLT("hueOffset", 0.0f);
 	AiParameterFLT("contrast", 1.0f);
 	AiParameterFLT("contrastPivot", 0.18f);
-	AiParameterFLT("contrastSoftClip", 0.0f);
 	AiParameterFLT("gain", 1.0f);
 	AiParameterFLT("exposure", 0.f);
 	AiParameterFLT("mask", 1.0f);
@@ -65,7 +63,6 @@ shader_evaluate
 	AtFloat hueOffset = AiShaderEvalParamFlt(p_hueOffset);
 	AtFloat contrastVal = AiShaderEvalParamFlt(p_contrast);
 	AtFloat contrastPivot = AiShaderEvalParamFlt(p_contrastPivot);
-	AtFloat contrastSoftClip = AiShaderEvalParamFlt(p_contrastSoftClip);
 	AtFloat gain = AiShaderEvalParamFlt(p_gain);
 	AtFloat exposure = AiShaderEvalParamFlt(p_exposure);
 	AtFloat mask = AiShaderEvalParamFlt(p_mask);
@@ -94,7 +91,7 @@ shader_evaluate
 		// contrast
 		if (contrastVal != 1.0f)
 		{
-			result = contrast(result, contrastVal, contrastPivot, contrastSoftClip);
+			result = contrast(result, contrastVal, contrastPivot);
 		}
 
 		// gain and exposure

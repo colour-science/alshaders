@@ -303,43 +303,22 @@ inline float luminance(float f)
 	return f;
 }
 
-template <typename T>
-inline T contrast(T input, float contrast, float pivot, float softClip)
+inline AtFloat contrast(float input, float contrast, float pivot)
 {
 	if (contrast == 1.0f) return input;
 
-	float xmin = std::max(0.0f, (pivot * (contrast-1.0f)/contrast));
-	float xmax = std::min(1.0f, ((1.0f-pivot * (1.0f-contrast))/contrast));
+	return (input-pivot)*contrast + pivot;
+}
 
-	float xl = (pivot - xmin) * softClip + xmin;
-	float al = contrast * xl + pivot * (1.0f-contrast);
-	float gl = contrast * xl / al;
-	float xh = xmax - (xmax-pivot) * softClip;
-	float ah = 1.0f - (contrast*xh + pivot * (1.0f-contrast));
-	float gh = contrast * (1.0f-xh) / ah;
+inline AtRGB contrast(const AtRGB& input, float contrast, float pivot)
+{
+	if (contrast == 1.0f) return input;
 
-	float lum = luminance(input);
-	if (softClip > 0.0f)
-	{
-		lum = clamp(lum, 0.0f, 1.0f);
-	}
-
-	float result;
-	if (softClip != 0 && lum < xl)
-	{
-		result = (al * pow(lum/xl, gl)) / lum;
-	}
-	else if (softClip != 0.0f && lum > xh)
-	{
-		result = (1.0f - ah * pow((1.0f-lum)/(1-xh), gh)) / lum;
-	}
-	else
-	{
-		result = (contrast*lum + pivot * (1.0f-contrast)) / lum;
-	}
-	result = std::max(0.0f, result);
-
-	return result * input;
+	return AiColorCreate(
+		(input.r-pivot)*contrast + pivot,
+		(input.g-pivot)*contrast + pivot,
+		(input.b-pivot)*contrast + pivot
+	);
 }
 
 inline AtFloat bias(AtFloat f, AtFloat b)

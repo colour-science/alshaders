@@ -9,24 +9,23 @@ global proc alRemapClampControl(string $n)
 global proc alRemapControls(string $n)
 {
 	editorTemplate -beginLayout "Remap";
-		editorTemplate  -label "Input min" -addControl "inputMin";
-		editorTemplate  -label "Input max" -addControl "inputMax";
+		editorTemplate  -label "Input min" -addControl "RMPinputMin";
+		editorTemplate  -label "Input max" -addControl "RMPinputMax";
 		editorTemplate -beginLayout "Contrast" -collapse 0;
 			editorTemplate	-addControl "contrast";
-			editorTemplate  -label "Pivot" -addControl "contrastPivot";
-			editorTemplate  -label "Soft clip" -addControl "contrastSoftClip";
+			editorTemplate  -label "Pivot" -addControl "RMPcontrastPivot";
 		editorTemplate -endLayout;
 		editorTemplate -beginLayout "Bias and gain" -collapse 0;
-			editorTemplate	-addControl "bias";
-			editorTemplate	-addControl "gain";
+			editorTemplate	-label "bias" -addControl "RMPbias";
+			editorTemplate	-label "gain" -addControl "RMPgain";
 		editorTemplate -endLayout;
-		editorTemplate  -label "Output min" -addControl "outputMin";
-		editorTemplate  -label "Output max" -addControl "outputMax";
+		editorTemplate  -label "Output min" -addControl "RMPoutputMin";
+		editorTemplate  -label "Output max" -addControl "RMPoutputMax";
 		editorTemplate -beginLayout "Clamp";
-			editorTemplate  -label "Enable" -addControl "clampEnable";
+			editorTemplate  -label "Enable" -addControl "RMPclampEnable";
 			editorTemplate -addControl "threshold";
-			editorTemplate  -label "Min" -addControl "clampMin";
-			editorTemplate  -label "Max" -addControl "clampMax";
+			editorTemplate  -label "Min" -addControl "RMPclampMin";
+			editorTemplate  -label "Max" -addControl "RMPclampMax";
 		editorTemplate -endLayout;
 	editorTemplate -endLayout;
 }
