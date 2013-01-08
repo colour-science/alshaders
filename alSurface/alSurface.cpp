@@ -463,7 +463,7 @@ shader_evaluate
 		transmissionRoughness *= powf(transmissionRoughnessDepthScale, sg->Rr_refr);
 	}
 
-	if ( sg->Rr_diff > 0 || sg->Rr_gloss > 1 || sssMix < 0.01f || !do_diffuse )
+	if (sg->Rr_diff > 0 || sg->Rr_gloss > 1 || sssMix < 0.01f)
 	{
 		do_sss = false;
 		sssMix = 0.0f;
