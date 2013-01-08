@@ -19,7 +19,7 @@ global proc alRemapControls(string $n)
 		editorTemplate -beginLayout "Bias and gain" -collapse 0;
 			editorTemplate	-addControl "bias";
 			editorTemplate	-addControl "gain";
-		editorTemplate -endLayoutl
+		editorTemplate -endLayout;
 		editorTemplate  -label "Output min" -addControl "outputMin";
 		editorTemplate  -label "Output max" -addControl "outputMax";
 		editorTemplate -beginLayout "Clamp";
