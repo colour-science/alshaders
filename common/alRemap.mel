@@ -11,9 +11,15 @@ global proc alRemapControls(string $n)
 	editorTemplate -beginLayout "Remap";
 		editorTemplate  -label "Input min" -addControl "inputMin";
 		editorTemplate  -label "Input max" -addControl "inputMax";
-		editorTemplate	-addControl "contrast";
-		editorTemplate  -label "Pivot" -addControl "contrastPivot";
-		editorTemplate  -label "Soft clip" -addControl "contrastSoftClip";
+		editorTemplate -beginLayout "Contrast" -collapse 0;
+			editorTemplate	-addControl "contrast";
+			editorTemplate  -label "Pivot" -addControl "contrastPivot";
+			editorTemplate  -label "Soft clip" -addControl "contrastSoftClip";
+		editorTemplate -endLayout;
+		editorTemplate -beginLayout "Bias and gain" -collapse 0;
+			editorTemplate	-addControl "bias";
+			editorTemplate	-addControl "gain";
+		editorTemplate -endLayoutl
 		editorTemplate  -label "Output min" -addControl "outputMin";
 		editorTemplate  -label "Output max" -addControl "outputMax";
 		editorTemplate -beginLayout "Clamp";

@@ -342,6 +342,26 @@ inline T contrast(T input, float contrast, float pivot, float softClip)
 	return result * input;
 }
 
+inline AtFloat bias(AtFloat f, AtFloat b)
+{
+	if (b > 0.0f) return powf(f, logf(b)/logf(0.5f));
+	else return 0.0f;
+}
+
+inline AtFloat biasandgain(AtFloat f, AtFloat b, AtFloat g)
+{
+	if (b != 0.5f)
+	{
+		f = bias(f, 0.5f);
+	}
+	if (g != 0.5f)
+	{
+		if (f < 0.5f) f = 0.5f * bias(2.0f*f, 1.0f-g);
+		else f = 2.0f - bias(2.0f-2.0f*f, 1.0f-g);
+	}
+	return f;
+}
+
 // Adapted from OSL. See copyright notice above.
 inline AtRGB rgb2hsv (AtRGB rgb)
 {

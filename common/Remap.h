@@ -9,6 +9,8 @@
 	p_contrast,					\
 	p_contrastPivot,			\
 	p_contrastSoftClip,			\
+	p_biasVal,						\
+	p_gainVal,						\
 	p_outputMin,				\
 	p_outputMax,				\
 	p_clampEnable,				\
@@ -22,6 +24,8 @@
 	AiParameterFLT("contrast", 1.0f);			\
 	AiParameterFLT("contrastPivot", 0.5f);		\
 	AiParameterFLT("contrastSoftClip", 0.0f);	\
+	AiParameterFLT("bias", 0.5f);				\
+	AiParameterFLT("gain", 0.5f);				\
 	AiParameterFLT("outputMin", 0.0f);			\
 	AiParameterFLT("outputMax", 1.0f);			\
 	AiParameterBOOL("clampEnable", false);		\
@@ -32,13 +36,15 @@
 struct RemapFloat
 {
 public:
-	RemapFloat(AtFloat imn, AtFloat imx, AtFloat ct, AtFloat ctp, AtFloat ctsc, AtFloat omn, AtFloat omx,
+	RemapFloat(AtFloat imn, AtFloat imx, AtFloat ct, AtFloat ctp, AtFloat ctsc, AtFloat bs, AtFloat gn, AtFloat omn, AtFloat omx,
 				bool ce, bool t, AtFloat cmn, AtFloat cmx) :
 		inputMin(imn),
 		inputMax(imx),
 		contrastVal(ct),
 		contrastPivot(ctp),
 		contrastSoftClip(ctsc),
+		bias(bs),
+		gain(gn),
 		outputMin(omn),
 		outputMax(omx),
 		clampEnable(ce),
@@ -51,6 +57,7 @@ public:
 	{
 		AtFloat f = (input-inputMin)/(inputMax-inputMin);
 		f = contrast(f, contrastVal, contrastPivot, contrastSoftClip);
+		f = biasandgain(f, bias, gain);
 		f = lerp(outputMin, outputMax, f);
 		if (clampEnable)
 		{
@@ -69,6 +76,8 @@ public:
 	AtFloat contrastVal;
 	AtFloat contrastPivot;
 	AtFloat contrastSoftClip;
+	AtFloat bias;
+	AtFloat gain;
 	AtFloat outputMin;
 	AtFloat outputMax;
 	bool clampEnable;
@@ -84,6 +93,8 @@ public:
 		AiShaderEvalParamFlt(p_contrast),			\
 		AiShaderEvalParamFlt(p_contrastPivot),		\
 		AiShaderEvalParamFlt(p_contrastSoftClip),	\
+		AiShaderEvalParamFlt(p_biasVal),				\
+		AiShaderEvalParamFlt(p_gainVal),				\
 		AiShaderEvalParamFlt(p_outputMin),			\
 		AiShaderEvalParamFlt(p_outputMax),			\
 		AiShaderEvalParamBool(p_clampEnable),		\
