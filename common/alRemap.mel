@@ -12,7 +12,7 @@ global proc alRemapControls(string $n)
 		editorTemplate  -label "Input min" -addControl "RMPinputMin";
 		editorTemplate  -label "Input max" -addControl "RMPinputMax";
 		editorTemplate -beginLayout "Contrast" -collapse 0;
-			editorTemplate	-addControl "contrast";
+			editorTemplate	label "Contrast" -addControl "RMPcontrast";
 			editorTemplate  -label "Pivot" -addControl "RMPcontrastPivot";
 		editorTemplate -endLayout;
 		editorTemplate -beginLayout "Bias and gain" -collapse 0;
@@ -23,7 +23,7 @@ global proc alRemapControls(string $n)
 		editorTemplate  -label "Output max" -addControl "RMPoutputMax";
 		editorTemplate -beginLayout "Clamp";
 			editorTemplate  -label "Enable" -addControl "RMPclampEnable";
-			editorTemplate -addControl "threshold";
+			editorTemplate  -label "Expand" -addControl "RMPthreshold";
 			editorTemplate  -label "Min" -addControl "RMPclampMin";
 			editorTemplate  -label "Max" -addControl "RMPclampMax";
 		editorTemplate -endLayout;
