@@ -8,7 +8,7 @@ struct BrdfData_wrap
    float eta;
    AtVector V;
    AtVector N;
-   mutable float kt;
+   mutable float kr;
 };
 
 
@@ -38,9 +38,8 @@ AtRGB AiCookTorranceMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    AtVector H;
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
-   float kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
-   brdfw->kt = 1.0f - kr;
-   return kr *  AiCookTorranceMISBRDF(brdfw->brdf_data, indir);
+   brdfw->kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
+   return brdfw->kr *  AiCookTorranceMISBRDF(brdfw->brdf_data, indir);
 }
 
 AtFloat AiCookTorranceMISPDF_wrap( const void* brdf_data, const AtVector* indir )

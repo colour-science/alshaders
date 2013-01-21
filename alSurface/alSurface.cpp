@@ -504,7 +504,7 @@ shader_evaluate
 		brdfw.eta = eta;
 		brdfw.V = wo;
 		brdfw.N = sg->N;
-		brdfw.kt = 1.0f;
+		brdfw.kr = 0.0f;
 
 		void* mis2;
 		mis2 = GlossyMISCreateData(sg,&U,&V,roughness2,roughness2);
@@ -546,7 +546,7 @@ shader_evaluate
 				{
 					LdiffuseDirect =
 					AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-											* brdfw.kt;
+											* (1.0f - brdfw.kr*maxh(specular1Color));
 					if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
 					{
 						lightGroupDiffuse[lightGroup] += LdiffuseDirect;
@@ -557,7 +557,7 @@ shader_evaluate
 				{
 					Lspecular2Direct =
 					AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-											* brdfw.kt;
+											* (1.0f - brdfw.kr*maxh(specular1Color));
 					if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
 					{
 						lightGroupSpecular2[lightGroup] += Lspecular2Direct;
@@ -585,13 +585,13 @@ shader_evaluate
 				{
 					result_diffuseDirect +=
 					AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap)
-											* brdfw.kt;
+											* (1.0f - brdfw.kr*maxh(specular1Color));
 				}
 				if (do_glossy2)
 				{
 					result_glossy2Direct +=
 					AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-											* brdfw.kt;
+											* (1.0f - brdfw.kr*maxh(specular1Color));
 				}
 			}
 		}
@@ -637,7 +637,7 @@ shader_evaluate
 			}
 			if (count) result_glossyIndirect /= float(count);
 			if (count) kti /= float(count);
-			kti = 1.0f - kti;
+			kti = 1.0f - kti*maxh(specular1Color);
 			result_glossyIndirect *= specular1Color;
 		} // if (do_glossy)
 
