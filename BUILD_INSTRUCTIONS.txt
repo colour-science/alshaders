@@ -1,7 +1,16 @@
+BINARY DISTRIBUTION
+-------------------
+Simply copy the files from the subdirectories to the relevant subdirectories of your MtoA installation (or somewhere in
+the appropriate paths):
+- libraries (*.dylib, *.so, *.dll) and *.mtd files go in 'shaders'
+- *.mel scripts go in 'scripts'
+
+SOURCE DISTRIBUTION
+-------------------
 This project uses CMake >= 2.8 to build. It has been tested on Mac OS X 10.7 only. It *should* work without modification
 on Linux. You're on your own with Windows.
 
-In order to set it up to build in your environment, edit the top-level CMakeLists.txt and set ARNOLD_ROOT to point to 
+In order to set it up to build in your environment, edit the top-level CMakeLists.txt (or create a local.cmake file) and set ARNOLD_ROOT to point to 
 the root of your Arnold installation (in order to find the include files and libai.so), then set MTOA_ROOT to point to
 the root of your MtoA installation if you want to install the shaders and AEtemplates there. If you want to install the
 shaders and AEtemplates somewhere else, set MTOA_SHADERS and MTOA_SCRIPTS appropriately.
