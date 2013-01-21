@@ -132,25 +132,34 @@ shader_evaluate
 		}
 		else
 		{
-			AtRGB tmp[NUM_AOVs];
-			AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
-			for (int i=0; i < NUM_AOVs; ++i)
+			if (sg->Rt & AI_RAY_CAMERA) // handle aovs
 			{
-				if (!AiAOVGetRGB(sg, AOVs[i], tmp[i]))
+				AtRGB tmp[NUM_AOVs];
+				AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
+				for (int i=0; i < NUM_AOVs; ++i)
 				{
-					tmp[i] = AI_RGB_BLACK;
+					if (!AiAOVGetRGB(sg, AOVs[i], tmp[i]))
+					{
+						tmp[i] = AI_RGB_BLACK;
+					}
+				}
+				AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
+				result = lerp(layer1, layer2, mix);
+				for (int i=0; i < NUM_AOVs; ++i)
+				{
+					AtRGB tmp2;
+					if (!AiAOVGetRGB(sg, AOVs[i], tmp2))
+					{
+						tmp2 = AI_RGB_BLACK;
+					}
+					AiAOVSetRGB(sg, AOVs[i], lerp(tmp[i], tmp2, mix));
 				}
 			}
-			AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
-			result = lerp(layer1, layer2, mix);
-			for (int i=0; i < NUM_AOVs; ++i)
+			else // just layer the results
 			{
-				AtRGB tmp2;
-				if (!AiAOVGetRGB(sg, AOVs[i], tmp2))
-				{
-					tmp2 = AI_RGB_BLACK;
-				}
-				AiAOVSetRGB(sg, AOVs[i], lerp(tmp[i], tmp2, mix));
+				AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
+				AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
+				result = lerp(layer1, layer2, mix);
 			}
 		}
 	}
