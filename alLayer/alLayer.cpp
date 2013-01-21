@@ -57,9 +57,53 @@ node_finish
 
 }
 
+#define NUM_AOVs 20
+static const char* AOVs[NUM_AOVs] = {
+	"diffuseDirect",
+	"diffuseIndirect",
+	"specularDirect",
+	"specularIndirect",
+	"specular2Direct",
+	"specular2Indirect",
+	"singleScatter",
+	"multiScatter",
+	"transmission",
+	"emission",
+	"uv",
+	"depth",
+	"lightGroup1",
+	"lightGroup2",
+	"lightGroup3",
+	"lightGroup4",
+	"lightGroup5",
+	"lightGroup6",
+	"lightGroup7",
+	"lightGroup8"
+};
+
+
 node_update
 {
-
+	AiAOVRegister("diffuseDirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("diffuseIndirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("specularDirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("specularIndirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("specular2Direct", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("specular2Indirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("singleScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("multiScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("transmission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("emission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("uv", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("depth", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup1", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup3", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup4", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup5", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("lightGroup8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 }
 
 shader_evaluate
@@ -88,9 +132,26 @@ shader_evaluate
 		}
 		else
 		{
+			AtRGB tmp[NUM_AOVs];
 			AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
+			for (int i=0; i < NUM_AOVs; ++i)
+			{
+				if (!AiAOVGetRGB(sg, AOVs[i], tmp[i]))
+				{
+					tmp[i] = AI_RGB_BLACK;
+				}
+			}
 			AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
 			result = lerp(layer1, layer2, mix);
+			for (int i=0; i < NUM_AOVs; ++i)
+			{
+				AtRGB tmp2;
+				if (!AiAOVGetRGB(sg, AOVs[i], tmp2))
+				{
+					tmp2 = AI_RGB_BLACK;
+				}
+				AiAOVSetRGB(sg, AOVs[i], lerp(tmp[i], tmp2, mix));
+			}
 		}
 	}
 
