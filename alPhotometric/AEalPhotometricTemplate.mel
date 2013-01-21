@@ -1,25 +1,32 @@
+global string $alIESfilenameTextFieldAttr;
+
 global proc alFileDialogPopup(string $attr)
 {
+	global string $alIESfilenameTextFieldAttr;
 	string $fn[] = `fileDialog2 -ds 1 -ff "*.ies *.IES" -fm 1`;
 	if ($fn[0] != "")
 	{
-		setAttr -type "string" $attr $fn[0];
+		setAttr -type "string" $alIESfilenameTextFieldAttr $fn[0];
 		textField  -e -fileName `getAttr $attr` "alIESfilenameTextField";
 	}
 }
 
 global proc alIESFileBrowserCreate(string $attr)
 {
+	global string $alIESfilenameTextFieldAttr;
+	$alIESfilenameTextFieldAttr = $attr;
 	rowLayout -nc 3;
 		text -l "IES File";
 		textField  -fileName `getAttr $attr` "alIESfilenameTextField";
 		symbolButton -image "navButtonBrowse.xpm" -c ("alFileDialogPopup(\"" + $attr + "\")");  
-  		setParent ..;    
+  	setParent ..;    
 }
 
 global proc alIESFileBrowserReplace(string $attr)
 {
-	textField  -e -fileName `getAttr $attr` "alIESfilenameTextField";  
+	global string $alIESfilenameTextFieldAttr;
+	$alIESfilenameTextFieldAttr = $attr;
+	textField -e -fileName `getAttr $attr` "alIESfilenameTextField";  
 }
 
 global proc AEalPhotometricTemplate(string $n)
