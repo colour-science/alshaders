@@ -331,12 +331,12 @@ inline AtFloat biasandgain(AtFloat f, AtFloat b, AtFloat g)
 {
 	if (b != 0.5f)
 	{
-		f = bias(f, 0.5f);
+		f = bias(f, b);
 	}
 	if (g != 0.5f)
 	{
 		if (f < 0.5f) f = 0.5f * bias(2.0f*f, 1.0f-g);
-		else f = 2.0f - bias(2.0f-2.0f*f, 1.0f-g);
+		else f = 1.0f - bias(2.0f - 2.0f*f, 1.0f-g)*0.5f;
 	}
 	return f;
 }
