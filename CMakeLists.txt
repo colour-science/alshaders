@@ -40,6 +40,7 @@ set(SUBDIRECTORIES
 		alCurvature
 		alBlackbody
 		alPhotometric
+		alInputVector
 		common
 )
 
