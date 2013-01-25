@@ -30,13 +30,19 @@ global proc AEalSurfaceTemplate( string $n )
 {
 	editorTemplate -beginScrollLayout;
 		AEswatchDisplay $n;
-	
-	editorTemplate -beginLayout "Reflection" -collapse 0;
-		
+			
 		editorTemplate -beginLayout "Diffuse" -collapse 0;
 			editorTemplate -label "Strength" -addControl "diffuseStrength";
 			editorTemplate  -label "Color" -addControl "diffuseColor";
 			editorTemplate  -label "Roughness" -addControl "diffuseRoughness";
+			
+			editorTemplate -beginLayout "Subsurface scattering";
+				editorTemplate  -label "Mix" -addControl "sssMix";
+				editorTemplate  -label "Distance" -addControl "sssRadius";
+				editorTemplate  -label "Color" -addControl "sssRadiusColor";
+				editorTemplate -label "Density scale" -addControl "sssDensityScale" ;
+			editorTemplate -endLayout;
+			
 			editorTemplate -beginLayout "Advanced";
 				editorTemplate -label "Extra samples" -addControl "diffuseExtraSamples";
 				editorTemplate -label "Enable caustics" -addControl "diffuseEnableCaustics";
@@ -64,11 +70,8 @@ global proc AEalSurfaceTemplate( string $n )
 				editorTemplate -label "Extra samples" -addControl "specular2ExtraSamples";
 			editorTemplate -endLayout;
 		editorTemplate -endLayout;
-		
-	editorTemplate -endLayout; // endLayout Reflection
-	
+			
 	editorTemplate -beginLayout "Transmission";
-		editorTemplate -beginLayout "Specular" -collapse 1;
 			editorTemplate  -label "Strength" -addControl "transmissionStrength" ;
 			editorTemplate -label "Color" -addControl "transmissionColor";
 			editorTemplate -label "Link to spec" -addControl "transmissionLinkToSpecular1" 
@@ -98,14 +101,6 @@ global proc AEalSurfaceTemplate( string $n )
 				editorTemplate -label "Extra samples" -addControl "transmissionExtraSamples";
 				editorTemplate -label "Enable internal reflections" -addControl "transmissionEnableCaustics";
 			editorTemplate -endLayout;
-		editorTemplate -endLayout;
-		
-		editorTemplate -beginLayout "Diffusion";
-			editorTemplate  -label "Mix" -addControl "sssMix";
-			editorTemplate  -label "Distance" -addControl "sssRadius";
-			editorTemplate  -label "Color" -addControl "sssRadiusColor";
-			editorTemplate -label "Density scale" -addControl "sssDensityScale" ;
-		editorTemplate -endLayout;
 		
 	editorTemplate -endLayout; // endLayout Transmission
 	
