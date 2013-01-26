@@ -41,6 +41,7 @@ set(SUBDIRECTORIES
 		alBlackbody
 		alPhotometric
 		alInputVector
+		alHair
 		common
 )
 
