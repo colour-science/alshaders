@@ -148,6 +148,16 @@ inline AtFloat sphericalPhi(const AtVector &v)
     return (p < 0.f) ? p + 2.f*AI_PI : p;
 }
 
+inline AtFloat sphericalTheta(const AtVector& w, const AtVector& U)
+{
+	return acosf(AiV3Dot(U, w));
+}
+
+inline AtFloat sphericalPhi(const AtVector& w, const AtVector& V, const AtVector& W)
+{
+	return atan2f(AiV3Dot(w, V), AiV3Dot(w, W));
+}
+
 inline float maxh(const AtRGB& c)
 {
    return std::max(std::max(c.r, c.g), c.b);
