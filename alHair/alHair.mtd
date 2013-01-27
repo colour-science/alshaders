@@ -1,0 +1,4 @@
+[node alHair]
+	desc					STRING		""
+	maya.name				STRING		"alHair"
+	maya.classification		STRING		"shader/surface"
