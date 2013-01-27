@@ -7,18 +7,21 @@
 struct ShaderData
 {
 	ShaderData()
-	: sampler_R(NULL), sampler_TT(NULL), sampler_TRT(NULL), sampler_g(NULL)
+	: sampler_diffuse(NULL), sampler_R(NULL), sampler_TT(NULL), sampler_TRT(NULL), sampler_g(NULL)
 	{}
 	~ShaderData()
 	{
+		AiSamplerDestroy(sampler_diffuse);
 		AiSamplerDestroy(sampler_R);
 		AiSamplerDestroy(sampler_TT);
 		AiSamplerDestroy(sampler_TRT);
 		AiSamplerDestroy(sampler_g);
 	}
 
-	void update(int glossy_samples)
+	void update(int diffuse_samples, int glossy_samples)
 	{
+		AiSamplerDestroy(sampler_diffuse);
+		sampler_diffuse = AiSampler(diffuse_samples, 2);
 		AiSamplerDestroy(sampler_R);
 		sampler_R = AiSampler(glossy_samples, 2);
 		AiSamplerDestroy(sampler_TT);
@@ -29,6 +32,7 @@ struct ShaderData
 		sampler_g = AiSampler(glossy_samples, 2);
 	}
 
+	AtSampler* sampler_diffuse;
 	AtSampler* sampler_R;
 	AtSampler* sampler_TT;
 	AtSampler* sampler_TRT;
@@ -40,6 +44,8 @@ AI_SHADER_NODE_EXPORT_METHODS(alHair)
 enum alHairParams
 {
 	p_ior,
+	p_diffuseStrength,
+	p_diffuseColor,
 	p_specularShift,
 	p_specularWidth,
 	p_specular1Strength,
@@ -57,6 +63,8 @@ enum alHairParams
 node_parameters
 {
 	AiParameterFlt("ior", 1.55f);
+	AiParameterFlt("diffuseStrength", 1.0f);
+	AiParameterRGB("diffuseColor", 0.31f, 0.08f, 0.005f);
 	AiParameterFlt("specularShift", 7.0f);
 	AiParameterFlt("specularWidth", 7.0f);
 	AiParameterFlt("specular1Strength", 1.0f);
@@ -101,8 +109,9 @@ node_update
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 	AtNode *options   = AiUniverseGetOptions();
+	int diffuse_samples = AiNodeGetInt(options, "GI_diffuse_samples");
 	int glossy_samples = AiNodeGetInt(options, "GI_glossy_samples");
-	data->update(glossy_samples);
+	data->update(diffuse_samples, glossy_samples);
 
 	AiAOVRegister("specularDirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("specularIndirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
@@ -114,15 +123,17 @@ AtFloat g(AtFloat beta, AtFloat alpha, AtFloat theta_h)
 	return expf(-(n*n)/(2.0f*beta*beta));
 }
 
-// returns theta
+// returns theta. See section 3.2.1
 AtFloat longitudinalSample(AtFloat u, AtFloat theta_r, AtFloat alpha, AtFloat beta)
 {
 	AtFloat A = atanf((AI_PI*0.25f + theta_r*0.5f - alpha) / beta);
 	AtFloat B = atanf((-AI_PI*0.25f + theta_r*0.5f - alpha) / beta);
-	return 2.0f*beta*tanf(u*(A-B)+B) + 2.0f*alpha - theta_r;
+	AtFloat theta_i = 2.0f*beta*tanf(u*(A-B)+B) + 2.0f*alpha - theta_r;
+	// Clamp theta_i rather than discarding a sample (see section 3.3)
+	return clamp(theta_i, -0.4999f*AI_PI, 0.4999f*AI_PI);
 }
 
-// returns p(theta)
+// returns p(theta). See section 3.2.1
 AtFloat longitudinalPdf(AtFloat theta_i, AtFloat theta_r, AtFloat alpha, AtFloat beta)
 {
 	AtFloat A = atanf((AI_PI*0.25f + theta_r*0.5f - alpha) / beta);
@@ -135,11 +146,13 @@ AtFloat longitudinalPdf(AtFloat theta_i, AtFloat theta_r, AtFloat alpha, AtFloat
 
 // returns phi
 // get phi_i = phi_r - phi
+// see section 3.2.2
 AtFloat NrSample(AtFloat u)
 {
 	return 2.0f * asinf(2.0f*u - 1);
 }
 
+// see section 3.2.2
 AtFloat NrPdf(AtFloat phi)
 {
 	return cosf(phi*0.5f)*0.25f;
@@ -147,18 +160,21 @@ AtFloat NrPdf(AtFloat phi)
 
 // returns phi
 // get phi_i = phi_r - phi
+// see section 3.2.2
 AtFloat NttSample(AtFloat u, AtFloat gamma_TT)
 {
 	AtFloat C_TT = 2.0f*atanf(AI_PI/gamma_TT);
 	return gamma_TT*tanf(C_TT*(u - 0.5f)) + AI_PI;
 }
 
+// see section 3.2.2
 AtFloat NttPdf(AtFloat phi, AtFloat gamma_TT)
 {
 	AtFloat C_TT = 2.0f*atanf(AI_PI/gamma_TT);
 	return (gamma_TT/((phi - AI_PI)*(phi - AI_PI) + gamma_TT*gamma_TT)) / C_TT;
 }
 
+// see section 3.2.2
 AtFloat NgSample(AtFloat u, AtFloat gamma_g, AtFloat phi_g)
 {
 	AtFloat sign = 1.0f;
@@ -178,6 +194,7 @@ AtFloat NgSample(AtFloat u, AtFloat gamma_g, AtFloat phi_g)
 	return sign * (gamma_g*tanf(u*(Cg - Dg) + Dg) + phi_g);
 }
 
+// see section 3.2.2
 AtFloat NgPdf(AtFloat phi, AtFloat gamma_g, AtFloat phi_g)
 {
 	AtFloat Cg = atanf((AI_PIOVER2 - phi_g)/gamma_g);
@@ -191,6 +208,7 @@ shader_evaluate
 {
 	// Initialize result temporaries
 	AtRGB result_diffuse_direct = AI_RGB_BLACK;
+	AtRGB result_diffuse_indirect = AI_RGB_BLACK;
 	AtRGB result_R_direct = AI_RGB_BLACK;
 	AtRGB result_R_indirect = AI_RGB_BLACK;
 	AtRGB result_TT_direct = AI_RGB_BLACK;
@@ -239,56 +257,74 @@ shader_evaluate
 	AtFloat gamma_g = AiShaderEvalParamFlt(p_glintRolloff) * AI_DTOR;
 	AtFloat phi_g = AiShaderEvalParamFlt(p_glintSeparation) * AI_DTOR;
 
+	AtRGB diffuseColor = AiShaderEvalParamRGB(p_diffuseColor) * AiShaderEvalParamFlt(p_diffuseStrength);
 	AtRGB specular1Color = AiShaderEvalParamRGB(p_specular1Color) * AiShaderEvalParamFlt(p_specular1Strength);
 	AtRGB specular2Color = AiShaderEvalParamRGB(p_specular2Color) * AiShaderEvalParamFlt(p_specular2Strength);
 	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
 	AtFloat glintStrength = AiShaderEvalParamFlt(p_glintStrength);
 
+	bool do_glossy = true;
+	if (sg->Rr_diff > 0)
+	{
+		do_glossy = false;
+	}
+
 	// Direct lighting loop
 	AiLightsPrepare(sg);
 	while (AiLightsGetSample(sg))
 	{
-		// Get angle measures. See Section 3 in Ou et. al.
-		AtFloat theta_i = AI_PIOVER2 - sphericalTheta(sg->Ld, U);
-		AtFloat cos_theta_i = fabsf(cosf(theta_i));
-		AtFloat phi_i = sphericalPhi(sg->Ld, V, W);
-		AtFloat phi = phi_r - phi_i;
-		if (phi < -AI_PI) phi += AI_PITIMES2;
-		if (phi > AI_PI) phi -= AI_PITIMES2;
-		AtFloat theta_h = (theta_r + theta_i)*0.5f;
-		AtFloat theta_d = (theta_r - theta_i)*0.5f;
-		AtFloat cos_theta_d = cosf(theta_d);
-		AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
+		// Diffuse
+		AtFloat tl = AiV3Dot(sg->Ld, U);
+		result_diffuse_direct += sqrtf(1.0f - tl*tl) * sg->Li * sg->we * AI_ONEOVER2PI;
 
-		// fresnel
-		AtFloat kr = fresnel(cos_theta_i, eta);
+		if (do_glossy)
+		{
+			// Get angle measures. See Section 3 in Ou et. al.
+			AtFloat theta_i = AI_PIOVER2 - sphericalTheta(sg->Ld, U);
+			AtFloat cos_theta_i = fabsf(cosf(theta_i));
+			AtFloat phi_i = sphericalPhi(sg->Ld, V, W);
+			AtFloat phi = phi_r - phi_i;
+			if (phi < -AI_PI) phi += AI_PITIMES2;
+			if (phi > AI_PI) phi -= AI_PITIMES2;
+			AtFloat theta_h = (theta_r + theta_i)*0.5f;
+			AtFloat theta_d = (theta_r - theta_i)*0.5f;
+			AtFloat cos_theta_d = cosf(theta_d);
+			AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
 
-		// Calculate longitudinal and azimuthal functions. See Section 3.1 in Ou et. al.
-		AtFloat Mr = g(beta_R, alpha_R, theta_h);
-		AtFloat Nr = cosf(phi*0.5f);
+			// Precalculate invariants across all lobes
+			AtRGB L = sg->Li * sg->we * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
 
-		AtFloat Mtt = g(beta_TT, alpha_TT, theta_h);
-		AtFloat Ntt = g(gamma_TT, 0.0f, AI_PI-phi);
+			if (maxh(L) > IMPORTANCE_EPS)
+			{
+				// fresnel
+				AtFloat kr = fresnel(cos_theta_i, eta);
 
-		AtFloat Mtrt = g(beta_TRT, alpha_TRT, theta_h);
-		AtFloat Ntrt = cosf(phi*0.5f);
+				// Calculate longitudinal and azimuthal functions. See Section 3.1 in Ou et. al.
+				AtFloat Mr = g(beta_R, alpha_R, theta_h);
+				AtFloat Nr = cosf(phi*0.5f);
 
-		AtFloat phi_o = phi + phi_offset;
-		if (phi_o < -AI_PI) phi_o += AI_PITIMES2;
-		if (phi_o > AI_PI) phi_o -= AI_PITIMES2;
-		AtFloat Ng = g(gamma_g, 0.0f, fabsf(phi_o) - phi_g);
+				AtFloat Mtt = g(beta_TT, alpha_TT, theta_h);
+				AtFloat Ntt = g(gamma_TT, 0.0f, AI_PI-phi);
 
-		// Precalculate invariants across all lobes
-		AtRGB L = sg->Li * sg->we * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
+				AtFloat Mtrt = g(beta_TRT, alpha_TRT, theta_h);
+				AtFloat Ntrt = cosf(phi*0.5f);
 
-		// Sum result temporaries for each lobe
-		result_R_direct += L * Mr * Nr * kr;
-		result_TT_direct += L * Mtt * Ntt * (1.0f-kr);
-		result_TRT_direct += L * Mtrt * Ntrt * kr;
-		result_TRTg_direct += L * Mtrt * Ng * kr;
+				AtFloat phi_o = phi + phi_offset;
+				if (phi_o < -AI_PI) phi_o += AI_PITIMES2;
+				if (phi_o > AI_PI) phi_o -= AI_PITIMES2;
+				AtFloat Ng = g(gamma_g, 0.0f, fabsf(phi_o) - phi_g);
+
+				// Sum result temporaries for each lobe
+				result_R_direct += L * Mr * Nr * kr;
+				result_TT_direct += L * Mtt * Ntt * (1.0f-kr);
+				result_TRT_direct += L * Mtrt * Ntrt * kr;
+				result_TRTg_direct += L * Mtrt * Ng * kr;
+			}
+		}
 	}
 
 	// Multiply by user-defined reflectance
+	result_diffuse_direct *= diffuseColor;
 	result_R_direct *= specular1Color;
 	result_TT_direct *= transmissionColor;
 	result_TRT_direct *= specular2Color;
@@ -301,142 +337,175 @@ shader_evaluate
 	AtFloat pdf;
 	AtVector wi;
 	AtScrSample scrs;
-	// R
+	// Diffuse
 	{
-		AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_R, sg);
-		AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
+		AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_diffuse, sg);
+		AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
 		AtInt count=0;
 		while(AiSamplerGetSample(sampit, samples))
 		{
-			theta_i = longitudinalSample(samples[0], theta_r, alpha_R, beta_R);
-			phi = NrSample(samples[1]);
-			phi_i = phi_r - phi;
-			pdf = longitudinalPdf(theta_i, theta_r, alpha_R, beta_R) * NrPdf(phi);
-
-			AtFloat theta_h = (theta_r + theta_i)*0.5f;
-
-			sphericalDirection(theta_i, phi_i, V, W, U, wi);
+			wi = uniformSampleSphere(samples[0], samples[1]);
 			wi_ray.dir = wi;
-
 			AiTrace(&wi_ray, &scrs);
-			AtFloat Mr = g(beta_R, alpha_R, theta_h);
-			AtFloat Nr = cosf(phi*0.5f);
-			AtFloat theta_d = (theta_r - theta_i)*0.5f;
-			AtFloat cos_theta_d = cosf(theta_d);
-			AtFloat cos_theta_i = cosf(theta_i);
-			AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
-			AtFloat kr = fresnel(cos_theta_i, eta);
-
-			result_R_indirect += scrs.color*Mr*Nr*kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI / pdf;
+			AtFloat tl = AiV3Dot(wi, U);
+			AtFloat kr = fresnel(fabsf(tl), eta);
+			result_diffuse_indirect += sqrtf(1.0f - tl*tl) * scrs.color * AI_ONEOVER2PI;
 		}
-		if (count) result_R_indirect /= AtFloat(count);
-		result_R_indirect *= specular1Color;
+		if (count) result_diffuse_indirect /= AtFloat(count);
+		result_diffuse_indirect *= diffuseColor;
 	}
-	// TT
+
+	if (do_glossy)
 	{
-		AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_TT, sg);
-		AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
-		AtInt count=0;
-		while(AiSamplerGetSample(sampit, samples))
+		// R
+		if (maxh(specular1Color) > IMPORTANCE_EPS)
 		{
-			theta_i = longitudinalSample(samples[0], theta_r, alpha_TT, beta_TT);
-			phi = NttSample(samples[1], gamma_TT);
-			phi_i = phi_r - phi;
-			pdf = longitudinalPdf(theta_i, theta_r, alpha_TT, beta_TT) * NttPdf(phi, gamma_TT);
+			AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_R, sg);
+			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
+			AtInt count=0;
+			while(AiSamplerGetSample(sampit, samples))
+			{
+				theta_i = longitudinalSample(samples[0], theta_r, alpha_R, beta_R);
+				phi = NrSample(samples[1]);
+				phi_i = phi_r - phi;
+				pdf = longitudinalPdf(theta_i, theta_r, alpha_R, beta_R) * NrPdf(phi);
 
-			AtFloat theta_h = (theta_r + theta_i)*0.5f;
+				AtFloat theta_h = (theta_r + theta_i)*0.5f;
 
-			sphericalDirection(theta_i, phi_i, V, W, U, wi);
-			wi_ray.dir = wi;
+				sphericalDirection(theta_i, phi_i, V, W, U, wi);
+				wi_ray.dir = wi;
 
-			AiTrace(&wi_ray, &scrs);
-			AtFloat Mtt = g(beta_TT, alpha_TT, theta_h);
-			AtFloat Ntt = g(gamma_TT, 0.0f, AI_PI-phi);
-			AtFloat theta_d = (theta_r - theta_i)*0.5f;
-			AtFloat cos_theta_d = cosf(theta_d);
-			AtFloat cos_theta_i = cosf(theta_i);
-			AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
-			AtFloat kr = fresnel(fabsf(cos_theta_i), eta);
+				AiTrace(&wi_ray, &scrs);
+				AtFloat Mr = g(beta_R, alpha_R, theta_h);
+				AtFloat Nr = cosf(phi*0.5f);
+				AtFloat theta_d = (theta_r - theta_i)*0.5f;
+				AtFloat cos_theta_d = cosf(theta_d);
+				AtFloat cos_theta_i = cosf(theta_i);
+				AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
+				AtFloat kr = fresnel(cos_theta_i, eta);
 
-			result_TT_indirect += scrs.color*Mtt*Ntt*(1.0f-kr)*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI / pdf;
+				result_R_indirect += scrs.color*Mr*Nr*kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI / pdf;
+			}
+			if (count) result_R_indirect /= AtFloat(count);
+			result_R_indirect *= specular1Color;
 		}
-		if (count) result_TT_indirect /= AtFloat(count);
-		result_TT_indirect *= transmissionColor;
+		// TT
+		if (maxh(transmissionColor) > IMPORTANCE_EPS)
+		{
+			AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_TT, sg);
+			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
+			AtInt count=0;
+			while(AiSamplerGetSample(sampit, samples))
+			{
+				theta_i = longitudinalSample(samples[0], theta_r, alpha_TT, beta_TT);
+				phi = NttSample(samples[1], gamma_TT);
+				phi_i = phi_r - phi;
+				pdf = longitudinalPdf(theta_i, theta_r, alpha_TT, beta_TT) * NttPdf(phi, gamma_TT);
+
+				AtFloat theta_h = (theta_r + theta_i)*0.5f;
+
+				sphericalDirection(theta_i, phi_i, V, W, U, wi);
+				wi_ray.dir = wi;
+
+				AiTrace(&wi_ray, &scrs);
+				AtFloat Mtt = g(beta_TT, alpha_TT, theta_h);
+				AtFloat Ntt = g(gamma_TT, 0.0f, AI_PI-phi);
+				AtFloat theta_d = (theta_r - theta_i)*0.5f;
+				AtFloat cos_theta_d = cosf(theta_d);
+				AtFloat cos_theta_i = cosf(theta_i);
+				AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
+				AtFloat kr = fresnel(fabsf(cos_theta_i), eta);
+
+				result_TT_indirect += scrs.color*Mtt*Ntt*(1.0f-kr)*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI / pdf;
+			}
+			if (count) result_TT_indirect /= AtFloat(count);
+			result_TT_indirect *= transmissionColor;
+		}
+		// TRT
+		if (maxh(specular2Color) > IMPORTANCE_EPS)
+		{
+			AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_TRT, sg);
+			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
+			AtInt count=0;
+			while(AiSamplerGetSample(sampit, samples))
+			{
+				theta_i = longitudinalSample(samples[0], theta_r, alpha_TRT, beta_TRT);
+				phi = NrSample(samples[1]);
+				phi_i = phi_r - phi;
+				pdf = longitudinalPdf(theta_i, theta_r, alpha_TRT, beta_TRT) * NrPdf(phi);
+
+				AtFloat theta_h = (theta_r + theta_i)*0.5f;
+
+				sphericalDirection(theta_i, phi_i, V, W, U, wi);
+				wi_ray.dir = wi;
+
+				AiTrace(&wi_ray, &scrs);
+				AtFloat Mtrt = g(beta_TRT, alpha_TRT, theta_h);
+				AtFloat Ntrt = cosf(phi*0.5f);
+				AtFloat theta_d = (theta_r - theta_i)*0.5f;
+				AtFloat cos_theta_d = cosf(theta_d);
+				AtFloat cos_theta_i = cosf(theta_i);
+				AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
+				AtFloat kr = fresnel(fabsf(cos_theta_i), eta);
+
+				result_TRT_indirect += scrs.color*Mtrt*Ntrt*kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI / pdf;
+			}
+			if (count) result_TRT_indirect /= AtFloat(count);
+			result_TRT_indirect *= specular2Color;
+		}
+		// TRTg
+		if (maxh(specular2Color) > IMPORTANCE_EPS)
+		{
+			AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_g, sg);
+			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
+			AtInt count=0;
+			while(AiSamplerGetSample(sampit, samples))
+			{
+				theta_i = longitudinalSample(samples[0], theta_r, alpha_TRT, beta_TRT);
+				phi = NgSample(samples[1], gamma_g, phi_g);
+				phi_i = phi_r - phi;
+				pdf = longitudinalPdf(theta_i, theta_r, alpha_TRT, beta_TRT) * NgPdf(phi, gamma_g, phi_g);
+
+				AtFloat theta_h = (theta_r + theta_i)*0.5f;
+
+				sphericalDirection(theta_i, phi_i, V, W, U, wi);
+				wi_ray.dir = wi;
+
+				AiTrace(&wi_ray, &scrs);
+				AtFloat Mtrt = g(beta_TRT, alpha_TRT, theta_h);
+				AtFloat phi_o = phi + phi_offset;
+				if (phi_o < -AI_PI) phi_o += AI_PITIMES2;
+				if (phi_o > AI_PI) phi_o -= AI_PITIMES2;
+				AtFloat Ng = g(gamma_g, 0.0f, fabsf(phi_o) - phi_g);
+				AtFloat theta_d = (theta_r - theta_i)*0.5f;
+				AtFloat cos_theta_d = cosf(theta_d);
+				AtFloat cos_theta_i = cosf(theta_i);
+				AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
+				AtFloat kr = fresnel(fabsf(cos_theta_i), eta);
+
+				result_TRTg_indirect += scrs.color*Mtrt*Ng*kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI / pdf;
+			}
+			if (count) result_TRTg_indirect /= AtFloat(count);
+			result_TRTg_indirect *= specular2Color * glintStrength;
+		}
 	}
-	// TRT
+
+	if (sg->Rt & AI_RAY_CAMERA)
 	{
-		AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_TRT, sg);
-		AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
-		AtInt count=0;
-		while(AiSamplerGetSample(sampit, samples))
-		{
-			theta_i = longitudinalSample(samples[0], theta_r, alpha_TRT, beta_TRT);
-			phi = NrSample(samples[1]);
-			phi_i = phi_r - phi;
-			pdf = longitudinalPdf(theta_i, theta_r, alpha_TRT, beta_TRT) * NrPdf(phi);
-
-			AtFloat theta_h = (theta_r + theta_i)*0.5f;
-
-			sphericalDirection(theta_i, phi_i, V, W, U, wi);
-			wi_ray.dir = wi;
-
-			AiTrace(&wi_ray, &scrs);
-			AtFloat Mtrt = g(beta_TRT, alpha_TRT, theta_h);
-			AtFloat Ntrt = cosf(phi*0.5f);
-			AtFloat theta_d = (theta_r - theta_i)*0.5f;
-			AtFloat cos_theta_d = cosf(theta_d);
-			AtFloat cos_theta_i = cosf(theta_i);
-			AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
-			AtFloat kr = fresnel(fabsf(cos_theta_i), eta);
-
-			result_TRT_indirect += scrs.color*Mtrt*Ntrt*kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI / pdf;
-		}
-		if (count) result_TRT_indirect /= AtFloat(count);
-		result_TRT_indirect *= specular2Color;
+		AiAOVSetRGB(sg, "diffuseDirect", result_diffuse_direct);
+		AiAOVSetRGB(sg, "diffuseIndirect", result_diffuse_indirect);
+		AiAOVSetRGB(sg, "specularDirect", result_R_direct);
+		AiAOVSetRGB(sg, "specularIndirect", result_R_indirect);
+		AiAOVSetRGB(sg, "specular2Direct", result_TRT_direct + result_TRTg_direct);
+		AiAOVSetRGB(sg, "specular2Indirect", result_TRT_indirect + result_TRTg_indirect);
+		AiAOVSetRGB(sg, "glintDirect", result_TRTg_direct);
+		AiAOVSetRGB(sg, "glintIndirect", result_TRTg_indirect);
+		AiAOVSetRGB(sg, "transmissionDirect", result_TT_direct);
+		AiAOVSetRGB(sg, "transmissionIndirect", result_TT_indirect);
 	}
-	// TRTg
-	{
-		AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_g, sg);
-		AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
-		AtInt count=0;
-		while(AiSamplerGetSample(sampit, samples))
-		{
-			theta_i = longitudinalSample(samples[0], theta_r, alpha_TRT, beta_TRT);
-			phi = NgSample(samples[1], gamma_g, phi_g);
-			phi_i = phi_r - phi;
-			pdf = longitudinalPdf(theta_i, theta_r, alpha_TRT, beta_TRT) * NgPdf(phi, gamma_g, phi_g);
-
-			AtFloat theta_h = (theta_r + theta_i)*0.5f;
-
-			sphericalDirection(theta_i, phi_i, V, W, U, wi);
-			wi_ray.dir = wi;
-
-			AiTrace(&wi_ray, &scrs);
-			AtFloat Mtrt = g(beta_TRT, alpha_TRT, theta_h);
-			AtFloat phi_o = phi + phi_offset;
-			if (phi_o < -AI_PI) phi_o += AI_PITIMES2;
-			if (phi_o > AI_PI) phi_o -= AI_PITIMES2;
-			AtFloat Ng = g(gamma_g, 0.0f, fabsf(phi_o) - phi_g);
-			AtFloat theta_d = (theta_r - theta_i)*0.5f;
-			AtFloat cos_theta_d = cosf(theta_d);
-			AtFloat cos_theta_i = cosf(theta_i);
-			AtFloat inv_cos_theta_d2 = 1.0f/(cos_theta_d*cos_theta_d);
-			AtFloat kr = fresnel(fabsf(cos_theta_i), eta);
-
-			result_TRTg_indirect += scrs.color*Mtrt*Ng*kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI / pdf;
-		}
-		if (count) result_TRTg_indirect /= AtFloat(count);
-		result_TRTg_indirect *= specular2Color * glintStrength;
-	}
-
-	AiAOVSetRGB(sg, "specularDirect", result_R_direct);
-	AiAOVSetRGB(sg, "specularIndirect", result_R_indirect);
-	AiAOVSetRGB(sg, "specular2Direct", result_TRT_direct + result_TRTg_direct);
-	AiAOVSetRGB(sg, "specular2Indirect", result_TRT_indirect + result_TRTg_indirect);
-	AiAOVSetRGB(sg, "transmissionDirect", result_TT_direct);
-	AiAOVSetRGB(sg, "transmissionIndirect", result_TT_indirect);
 
 	sg->out.RGB = 	result_diffuse_direct +
+					result_diffuse_indirect +
 					result_R_direct +
 					result_R_indirect +
 					result_TT_direct +
