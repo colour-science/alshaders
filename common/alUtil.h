@@ -158,6 +158,13 @@ inline AtFloat sphericalPhi(const AtVector& w, const AtVector& V, const AtVector
 	return atan2f(AiV3Dot(w, V), AiV3Dot(w, W));
 }
 
+inline void sphericalDirection(AtFloat theta, AtFloat phi, const AtVector& U, const AtVector& V, const AtVector& W,
+								AtVector& w)
+{
+	AtFloat sintheta = sinf(theta);
+	w = sintheta*cosf(phi)*U + sintheta*sinf(phi)*V + cosf(theta)*W;
+}
+
 inline float maxh(const AtRGB& c)
 {
    return std::max(std::max(c.r, c.g), c.b);
