@@ -16,8 +16,8 @@ def mkdir_p(path):
         else: raise
 
 MAJOR_VERSION = 0
-MINOR_VERSION = 1
-PATCH_VERSION = 1
+MINOR_VERSION = 2
+PATCH_VERSION = 0
 
 subdirs = [
 	'alBlackbody', 
