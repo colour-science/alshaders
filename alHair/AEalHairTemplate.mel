@@ -3,6 +3,11 @@ global proc AEalHairTemplate(string $n)
 	editorTemplate -beginScrollLayout;
 	AEswatchDisplay $n;
 	
+	editorTemplate -beginLayout "Diffuse" -collapse 0;
+		editorTemplate -addControl "diffuseStrength";
+		editorTemplate -addControl "diffuseColor";
+	editorTemplate -endLayout;
+	
 	editorTemplate -beginLayout "Specular 1" -collapse 0;
 		editorTemplate -addControl "specular1Strength";
 		editorTemplate -addControl "specular1Color";
