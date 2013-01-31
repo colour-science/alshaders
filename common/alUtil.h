@@ -161,8 +161,7 @@ inline AtFloat sphericalPhi(const AtVector& w, const AtVector& V, const AtVector
 inline void sphericalDirection(AtFloat theta, AtFloat phi, const AtVector& U, const AtVector& V, const AtVector& W,
 								AtVector& w)
 {
-	AtFloat sintheta = sinf(theta);
-	w = sintheta*cosf(phi)*U + sintheta*sinf(phi)*V + cosf(theta)*W;
+	w = U*cosf(theta)*sinf(phi) + V*cosf(theta)*cosf(phi) + W*sinf(theta);
 }
 
 inline float maxh(const AtRGB& c)
