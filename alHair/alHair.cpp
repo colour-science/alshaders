@@ -166,11 +166,6 @@ void sample_R(double u[2], AtFloat theta_r, AtFloat phi_r, AtFloat alpha, AtFloa
 	AtFloat phi = 2.0f*asinf(1.0f - 2.0f*u[1]);
 	phi_i = phi_r - phi;
 
-	/*
-	sampleSphere(u, U, V, W, theta_i, phi_i);
-	AtFloat theta_h = (theta_i+theta_r)*0.5f;
-	AtFloat phi = phi_r - phi_i;
-	*/
 	if (phi < -AI_PI) phi += AI_PITIMES2;
 	if (phi > AI_PI) phi -= AI_PITIMES2;
 
@@ -180,9 +175,8 @@ void sample_R(double u[2], AtFloat theta_r, AtFloat phi_r, AtFloat alpha, AtFloa
 	AtFloat cos_theta_d = cosf(theta_d);
 	AtFloat cos_theta_i = cosf(theta_i);
 	AtFloat inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-	AtFloat kr = 1;//fresnel(cos_theta_i, eta);
 
-	brdf = Mr*Nr*kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI;
+	brdf = Mr*Nr*cos_theta_i*inv_cos_theta_d2;
 }
 
 void sample_TT(double u[2], AtFloat theta_r, AtFloat phi_r, AtFloat alpha, AtFloat beta, AtFloat gamma,
@@ -195,10 +189,6 @@ void sample_TT(double u[2], AtFloat theta_r, AtFloat phi_r, AtFloat alpha, AtFlo
 	AtFloat phi = p + AI_PI;
 	phi_i = phi_r - phi;
 
-	/*
-	sampleSphere(u, U, V, W, theta_i, phi_i);
-	AtFloat phi = phi_r - phi_i;
-	*/
 	if (phi < -AI_PI) phi += AI_PITIMES2;
 	if (phi > AI_PI) phi -= AI_PITIMES2;
 
@@ -209,14 +199,13 @@ void sample_TT(double u[2], AtFloat theta_r, AtFloat phi_r, AtFloat alpha, AtFlo
 	AtFloat cos_theta_d = cosf(theta_d);
 	AtFloat cos_theta_i = fabs(cosf(theta_i));
 	AtFloat inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-	AtFloat kt = 1;//1.0f - fresnel(fabsf(cos_theta_i), eta);
 
-	brdf = Mtt*Ntt*kt*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI;
+	brdf = Mtt*Ntt*cos_theta_i*inv_cos_theta_d2;
 }
 
 
 void sample_g(double u[2], AtFloat theta_r, AtFloat phi_r, AtFloat alpha, AtFloat beta, AtFloat gamma, AtFloat phi_g,
-				AtFloat phi_offset, AtFloat& theta_i, AtFloat& phi_i, AtFloat& brdf, const AtVector& U, const AtVector& V, const AtVector& W)
+				AtFloat& theta_i, AtFloat& phi_i, AtFloat& brdf, const AtVector& U, const AtVector& V, const AtVector& W)
 {
 	theta_i = sampleLong(u[0], theta_r, alpha, beta);
 	AtFloat c = atanf((AI_PIOVER2-phi_g)/gamma);
@@ -247,11 +236,6 @@ void sample_g(double u[2], AtFloat theta_r, AtFloat phi_r, AtFloat alpha, AtFloa
 	AtFloat phi = 2.0f*asinf(1.0f - 2.0f*u[1]);
 	phi_i = phi_r - phi;
 
-
-	/*
-	sampleSphere(u, U, V, W, theta_i, phi_i);
-	phi = phi_r - phi_i;
-	*/
 	if (phi < -AI_PI) phi += AI_PITIMES2;
 	if (phi > AI_PI) phi -= AI_PITIMES2;
 
@@ -262,11 +246,9 @@ void sample_g(double u[2], AtFloat theta_r, AtFloat phi_r, AtFloat alpha, AtFloa
 	AtFloat cos_theta_d = cosf(theta_d);
 	AtFloat cos_theta_i = cosf(theta_i);
 	AtFloat inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-	AtFloat kr = 1;//fresnel(fabsf(cos_theta_i), eta);
 
-	brdf = Mtrt*Ng*kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI;
-	//brdf = kr*cos_theta_i*inv_cos_theta_d2*AI_ONEOVER2PI;;
-	//brdf = 1;
+	brdf = Mtrt*Ng*cos_theta_i*inv_cos_theta_d2;
+
 }
 
 AtFloat pdfLong(AtFloat theta_r, AtFloat theta_i, AtFloat alpha, AtFloat beta)
@@ -276,19 +258,12 @@ AtFloat pdfLong(AtFloat theta_r, AtFloat theta_i, AtFloat alpha, AtFloat beta)
 	AtFloat theta_h = (theta_r+theta_i)*0.5f;
 	AtFloat t = theta_h - alpha;
 	return beta / ((t*t + beta*beta) * std::max(0.001f, (2.0f * (A-B) * cosf(theta_i))));
-	//return 1.0f;
-	//return beta / (t*t);
-	//return beta / fabsf(t*t);
-	//return t*t;
-	//return beta;
-	//return fabsf(beta / (t*t));
 }
 
 AtFloat pdf_R(AtFloat theta_r, AtFloat phi_r, AtFloat theta_i, AtFloat phi_i, AtFloat alpha, AtFloat beta)
 {
 	AtFloat phi_pdf = cosf((phi_r - phi_i) * 0.5f) * 0.25f;
 	return phi_pdf * pdfLong(theta_r, theta_i, alpha, beta);
-	//return 1;
 }
 
 AtFloat pdf_TT(AtFloat theta_r, AtFloat phi_r, AtFloat theta_i, AtFloat phi_i, AtFloat alpha, AtFloat beta, AtFloat gamma)
@@ -300,7 +275,6 @@ AtFloat pdf_TT(AtFloat theta_r, AtFloat phi_r, AtFloat theta_i, AtFloat phi_i, A
 	AtFloat p = phi + AI_PI;
 	AtFloat phi_pdf = (gamma / (p*p + gamma*gamma)) / c;
 	return phi_pdf * pdfLong(theta_r, theta_i, alpha, beta);
-	//return 1;
 }
 
 AtFloat pdf_g(AtFloat theta_r, AtFloat phi_r, AtFloat theta_i, AtFloat phi_i, AtFloat alpha, AtFloat beta,
@@ -312,7 +286,52 @@ AtFloat pdf_g(AtFloat theta_r, AtFloat phi_r, AtFloat theta_i, AtFloat phi_i, At
 	AtFloat p = phi - phi_g;
 	AtFloat phi_pdf = gamma / (p*p + gamma*gamma) / (2.0f*fabsf((c-d)));
 	return phi_pdf * pdfLong(theta_r, theta_i, alpha, beta);
-	//return 1.0f;
+}
+
+AtFloat hairFresnel(AtFloat phi, AtFloat ior)
+{
+	AtFloat roots[3] = {0};
+	AtFloat pi3 = AI_PI*AI_PI*AI_PI;
+	AtFloat rPerp = 1.0f;
+	AtFloat rParal = 1.0f;
+	solveCubic(0.0f, 0.0f, -2.0f, -phi, roots);
+	AtFloat gamma_i = fabsf(roots[0]);
+	if (gamma_i > AI_PIOVER2 )
+	{
+			gamma_i = AI_PI - gamma_i;
+	}
+
+	AtFloat sin_gamma = sinf(gamma_i);
+	AtFloat etaPerp = sqrtf(ior*ior - sin_gamma*sin_gamma) / cosf(gamma_i);
+	AtFloat inv_etaPerp = 1.0f/etaPerp;
+	AtFloat etaParal = (ior*ior)*inv_etaPerp;
+	AtFloat inv_etaParal = 1.0f/etaParal;
+
+	// perp
+	float a = inv_etaPerp*sinf(gamma_i);
+	a *= a;
+	if ( a <= 1 )
+	{
+			float b = etaPerp*sqrtf(1-a);
+			float c = cosf(gamma_i);
+			rPerp =  ( c - b ) / ( c + b );
+			rPerp *= rPerp;
+			rPerp = std::min(1.0f, rPerp);
+	}
+
+	// parl
+	float d = inv_etaParal*sinf(gamma_i);
+	d *= d;
+	if ( d <= 1 )
+	{
+			float e = sqrtf(1-d);
+			float f = etaParal*cosf(gamma_i);
+			rParal = (e - f) / (e + f);
+			rParal *= rParal;
+			rParal = std::min(1.0f, rParal);
+	}
+
+	return 0.5f * (rPerp + rParal);
 }
 
 shader_evaluate
@@ -342,10 +361,12 @@ shader_evaluate
 
 	// Get a random value per curve
 	AtUInt32 curve_id = 0;
-	AtFloat phi_offset = 0.0f;
-	AiUDataGetUInt("curve_id", &curve_id);
-	AtPoint2 p; p.x = AtFloat(curve_id); p.y = 0.0f;
-	AtFloat cn = AiCellNoise2(p);
+	AtFloat cn = 1.0f;
+	if (AiUDataGetUInt("curve_id", &curve_id))
+	{
+		AtPoint2 p; p.x = AtFloat(curve_id); p.y = 0.0f;
+		cn = AiCellNoise2(p);
+	}
 
 	// Get shader data
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
@@ -364,14 +385,13 @@ shader_evaluate
 
 	AtFloat gamma_TT = AiShaderEvalParamFlt(p_transmissionRolloff) * AI_DTOR;
 	AtFloat gamma_g = AiShaderEvalParamFlt(p_glintRolloff) * AI_DTOR;
-	//AtFloat phi_g = AiShaderEvalParamFlt(p_glintSeparation) * AI_DTOR;
 	AtFloat phi_g = lerp(30.0f*AI_DTOR, 45.0f*AI_DTOR, cn);
 
 	AtRGB diffuseColor = AiShaderEvalParamRGB(p_diffuseColor) * AiShaderEvalParamFlt(p_diffuseStrength);
 	AtRGB specular1Color = AiShaderEvalParamRGB(p_specular1Color) * AiShaderEvalParamFlt(p_specular1Strength);
 	AtRGB specular2Color = AiShaderEvalParamRGB(p_specular2Color) * AiShaderEvalParamFlt(p_specular2Strength);
 	AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
-	AtFloat glintStrength = AiShaderEvalParamFlt(p_glintStrength);
+	AtFloat glintStrength = AiShaderEvalParamFlt(p_glintStrength) * cn;
 
 	bool do_glossy = true;
 	bool do_R = true, do_TT = true, do_TRT = true, do_g = true;
@@ -382,7 +402,7 @@ shader_evaluate
 		do_TRT = true;
 		do_g = false;
 	}
-	else if (sg->Rr > 0)
+	if (sg->Rr_diff > 0)
 	{
 		do_glossy = false;
 	}
@@ -412,14 +432,12 @@ shader_evaluate
 			AtFloat inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
 
 			// Precalculate invariants across all lobes
-			AtRGB L = sg->Li * sg->we * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
+			AtRGB L = sg->Li * sg->we * cos_theta_i * inv_cos_theta_d2 * AI_PI;
 
 			if (maxh(L) > IMPORTANCE_EPS)
 			{
-				// fresnel
-				AtFloat kr = 1.0f;//fresnel(cos_theta_i, eta);
-				AtFloat kt = 1.0f;
-
+				AtFloat kr = hairFresnel(phi, 1.55f);
+				AtFloat kt = 1.0f - kr;
 				// Calculate longitudinal and azimuthal functions. See Section 3.1 in Ou et. al.
 				AtFloat Mr = g(beta_R, alpha_R, theta_h);
 				AtFloat Nr = cosf(phi*0.5f);
@@ -435,8 +453,8 @@ shader_evaluate
 				// Sum result temporaries for each lobe
 				if (do_R) result_R_direct += L * Mr * Nr * kr;
 				if (do_TT) result_TT_direct += L * Mtt * Ntt * kt;
-				if (do_TRT) result_TRT_direct += L * Mtrt * Ntrt * kr;
-				if (do_g) result_TRTg_direct += L * Mtrt * Ng * kr;
+				if (do_TRT) result_TRT_direct += L * Mtrt * Ntrt * kt*kt*kr;
+				if (do_g) result_TRTg_direct += L * Mtrt * Ng* kt*kt*kr;
 			}
 		}
 	}
@@ -469,7 +487,6 @@ shader_evaluate
 			wi_ray.dir = wi;
 			AiTrace(&wi_ray, &scrs);
 			AtFloat tl = AiV3Dot(wi, U);
-			AtFloat kr = fresnel(fabsf(tl), eta);
 			result_diffuse_indirect += sqrtf(1.0f - tl*tl) * scrs.color * AI_ONEOVER2PI;
 		}
 		result_diffuse_indirect *= AiSamplerGetSampleInvCount(sampit);
@@ -492,35 +509,55 @@ shader_evaluate
 				samples[0] = 2.0 * samples[0];
 				samples[1] = 2.0 * samples[1];
 				sample_R(samples, theta_r, phi_r, alpha_R, beta_R, theta_i, phi_i, brdf, U, V, W);
+				AtFloat phi = phi_r - phi_i;
+				if (phi < -AI_PI) phi += AI_PITIMES2;
+				if (phi > AI_PI) phi -= AI_PITIMES2;
+				AtFloat kr = hairFresnel(phi, 1.55f);
+				AtFloat kt = 1.0f - kr;
 				if (do_R ) sum = &result_R_indirect; else sum = &tmp;
-				I = specular1Color;
+				I = specular1Color * kr;
 			}
 			else if (samples[0] >= 0.5 && samples[1] < 0.5) // TT
 			{
 				samples[0] = 2.0 * (1.0 - samples[0]);
 				samples[1] = 2.0 * samples[1];
 				sample_TT(samples, theta_r, phi_r, alpha_TT, beta_TT, gamma_TT, theta_i, phi_i, brdf, U, V, W);
+				AtFloat phi = phi_r - phi_i;
+				if (phi < -AI_PI) phi += AI_PITIMES2;
+				if (phi > AI_PI) phi -= AI_PITIMES2;
+				AtFloat kr = hairFresnel(phi, 1.55f);
+				AtFloat kt = 1.0f - kr;
 				sum = &result_TT_indirect;
 				if (do_TT) sum = &result_TT_indirect; else sum = &tmp;
-				I = transmissionColor;
+				I = transmissionColor * kt;
 			}
 			else if (samples[0] < 0.5 && samples[1] >= 0.5) // TRT
 			{
 				samples[0] = 2.0 * samples[0];
 				samples[1] = 2.0 * (1.0 - samples[1]);
 				sample_R(samples, theta_r, phi_r, alpha_TRT, beta_TRT, theta_i, phi_i, brdf, U, V, W);
+				AtFloat phi = phi_r - phi_i;
+				if (phi < -AI_PI) phi += AI_PITIMES2;
+				if (phi > AI_PI) phi -= AI_PITIMES2;
+				AtFloat kr = hairFresnel(phi, 1.55f);
+				AtFloat kt = 1.0f - kr;
 				sum = &result_TRT_indirect;
 				if (do_TRT) sum = &result_TRT_indirect; else sum = &tmp;
-				I = specular2Color;
+				I = specular2Color * kr*kt*kt;
 			}
 			else // G
 			{
 				samples[0] = 2.0 * (1.0 - samples[0]);
 				samples[1] = 2.0 * (1.0 - samples[1]);
-				sample_g(samples, theta_r, phi_r, alpha_TRT, beta_TRT, gamma_g, phi_g, phi_offset, theta_i, phi_i, brdf, U, V, W);
+				sample_g(samples, theta_r, phi_r, alpha_TRT, beta_TRT, gamma_g, phi_g, theta_i, phi_i, brdf, U, V, W);
+				AtFloat phi = phi_r - phi_i;
+				if (phi < -AI_PI) phi += AI_PITIMES2;
+				if (phi > AI_PI) phi -= AI_PITIMES2;
+				AtFloat kr = hairFresnel(phi, 1.55f);
+				AtFloat kt = 1.0f - kr;
 				sum = &result_TRTg_indirect;
 				if (do_g) sum = &result_TRTg_indirect; else sum = &tmp;
-				I = specular2Color * glintStrength;
+				I = specular2Color * glintStrength * kr*kt*kt;
 			}
 
 			sphericalDirection(theta_i, phi_i, V, W, U, wi);
