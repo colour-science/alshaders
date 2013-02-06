@@ -3,3 +3,4 @@ build
 .cproject
 local.cmake
 .DS_Store
+.settings
