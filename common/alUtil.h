@@ -499,3 +499,134 @@ inline AtFloat sampleTEAFloat(AtUInt32 v0, AtUInt32 v1, int rounds = 4) {
 // TODO: make this better
 #define M_RAN_INVM32 2.32830643653869628906e-010
 inline double random(AtUInt32 ui) { return ui * M_RAN_INVM32; }
+
+// Polynomial solvers below adapted from Cortex (which appear to themselves have been hoisted from Imath)
+// http://cortex-vfx.googlecode.com/svn-history/r2684/trunk/rsl/IECoreRI/Roots.h
+//////////////////////////////////////////////////////////////////////////
+//
+//  Copyright (c) 2009, Image Engine Design Inc. All rights reserved.
+//
+//  Redistribution and use in source and binary forms, with or without
+//  modification, are permitted provided that the following conditions are
+//  met:
+//
+//     * Redistributions of source code must retain the above copyright
+//       notice, this list of conditions and the following disclaimer.
+//
+//     * Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//
+//     * Neither the name of Image Engine Design nor the names of any
+//       other contributors to this software may be used to endorse or
+//       promote products derived from this software without specific prior
+//       written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+//  IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+//  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+//  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+//  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+//  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+//  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+//  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+//  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+//  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+//  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+//////////////////////////////////////////////////////////////////////////
+// Solves a * x + b == 0
+inline AtFloat solveLinear(AtFloat a, AtFloat b, AtFloat& root)
+{
+	if (a != 0)
+	{
+		root = -b / a;
+		return 1;
+	}
+	else if (b != 0)
+	{
+		return 0;
+	}
+	return -1;
+}
+
+inline AtFloat sign(AtFloat f)
+{
+	if (f < 0) return -1.0f;
+	else return 1.0f;
+}
+
+inline AtFloat cubicRoot(AtFloat v)
+{
+	return sign(v)*powf(fabsf(v), 1/3);
+}
+
+inline AtFloat solveQuadratic(AtFloat a, AtFloat b, AtFloat c, AtFloat roots[3])
+{
+	AtFloat epsilon = 1e-16;
+
+	if (fabsf(a) < epsilon)
+	{
+		return solveLinear(b, c, roots[0]);
+	}
+	AtFloat D = b*b-4*a*c;
+
+	if (fabsf(D) < epsilon)
+	{
+		roots[0] = -b/(2*a);
+		return 1;
+	}
+	if (D > 0)
+	{
+		AtFloat s = sqrtf(D);
+		roots[0] = (-b + s) / (2 * a);
+		roots[1] = (-b - s) / (2 * a);
+	    return 2;
+	}
+    return 0;
+}
+
+// Computes real roots for a given cubic polynomial (x^3+Ax^2+Bx+C = 0).
+// \todo: make sure it returns the same number of roots as in OpenEXR/ImathRoot.h
+inline AtFloat solveNormalizedCubic(AtFloat A, AtFloat B, AtFloat C, AtFloat roots[3])
+{
+	AtFloat epsilon = 1e-16;
+	if (fabsf(C) < epsilon)
+	{
+		// 1 or 2 roots
+		return solveQuadratic(1, A, B, roots);
+	}
+
+	AtFloat Q = (3*B - A*A)/9;
+	AtFloat R = (9*A*B - 27*C - 2*A*A*A)/54;
+	AtFloat D = Q*Q*Q + R*R;	// polynomial discriminant
+	AtFloat rootCount = 1;
+
+	if (D > 0) // complex or duplicate roots
+	{
+		AtFloat sqrtD = sqrtf(D);
+		AtFloat S = cubicRoot( R + sqrtD );
+		AtFloat T = cubicRoot( R - sqrtD );
+		roots[0] = (-A/3 + (S + T));   // one real root
+	}
+	else  // 3 real roots
+	{
+		AtFloat th = acosf( R/sqrtf(-(Q*Q*Q)) );
+		AtFloat sqrtQ = sqrtf(-Q);
+		roots[0] = (2*sqrtQ*cosf(th/3) - A/3);
+		roots[1] = (2*sqrtQ*cosf((th + 2*AI_PI)/3) - A/3);
+		roots[2] = (2*sqrtQ*cosf((th + 4*AI_PI)/3) - A/3);
+		rootCount = 3;
+	}
+	return rootCount;
+}
+
+inline AtFloat solveCubic(AtFloat a, AtFloat b, AtFloat c, AtFloat d, AtFloat roots[3])
+{
+	AtFloat epsilon = 1e-16;
+	if (fabsf(a) < epsilon)
+	{
+		return solveQuadratic (b, c, d, roots);
+    }
+	return solveNormalizedCubic (b / a, c / a, d / a, roots);
+}
