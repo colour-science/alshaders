@@ -7,6 +7,11 @@ global proc AEalHairTemplate(string $n)
 		editorTemplate -addControl "diffuseStrength";
 		editorTemplate -addControl "diffuseColor";
 	editorTemplate -endLayout;
+
+	editorTemplate -beginLayout "Fibre properties" -collapse 0;
+		editorTemplate -addControl "specularShift";
+		editorTemplate -addControl "specularWidth";
+	editorTemplate -endLayout;
 	
 	editorTemplate -beginLayout "Specular 1" -collapse 0;
 		editorTemplate -addControl "specular1Strength";
@@ -18,7 +23,6 @@ global proc AEalHairTemplate(string $n)
 		editorTemplate -addControl "specular2Color";
 		editorTemplate -addControl "glintStrength";
 		editorTemplate -addControl "glintRolloff";
-		editorTemplate -addControl "glintSeparation";
 	editorTemplate -endLayout;
 	
 	editorTemplate -beginLayout "Transmission" -collapse 0;
@@ -26,10 +30,9 @@ global proc AEalHairTemplate(string $n)
 		editorTemplate -addControl "transmissionColor";
 		editorTemplate -addControl "transmissionRolloff";
 	editorTemplate -endLayout;
-	
-	editorTemplate -beginLayout "Fibre properties";
-		editorTemplate -addControl "ior";
-		editorTemplate -addControl "specularShift";
+
+	editorTemplate -beginLayout "Advanced";
+		editorTemplate -addControl "extraSamples";
 	editorTemplate -endLayout;
 
 	editorTemplate -addExtraControls;
