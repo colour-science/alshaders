@@ -76,7 +76,7 @@
     aov.type                INT     0x05
    	[attr multiScatter]
     aov.type                INT     0x05
-    [attr transmission]
+    [attr transmissionIndirect]
     aov.type                INT     0x05
     [attr emission]
     aov.type                INT     0x05

@@ -193,7 +193,7 @@ node_update
 	AiAOVRegister("specular2Indirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("singleScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("multiScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("transmission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("transmissionIndirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("emission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("uv", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("depth", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
@@ -710,7 +710,7 @@ shader_evaluate
 		AiAOVSetRGB(sg, "specularIndirect", result_glossyIndirect);
 		AiAOVSetRGB(sg, "specular2Indirect", result_glossy2Indirect);
 		AiAOVSetRGB(sg, "singleScatter", result_ss);
-		AiAOVSetRGB(sg, "transmission", result_transmission);
+		AiAOVSetRGB(sg, "transmissionIndirect", result_transmission);
 		AiAOVSetRGB(sg, "emission", result_emission);
 
 		// write light groups
