@@ -57,6 +57,7 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate -beginLayout "Advanced";
 				editorTemplate -label "Roughness depth scale" -addControl "specular1RoughnessDepthScale";
 				editorTemplate -label "Extra samples" -addControl "specular1ExtraSamples";
+				editorTemplate -label "Normal" -addControl "specular1Normal";
 			editorTemplate -endLayout;	
 		editorTemplate -endLayout;
 		
@@ -68,6 +69,7 @@ global proc AEalSurfaceTemplate( string $n )
 			editorTemplate -beginLayout "Advanced";
 				editorTemplate -label "Roughness depth scale" -addControl "specular2RoughnessDepthScale";
 				editorTemplate -label "Extra samples" -addControl "specular2ExtraSamples";
+				editorTemplate -label "Normal" -addControl "specular2Normal";
 			editorTemplate -endLayout;
 		editorTemplate -endLayout;
 			

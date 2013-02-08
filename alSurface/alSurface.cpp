@@ -70,12 +70,14 @@ enum alSurfaceParams
 	p_specular1Ior,
 	p_specular1RoughnessDepthScale,
 	p_specular1ExtraSamples,
+	p_specular1Normal,
 	p_specular2Strength,
 	p_specular2Color,
 	p_specular2Roughness,
 	p_specular2Ior,
 	p_specular2RoughnessDepthScale,
 	p_specular2ExtraSamples,
+	p_specular2Normal,
 
 	// transmission
 	p_transmissionStrength,
@@ -124,6 +126,7 @@ node_parameters
 	AiParameterFLT("specular1Ior", 1.4f );
 	AiParameterFLT("specular1RoughnessDepthScale", 1.0f);
 	AiParameterINT("specular1ExtraSamples", 0);
+	AiParameterVec("specular1Normal", 0, 0, 0);
 
 	AiParameterFLT("specular2Strength", 0.0f );
 	AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
@@ -131,6 +134,7 @@ node_parameters
 	AiParameterFLT("specular2Ior", 1.4f );
 	AiParameterFLT("specular2RoughnessDepthScale", 1.0f);
 	AiParameterINT("specular2ExtraSamples", 0);
+	AiParameterVec("specular2Normal", 0, 0, 0);
 
 	AiParameterFLT("transmissionStrength", 0.0f );
 	AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
@@ -385,6 +389,17 @@ shader_evaluate
 	AtFloat sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
 	AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
 	AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
+	AtVector specular1Normal = sg->N;
+	if (AiNodeIsLinked(node, "specular1Normal"))
+	{
+		specular1Normal = AiShaderEvalParamVec(p_specular1Normal);
+	}
+
+	AtVector specular2Normal = sg->N;
+	if (AiNodeIsLinked(node, "specular2Normal"))
+	{
+		specular2Normal = AiShaderEvalParamVec(p_specular2Normal);
+	}
 
 	AtFloat roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
 	roughness2 *= roughness2;
@@ -496,6 +511,8 @@ shader_evaluate
 	if (do_diffuse || do_glossy || do_glossy2)
 	{
 		// Create the BRDF data structures for MIS
+		AtVector Nold = sg->N;
+		sg->N = sg->Nf = specular1Normal;
 		void* mis;
 		mis = GlossyMISCreateData(sg,&U,&V,roughness,roughness);
 		BrdfData_wrap brdfw;
@@ -503,9 +520,11 @@ shader_evaluate
 		brdfw.sg = sg;
 		brdfw.eta = eta;
 		brdfw.V = wo;
-		brdfw.N = sg->N;
+		brdfw.N = specular1Normal;
 		brdfw.kr = 0.0f;
 
+
+		sg->N = sg->Nf = specular2Normal;	
 		void* mis2;
 		mis2 = GlossyMISCreateData(sg,&U,&V,roughness2,roughness2);
 		BrdfData_wrap brdfw2;
@@ -513,7 +532,9 @@ shader_evaluate
 		brdfw2.sg = sg;
 		brdfw2.eta = eta2;
 		brdfw2.V = wo;
-		brdfw2.N = sg->N;
+		brdfw2.N = specular2Normal;
+
+		sg->N = Nold;
 
 		void* dmis;
 		dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
@@ -534,6 +555,7 @@ shader_evaluate
 				int lightGroup = data->lightGroups[sg->Lp];
 				if (do_glossy)
 				{
+					sg->N = sg->Nf = specular1Normal;
 					LspecularDirect =
 					AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
 					if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
@@ -541,6 +563,7 @@ shader_evaluate
 						lightGroupSpecular[lightGroup] += LspecularDirect;
 					}
 					result_glossyDirect += LspecularDirect;
+					sg->N = Nold;
 				}
 				if (do_diffuse)
 				{
@@ -555,6 +578,7 @@ shader_evaluate
 				}
 				if (do_glossy2)
 				{
+					sg->N = sg->Nf = specular2Normal;
 					Lspecular2Direct =
 					AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
 											* (1.0f - brdfw.kr*maxh(specular1Color));
@@ -563,6 +587,7 @@ shader_evaluate
 						lightGroupSpecular2[lightGroup] += Lspecular2Direct;
 					}
 					result_glossy2Direct += Lspecular2Direct;
+					sg->N = Nold;
 				}
 			}
 			for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
@@ -619,7 +644,7 @@ shader_evaluate
 			while(AiSamplerGetSample(sampit, samples))
 			{
 				wi = GlossyMISSample(mis, samples[0], samples[1]);
-				if (AiV3Dot(wi,sg->Nf) > 0.0f)
+				if (AiV3Dot(wi,specular1Normal) > 0.0f)
 				{
 					// get half-angle vector for fresnel
 					wi_ray.dir = wi;
@@ -649,7 +674,7 @@ shader_evaluate
 			while(AiSamplerGetSample(sampit, samples))
 			{
 				wi = GlossyMISSample(mis2, samples[0], samples[1]);
-				if (AiV3Dot(wi,sg->Nf) > 0.0f)
+				if (AiV3Dot(wi,specular2Normal) > 0.0f)
 				{
 					wi_ray.dir = wi;
 					AiV3Normalize(H, wi+brdfw2.V);
