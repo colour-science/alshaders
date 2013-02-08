@@ -132,17 +132,17 @@ enum alHairParams
 node_parameters
 {
 	AiParameterFlt("ior", 1.55f);
-	AiParameterFlt("diffuseStrength", 1.0f);
+	AiParameterFlt("diffuseStrength", 0.2f);
 	AiParameterRGB("diffuseColor", 0.31f, 0.08f, 0.005f);
 	AiParameterFlt("specularShift", 7.0f);
-	AiParameterFlt("specularWidth", 7.0f);
+	AiParameterFlt("specularWidth", 5.0f);
 	AiParameterFlt("extraSamples", 0);
 	AiParameterFlt("specular1Strength", 1.0f);
 	AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f);
 	AiParameterFlt("specular2Strength", 1.0f);
 	AiParameterRGB("specular2Color", 0.31f, 0.08f, 0.005f);
 	AiParameterFlt("glintStrength", 2.0f);
-	AiParameterFlt("glintRolloff", 15.0f);
+	AiParameterFlt("glintRolloff", 5.0f);
 	AiParameterFlt("glintSeparation", 35.0f);
 	AiParameterFlt("transmissionStrength", 1.0f);
 	AiParameterRGB("transmissionColor", 0.92f, 0.7f, 0.64f);
