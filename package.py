@@ -29,6 +29,8 @@ subdirs = [
 	'alPhotometric',
 	'alRemap',
 	'alSurface',
+	'alInputVector',
+	'alHair',
 	'common'
 ] 
 
