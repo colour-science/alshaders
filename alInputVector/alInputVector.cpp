@@ -15,6 +15,13 @@ enum Inputs
 {
 	IN_P = 0,
 	IN_PO,
+	IN_N,
+	IN_Nf,
+	IN_Ng,
+	IN_Ngf,
+	IN_Ns,
+	IN_dPdu,
+	IN_dPdv,
 	IN_USER,
 	IN_CUSTOM
 };
@@ -22,6 +29,13 @@ enum Inputs
 static const char* InputNames[] = {
 	"P",
 	"Po",
+	"N",
+	"Nf",
+	"Ng",
+	"Ngf",
+	"Ns",
+	"dPdu",
+	"dPdv",
 	"User",
 	"Custom",
 	NULL
@@ -94,6 +108,27 @@ shader_evaluate
 		break;
 	case IN_PO:
 		vector = sg->Po;
+		break;
+	case IN_N:
+		vector = sg->N;
+		break;
+	case IN_Nf:
+		vector = sg->Nf;
+		break;
+	case IN_Ng:
+		vector = sg->Ng;
+		break;
+	case IN_Ngf:
+		vector = sg->Ngf;
+		break;
+	case IN_Ns:
+		vector = sg->Ns;
+		break;
+	case IN_dPdu:
+		vector = sg->dPdu;
+		break;
+	case IN_dPdv:
+		vector = sg->dPdv;
 		break;
 	case IN_USER:
 		AiUDataGetPnt(userName, &vector);
