@@ -642,7 +642,6 @@ shader_evaluate
 		{
 			AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
 			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
-			AtInt count=0;
 			kti = 0.0f;
 			while(AiSamplerGetSample(sampit, samples))
 			{
@@ -661,10 +660,9 @@ shader_evaluate
 						scrs.color*GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
 					}
 				}
-				count++;
 			}
-			if (count) result_glossyIndirect /= float(count);
-			if (count) kti /= float(count);
+			result_glossyIndirect *= AiSamplerGetSampleInvCount(sampit);
+			kti *= AiSamplerGetSampleInvCount(sampit);
 			kti = 1.0f - kti*maxh(specular1Color);
 			result_glossyIndirect *= specular1Color;
 		} // if (do_glossy)
@@ -673,7 +671,6 @@ shader_evaluate
 		{
 			AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
 			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
-			AtInt count=0;
 			kti2 = 0.0f;
 			while(AiSamplerGetSample(sampit, samples))
 			{
@@ -692,15 +689,10 @@ shader_evaluate
 						kti2 += kr; 
 					}
 				}
-				count++;
 			}
-			if (count) 
-			{
-				result_glossy2Indirect /= float(count);
-				kti2 /= float(count);
-			}
+			result_glossy2Indirect*= AiSamplerGetSampleInvCount(sampit);
+			kti2 *= AiSamplerGetSampleInvCount(sampit);
 			kti2 = 1.0f - kti2*maxh(specular2Color);
-
 			result_glossy2Indirect *= specular2Color;
 		} // if (do_glossy2)
 
@@ -751,7 +743,6 @@ shader_evaluate
 
 		// write light groups
 		AtRGB lightGroup[NUM_LIGHT_GROUPS];
-		char lightGroupName[32];
 		for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
 		{
 			lightGroup[i] = lightGroupDiffuse[i] + lightGroupSpecular[i] + lightGroupSpecular2[i];
