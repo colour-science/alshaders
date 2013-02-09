@@ -732,7 +732,7 @@ shader_evaluate
 		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
 																transmissionRoughness, transmissionIor,
 																sigma_s, sigma_a,
-																ssDirection, ssStrength, ssInScattering, result_ss) * kti;
+																ssDirection, ssStrength, ssInScattering, result_ss) * kti * kti2;
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)
