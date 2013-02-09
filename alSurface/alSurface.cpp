@@ -409,9 +409,6 @@ shader_evaluate
 	AtFloat eta2 = 1.0f / ior2;
 
 
-
-
-
 	AtFloat specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
 	AtFloat specular2RoughnessDepthScale = AiShaderEvalParamFlt(p_specular2RoughnessDepthScale);
 	AtFloat transmissionRoughnessDepthScale = AiShaderEvalParamFlt(p_transmissionRoughnessDepthScale);
@@ -483,6 +480,9 @@ shader_evaluate
 		do_sss = false;
 		sssMix = 0.0f;
 	}
+
+	// make sure diffuse and transmission can't sum > 1
+	transmissionColor *= 1.0f - maxh(diffuseColor);
 
 	if ((sg->Rr_diff > 0) || maxh(transmissionColor) < IMPORTANCE_EPS)
 	{
@@ -732,7 +732,7 @@ shader_evaluate
 		result_transmission = beckmannMicrofacetTransmission(sg, sg->N, U, V, wo, data->refraction_sampler,
 																transmissionRoughness, transmissionIor,
 																sigma_s, sigma_a,
-																ssDirection, ssStrength, ssInScattering, result_ss) * kti * kti2;
+																ssDirection, ssStrength, ssInScattering, result_ss) * kti * kti2 * transmissionColor;
 	}
 
 	if (sg->Rt & AI_RAY_CAMERA)
