@@ -506,6 +506,7 @@ shader_evaluate
 	// Accumulator for transmission integrated according to the specular1 brdf. Will be used to attenuate diffuse,
 	// glossy2, sss and transmission
 	AtFloat kti = 1.0f;
+	AtFloat kti2 = 1.0f;
 
 	// Begin illumination calculation
 	if (do_diffuse || do_glossy || do_glossy2)
@@ -565,17 +566,6 @@ shader_evaluate
 					result_glossyDirect += LspecularDirect;
 					sg->N = Nold;
 				}
-				if (do_diffuse)
-				{
-					LdiffuseDirect =
-					AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-											* (1.0f - brdfw.kr*maxh(specular1Color));
-					if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-					{
-						lightGroupDiffuse[lightGroup] += LdiffuseDirect;
-					}
-					result_diffuseDirect += LdiffuseDirect;
-				}
 				if (do_glossy2)
 				{
 					sg->N = sg->Nf = specular2Normal;
@@ -588,6 +578,18 @@ shader_evaluate
 					}
 					result_glossy2Direct += Lspecular2Direct;
 					sg->N = Nold;
+				}
+				if (do_diffuse)
+				{
+					LdiffuseDirect =
+					AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+											* (1.0f - brdfw.kr*maxh(specular1Color))
+											* (1.0f - brdfw2.kr*maxh(specular2Color));
+					if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+					{
+						lightGroupDiffuse[lightGroup] += LdiffuseDirect;
+					}
+					result_diffuseDirect += LdiffuseDirect;
 				}
 			}
 			for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
@@ -606,17 +608,18 @@ shader_evaluate
 					result_glossyDirect +=
 					AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
 				}
-				if (do_diffuse)
-				{
-					result_diffuseDirect +=
-					AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap)
-											* (1.0f - brdfw.kr*maxh(specular1Color));
-				}
 				if (do_glossy2)
 				{
 					result_glossy2Direct +=
 					AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
 											* (1.0f - brdfw.kr*maxh(specular1Color));
+				}
+				if (do_diffuse)
+				{
+					result_diffuseDirect +=
+					AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap)
+											* (1.0f - brdfw.kr*maxh(specular1Color))
+											* (1.0f - brdfw2.kr*maxh(specular2Color));
 				}
 			}
 		}
@@ -671,6 +674,7 @@ shader_evaluate
 			AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
 			AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
 			AtInt count=0;
+			kti2 = 0.0f;
 			while(AiSamplerGetSample(sampit, samples))
 			{
 				wi = GlossyMISSample(mis2, samples[0], samples[1]);
@@ -685,17 +689,24 @@ shader_evaluate
 						AiTrace(&wi_ray, &scrs);
 						result_glossy2Indirect +=
 						scrs.color*GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
+						kti2 += kr; 
 					}
 				}
 				count++;
 			}
-			if (count) result_glossy2Indirect /= float(count);
+			if (count) 
+			{
+				result_glossy2Indirect /= float(count);
+				kti2 /= float(count);
+			}
+			kti2 = 1.0f - kti2*maxh(specular2Color);
+
 			result_glossy2Indirect *= specular2Color;
 		} // if (do_glossy2)
 
 		if ( do_diffuse )
 		{
-			result_diffuseIndirect = AiOrenNayarIntegrate(&sg->Nf, sg, diffuseRoughness) * diffuseColor * kti;
+			result_diffuseIndirect = AiOrenNayarIntegrate(&sg->Nf, sg, diffuseRoughness) * diffuseColor * kti * kti2;
 		} // if (do_diffuse)
 
 	} // if (do_diffuse || do_glossy)
@@ -706,7 +717,7 @@ shader_evaluate
 	// Diffusion multiple scattering
 	if (do_sss)
 	{
-		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor * kti;
+		result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor * kti * kti2;
 	}
 
 
