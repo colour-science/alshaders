@@ -7,6 +7,7 @@
 #include <algorithm>
 
 // hard-code IOR for now
+// this is completely buggered
 #define IOR 1.6f
 #define FRESNEL_SAMPLES 1024
 AtFloat hairFresnel(AtFloat phi, AtFloat ior)
@@ -313,12 +314,12 @@ shader_evaluate
 			AtFloat inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
 
 			// Precalculate invariants across all lobes
-			AtRGB L = sg->Li * sg->we * cos_theta_i * inv_cos_theta_d2;
+			AtRGB L = sg->Li * sg->we * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
 
-			if (maxh(L) > IMPORTANCE_EPS)
+			if (1)//maxh(L) > IMPORTANCE_EPS)
 			{
-				AtFloat kr = data->fresnelLookup(phi);
-				AtFloat kt = 1.0f - kr;
+				//AtFloat kr = data->fresnelLookup(phi);
+				//AtFloat kt = 1.0f - kr;
 				// Calculate longitudinal and azimuthal functions. See Section 3.1 in Ou et. al.
 				AtFloat Mr = g(beta_R, alpha_R, theta_h);
 				AtFloat Nr = cosf(phi*0.5f);
@@ -332,10 +333,11 @@ shader_evaluate
 				AtFloat Ng = g(gamma_g, 0.0f, fabsf(phi) - phi_g);
 
 				// Sum result temporaries for each lobe
-				result_R_direct += L * Mr * Nr * kr;
-				result_TT_direct += L * Mtt * Ntt * kt*kt;
-				result_TRT_direct += L * Mtrt * Ntrt * kt*kt;
-				if (do_g) result_TRTg_direct += L * Mtrt * Ng* kt*kt;
+				result_R_direct += L * Mr * Nr;// * kr;
+				result_TT_direct += L * Mtt * Ntt;// * kt*kt;
+				result_TRT_direct += L * Mtrt * Ntrt;// * kt*kt;
+				if (do_g) result_TRTg_direct += L * Mtrt * Ng;//* kt*kt;
+				
 			}
 		}
 	}
@@ -404,14 +406,14 @@ shader_evaluate
 			AtFloat cos_theta_d = cosf(theta_d);
 			AtFloat inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
 
-			AtFloat R = cos_theta_i * inv_cos_theta_d2 * g(beta_R, alpha_R, theta_h) * cosphi2 / (pdf_phi * pdf_long);
+			AtFloat R = cos_theta_i * inv_cos_theta_d2 * g(beta_R, alpha_R, theta_h) * cosphi2 * AI_ONEOVER2PI / (pdf_phi * pdf_long);
 
 			if (R > IMPORTANCE_EPS)
 			{
 				sphericalDirection(theta_i, phi_i, V, W, U, wi_ray.dir);
 				AiTrace(&wi_ray, &scrs);
-				AtFloat kr = data->fresnelLookup(phi);
-				result_R_indirect += scrs.color * kr * R;
+				//AtFloat kr = data->fresnelLookup(phi);
+				result_R_indirect += scrs.color * R;
 			}
 		}
 		result_R_indirect *= AiSamplerGetSampleInvCount(sampit) * specular1Color;
@@ -435,14 +437,14 @@ shader_evaluate
 			AtFloat cos_theta_d = cosf(theta_d);
 			AtFloat inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
 
-			AtFloat R = cos_theta_i * inv_cos_theta_d2 * g(beta_TRT, alpha_TRT, theta_h) * cosphi2 / (pdf_phi * pdf_long);
+			AtFloat R = cos_theta_i * inv_cos_theta_d2 * g(beta_TRT, alpha_TRT, theta_h) * cosphi2 * AI_ONEOVER2PI / (pdf_phi * pdf_long);
 
 			if (R > IMPORTANCE_EPS)
 			{
 				sphericalDirection(theta_i, phi_i, V, W, U, wi_ray.dir);
 				AiTrace(&wi_ray, &scrs);
 				AtFloat kt = 1.0f - data->fresnelLookup(phi);
-				result_TRT_indirect += scrs.color * kt * kt * R;
+				result_TRT_indirect += scrs.color * R;
 			}
 		}
 		result_TRT_indirect *= AiSamplerGetSampleInvCount(sampit) * specular2Color;
