@@ -1,5 +1,6 @@
 [node alPhotometric]
-	desc					STRING		""
-	maya.name				STRING		"alPhotometric"
-	maya.classification		STRING		"light/filter"
-		
+    desc                    STRING      ""
+    maya.name               STRING      "alPhotometric"
+    maya.classification     STRING      "light/filter"
+    maya.id                 INT         0x0011640B
+        

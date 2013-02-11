@@ -1,4 +1,5 @@
 [node alFractal]
-	desc				STRING		"Procedural fractal node"
-	maya.name			STRING		"alFractal"
-	maya.classification	STRING		"shader/surface"
+    desc                STRING      "Procedural fractal node"
+    maya.name           STRING      "alFractal"
+    maya.classification STRING      "shader/surface"
+    maya.id             INT         0x00116409

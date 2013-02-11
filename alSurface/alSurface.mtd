@@ -1,65 +1,66 @@
 [node alSurface]
-	desc					STRING		"All-purpose, physically plausible surface shader"
-	maya.name				STRING		"alSurface"
-	maya.classification		STRING		"shader/surface"
-	
-	[attr diffuseStrength]
-		min					FLOAT			0
-		max					FLOAT			1
-		
-	[attr diffuseRoughness]
-		min					FLOAT			0
-		softmax				FLOAT			1
-		
-	[attr emissionStrength]
-		min					FLOAT			0
-		softmax				FLOAT			1
-		
-	[attr sssMix]
-		min					FLOAT			0
-		max					FLOAT			1
-		
-	[attr sssRadius]
-		min					FLOAT			0
-		softMax				FLOAT			10
-		
-	[attr specular1Strength]
-		min					FLOAT			0
-		max					FLOAT			1
-		
-	[attr specular1Roughness]
-		min					FLOAT			0
-		max					FLOAT			1
-		
-	[attr specular2Strength]
-		min					FLOAT			0
-		max					FLOAT			1
-		
-	[attr specular2Roughness]
-		min					FLOAT			0
-		max					FLOAT			1
-		
-	[attr transmissionStrength]
-		min					FLOAT			0
-		max					FLOAT			1
-		
-	[attr transmissionRoughness]
-		min					FLOAT			0
-		max					FLOAT			1
-		
-	[attr ssStrength]
-		min					FLOAT			0
-		max					FLOAT 			1
-		
-	[attr ssBalance]
-		min					FLOAT			0
-		max					FLOAT 			1
-		
-	[attr ssDirection]
-		min					FLOAT			-1
-		max					FLOAT 			1
-		
-	# AOVs
+    desc                    STRING      "All-purpose, physically plausible surface shader"
+    maya.name               STRING      "alSurface"
+    maya.classification     STRING      "shader/surface"
+    maya.id                 INT         0x00116402
+    
+    [attr diffuseStrength]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr diffuseRoughness]
+        min                 FLOAT           0
+        softmax             FLOAT           1
+        
+    [attr emissionStrength]
+        min                 FLOAT           0
+        softmax             FLOAT           1
+        
+    [attr sssMix]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr sssRadius]
+        min                 FLOAT           0
+        softMax             FLOAT           10
+        
+    [attr specular1Strength]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr specular1Roughness]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr specular2Strength]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr specular2Roughness]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr transmissionStrength]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr transmissionRoughness]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr ssStrength]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr ssBalance]
+        min                 FLOAT           0
+        max                 FLOAT           1
+        
+    [attr ssDirection]
+        min                 FLOAT           -1
+        max                 FLOAT           1
+        
+    # AOVs
     [attr diffuseDirect]
     aov.type                INT     0x05
     [attr diffuseIndirect]
@@ -74,7 +75,7 @@
     aov.type                INT     0x05
     [attr singleScatter]
     aov.type                INT     0x05
-   	[attr multiScatter]
+    [attr multiScatter]
     aov.type                INT     0x05
     [attr transmissionIndirect]
     aov.type                INT     0x05
@@ -100,4 +101,4 @@
     aov.type                INT     0x05
     [attr lightGroup8]
     aov.type                INT     0x05
-		
+        
