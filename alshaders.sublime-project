@@ -23,8 +23,6 @@
 		[
 			"-I${folder:${project_path:alshaders.sublime-project}}/*",
 			"-I/Users/anders/vfx/arnold/4.0.10.2/include"
-		],
-
-		"sublimeclang_debug_options": true
+		]
 	}
 }
