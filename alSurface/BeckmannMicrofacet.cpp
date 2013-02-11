@@ -46,7 +46,7 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
             float cosThetaM2 = cosThetaM * cosThetaM;
             float tanThetaM2 = tanThetaM * tanThetaM;
             float cosThetaM4 = cosThetaM2 * cosThetaM2;
-            float D = expf(-tanThetaM2 / alpha2) / (float(AI_PI) * alpha2 *  cosThetaM4);
+            float D = fast_exp(-tanThetaM2 / alpha2) / (float(AI_PI) * alpha2 *  cosThetaM4);
             // eq. 24
             float pm = D * cosThetaM;
             // eval BRDF*cosNI
@@ -72,9 +72,9 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
             AtRGB transmittance = AI_RGB_WHITE;
             if (maxh(sigma_t) > 0.0f && !inside)
             {
-                transmittance.r = expf(-sample.z * sigma_t.r);
-                transmittance.g = expf(-sample.z * sigma_t.g);
-                transmittance.b = expf(-sample.z * sigma_t.b);
+                transmittance.r = fast_exp(-sample.z * sigma_t.r);
+                transmittance.g = fast_exp(-sample.z * sigma_t.g);
+                transmittance.b = fast_exp(-sample.z * sigma_t.b);
             }
             result += sample.color * brdf/pdf * transmittance;
 
@@ -96,9 +96,9 @@ AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& Z, c
             AtRGB transmittance = AI_RGB_WHITE;
             if (maxh(sigma_t) > 0.0f && !inside)
             {
-                transmittance.r = expf(-sample.z * sigma_t.r);
-                transmittance.g = expf(-sample.z * sigma_t.g);
-                transmittance.b = expf(-sample.z * sigma_t.b);
+                transmittance.r = fast_exp(-sample.z * sigma_t.r);
+                transmittance.g = fast_exp(-sample.z * sigma_t.g);
+                transmittance.b = fast_exp(-sample.z * sigma_t.b);
             }
             result += sample.color * transmittance;
         }
