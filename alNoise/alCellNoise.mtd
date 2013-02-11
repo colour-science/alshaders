@@ -1,5 +1,5 @@
 [node alCellNoise]
     desc                STRING      "Procedural cell noise node"
     maya.name           STRING      "alCellNoise"
-    maya.classification STRING      "shader/utility"
+    maya.classification STRING      "texture"
     maya.id             INT         0x00116408

@@ -1,7 +1,7 @@
 [node alRemapColor]
     desc                STRING      "Remap color node"
     maya.name           STRING      "alRemapColor"
-    maya.classification STRING      "shader/surface"
+    maya.classification STRING      "shader/utility"
     maya.id             INT         0x0011640D
     
     [attr saturation]
