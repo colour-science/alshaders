@@ -33,6 +33,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 AtColor beckmannMicrofacetTransmission(AtShaderGlobals* sg, const AtVector& N, const AtVector& U, const AtVector& V,
-										const AtVector& wo, AtSampler* sampler, AtFloat roughness, AtFloat eta,
-										AtRGB sigma_s, AtRGB sigma_a, AtFloat g, AtFloat ssScale,
-										bool inScattering, AtRGB& ss_result);
+                                        const AtVector& wo, AtSampler* sampler, float roughness, float eta,
+                                        AtRGB sigma_s, AtRGB sigma_a, float g, float ssScale,
+                                        bool inScattering, AtRGB& ss_result);
