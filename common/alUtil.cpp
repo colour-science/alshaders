@@ -1,25 +1,25 @@
 #include "alUtil.h"
 
 void alphaInversion( const AtRGB& scatterColour, float scatterDist, AtRGB& sigma_s_prime_,
-											AtRGB& sigma_a_ )
+                                                                             AtRGB& sigma_a_ )
 {
-	AtRGB col = scatterColour;
+       AtRGB col = scatterColour;
 
-	col = col / maxh(col);
+       col = col / maxh(col);
 
-	AtRGB alpha_prime = rgb(alpha1_3(clamp(col.r*.439, 0, 1)),
-					alpha1_3(clamp(col.g*.439, 0, 1)),
-					alpha1_3(clamp(col.b*.439, 0, 1 )) );
+       AtRGB alpha_prime = rgb(alpha1_3(clamp(col.r*.439, 0, 1)),
+                                   alpha1_3(clamp(col.g*.439, 0, 1)),
+                                   alpha1_3(clamp(col.b*.439, 0, 1 )) );
 
-	AtRGB sigma_tr = rgb(1.0f,1.0f,1.0f) / (scatterColour * col);
+       AtRGB sigma_tr = rgb(1.0f,1.0f,1.0f) / (scatterColour * col);
 
 
-	AtRGB sigma_t_prime = rgb( 	sigma_tr[0] / ( sqrt( 3 * ( 1 - alpha_prime[0] ) ) ),
-					sigma_tr[1] / ( sqrt( 3 * ( 1 - alpha_prime[1] ) ) ),
-					sigma_tr[2] / ( sqrt( 3 * ( 1 - alpha_prime[2] ) ) ) );
+       AtRGB sigma_t_prime = rgb(  sigma_tr[0] / ( sqrt( 3 * ( 1 - alpha_prime[0] ) ) ),
+                                   sigma_tr[1] / ( sqrt( 3 * ( 1 - alpha_prime[1] ) ) ),
+                                   sigma_tr[2] / ( sqrt( 3 * ( 1 - alpha_prime[2] ) ) ) );
 
-	sigma_s_prime_ = sigma_t_prime * alpha_prime;
-	sigma_a_ = sigma_t_prime - sigma_s_prime_;
+       sigma_s_prime_ = sigma_t_prime * alpha_prime;
+       sigma_a_ = sigma_t_prime - sigma_s_prime_;
 }
 
 float alpha1_3( float x )
@@ -428,6 +428,6 @@ float alpha1_3( float x )
        0.99992967,   0.99994374,   0.99995780,   0.99997187,   0.99998593,
        1.00000000 };
 
-			int i = (int)ceil( x * (2000));
+                     int i = (int)ceil( x * (2000));
        return alpha1_3[i];
 }

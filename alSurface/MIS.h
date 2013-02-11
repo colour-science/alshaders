@@ -1,5 +1,6 @@
 #pragma once
 #include <ai.h>
+#include "alUtil.h"
 
 struct BrdfData_wrap
 {
@@ -21,13 +22,13 @@ AtRGB AiWardDuerMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    return kr *  AiWardDuerMISBRDF(brdfw->brdf_data, indir);
 }
 
-AtFloat AiWardDuerMISPDF_wrap( const void* brdf_data, const AtVector* indir )
+float AiWardDuerMISPDF_wrap( const void* brdf_data, const AtVector* indir )
 {
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    return AiWardDuerMISPDF(brdfw->brdf_data, indir);
 }
 
-AtVector AiWardDuerMISSample_wrap( const void* brdf_data, AtFloat randx, AtFloat randy )
+AtVector AiWardDuerMISSample_wrap( const void* brdf_data, float randx, float randy )
 {
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    return AiWardDuerMISSample(brdfw->brdf_data, randx, randy);
@@ -42,13 +43,13 @@ AtRGB AiCookTorranceMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    return brdfw->kr *  AiCookTorranceMISBRDF(brdfw->brdf_data, indir);
 }
 
-AtFloat AiCookTorranceMISPDF_wrap( const void* brdf_data, const AtVector* indir )
+float AiCookTorranceMISPDF_wrap( const void* brdf_data, const AtVector* indir )
 {
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    return AiCookTorranceMISPDF(brdfw->brdf_data, indir);
 }
 
-AtVector AiCookTorranceMISSample_wrap( const void* brdf_data, AtFloat randx, AtFloat randy )
+AtVector AiCookTorranceMISSample_wrap( const void* brdf_data, float randx, float randy )
 {
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    return AiCookTorranceMISSample(brdfw->brdf_data, randx, randy);
@@ -65,13 +66,13 @@ AtRGB AiOrenNayarMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    return AiOrenNayarMISBRDF(brdfw->brdf_data, indir) * (1-kr);
 }
 
-AtFloat AiOrenNayarMISPDF_wrap( const void* brdf_data, const AtVector* indir )
+float AiOrenNayarMISPDF_wrap( const void* brdf_data, const AtVector* indir )
 {
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    return AiOrenNayarMISPDF(brdfw->brdf_data, indir);
 }
 
-AtVector AiOrenNayarMISSample_wrap( const void* brdf_data, AtFloat randx, AtFloat randy )
+AtVector AiOrenNayarMISSample_wrap( const void* brdf_data, float randx, float randy )
 {
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    return AiOrenNayarMISSample(brdfw->brdf_data, randx, randy);
