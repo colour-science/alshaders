@@ -239,6 +239,10 @@ node_update
         data->lightGroups[light] = AiNodeGetInt(light, "lightGroup") - 1;
     }
     AiNodeIteratorDestroy(it);
+
+    // check whether the normal parameters are connected or not
+    data->specular1NormalConnected = AiNodeIsLinked(node, "specular1Normal");
+    data->specular2NormalConnected = AiNodeIsLinked(node, "specular2Normal");
 };
 
 
@@ -342,9 +346,9 @@ shader_evaluate
                         if (doExtinction)
                         {
                             float z = AiV3Dist(sg->P, alsPreviousIntersection);
-                            outOpacity.r = expf(-z * als_sigma_t.r);
-                            outOpacity.g = expf(-z * als_sigma_t.g);
-                            outOpacity.b = expf(-z * als_sigma_t.b);
+                            outOpacity.r = fast_exp(-z * als_sigma_t.r);
+                            outOpacity.g = fast_exp(-z * als_sigma_t.g);
+                            outOpacity.b = fast_exp(-z * als_sigma_t.b);
                             outOpacity = 1.0f - (outOpacity*kt);
                         }
 
@@ -390,13 +394,13 @@ shader_evaluate
     AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
     AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
     AtVector specular1Normal = sg->N;
-    if (AiNodeIsLinked(node, "specular1Normal"))
+    if (data->specular1NormalConnected)
     {
         specular1Normal = AiShaderEvalParamVec(p_specular1Normal);
     }
 
     AtVector specular2Normal = sg->N;
-    if (AiNodeIsLinked(node, "specular2Normal"))
+    if (data->specular2NormalConnected)
     {
         specular2Normal = AiShaderEvalParamVec(p_specular2Normal);
     }
