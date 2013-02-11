@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(ARNOLD_VERSION 4.0.10.2)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 
-set(MTOA_VERSION 0.20.0)
+set(MTOA_VERSION 0.21.0)
 set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
 
 # check if we have a local cmake include file and include it if we do
