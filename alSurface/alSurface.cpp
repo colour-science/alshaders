@@ -538,6 +538,7 @@ shader_evaluate
         brdfw2.eta = eta2;
         brdfw2.V = wo;
         brdfw2.N = specular2Normal;
+        brdfw2.kr = 0.0f;
 
         sg->N = Nold;
 
@@ -549,6 +550,7 @@ shader_evaluate
         brdfd.eta = eta;
         brdfd.V = wo;
         brdfd.N = sg->N;
+        brdfd.kr = 0.0f;
 
         // Light loop
         AiLightsPrepare(sg);
