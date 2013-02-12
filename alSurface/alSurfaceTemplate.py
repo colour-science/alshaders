@@ -1,11 +1,10 @@
 import pymel.core as pm
-from mtoa.ui.ae.alShaders import alShadersTemplate
+from alShaders import alShadersTemplate
 
 class AEalSurfaceTemplate(alShadersTemplate):
     def setup(self):
         self.addSwatch()
         self.beginScrollLayout()
-        self.addCustom('message', 'AEshaderTypeNew', 'AEshaderTypeReplace')
 
         self.beginLayout('Diffuse', collapse=False)
 
