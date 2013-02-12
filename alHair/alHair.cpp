@@ -201,7 +201,7 @@ node_update
 float g(float beta, float alpha, float theta_h)
 {
     float n = theta_h-alpha;
-    return expf(-(n*n)/(2.0f*beta*beta));
+    return fast_exp(-(n*n)/(2.0f*beta*beta));
 }
 
 #define PIOVER4 0.7853981633974483f
@@ -331,7 +331,7 @@ shader_evaluate
             // Precalculate invariants across all lobes
             AtRGB L = sg->Li * sg->we * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
 
-            if (1)//maxh(L) > IMPORTANCE_EPS)
+            if (maxh(L) > IMPORTANCE_EPS)
             {
                 //float kr = data->fresnelLookup(phi);
                 //float kt = 1.0f - kr;
