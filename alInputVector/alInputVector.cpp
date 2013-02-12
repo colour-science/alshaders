@@ -1,4 +1,5 @@
 #include <ai.h>
+#include <cstring>
 
 AI_SHADER_NODE_EXPORT_METHODS(alInputVector)
 
