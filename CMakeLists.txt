@@ -3,8 +3,10 @@ cmake_minimum_required(VERSION 2.8)
 project(alShaders)
 
 set(CMAKE_BUILD_TYPE RELEASE)
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_VERBOSE_MAKEFILE FALSE)
+set(CMAKE_SKIP_RPATH TRUE)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 
 # pre-set the arnold and mtoa versions and root paths
 set(ARNOLD_VERSION 4.0.10.2)
