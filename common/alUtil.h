@@ -471,8 +471,8 @@ inline float modulo(float a, float b) {
  * \return
  *     A uniformly distributed 64-bit integer
  */
-inline uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds = 4) {
-    uint32_t sum = 0;
+inline AtUInt64 sampleTEA(AtUInt32 v0, AtUInt32 v1, int rounds = 4) {
+    AtUInt32 sum = 0;
 
     for (int i=0; i<rounds; ++i)
     {
@@ -481,15 +481,15 @@ inline uint64_t sampleTEA(uint32_t v0, uint32_t v1, int rounds = 4) {
         v1 += ((v0 << 4) + 0xAD90777D) ^ (v0 + sum) ^ ((v0 >> 5) + 0x7E95761E);
     }
 
-    return ((uint64_t) v1 << 32) + v0;
+    return ((AtUInt64) v1 << 32) + v0;
 }
 
-inline float sampleTEAFloat(uint32_t v0, uint32_t v1, int rounds = 4) {
+inline float sampleTEAFloat(AtUInt32 v0, AtUInt32 v1, int rounds = 4) {
     /* Trick from MTGP: generate an uniformly distributed
        single precision number in [1,2) and subtract 1. */
     union
     {
-        uint32_t u;
+        AtUInt32 u;
         float f;
     } x;
     x.u = ((sampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
@@ -498,7 +498,7 @@ inline float sampleTEAFloat(uint32_t v0, uint32_t v1, int rounds = 4) {
 
 // TODO: make this better
 #define M_RAN_INVM32 2.32830643653869628906e-010
-inline double random(uint32_t ui) { return ui * M_RAN_INVM32; }
+inline double random(AtUInt32 ui) { return ui * M_RAN_INVM32; }
 
 // Polynomial solvers below adapted from Cortex (which appear to themselves have been hoisted from Imath)
 // http://cortex-vfx.googlecode.com/svn-history/r2684/trunk/rsl/IECoreRI/Roots.h
