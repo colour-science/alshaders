@@ -22,7 +22,8 @@
 		"sublimeclang_options":
 		[
 			"-I${folder:${project_path:alshaders.sublime-project}}/*",
-			"-I/Users/anders/vfx/arnold/4.0.10.2/include"
+			"-I/Users/anders/vfx/arnold/4.0.10.2/include",
+            "-I/Users/anders/vfx/boost/1.43.0/include"
 		]
 	}
 }
