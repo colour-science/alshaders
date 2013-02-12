@@ -1,3 +1,3 @@
-set(MEL alRemap.mel)
+set(UI alShaders.py)
 
-install(FILES ${MEL} DESTINATION ${MTOA_SCRIPTS})
+install(FILES ${UI} DESTINATION ${MTOA_UI})

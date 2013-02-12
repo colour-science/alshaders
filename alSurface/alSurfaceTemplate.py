@@ -1,12 +1,11 @@
 import pymel.core as pm
-from mtoa.ui.ae.shaderTemplate import ShaderAETemplate
+from mtoa.ui.ae.alShaders import alShadersTemplate
 
-class AEalSurfaceTemplate(ShaderAETemplate):
+class AEalSurfaceTemplate(alShadersTemplate):
     def setup(self):
         self.addSwatch()
         self.beginScrollLayout()
         self.addCustom('message', 'AEshaderTypeNew', 'AEshaderTypeReplace')
-
 
         self.beginLayout('Diffuse', collapse=False)
 
@@ -92,5 +91,5 @@ class AEalSurfaceTemplate(ShaderAETemplate):
 
         pm.mel.AEdependNodeTemplate(self.nodeName)
 
-        self.addExtraControls();
+        self.addExtraControls()
         self.endScrollLayout()

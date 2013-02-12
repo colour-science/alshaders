@@ -3,7 +3,7 @@ set(SHADERS alBlackbody)
 foreach(SHADER ${SHADERS})
 	set(SRC ${SHADER}.cpp ../common/alUtil.cpp ../common/Color.cpp)
 	set(MTD ${SHADER}.mtd)
-	set(MEL AE${SHADER}Template.mel)
+	set(UI ${SHADER}Template.py)
 
 	add_library(${SHADER} SHARED ${SRC})
 
@@ -12,6 +12,6 @@ foreach(SHADER ${SHADERS})
 
 	install(TARGETS ${SHADER} DESTINATION ${MTOA_SHADERS})
 	install(FILES ${MTD} DESTINATION ${MTOA_SHADERS})
-	install(FILES ${MEL} DESTINATION ${MTOA_SCRIPTS})
+	install(FILES ${UI} DESTINATION ${MTOA_UI})
 endforeach()
 
