@@ -2,5 +2,6 @@
     desc                    STRING      ""
     maya.name               STRING      "alPhotometric"
     maya.classification     STRING      "light/filter"
+    maya.lights             STRING      "pointLight spotLight areaLight aiAreaLight"
     maya.id                 INT         0x0011640B
         
