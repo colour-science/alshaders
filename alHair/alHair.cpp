@@ -127,7 +127,8 @@ enum alHairParams
     p_glintSeparation,
     p_transmissionStrength,
     p_transmissionColor,
-    p_transmissionRolloff
+    p_transmissionRolloff,
+    p_opacity
 };
 
 node_parameters
@@ -148,6 +149,7 @@ node_parameters
     AiParameterFlt("transmissionStrength", 1.0f);
     AiParameterRGB("transmissionColor", 0.92f, 0.7f, 0.64f);
     AiParameterFlt("transmissionRolloff", 30.0f);
+    AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
 }
 
 node_loader
@@ -219,6 +221,18 @@ float sampleLong(double u, float theta_r, float alpha, float beta, float A, floa
 
 shader_evaluate
 {
+    // get opacity first
+    AtRGB opacity = AiShaderEvalParamRGB(p_opacity);
+    float geo_opacity = 1.0f;
+    if (AiUDataGetFlt("geo_opacity", &geo_opacity))
+    {
+        opacity *= geo_opacity;
+    }
+    if ((sg->Rt & AI_RAY_SHADOW) || AiShaderGlobalsApplyOpacity(sg, opacity))
+    {
+        return;
+    }
+
     // Initialize result temporaries
     AtRGB result_diffuse_direct = AI_RGB_BLACK;
     AtRGB result_diffuse_indirect = AI_RGB_BLACK;

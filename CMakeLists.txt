@@ -30,6 +30,7 @@ link_directories(${ARNOLD_ROOT}/bin)
 
 set(MTOA_SHADERS ${MTOA_ROOT}/shaders)
 set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
+set(MTOA_UI ${MTOA_ROOT}/scripts/mtoa/ui/ae)
 
 include_directories(common)
 

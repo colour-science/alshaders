@@ -1,4 +1,3 @@
-global proc bumpControlNew(string $attr)
 {
 	setUITemplate -pst "attributeEditorTemplate";
 	attrNavigationControlGrp -label "Bump mapping" -at $attr "bumpControl";
