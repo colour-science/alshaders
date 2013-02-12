@@ -228,6 +228,7 @@ shader_evaluate
     {
         opacity *= geo_opacity;
     }
+    // early out if in shadow ray or fully transparent
     if ((sg->Rt & AI_RAY_SHADOW) || AiShaderGlobalsApplyOpacity(sg, opacity))
     {
         return;
