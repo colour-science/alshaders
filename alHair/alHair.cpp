@@ -138,7 +138,7 @@ node_parameters
     AiParameterRGB("diffuseColor", 0.31f, 0.08f, 0.005f);
     AiParameterFlt("specularShift", 7.0f);
     AiParameterFlt("specularWidth", 5.0f);
-    AiParameterFlt("extraSamples", 0);
+    AiParameterInt("extraSamples", 0);
     AiParameterFlt("specular1Strength", 1.0f);
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f);
     AiParameterFlt("specular2Strength", 1.0f);
@@ -183,6 +183,7 @@ node_update
     ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
     AtNode *options   = AiUniverseGetOptions();
     int diffuse_samples = AiNodeGetInt(options, "GI_diffuse_samples");
+    std::cerr << "extra samples: " << params[p_extraSamples].INT << std::endl;
     int glossy_samples = std::max(0, AiNodeGetInt(options, "GI_glossy_samples") + params[p_extraSamples].INT);
     data->update(diffuse_samples, glossy_samples);
 
@@ -336,35 +337,22 @@ struct HairBsdf
 
     inline void FdiffuseDirect(const AtRGB& Li, float weight)
     {
-        result_diffuse_direct += cos_theta_i * Li * weight * AI_ONEOVER2PI;
+        result_diffuse_direct += cos_theta_i * Li * weight * AI_ONEOVER2PI * diffuseColor;
     }
 
     inline void scaleDirect()
     {
-        result_diffuse_direct *= diffuseColor;
         result_R_direct *= specular1Color;
         result_TT_direct *= transmissionColor;
         result_TRT_direct *= specular2Color;
         result_TRTg_direct *= specular2Color * glintStrength;
     }
 
-    inline void scaleR(float weight)
+    inline void scaleIndirect(float weight)
     {
-        result_R_indirect *= specular1Color * weight;   
-    }
-
-    inline void scaleTT(float weight)
-    {
+        result_R_indirect *= specular1Color * weight;
         result_TT_indirect *= transmissionColor * weight;
-    }
-
-    inline void scaleTRT(float weight)
-    {
-         result_TRT_indirect *= specular2Color * weight;
-    }
-
-    inline void scaleg(float weight)
-    {
+        result_TRT_indirect *= specular2Color * weight;
         result_TRTg_indirect *= specular2Color * glintStrength * weight;
     }
 
@@ -394,28 +382,11 @@ struct HairBsdf
         phi_i = phi_r - phi;
         if (phi_i < -AI_PI) phi_i += AI_PITIMES2;
         if (phi_i > AI_PI) phi_i -= AI_PITIMES2;
+        if (phi < -AI_PI) phi += AI_PITIMES2;
+        if (phi > AI_PI) phi -= AI_PITIMES2;
+        cosphi2 = cos(phi*0.5f);
         sphericalDirection(theta_i, phi_i, V, W, U, wi);
         invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
-    }
-
-    inline bool importantR()
-    {
-        return maxh(invariant*specular1Color) > IMPORTANCE_EPS;
-    }
-
-    inline bool importantTT()
-    {
-        return maxh(invariant*transmissionColor) > IMPORTANCE_EPS;
-    }
-
-    inline bool importantTRT()
-    {
-        return maxh(invariant*specular2Color) > IMPORTANCE_EPS;
-    }
-
-    inline bool importantg()
-    {
-        return maxh(invariant*specular2Color*glintStrength) > IMPORTANCE_EPS;
     }
 
     inline void sampleR(float u1, float u2)
@@ -428,14 +399,8 @@ struct HairBsdf
     {
         float t = theta_h-alpha_R;
         float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_R-B_R))) * (beta_R / (t*t + beta_R*beta_R));
-        cosphi2 = cosf(phi*0.5f);
         float pdf_phi = cosphi2*0.25f;
         return pdf_theta * pdf_phi;
-    }
-
-    inline void FR(const AtRGB& Li)
-    {
-        result_R_indirect += Li * invariant * bsdfR() / pdfR();
     }
 
     inline void sampleTRT(float u1, float u2)
@@ -448,14 +413,8 @@ struct HairBsdf
     {
         float t = theta_h-alpha_TRT;
         float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_TRT-B_TRT))) * (beta_TRT / (t*t + beta_TRT*beta_TRT));
-        cosphi2 = cosf(phi*0.5f);
         float pdf_phi = cosphi2*0.25f;
         return pdf_theta * pdf_phi;
-    }
-
-    inline void FTRT(const AtRGB& Li)
-    {
-        result_TRT_indirect += Li * invariant * bsdfTRT() / pdfTRT();
     }
 
     inline void sampleTT(float u1, float u2)
@@ -472,11 +431,6 @@ struct HairBsdf
         float p = phi-AI_PI;
         float pdf_phi = (1.0f / C_TT) * (gamma_TT / (p*p + gamma_TT*gamma_TT));
         return pdf_theta * pdf_phi;
-    }
-
-    inline void FTT(const AtRGB& Li)
-    {
-        result_TT_indirect += Li * invariant * bsdfTT() / pdfTT();
     }
 
     inline void sampleg(float u1, float u2)
@@ -508,10 +462,49 @@ struct HairBsdf
         return pdf_theta * pdf_phi;
     }
 
-    inline void Fg(const AtRGB& Li)
+    inline float pdfUniform()
     {
-        result_TRTg_indirect += Li * invariant * bsdfg() / pdfg();
+        return (pdfR() + pdfTT() + pdfTRT() + pdfg())* 0.25f;
     }
+
+    inline void sampleUniform(AtRay& wi_ray, double u1, double u2)
+    {
+        if (u1 < 0.5 && u2 < 0.5)
+        {
+            u1 = 2.0 * u1;
+            u2 = 2.0 * u2;
+            sampleR(u1, u2);
+        }
+        else if (u1 >= 0.5 && u2 < 0.5)
+        {
+            u1 = 2.0 * (1.0 - u1);
+            u2 = 2.0 * u2;
+            sampleTT(u1, u2);
+        }
+        else if (u1 < 0.5 && u2 >= 0.5)
+        {
+            u1 = 2.0 * u1;
+            u2 = 2.0 * (1.0 - u2);
+            sampleTRT(u1, u2);
+        }
+        else
+        {
+            u1 = 2.0 * (1.0 - u1);
+            u2 = 2.0 * (1.0 - u2);
+            sampleg(u1, u2);
+        }
+
+        prepareIndirectSample(wi_ray.dir);
+        AtFloat p = pdfUniform();
+        AtScrSample scrs;
+        AiTrace(&wi_ray, &scrs);
+        result_R_indirect += scrs.color * bsdfR() * invariant / p;
+        result_TT_indirect += scrs.color * bsdfTT() * invariant / p;
+        result_TRT_indirect += scrs.color * bsdfTRT() * invariant / p;
+        result_TRTg_indirect += scrs.color * bsdfg() * invariant / p;
+    }
+
+    
 
     AtVector U, V, W; //< local coordinate frame
     float theta_r; //< exitant spherical theta
@@ -649,6 +642,16 @@ shader_evaluate
         
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
 
+        
+        sampit = AiSamplerIterator(data->sampler_R, sg);
+        while(AiSamplerGetSample(sampit, samples))
+        {
+            hb.sampleUniform(wi_ray, samples[0], samples[1]);
+            hb.prepareIndirectSample(wi_ray.dir);
+        }
+        hb.scaleIndirect(AiSamplerGetSampleInvCount(sampit));
+        
+#if 0        
         sampit = AiSamplerIterator(data->sampler_R, sg);
         while(AiSamplerGetSample(sampit, samples))
         {
@@ -660,7 +663,7 @@ shader_evaluate
                 hb.FR(scrs.color);
             }
         }
-        hb.scaleR(AiSamplerGetSampleInvCount(sampit));
+        hb.result_R_indirect *= hb.specular1Color * AiSamplerGetSampleInvCount(sampit);
 
         sampit = AiSamplerIterator(data->sampler_TRT, sg);
         while(AiSamplerGetSample(sampit, samples))
@@ -673,7 +676,7 @@ shader_evaluate
                 hb.FTRT(scrs.color);
             }
         }
-        hb.scaleTRT(AiSamplerGetSampleInvCount(sampit));
+        hb.result_TRT_indirect *= hb.specular2Color * AiSamplerGetSampleInvCount(sampit);
 
         sampit = AiSamplerIterator(data->sampler_TT, sg);
         while(AiSamplerGetSample(sampit, samples))
@@ -686,7 +689,7 @@ shader_evaluate
                 hb.FTT(scrs.color);
             }
         }
-        hb.scaleTT(AiSamplerGetSampleInvCount(sampit));
+        hb.result_TT_indirect *= hb.transmissionColor * AiSamplerGetSampleInvCount(sampit);
 
         sampit = AiSamplerIterator(data->sampler_g, sg);
         while(AiSamplerGetSample(sampit, samples))
@@ -699,7 +702,8 @@ shader_evaluate
                 hb.Fg(scrs.color);
             }
         }
-        hb.scaleg(AiSamplerGetSampleInvCount(sampit));
+        hb.result_TRTg_indirect *= hb.specular2Color * hb.glintStrength * AiSamplerGetSampleInvCount(sampit);
+#endif
     }
 
     if (sg->Rt & AI_RAY_CAMERA)
