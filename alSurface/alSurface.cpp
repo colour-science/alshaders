@@ -753,7 +753,7 @@ shader_evaluate
             result_glossy2Indirect *= specular2Color;
         } // if (do_glossy2)
 
-        if (do_diffuse && kti*kti2*maxh(diffuseColor)*AI_ONEOVERPI > IMPORTANCE_EPS)
+        if (do_diffuse && kti*kti2*maxh(diffuseColor) > IMPORTANCE_EPS)
         {
             //result_diffuseIndirect = AiOrenNayarIntegrate(&sg->Nf, sg, diffuseRoughness) * diffuseColor * kti * kti2;
             AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
@@ -770,7 +770,7 @@ shader_evaluate
                     dgL[i] += deepGroup[i];
                 }
             }
-            AtRGB r = diffuseColor * kti * kti2 * AI_ONEOVERPI * AiSamplerGetSampleInvCount(sampit);
+            AtRGB r = diffuseColor * kti * kti2 * AiSamplerGetSampleInvCount(sampit);
             result_diffuseIndirect *= r;
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
