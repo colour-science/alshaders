@@ -116,9 +116,9 @@ inline void concentricSampleDisk(float u1, float u2, float& dx, float& dy)
     dy = r * sinf(theta);
 }
 
-inline Imath::V3f cosineSampleHemisphere(float u1, float u2)
+inline AtVector cosineSampleHemisphere(float u1, float u2)
 {
-   Imath::V3f ret;
+   AtVector ret;
    concentricSampleDisk(u1, u2, ret.x, ret.z);
    ret.y = sqrtf(std::max(0.0f, 1.0f - ret.x*ret.x - ret.z*ret.z));
    return ret;
