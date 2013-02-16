@@ -623,7 +623,7 @@ shader_evaluate
                 if (do_diffuse)
                 {
                     result_diffuseDirect +=
-                    AiEvaluateLightSample(sg,&brdfd,AiOrenNayarMISSample_wrap,AiOrenNayarMISBRDF_wrap, AiOrenNayarMISPDF_wrap)
+                    AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
                                             * (1.0f - brdfw.kr*maxh(specular1Color))
                                             * (1.0f - brdfw2.kr*maxh(specular2Color));
                 }
