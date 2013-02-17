@@ -206,6 +206,8 @@ float g(float beta, float alpha, float theta_h)
 }
 
 #define PIOVER4 0.7853981633974483f
+#define ONEOVER4PI 0.07957747154594767
+
 
 void AB(float theta_r, float alpha, float beta, float& A, float& B)
 {
@@ -295,6 +297,23 @@ struct HairBsdf
         invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
     }
 
+    inline void prepareIndirectSample(AtVector& wi)
+    {
+        cos_theta_i = std::max(cosf(theta_i), 0.0001f);
+        theta_h = (theta_r+theta_i)*0.5f;
+        theta_d = (theta_r - theta_i)*0.5f;
+        cos_theta_d = cosf(theta_d);
+        inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
+        phi_i = phi_r - phi;
+        if (phi_i < -AI_PI) phi_i += AI_PITIMES2;
+        if (phi_i > AI_PI) phi_i -= AI_PITIMES2;
+        if (phi < -AI_PI) phi += AI_PITIMES2;
+        if (phi > AI_PI) phi -= AI_PITIMES2;
+        cosphi2 = cos(phi*0.5f);
+        sphericalDirection(theta_i, phi_i, V, W, U, wi);
+        invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
+    }
+
     inline float bsdfR()
     {
         float Mr = g(beta_R, alpha_R, theta_h);
@@ -335,9 +354,16 @@ struct HairBsdf
         }
     }
 
-    inline void FdiffuseDirect(const AtRGB& Li, float weight)
+    inline void FdiffuseDirect(const AtRGB& Li, const AtVector& wi, float weight)
     {
-        result_diffuse_direct += cos_theta_i * Li * weight * AI_ONEOVER2PI * diffuseColor;
+        float tl = AiV3Dot(wi, U);
+        result_diffuse_direct += sqrtf(1.0f - tl*tl) * Li * weight * AI_ONEOVER2PI * diffuseColor;
+    }
+
+    inline void FdiffuseIndirect(const AtRGB& Li, const AtVector& wi)
+    {
+        float tl = AiV3Dot(wi, U);
+        result_diffuse_indirect += Li * sqrtf(1.0f - tl*tl) / ONEOVER4PI;
     }
 
     inline void scaleDirect()
@@ -358,35 +384,12 @@ struct HairBsdf
 
     inline void scaleDiffuse(float weight)
     {
-        result_diffuse_indirect *= diffuseColor * weight;
+        result_diffuse_indirect *= diffuseColor * weight * AI_ONEOVER2PI;
     }
 
     inline void sampleDiffuse(float u1, float u2, AtVector& wi)
     {
         wi = uniformSampleSphere(u1, u2);
-    }
-
-    inline void FdiffuseIndirect(const AtRGB& Li, const AtVector& wi)
-    {
-        float tl = AiV3Dot(wi, U);
-        result_diffuse_indirect += Li * sqrtf(1.0f - tl*tl) * AI_ONEOVER2PI;
-    }
-
-    inline void prepareIndirectSample(AtVector& wi)
-    {
-        cos_theta_i = std::max(cosf(theta_i), 0.0001f);
-        theta_h = (theta_r+theta_i)*0.5f;
-        theta_d = (theta_r - theta_i)*0.5f;
-        cos_theta_d = cosf(theta_d);
-        inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        phi_i = phi_r - phi;
-        if (phi_i < -AI_PI) phi_i += AI_PITIMES2;
-        if (phi_i > AI_PI) phi_i -= AI_PITIMES2;
-        if (phi < -AI_PI) phi += AI_PITIMES2;
-        if (phi > AI_PI) phi -= AI_PITIMES2;
-        cosphi2 = cos(phi*0.5f);
-        sphericalDirection(theta_i, phi_i, V, W, U, wi);
-        invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
     }
 
     inline void sampleR(float u1, float u2)
@@ -469,6 +472,7 @@ struct HairBsdf
 
     inline void sampleUniform(AtRay& wi_ray, double u1, double u2)
     {
+        // Choose a lobe to sample based on which quadrant we are in
         if (u1 < 0.5 && u2 < 0.5)
         {
             u1 = 2.0 * u1;
@@ -494,14 +498,22 @@ struct HairBsdf
             sampleg(u1, u2);
         }
 
+        // precalculate some stuff
         prepareIndirectSample(wi_ray.dir);
-        AtFloat p = pdfUniform();
+        AtFloat p = invariant / pdfUniform();
         AtScrSample scrs;
-        AiTrace(&wi_ray, &scrs);
-        result_R_indirect += scrs.color * bsdfR() * invariant / p;
-        result_TT_indirect += scrs.color * bsdfTT() * invariant / p;
-        result_TRT_indirect += scrs.color * bsdfTRT() * invariant / p;
-        result_TRTg_indirect += scrs.color * bsdfg() * invariant / p;
+
+        if (p > IMPORTANCE_EPS*0.1)
+        {
+            // trace our ray
+            AiTrace(&wi_ray, &scrs);
+
+            // calculate result
+            result_R_indirect += scrs.color * bsdfR() * p;
+            result_TT_indirect += scrs.color * bsdfTT() * p;
+            result_TRT_indirect += scrs.color * bsdfTRT() * p;
+            result_TRTg_indirect += scrs.color * bsdfg() * p;
+        }
     }
 
     
@@ -560,6 +572,23 @@ struct HairBsdf
     AtRGB result_TRTg_indirect;
 };
 
+AtVector HairDiffuseSample(const void* brdf_data, float u1, float u2)
+{
+    return uniformSampleSphere(u1, u2);
+}
+
+AtRGB HairDiffuseBsdf(const void* brdf_data, const AtVector* wi)
+{
+    const HairBsdf* hb = reinterpret_cast<const HairBsdf*>(brdf_data);
+    float tl = AiV3Dot(*wi, hb->U);
+    return rgb(sqrtf(1.0f - tl*tl)* AI_ONEOVER2PI);
+}
+
+float HairDiffusePdf(const void* brdf_data, const AtVector* wi)
+{
+    return ONEOVER4PI;
+}
+
 shader_evaluate
 {
     // get opacity first
@@ -591,6 +620,7 @@ shader_evaluate
         do_TRT = true;
         do_g = false;
     }
+
     if (sg->Rr_diff > 0)
     {
         do_glossy = false;
@@ -604,7 +634,7 @@ shader_evaluate
     {
         if (do_diffuse)
         {
-            hb.FdiffuseDirect(sg->Li, sg->we);
+            hb.result_diffuse_direct += AiEvaluateLightSample(sg, &hb, HairDiffuseSample, HairDiffuseBsdf, HairDiffusePdf) * hb.diffuseColor;
         }
 
         if (do_glossy)
@@ -647,63 +677,8 @@ shader_evaluate
         while(AiSamplerGetSample(sampit, samples))
         {
             hb.sampleUniform(wi_ray, samples[0], samples[1]);
-            hb.prepareIndirectSample(wi_ray.dir);
         }
         hb.scaleIndirect(AiSamplerGetSampleInvCount(sampit));
-        
-#if 0        
-        sampit = AiSamplerIterator(data->sampler_R, sg);
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            hb.sampleR(samples[0], samples[1]);
-            hb.prepareIndirectSample(wi_ray.dir);
-            if (hb.importantR())
-            {
-                AiTrace(&wi_ray, &scrs);
-                hb.FR(scrs.color);
-            }
-        }
-        hb.result_R_indirect *= hb.specular1Color * AiSamplerGetSampleInvCount(sampit);
-
-        sampit = AiSamplerIterator(data->sampler_TRT, sg);
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            hb.sampleTRT(samples[0], samples[1]);
-            hb.prepareIndirectSample(wi_ray.dir);
-            if (hb.importantTRT())
-            {
-                AiTrace(&wi_ray, &scrs);
-                hb.FTRT(scrs.color);
-            }
-        }
-        hb.result_TRT_indirect *= hb.specular2Color * AiSamplerGetSampleInvCount(sampit);
-
-        sampit = AiSamplerIterator(data->sampler_TT, sg);
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            hb.sampleTT(samples[0], samples[1]);
-            hb.prepareIndirectSample(wi_ray.dir);
-            if (hb.importantTT())
-            {
-                AiTrace(&wi_ray, &scrs);
-                hb.FTT(scrs.color);
-            }
-        }
-        hb.result_TT_indirect *= hb.transmissionColor * AiSamplerGetSampleInvCount(sampit);
-
-        sampit = AiSamplerIterator(data->sampler_g, sg);
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            hb.sampleg(samples[0], samples[1]);
-            hb.prepareIndirectSample(wi_ray.dir);
-            if (hb.importantg())
-            {
-                AiTrace(&wi_ray, &scrs);
-                hb.Fg(scrs.color);
-            }
-        }
-        hb.result_TRTg_indirect *= hb.specular2Color * hb.glintStrength * AiSamplerGetSampleInvCount(sampit);
-#endif
     }
 
     if (sg->Rt & AI_RAY_CAMERA)
