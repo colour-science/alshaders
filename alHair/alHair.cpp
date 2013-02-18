@@ -141,6 +141,8 @@ struct HairBsdf
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
     node(n), data(d)
     {
+        depth = sg->Rr;
+
         result_diffuse_direct = AI_RGB_BLACK;
         result_diffuse_indirect = AI_RGB_BLACK;
         result_R_direct = AI_RGB_BLACK;
@@ -251,7 +253,7 @@ struct HairBsdf
         if (phi_i > AI_PI) phi_i -= AI_PITIMES2;
         if (phi < -AI_PI) phi += AI_PITIMES2;
         if (phi > AI_PI) phi -= AI_PITIMES2;
-        cosphi2 = cos(phi*0.5f);
+        cosphi2 = cosf(phi*0.5f);
         sphericalDirection(theta_i, phi_i, V, W, U, wi);
         invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
     }
@@ -305,7 +307,7 @@ struct HairBsdf
     inline void sampleR(float u1, float u2)
     {
         theta_i = sampleLong(u1, theta_r, alpha_R, beta_R, A_R, B_R);
-        phi = 2.0f * asinf(2.0f*u2 - 1.0f);
+        phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f));
     }
 
     /// PDF of the R lobe
@@ -321,7 +323,7 @@ struct HairBsdf
     inline void sampleTRT(float u1, float u2)
     {
         theta_i = sampleLong(u1, theta_r, alpha_TRT, beta_TRT, A_TRT, B_TRT);
-        phi = 2.0f * asinf(2.0f*u2 - 1.0f);
+        phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f));
     }
 
     /// PDF of the TRT lobe
@@ -386,29 +388,45 @@ struct HairBsdf
     inline void sampleGlossyUniform(double u1, double u2)
     {
         // Choose a lobe to sample based on which quadrant we are in
-        if (u1 < 0.5 && u2 < 0.5)
+        if (depth < 1)
         {
-            u1 = 2.0 * u1;
-            u2 = 2.0 * u2;
-            sampleR(u1, u2);
-        }
-        else if (u1 >= 0.5 && u2 < 0.5)
-        {
-            u1 = 2.0 * (1.0 - u1);
-            u2 = 2.0 * u2;
-            sampleTT(u1, u2);
-        }
-        else if (u1 < 0.5 && u2 >= 0.5)
-        {
-            u1 = 2.0 * u1;
-            u2 = 2.0 * (1.0 - u2);
-            sampleTRT(u1, u2);
+            if (u1 < 0.5 && u2 < 0.5)
+            {
+                u1 = 2.0 * u1;
+                u2 = 2.0 * u2;
+                sampleR(u1, u2);
+            }
+            else if (u1 >= 0.5 && u2 < 0.5)
+            {
+                u1 = 2.0 * (1.0 - u1);
+                u2 = 2.0 * u2;
+                sampleTT(u1, u2);
+            }
+            else if (u1 < 0.5 && u2 >= 0.5)
+            {
+                u1 = 2.0 * u1;
+                u2 = 2.0 * (1.0 - u2);
+                sampleTRT(u1, u2);
+            }
+            else
+            {
+                u1 = 2.0 * (1.0 - u1);
+                u2 = 2.0 * (1.0 - u2);
+                sampleg(u1, u2);
+            }
         }
         else
         {
-            u1 = 2.0 * (1.0 - u1);
-            u2 = 2.0 * (1.0 - u2);
-            sampleg(u1, u2);
+            if (u1 < 0.5)
+            {
+                u1 = 2.0 * u1;
+                sampleR(u1, u2);
+            }
+            else if (u1 >= 0.5)
+            {
+                u1 = 2.0 * (1.0 - u1);
+                sampleTT(u1, u2);
+            }
         }
 
         // precalculate some stuff
@@ -422,17 +440,31 @@ struct HairBsdf
             AiTrace(&wi_ray, &scrs);
 
             // calculate result
-            result_R_indirect += scrs.color * bsdfR() * p;
-            result_TT_indirect += scrs.color * bsdfTT() * p;
-            result_TRT_indirect += scrs.color * bsdfTRT() * p;
-            result_TRTg_indirect += scrs.color * bsdfg() * p;
+            if (depth < 1)
+            {
+                result_R_indirect += scrs.color * bsdfR() * p;
+                result_TT_indirect += scrs.color * bsdfTT() * p;
+                result_TRT_indirect += scrs.color * bsdfTRT() * p;
+                result_TRTg_indirect += scrs.color * bsdfg() * p;
+            }
+            else
+            {
+                result_R_indirect += scrs.color * bsdfR() * p;
+                result_TT_indirect += scrs.color * bsdfTT() * p;
+                result_TRT_indirect += scrs.color * bsdfTRT() * p;
+                result_TRTg_indirect += scrs.color * bsdfg() * p;
+            }
         }
     }
 
     /// PDF for uniformly sampling all glossy lobes
     inline float pdfUniform()
     {
-        return (pdfR() + pdfTT() + pdfTRT() + pdfg())* 0.25f;
+        float pdf;
+        if (depth < 1) pdf = (pdfR() + pdfTT() + pdfTRT() + pdfg())* 0.25f;
+        else pdf = (pdfR() + pdfTT()) * 0.5f;
+
+        return pdf;
     }
 
     /// MIS diffuse sampling
@@ -563,6 +595,13 @@ struct HairBsdf
         {
             opacity *= geo_opacity;
         }
+
+        //if (!(sg->Rt & AI_RAY_SHADOW || sg->Rt & AI_RAY_CAMERA))
+        if (sg->transp_index > 5)
+        {
+            opacity = 1.0f;
+        }
+
         // early out if in shadow ray or fully transparent
         return ((sg->Rt & AI_RAY_SHADOW) || AiShaderGlobalsApplyOpacity(sg, opacity));
     }
@@ -622,6 +661,8 @@ struct HairBsdf
 
     bool do_diffuse;
     bool do_glossy;
+
+    int depth;
 
     AtNode* node;
     ShaderData* data;
