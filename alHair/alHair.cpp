@@ -102,6 +102,9 @@ inline AtRGB g(AtRGB beta, AtRGB alpha, AtRGB theta_h)
     );
 }
 
+#define NORMALIZED_GAUSSIAN
+#ifdef NORMALIZED_GAUSSIAN
+
 /// Normalized gaussian with offset
 inline float gn(float beta, float alpha, float theta_h)
 {
@@ -118,6 +121,26 @@ inline AtRGB gn(AtRGB beta, AtRGB alpha, AtRGB theta_h)
     );
 }
 
+#else
+
+// Normalized gaussian with offset
+inline float gn(float beta, float alpha, float theta_h)
+{
+    float n = theta_h-alpha;
+    return fast_exp(-(n*n)/(2.0f*beta));
+}
+
+inline AtRGB gn(AtRGB beta, AtRGB alpha, AtRGB theta_h)
+{
+    return AiColorCreate(
+        gn(beta.r, alpha.r, theta_h.r),
+        gn(beta.g, alpha.g, theta_h.g),
+        gn(beta.b, alpha.b, theta_h.b)
+    );
+}
+
+#endif
+
 /// Scattering of the R lobe
 inline float bsdfR(float beta_R, float alpha_R, float theta_h, float cosphi2)
 {
@@ -130,7 +153,7 @@ inline float bsdfR(float beta_R, float alpha_R, float theta_h, float cosphi2)
 inline float bsdfTT(float beta_TT, float alpha_TT, float theta_h, float gamma_TT, float phi)
 {
     float Mtt = g(beta_TT, alpha_TT, theta_h);
-    float Ntt = g(gamma_TT, 0.0f, AI_PI-fabsf(phi));
+    float Ntt = g(gamma_TT, 0.0f, AI_PI-phi);
     return Mtt * Ntt;
 }
 
@@ -146,7 +169,7 @@ inline float bsdfTRT(float beta_TRT, float alpha_TRT, float theta_h, float cosph
 inline float bsdfg(float beta_TRT, float alpha_TRT, float theta_h, float gamma_g, float phi, float phi_g)
 {
     float Mtrt = g(beta_TRT, alpha_TRT, theta_h);
-    float Ng = g(gamma_g, 0.0f, fabsf(phi) - phi_g);
+    float Ng = g(gamma_g, 0.0f, phi - phi_g);
     return Mtrt * Ng;
 }
 
@@ -216,6 +239,8 @@ struct HairBsdf
             memset(a_bar_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             memset(alpha_f, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             memset(alpha_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
+            memset(beta_f, 0, sizeof(AtRGB)*DS_NUMSTEPS);
+            memset(beta_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             for (float theta_d = 0; theta_d < AI_PIOVER2; theta_d+=theta_d_step)
             {
                 for (float theta_r = -AI_PIOVER2; theta_r < AI_PIOVER2; theta_r += theta_r_step)
@@ -433,6 +458,7 @@ struct HairBsdf
         phi = phi_r - phi_i;
         if (phi < -AI_PI) phi += AI_PITIMES2;
         if (phi > AI_PI) phi -= AI_PITIMES2;
+        phi = fabsf(phi);
         cosphi2 = cosf(phi*0.5f);
         theta_h = (theta_r + theta_i)*0.5f;
         theta_d = (theta_r - theta_i)*0.5f;
@@ -455,6 +481,7 @@ struct HairBsdf
         if (phi_i > AI_PI) phi_i -= AI_PITIMES2;
         if (phi < -AI_PI) phi += AI_PITIMES2;
         if (phi > AI_PI) phi -= AI_PITIMES2;
+        phi = fabsf(phi);
         cosphi2 = cosf(phi*0.5f);
         sphericalDirection(theta_i, phi_i, V, W, U, wi);
         invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
@@ -675,6 +702,19 @@ struct HairBsdf
         result_TRT_direct *= specular2Color;
         result_TRTg_direct *= specular2Color * glintStrength;
         sg->fhemi = true;
+        
+
+        /*
+        sg->fhemi = false;
+        AiLightsPrepare(sg);
+        while (AiLightsGetSample(sg))
+        {
+            prepareDirectSample(sg->Ld);
+            result_R_direct = rgb(phi / AI_PI);
+        }
+
+        sg->fhemi = true;
+        */
     }
 
     /// Integrate the direct illumination with dual scattering for all diffuse and glossy lobes
@@ -706,23 +746,23 @@ struct HairBsdf
             AtRGB theta_hr = rgb(theta_h);
             AtRGB f_direct_back = 2.0f * data->A_b[idx] * gn(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
             AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
-            if (als_hairNumIntersections)// && phi >= AI_PIOVER2)
+            if (als_hairNumIntersections)
             {
                 AtRGB T_f = als_T_f;
                 AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
 
-                
+                AtRGB f_s_scatter = AI_RGB_BLACK;
 
-                
-                AtRGB f_s_scatter = gn(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[idx]
+                if (phi >= AI_PIOVER2) // forward scattering directions only
+                {
+                    f_s_scatter = gn(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[idx]
                                     + gn(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[idx]
                                     + gn(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[idx];
-
+                }
                 
                 AtRGB f_scatter_back = 2.0f * data->A_b[idx] * gn(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
 
                 float directFraction = 0.0f;
-                //AtRGB F_direct = 
                 AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
 
                 result_Pg_direct += sg->Li * sg->we * occlusion * F_scatter * cos_theta_i;
@@ -1083,6 +1123,7 @@ shader_evaluate
     
     // Do direct illumination
     hb.integrateDirectDual(sg);
+    //hb.integrateDirect(sg);
 
     // Writeshader result
     hb.writeResult(sg);
