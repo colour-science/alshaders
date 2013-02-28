@@ -6,10 +6,10 @@ class AEalHairTemplate(alShadersTemplate):
         self.addSwatch()
         self.beginScrollLayout()
 
-        self.beginLayout('Diffuse', collapse=False)
-        self.addControl('diffuseStrength', label='Strengh')
-        self.addControl('diffuseColor', label='Color')
-        self.endLayout() # end Diffuse
+        #self.beginLayout('Diffuse', collapse=False)
+        #self.addControl('diffuseStrength', label='Strengh')
+        #self.addControl('diffuseColor', label='Color')
+        #self.endLayout() # end Diffuse
 
         self.beginLayout('Fibre properties', collapse=False)
         self.addControl('specularWidth', label='Highlight width')
@@ -33,6 +33,11 @@ class AEalHairTemplate(alShadersTemplate):
         self.addControl('transmissionColor', label='Color')
         self.addControl('transmissionRolloff', label='Rolloff')
         self.endLayout() # end Transmission
+
+        self.beginLayout('Dual scattering', collapse=False)
+        self.addControl('densityFront')
+        self.addControl('densityBack')
+        self.endLayout() # end Dual scattering
 
         self.beginLayout('Advanced', collapse=True)
         self.addControl('extraSamples', label='Extra samples')

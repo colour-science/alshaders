@@ -26,7 +26,9 @@ enum alHairParams
     p_transmissionStrength,
     p_transmissionColor,
     p_transmissionRolloff,
-    p_opacity
+    p_opacity,
+    p_densityFront,
+    p_densityBack
 };
 
 // hard-code IOR for now
@@ -427,6 +429,9 @@ struct HairBsdf
         transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
         glintStrength = AiShaderEvalParamFlt(p_glintStrength) * cn;
 
+        density_front = AiShaderEvalParamFlt(p_densityFront);
+        density_back = AiShaderEvalParamFlt(p_densityBack);
+
         do_diffuse = do_glossy = true;
         if (sg->Rr_diff > 0)
         {
@@ -726,6 +731,7 @@ struct HairBsdf
     /// Integrate the indirect illumination for all diffuse and glossy lobes
     inline void integrateIndirect(AtShaderGlobals* sg)
     {
+        /*
         if (do_diffuse)
         {
             AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_diffuse, sg);
@@ -740,6 +746,7 @@ struct HairBsdf
             // The FOURPI factor comes from moving the pdf 1/4*pi pdf out of the loop
             result_diffuse_indirect *= diffuseColor * AiSamplerGetSampleInvCount(sampit) * AI_ONEOVER2PI * FOURPI;
         }
+        */
 
         if (do_glossy)
         {
@@ -1081,6 +1088,8 @@ node_parameters
     AiParameterRGB("transmissionColor", 0.92f, 0.7f, 0.64f);
     AiParameterFlt("transmissionRolloff", 30.0f);
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
+    AiParameterFlt("densityFront", 0.7f);
+    AiParameterFlt("densityBack", 0.7f);
 }
 
 node_loader
@@ -1213,7 +1222,11 @@ shader_evaluate
     // Do direct illumination
     hb.integrateDirectDual(sg);
 
-    hb.integrateIndirectDual(sg);
+    //if (sg->Rr_gloss < 1)
+    //    hb.integrateIndirect(sg);
+    //else
+        hb.integrateIndirectDual(sg);
+
 #endif
     // Writeshader result
     hb.writeResult(sg);
