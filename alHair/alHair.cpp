@@ -383,13 +383,21 @@ struct HairBsdf
         result_Pl_direct = AI_RGB_BLACK;
         result_Pg_indirect = AI_RGB_BLACK;
         result_Pl_indirect = AI_RGB_BLACK;
+        result_id1 = AI_RGB_BLACK;
+        result_id2 = AI_RGB_BLACK;
+        result_id3 = AI_RGB_BLACK;
+        result_id4 = AI_RGB_BLACK;
+        result_id5 = AI_RGB_BLACK;
+        result_id6 = AI_RGB_BLACK;
+        result_id7 = AI_RGB_BLACK;
+        result_id8 = AI_RGB_BLACK;
     }
 
     /// Parameter evaluation. This should be called after opacity() and before anything else.
     inline void evaluateParameters(AtShaderGlobals* sg)
     {
         // Get the spherical angles of the exitant direction relative to the hair fibre
-        AtVector wo = -sg->Rd;
+        wo = -sg->Rd;
         theta_r = AI_PIOVER2 - sphericalTheta(wo, U);
         phi_r = sphericalPhi(wo, V, W);
 
@@ -715,6 +723,10 @@ struct HairBsdf
                     result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi);
                     result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2);
                     result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g);
+
+                    result_id1 = rgb(phi);
+                    result_id2 = rgb(theta_i/AI_PIOVER2, theta_r/AI_PIOVER2, theta_h/AI_PIOVER2);
+                    result_id3 = rgb(cos_theta_i, theta_d/AI_PIOVER2, inv_cos_theta_d2);
                 }
             }
         }
@@ -946,6 +958,14 @@ struct HairBsdf
             AiAOVSetRGB(sg, "localDirect", result_Pl_direct);
             AiAOVSetRGB(sg, "globalIndirect", result_Pg_indirect);
             AiAOVSetRGB(sg, "localIndirect", result_Pl_indirect);
+            AiAOVSetRGB(sg, "id1", result_id1);
+            AiAOVSetRGB(sg, "id2", result_id2);
+            AiAOVSetRGB(sg, "id3", result_id3);
+            AiAOVSetRGB(sg, "id4", result_id4);
+            AiAOVSetRGB(sg, "id5", result_id5);
+            AiAOVSetRGB(sg, "id6", result_id6);
+            AiAOVSetRGB(sg, "id7", result_id7);
+            AiAOVSetRGB(sg, "id8", result_id8);
         }
 
         sg->out.RGB =   result_diffuse_direct +
@@ -1054,6 +1074,16 @@ struct HairBsdf
     AtRGB result_Pg_indirect;
     AtRGB result_Pl_indirect;
 
+    // IDs
+    AtRGB result_id1;
+    AtRGB result_id2;
+    AtRGB result_id3;
+    AtRGB result_id4;
+    AtRGB result_id5;
+    AtRGB result_id6;
+    AtRGB result_id7;
+    AtRGB result_id8;
+
     bool do_diffuse;
     bool do_glossy;
 
@@ -1065,7 +1095,8 @@ struct HairBsdf
     AtScrSample scrs;
     double samples[2];
     AtSamplerIterator* sampit;
-    
+
+    AtVector wo;
 };
 
 
