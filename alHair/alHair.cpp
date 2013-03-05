@@ -704,8 +704,10 @@ struct HairBsdf
         theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));// * SGN(AiV3Dot(wi,wo));
         cos_theta_i = fabsf(cosf(theta_i));
         phi_i = sphericalPhi(wi, V, W);
-        phi = phi_r - phi_i;
-        if (phi < 0) phi += AI_PITIMES2;
+        phi_d = phi_r - phi_i;
+        if (phi_d < 0) phi_d += AI_PITIMES2;
+        phi = phi_d - AI_PI;
+        phi = AI_PI - fabsf(phi);
 
         cosphi2 = fabsf(cosf(phi*0.5f));
         theta_h = (theta_r + theta_i)*0.5f;
@@ -770,7 +772,7 @@ struct HairBsdf
                 AtRGB L = sg->Li * sg->we * invariant;
                 if (maxh(L) > IMPORTANCE_EPS)
                 {
-                    hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi, absorption, kfr);
+                    hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
 
                     result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
                     result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
@@ -895,8 +897,7 @@ struct HairBsdf
                     AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
 
                     AtRGB f_s_scatter = AI_RGB_BLACK;
-                    float phi_c = cosf(fabsf(phi-AI_PI));
-                    if (phi_c > 0 ) // forward scattering directions only
+                    if (phi >= AI_PIOVER2 ) // forward scattering directions only
                     {
                         f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[idx]
                                         + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[idx]
@@ -970,8 +971,7 @@ struct HairBsdf
 
                 AtRGB f_s_scatter = AI_RGB_BLACK;
 
-                float phi_c = cosf(fabsf(phi-AI_PI));
-                if (phi_c > 0) // forward scattering directions only
+                if (phi > AI_PIOVER2) // forward scattering directions only
                 {
                     f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[idx]
                                     + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[idx]
@@ -1160,6 +1160,7 @@ struct HairBsdf
     AtVector wo;
     AtFloat theta_htt;
     AtRGB absorption;
+    float phi_d;
 };
 
 
