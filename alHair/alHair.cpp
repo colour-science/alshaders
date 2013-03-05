@@ -783,7 +783,6 @@ struct HairBsdf
                     result_id2 = rgb(theta_i/AI_PIOVER2, theta_r/AI_PIOVER2, theta_h/AI_PIOVER2);
                     result_id3 = rgb(cos_theta_i, theta_d/AI_PIOVER2, inv_cos_theta_d2);
                     result_id4 = rgb(cosphi2, SGN(AiV3Dot(sg->Ld,wo)), SGN(AiV3Dot(sg->Ld,U)));
-                    //result_id5 = rgb(kfr[0], kfr[1], kfr[2]);
                     result_id5 = kfr[0];
                     result_id6 = kfr[1];
                     result_id7 = kfr[2];
@@ -1265,6 +1264,7 @@ node_update
 
 shader_evaluate
 {
+    
     // Get shader data
     HairBsdf::ShaderData* data = (HairBsdf::ShaderData*)AiNodeGetLocalData(node);
 
@@ -1323,6 +1323,8 @@ shader_evaluate
 #endif
     // Writeshader result
     hb.writeResult(sg);
+
+
 }
 
 
