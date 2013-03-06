@@ -32,7 +32,8 @@ static const char* patternNames[] =
 {
 	"sine",
 	"square",
-	"saw"
+	"saw",
+	NULL
 };
 
 static const char* axisNames[] =
