@@ -17,6 +17,7 @@ set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
 
 #set boost root path
 set(BOOST_ROOT /Users/anders/vfx/boost/1.43.0)
+set(BOOST_INCLUDE_PATH ${BOOST_ROOT}/include)
 
 # check if we have a local cmake include file and include it if we do
 # this is useful for overriding our arnold and mtoa locations
@@ -37,7 +38,7 @@ set(MTOA_UI ${MTOA_ROOT}/scripts/mtoa/ui/ae)
 include_directories(common)
 
 #include boost for alPhotometric
-include_directories(${BOOST_ROOT}/include)
+include_directories(${BOOST_INCLUDE_PATH})
 
 set(SUBDIRECTORIES 
         alSurface
