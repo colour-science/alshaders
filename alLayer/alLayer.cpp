@@ -59,51 +59,51 @@ node_finish
 
 #define NUM_AOVs 20
 static const char* AOVs[NUM_AOVs] = {
-	"diffuseDirect",
-	"diffuseIndirect",
-	"specularDirect",
-	"specularIndirect",
-	"specular2Direct",
-	"specular2Indirect",
-	"singleScatter",
-	"multiScatter",
-	"transmission",
+	"direct_diffuse",
+	"indirect_diffuse",
+	"direct_specular",
+	"indirect_specular",
+	"direct_specular_2",
+	"indirect_specular_2",
+	"single_scatter",
+	"sss",
+	"refraction",
 	"emission",
 	"uv",
 	"depth",
-	"lightGroup1",
-	"lightGroup2",
-	"lightGroup3",
-	"lightGroup4",
-	"lightGroup5",
-	"lightGroup6",
-	"lightGroup7",
-	"lightGroup8"
+	"light_group_1",
+	"light_group_2",
+	"light_group_3",
+	"light_group_4",
+	"light_group_5",
+	"light_group_6",
+	"light_group_7",
+	"light_group_8"
 };
 
 
 node_update
 {
-	AiAOVRegister("diffuseDirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("diffuseIndirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("specularDirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("specularIndirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("specular2Direct", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("specular2Indirect", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("singleScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("multiScatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("transmission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("direct_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("indirect_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("indirect_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("direct_specular_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("indirect_specular_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("single_scatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("sss", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("refraction", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("emission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("uv", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("depth", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("lightGroup1", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("lightGroup2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("lightGroup3", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("lightGroup4", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("lightGroup5", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("lightGroup6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("lightGroup7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("lightGroup8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("light_group_1", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("light_group_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("light_group_3", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("light_group_4", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("light_group_5", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("light_group_6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("light_group_7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("light_group_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 }
 
 shader_evaluate
