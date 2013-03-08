@@ -113,7 +113,7 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
         if (p != 1)
         {
             if (phi_p > AI_PI) phi_p -= AI_PITIMES2;
-            //phi_p += p*AI_PI;
+            phi_p += p*AI_PI;
         }
         // get roots of polynomial
         float roots[3] = {0,0,0};
@@ -129,10 +129,10 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
             else
             {
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
-                float theta_t = acosf((n_p/ior)*cos_theta_i);
+                float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
                 float cos_theta_t = cosf(theta_t);
                 float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
-                Fr = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true));// * exp(-absorption*l);
+                Fr = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
             }
         }
         else 
@@ -863,6 +863,7 @@ struct HairBsdf
             AtRay ray;
             AtScrSample scrs;
             AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), NULL, AI_BIG, sg);
+            AtRGB kfr[3];
             while (AiLightsGetSample(sg))
             {
                 prepareDirectSample(sg->Ld);
@@ -877,18 +878,23 @@ struct HairBsdf
                 AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
 
                 int idx = int((fabs(theta_d) / AI_PIOVER2)*DS_NUMSTEPS);
+                //int idx = int((theta_d / AI_PIOVER2 + 0.5f)*(DS_NUMSTEPS-1));
                 AtRGB theta_hr = rgb(theta_h);
                 AtRGB f_direct_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
                 AtRGB occlusion = AI_RGB_WHITE - scrs.opacity; 
                 float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
+
                 if (directFraction > 0.0f)
                 {
+                    AtRGB kfr[3];
+                    hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
                     result_Pl_direct += sg->Li * sg->we * occlusion * density_back * f_direct_back * cos_theta_i * directFraction;
                     AtRGB L = sg->Li * sg->we * invariant * occlusion * directFraction;
-                    result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2);
-                    result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi);
-                    result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2);
-                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g);
+                    
+                    result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
+                    result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
+                    result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
+                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[2];
                 }
                 if (directFraction < 1.0f)
                 {
@@ -1018,14 +1024,14 @@ struct HairBsdf
             AiAOVSetRGB(sg, "localDirect", result_Pl_direct);
             AiAOVSetRGB(sg, "globalIndirect", result_Pg_indirect);
             AiAOVSetRGB(sg, "localIndirect", result_Pl_indirect);
-            AiAOVSetRGB(sg, "id1", result_id1);
-            AiAOVSetRGB(sg, "id2", result_id2);
-            AiAOVSetRGB(sg, "id3", result_id3);
-            AiAOVSetRGB(sg, "id4", result_id4);
-            AiAOVSetRGB(sg, "id5", result_id5);
-            AiAOVSetRGB(sg, "id6", result_id6);
-            AiAOVSetRGB(sg, "id7", result_id7);
-            AiAOVSetRGB(sg, "id8", result_id8);
+            AiAOVSetRGB(sg, "id_1", result_id1);
+            AiAOVSetRGB(sg, "id_2", result_id2);
+            AiAOVSetRGB(sg, "id_3", result_id3);
+            AiAOVSetRGB(sg, "id_4", result_id4);
+            AiAOVSetRGB(sg, "id_5", result_id5);
+            AiAOVSetRGB(sg, "id_6", result_id6);
+            AiAOVSetRGB(sg, "id_7", result_id7);
+            AiAOVSetRGB(sg, "id_8", result_id8);
         }
 
         sg->out.RGB =   result_diffuse_direct +
@@ -1318,7 +1324,7 @@ shader_evaluate
     // Do direct illumination
     hb.integrateDirectDual(sg);
 
-    hb.integrateIndirectDual(sg);
+    //hb.integrateIndirectDual(sg);
 
 #endif
     // Writeshader result
