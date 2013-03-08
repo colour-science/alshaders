@@ -71,7 +71,8 @@ static const char* coordinatesNames[] =
 {
 	"cartesian",
 	"spherical",
-	"normalized spherical"
+	"normalized spherical",
+	NULL
 };
 
 node_parameters
