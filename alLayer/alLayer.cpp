@@ -57,10 +57,13 @@ node_finish
 
 }
 
-#define NUM_AOVs 20
+#define NUM_AOVs 23
 static const char* AOVs[NUM_AOVs] = {
+	"diffuse_color",
 	"direct_diffuse",
+	"direct_diffuse_raw",
 	"indirect_diffuse",
+	"indirect_diffuse_raw",
 	"direct_specular",
 	"indirect_specular",
 	"direct_specular_2",
@@ -84,8 +87,11 @@ static const char* AOVs[NUM_AOVs] = {
 
 node_update
 {
+	AiAOVRegister("diffuse_color", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("direct_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("indirect_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("direct_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	AiAOVRegister("indirect_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("indirect_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 	AiAOVRegister("direct_specular_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);

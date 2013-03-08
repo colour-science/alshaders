@@ -189,8 +189,11 @@ node_finish
 node_update
 {
     // set up AOVs
+    AiAOVRegister("diffuse_color", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("direct_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("direct_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("indirect_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("indirect_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("indirect_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("direct_specular_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
@@ -428,9 +431,11 @@ shader_evaluate
 
     // Initialize result temporaries
     AtRGB result_diffuseDirect = AI_RGB_BLACK;
+    AtRGB result_diffuseDirectRaw = AI_RGB_BLACK;
     AtRGB result_glossyDirect = AI_RGB_BLACK;
     AtRGB result_glossy2Direct = AI_RGB_BLACK;
     AtRGB result_diffuseIndirect = AI_RGB_BLACK;
+    AtRGB result_diffuseIndirectRaw = AI_RGB_BLACK;
     AtRGB result_glossyIndirect = AI_RGB_BLACK;
     AtRGB result_glossy2Indirect = AI_RGB_BLACK;
     AtRGB result_sss = AI_RGB_BLACK;
@@ -631,6 +636,7 @@ shader_evaluate
         }
 
         // Multiply by the colors
+        result_diffuseDirectRaw = result_diffuseDirect;
         result_diffuseDirect *= diffuseColor;
         result_glossyDirect *= specular1Color;
         result_glossy2Direct *= specular2Color;
@@ -704,7 +710,8 @@ shader_evaluate
 
         if ( do_diffuse )
         {
-            result_diffuseIndirect = AiOrenNayarIntegrate(&sg->Nf, sg, diffuseRoughness) * diffuseColor * kti * kti2;
+            result_diffuseIndirectRaw = AiOrenNayarIntegrate(&sg->Nf, sg, diffuseRoughness) * kti * kti2;
+            result_diffuseIndirect = result_diffuseIndirectRaw * diffuseColor;
         } // if (do_diffuse)
 
     } // if (do_diffuse || do_glossy)
@@ -736,11 +743,14 @@ shader_evaluate
     if (sg->Rt & AI_RAY_CAMERA)
     {
         // write AOVs
+        AiAOVSetRGB(sg, "diffuse_color", diffuseColor);
         AiAOVSetRGB(sg, "direct_diffuse", result_diffuseDirect);
+        AiAOVSetRGB(sg, "direct_diffuse_raw", result_diffuseDirectRaw);
         AiAOVSetRGB(sg, "sss", result_sss);
         AiAOVSetRGB(sg, "direct_specular", result_glossyDirect);
         AiAOVSetRGB(sg, "direct_specular_2", result_glossy2Direct);
         AiAOVSetRGB(sg, "indirect_diffuse", result_diffuseIndirect);
+        AiAOVSetRGB(sg, "indirect_diffuse_raw", result_diffuseIndirectRaw);
         AiAOVSetRGB(sg, "indirect_specular", result_glossyIndirect);
         AiAOVSetRGB(sg, "indirect_specular_2", result_glossy2Indirect);
         AiAOVSetRGB(sg, "single_scatter", result_ss);
