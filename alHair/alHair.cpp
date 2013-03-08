@@ -11,8 +11,8 @@ AI_SHADER_NODE_EXPORT_METHODS(alHair)
 enum alHairParams
 {
     p_ior,
-    p_diffuseStrength,
-    p_diffuseColor,
+    p_hairDensity,
+    p_hairColor,
     p_specularShift,
     p_specularWidth,
     p_extraSamples,
@@ -36,63 +36,28 @@ enum alHairParams
 #define IOR 1.6f
 #define FRESNEL_SAMPLES 1024
 
-float hairTargetAngle(float p, float relativeAzimuth)
-{
-        float targetAngle = abs(relativeAzimuth);
-
-        // set right range to match polynomial representation of the real curve.
-        if ( p != 1 )
-        {
-                // converts angles to range [-PI,PI]
-                if ( targetAngle > AI_PI )
-                        targetAngle -= 2*AI_PI;
-
-                // offset center
-                targetAngle += p*AI_PI;
-        }
-        return targetAngle;
-}
-
-float hairRoots(float p, float eta, float targetAngle, float* roots)
-{
-        float rootCount;
-        // Computes the roots of: o(p,y) - targetAngle = 0
-        // by using the polynomial approximation: o(p,y) = (6pc / AI_PI - 2)y - 8(pc/AI_PI^3)y^3 + pPI where c = asin( 1/eta )^-1
-        float pi3 = AI_PI*AI_PI*AI_PI;
-        float c = asin(1/eta);
-        rootCount = solveCubic( -8*(p*c/pi3), 0, (6*p*c / AI_PI - 2), (p*AI_PI-targetAngle), roots );
-        return rootCount;
-}
-
-
-float bravaisIndex(float theta, float eta)
-{
-        float sinTheta = sin( theta );
-        float result = sqrt( eta*eta - sinTheta*sinTheta ) / cos( theta );
-        return result;
-}
-
-float hairFresnel(float incidenceAngle, float etaPerp, float etaParal, bool invert)
+float fresnel(float incidenceAngle, float etaPerp, float etaParal, float invert)
 {
         float n1, n2;
         float rPerp = 1;
         float rParal = 1;
 
-        float angle = fabsf(incidenceAngle);
-        if ( angle > AI_PIOVER2 )
+
+        float angle = abs(incidenceAngle);
+        if (angle > AI_PIOVER2)
         {
-                angle = AI_PI - angle;
+            angle = AI_PI - angle;
         }
 
         if ( invert )
         {
-                n1 = etaPerp;
-                n2 = 1;
+            n1 = etaPerp;
+            n2 = 1;
         }
         else
         {
-                n1 = 1;
-                n2 = etaPerp;
+            n1 = 1;
+            n2 = etaPerp;
         }
 
         // Perpendicular light reflectance
@@ -100,62 +65,96 @@ float hairFresnel(float incidenceAngle, float etaPerp, float etaParal, bool inve
         a *= a;
         if ( a <= 1 )
         {
-                float b = n2*sqrt(1-a);
-                float c = n1*cos(angle);
-                rPerp =  ( c - b ) / ( c + b );
-                rPerp *= rPerp;
-                rPerp = std::min(1.0f, rPerp);
+
+            float b = n2*sqrt(1-a);
+            float c = n1*cos(angle);
+            rPerp =  ( c - b ) / ( c + b );
+            rPerp *= rPerp;
+            rPerp = std::min(1.0f, rPerp );
         }
         if ( invert )
         {
-                n1 = etaParal;
-                n2 = 1;
+            n1 = etaParal;
+            n2 = 1;
         }
         else
         {
-                n1 = 1;
-                n2 = etaParal;
+            n1 = 1;
+            n2 = etaParal;
         }
         // Parallel light reflectance
         float d = (n1/n2)*sin(angle);
         d *= d;
         if ( d <= 1 )
         {
-                float e = n1*sqrt(1-d);
-                float f = n2*cos(angle);
-                rParal = ( e - f ) / ( e + f );
-                rParal *= rParal;
-                rParal = std::min(1.0f, rParal);
+
+            float e = n1*sqrt(1-d);
+            float f = n2*cos(angle);
+            rParal = ( e - f ) / ( e + f );
+            rParal *= rParal;
+            rParal = std::min( 1.0f, rParal );
         }
         return 0.5 * (rPerp + rParal);
 }
 
-AtRGB hairA(AtRGB absorption, float theta_i, float p, float gammaI, float refraction, float etaPerp, float etaParal)
+
+
+void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtRGB absorption, AtRGB kfr[3])
 {
-    if ( p == 0 )
-    {
-            return rgb(hairFresnel( gammaI, etaPerp, etaParal, 0 ));
-    }
+#define ONEOVERPI3 0.032251534433199495
+    // Get miller-bravais indices n' and n''
+    float sin_theta_d = sinf(theta_d);
+    float A = sqrtf(ior*ior - sin_theta_d*sin_theta_d);
+    float n_p = A / cosf(theta_d);
+    float n_pp = ior*ior / n_p;
 
-    float h = sin( gammaI );                        // from [1] right before equation 3.
-    float gammaT = asin(h / etaPerp);       // from [1] right before equation 3.
-    float thetaT = -SGN(theta_i)*acos((etaPerp/refraction)*cos(theta_i)); // definition for equation 20 in [2].
-    float cosTheta = cos(thetaT);
-    float l;
-    // equation 20 in [2]
-    l = 2*cosf(gammaT)/std::max(1e-5f,cosTheta);
-    //color segmentAbsorption = color( exp( -absorption[0]*l*p ), exp( -absorption[1]*l*p ), exp( -absorption[2]*l*p ) );
-
-    float fresnel;
-    // equations 24-28 in [2]
-    float invFresnel = hairFresnel( gammaT, etaPerp, etaParal, 1 );
-    fresnel = (1 - hairFresnel( gammaI, etaPerp, etaParal, 0 ))*(1 - invFresnel);
-    if ( p > 1 )
+    
+    float c = asinf(1.0f/n_p);
+    for (int p=0; p < 3; ++p)
     {
-            fresnel = fresnel * invFresnel;
+        // adjust phi to correct range for this component
+        float phi_p = phi;
+        if (p != 1)
+        {
+            if (phi_p > AI_PI) phi_p -= AI_PITIMES2;
+            phi_p += p*AI_PI;
+        }
+        // get roots of polynomial
+        float roots[3] = {0,0,0};
+        int numRoots = solveCubic(-8.0f*p*c*ONEOVERPI3, 0.0f, 6.0f*p*c*AI_ONEOVERPI - 2.0f, p*AI_PI - phi_p, roots);
+        AtRGB Fr = AI_RGB_BLACK;
+        if (p < 2)
+        {
+            float gamma_i = roots[0];
+            if (p==0)
+            {
+                Fr = rgb(fresnel(gamma_i, n_p, n_pp, false));
+            }
+            else
+            {
+                float gamma_t = asinf(sinf(gamma_i)/n_p);
+                float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
+                float cos_theta_t = cosf(theta_t);
+                float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
+                Fr = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
+            }
+        }
+        else 
+        {
+            for (int i=0; i < numRoots; ++i)
+            {
+                float gamma_i = roots[i];
+                float gamma_t = asinf(sinf(gamma_i)/n_p);
+                float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
+                float cos_theta_t = cosf(theta_t);
+                float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
+
+                float iFr = fresnel(gamma_t, n_p, n_pp, true);
+                Fr += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l*2);
+            }
+        }
+        kfr[p] = Fr;
     }
-    //return fresnel * segmentAbsorption;
-    return rgb(fresnel);
 }
 
 #define PIOVER4 0.7853981633974483f
@@ -164,13 +163,26 @@ AtRGB hairA(AtRGB absorption, float theta_i, float p, float gammaI, float refrac
 
 #define DS_NUMSTEPS 128
 
+#define NORMALIZED_GAUSSIAN
+#ifdef NORMALIZED_GAUSSIAN
 
-/// Gaussian with offset
+/// Normalized gaussian with offset
+inline float g(float beta, float alpha, float theta_h)
+{
+    float n = theta_h-alpha;
+    return fast_exp(-(n*n)/(2.0f*beta))/sqrtf(2.0f*AI_PI*beta);
+}
+
+#else
+
+// Normalized gaussian with offset
 inline float g(float beta, float alpha, float theta_h)
 {
     float n = theta_h-alpha;
     return fast_exp(-(n*n)/(2.0f*beta));
 }
+
+#endif
 
 inline AtRGB g(AtRGB beta, AtRGB alpha, AtRGB theta_h)
 {
@@ -181,44 +193,6 @@ inline AtRGB g(AtRGB beta, AtRGB alpha, AtRGB theta_h)
     );
 }
 
-//#define NORMALIZED_GAUSSIAN
-#ifdef NORMALIZED_GAUSSIAN
-
-/// Normalized gaussian with offset
-inline float gn(float beta, float alpha, float theta_h)
-{
-    float n = theta_h-alpha;
-    return fast_exp(-(n*n)/(2.0f*beta))/sqrtf(2.0f*AI_PI*beta);
-}
-
-inline AtRGB gn(AtRGB beta, AtRGB alpha, AtRGB theta_h)
-{
-    return AiColorCreate(
-        gn(beta.r, alpha.r, theta_h.r),
-        gn(beta.g, alpha.g, theta_h.g),
-        gn(beta.b, alpha.b, theta_h.b)
-    );
-}
-
-#else
-
-// Normalized gaussian with offset
-inline float gn(float beta, float alpha, float theta_h)
-{
-    float n = theta_h-alpha;
-    return fast_exp(-(n*n)/(2.0f*beta));
-}
-
-inline AtRGB gn(AtRGB beta, AtRGB alpha, AtRGB theta_h)
-{
-    return AiColorCreate(
-        gn(beta.r, alpha.r, theta_h.r),
-        gn(beta.g, alpha.g, theta_h.g),
-        gn(beta.b, alpha.b, theta_h.b)
-    );
-}
-
-#endif
 
 /// Scattering of the R lobe
 inline float bsdfR(float beta_R, float alpha_R, float theta_h, float cosphi2)
@@ -283,7 +257,8 @@ struct HairBsdf
             invFresnelSamples = 1.0f / FRESNEL_SAMPLES;
             for (int i=0; i < FRESNEL_SAMPLES; ++i)
             {
-                float phi = (AI_PI * float(i) * invFresnelSamples);
+
+                float phi = (AI_PITIMES2 * float(i) * invFresnelSamples) - AI_PI;
                 //kr[i] = hairFresnel(phi, IOR);
             }
         }
@@ -444,7 +419,7 @@ struct HairBsdf
         // Get a local coordinate frame based on the hair fibre direction
         U = AiV3Normalize(sg->dPdv);
         V = AiV3Cross(U, sg->N);
-        W = AiV3Cross(U, V);
+        W = AiV3Cross(V, U);
 
         result_diffuse_direct = AI_RGB_BLACK;
         result_diffuse_indirect = AI_RGB_BLACK;
@@ -508,7 +483,9 @@ struct HairBsdf
         AB(theta_r, alpha_TT, beta_TT, A_TT, B_TT);
         AB(theta_r, alpha_TRT, beta_TRT, A_TRT, B_TRT);
 
-        diffuseColor = AiShaderEvalParamRGB(p_diffuseColor) * AiShaderEvalParamFlt(p_diffuseStrength);
+        AtRGB hairColor = AiShaderEvalParamRGB(p_hairColor);
+        float hairColorDensity = AiShaderEvalParamFlt(p_hairDensity);
+        absorption = (AI_RGB_WHITE - min(rgb(0.9999f, 0.9999f, 0.9999f), hairColor)) * hairColorDensity;
         specular1Color = AiShaderEvalParamRGB(p_specular1Color) * AiShaderEvalParamFlt(p_specular1Strength);
         specular2Color = AiShaderEvalParamRGB(p_specular2Color) * AiShaderEvalParamFlt(p_specular2Strength);
         transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
@@ -536,79 +513,6 @@ struct HairBsdf
         float theta_h = t + alpha;
         return clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, (2.0f*theta_h - theta_r));
     }
-
-   AtRGB fresnelp(AtRGB absorption, float theta_i, float p, float refraction, float etaPerp, float etaParal, float phi)
-    {
-        float targetAngle = hairTargetAngle(p, phi);
-        float roots[3] = { 0,0,0 };
-        float rootCount = hairRoots( p, etaPerp, targetAngle, roots );
-
-        AtRGB result = AI_RGB_BLACK;
-        for (float i=0; i < rootCount; ++i)
-        {
-            float gammaI = roots[0];
-            if (fabsf(gammaI) <= AI_PIOVER2)
-            {
-                    float h = sinf(gammaI);
-                    result += hairA( absorption, theta_i, p, gammaI, refraction, etaPerp, etaParal );
-            }
-        }
-
-        return result;
-    }
-
-    inline void fresnel(float ior, AtRGB& Rfr, AtRGB& TTfr, AtRGB& TRTfr)
-    {
-        float etaPerp = bravaisIndex(theta_d, ior);
-        float etaParal = (ior*ior)/etaPerp;
-        float ra = fmodf(phi_r - phi_i, AI_PITIMES2);
-        Rfr = fresnelp(AI_RGB_BLACK, theta_i, 0, ior, etaPerp, etaParal, ra);
-        TTfr = fresnelp(AI_RGB_BLACK, theta_i, 1, ior, etaPerp, etaParal, ra);
-        TRTfr = fresnelp(AI_RGB_BLACK, theta_i, 2, ior, etaPerp, etaParal, ra);
-    }
-
-    /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the direct lighting loop
-    /// @param wi The incident direction 
-    inline void prepareDirectSample(AtVector wi)
-    {
-        // Get angle measures. See Section 3 in Ou et. al.
-        theta_i = AI_PIOVER2 - sphericalTheta(wi, U);
-        cos_theta_i = fabsf(cosf(theta_i));
-        phi_i = sphericalPhi(wi, V, W);
-        phi = phi_r - phi_i;
-        if (phi < -AI_PI) phi += AI_PITIMES2;
-        if (phi > AI_PI) phi -= AI_PITIMES2;
-        phi = fabsf(phi);
-        cosphi2 = cosf(phi*0.5f);
-        theta_h = (theta_r + theta_i)*0.5f;
-        theta_htt = (theta_r + theta_i*SGN(AiV3Dot(wi,wo)))*0.5f;
-        theta_d = fabsf((theta_r - theta_i)*0.5f);
-        cos_theta_d = cosf(theta_d);
-        inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
-    }
-
-    /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the indirect sampling loop
-    /// @param wi The incident direction 
-    inline void prepareIndirectSample(AtVector& wi)
-    {
-        cos_theta_i = std::max(cosf(theta_i), 0.0001f);
-        theta_h = (theta_r+theta_i)*0.5f;
-        theta_d = fabsf((theta_r - theta_i)*0.5f);
-        cos_theta_d = cosf(theta_d);
-        inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        phi_i = phi_r - phi;
-        if (phi_i < -AI_PI) phi_i += AI_PITIMES2;
-        if (phi_i > AI_PI) phi_i -= AI_PITIMES2;
-        if (phi < -AI_PI) phi += AI_PITIMES2;
-        if (phi > AI_PI) phi -= AI_PITIMES2;
-        phi = fabsf(phi);
-        cosphi2 = cosf(phi*0.5f);
-        sphericalDirection(theta_i, phi_i, V, W, U, wi);
-        invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
-    }
-
-    
 
     /// Sample according to the diffuse bsdf (just uniform spherical sampling for now)
     inline void sampleDiffuse(float u1, float u2, AtVector& wi)
@@ -796,6 +700,51 @@ struct HairBsdf
         return ONEOVER4PI;
     }
 
+    /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the direct lighting loop
+    /// @param wi The incident direction 
+    inline void prepareDirectSample(AtVector wi)
+    {
+        // Get angle measures. See Section 3 in Ou et. al.
+        theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));// * SGN(AiV3Dot(wi,wo));
+        cos_theta_i = fabsf(cosf(theta_i));
+        phi_i = sphericalPhi(wi, V, W);
+        phi_d = phi_r - phi_i;
+        if (phi_d < 0) phi_d += AI_PITIMES2;
+        phi = phi_d - AI_PI;
+        phi = AI_PI - fabsf(phi);
+
+        cosphi2 = fabsf(cosf(phi*0.5f));
+        theta_h = (theta_r + theta_i)*0.5f;
+        //theta_htt = (theta_r + theta_i*SGN(AiV3Dot(wi,wo)))*0.5f;
+        theta_htt = theta_h;
+        theta_d = (theta_r - theta_i)*0.5f;
+        cos_theta_d = cosf(theta_d);
+        inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
+        invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
+    }
+
+    /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the indirect sampling loop
+    /// @param wi The incident direction 
+    inline void prepareIndirectSample(AtVector& wi)
+    {
+        cos_theta_i = std::max(cosf(theta_i), 0.0001f);
+        theta_h = (theta_r+theta_i)*0.5f;
+        //theta_htt = (theta_r + theta_i*SGN(AiV3Dot(wi,wo)))*0.5f;
+        theta_htt = theta_h;
+        theta_d = (theta_r - theta_i)*0.5f;
+        cos_theta_d = cosf(theta_d);
+        inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
+        phi_i = phi_r - phi;
+        if (phi_i < -AI_PI) phi_i += AI_PITIMES2;
+        if (phi_i > AI_PI) phi_i -= AI_PITIMES2;
+        if (phi < -AI_PI) phi += AI_PITIMES2;
+        if (phi > AI_PI) phi -= AI_PITIMES2;
+        //phi = fabsf(phi);
+        cosphi2 = cosf(phi*0.5f);
+        sphericalDirection(theta_i, phi_i, V, W, U, wi);
+        invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
+    }
+
     /// Integrate the direct illumination for all diffuse and glossy lobes
     inline void integrateDirect(AtShaderGlobals* sg)
     {
@@ -816,28 +765,29 @@ struct HairBsdf
         AiLightsPrepare(sg);
         while (AiLightsGetSample(sg))
         {
-            //if (do_diffuse)
-            //{
-            //    result_diffuse_direct += AiEvaluateLightSample(sg, this, HairBsdf::HairDiffuseSample, HairBsdf::HairDiffuseBsdf, HairBsdf::HairDiffusePdf);
-            //}
 
+            AtRGB kfr[3];
             if (do_glossy)
             {
                 prepareDirectSample(sg->Ld);
-                fresnel(1.55, result_id4, result_id5, result_id6);
                 AtRGB L = sg->Li * sg->we * invariant;
                 if (maxh(L) > IMPORTANCE_EPS)
                 {
-                    result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2);
-                    result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi);
-                    result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2);
-                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g);
 
-                    result_id1 = rgb(phi, data->fresnelLookup(phi), 0.0f);
+                    hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
+
+                    result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
+                    result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
+                    result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
+                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[2];
+
+                    result_id1 = rgb(phi_r/AI_PI, phi_i/AI_PI, phi);
                     result_id2 = rgb(theta_i/AI_PIOVER2, theta_r/AI_PIOVER2, theta_h/AI_PIOVER2);
                     result_id3 = rgb(cos_theta_i, theta_d/AI_PIOVER2, inv_cos_theta_d2);
-
-
+                    result_id4 = rgb(cosphi2, SGN(AiV3Dot(sg->Ld,wo)), SGN(AiV3Dot(sg->Ld,U)));
+                    result_id5 = kfr[0];
+                    result_id6 = kfr[1];
+                    result_id7 = kfr[2];
                 }
             }
         }
@@ -854,22 +804,6 @@ struct HairBsdf
     /// Integrate the indirect illumination for all diffuse and glossy lobes
     inline void integrateIndirect(AtShaderGlobals* sg)
     {
-        /*
-        if (do_diffuse)
-        {
-            AtSamplerIterator* sampit = AiSamplerIterator(data->sampler_diffuse, sg);
-            AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
-            while(AiSamplerGetSample(sampit, samples))
-            {
-                sampleDiffuse(samples[0], samples[1], wi_ray.dir);
-                AiTrace(&wi_ray, &scrs);
-                float tl = AiV3Dot(wi_ray.dir, U);
-                result_diffuse_indirect += scrs.color * sqrtf(1.0f - tl*tl);
-            }
-            // The FOURPI factor comes from moving the pdf 1/4*pi pdf out of the loop
-            result_diffuse_indirect *= diffuseColor * AiSamplerGetSampleInvCount(sampit) * AI_ONEOVER2PI * FOURPI;
-        }
-        */
 
         if (do_glossy)
         {
@@ -915,6 +849,7 @@ struct HairBsdf
             AtRay ray;
             AtScrSample scrs;
             AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), NULL, AI_BIG, sg);
+            AtRGB kfr[3];
             while (AiLightsGetSample(sg))
             {
                 prepareDirectSample(sg->Ld);
@@ -929,18 +864,23 @@ struct HairBsdf
                 AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
 
                 int idx = int((fabs(theta_d) / AI_PIOVER2)*DS_NUMSTEPS);
+                //int idx = int((theta_d / AI_PIOVER2 + 0.5f)*(DS_NUMSTEPS-1));
                 AtRGB theta_hr = rgb(theta_h);
-                AtRGB f_direct_back = 2.0f * data->A_b[idx] * gn(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
+                AtRGB f_direct_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
                 AtRGB occlusion = AI_RGB_WHITE - scrs.opacity; 
                 float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
+
                 if (directFraction > 0.0f)
                 {
+                    AtRGB kfr[3];
+                    hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
                     result_Pl_direct += sg->Li * sg->we * occlusion * density_back * f_direct_back * cos_theta_i * directFraction;
                     AtRGB L = sg->Li * sg->we * invariant * occlusion * directFraction;
-                    result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2);
-                    result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi);
-                    result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2);
-                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g);
+                    
+                    result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
+                    result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
+                    result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
+                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[2];
                 }
                 if (directFraction < 1.0f)
                 {
@@ -948,18 +888,18 @@ struct HairBsdf
                     AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
 
                     AtRGB f_s_scatter = AI_RGB_BLACK;
-
-                    if (phi >= AI_PIOVER2) // forward scattering directions only
+                    if (phi >= AI_PIOVER2 ) // forward scattering directions only
                     {
-                        f_s_scatter = gn(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[idx]
-                                        + gn(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[idx]
-                                        + gn(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[idx];
+                        f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[idx]
+                                        + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[idx]
+                                        + g(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[idx];
                         // TODO: without this suppression term we get a hard line in f_s_scatter, which probably means we've made
                         // a mistake somewhere further up the chain...                
-                        f_s_scatter *= -cosf(phi);
+                        //f_s_scatter *= phi_c;
+                        f_s_scatter *= S_f;
                     }
                     
-                    AtRGB f_scatter_back = 2.0f * data->A_b[idx] * gn(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
+                    AtRGB f_scatter_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
 
                     
                     AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
@@ -1003,7 +943,7 @@ struct HairBsdf
 
             int idx = int((fabs(theta_d) / AI_PIOVER2)*DS_NUMSTEPS);
             AtRGB theta_hr = rgb(theta_h);
-            AtRGB f_direct_back = 2.0f * data->A_b[idx] * gn(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
+            AtRGB f_direct_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
             float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
             if (directFraction > 0.0f)
             {
@@ -1022,18 +962,19 @@ struct HairBsdf
 
                 AtRGB f_s_scatter = AI_RGB_BLACK;
 
-                if (phi >= AI_PIOVER2) // forward scattering directions only
+                if (phi > AI_PIOVER2) // forward scattering directions only
                 {
-                    f_s_scatter = gn(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[idx]
-                                    + gn(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[idx]
-                                    + gn(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[idx];
+                    f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[idx]
+                                    + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[idx]
+                                    + g(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[idx];
 
                     // TODO: without this suppression term we get a hard line in f_s_scatter, which probably means we've made
                     // a mistake somewhere further up the chain...                
-                    f_s_scatter *= -cosf(phi);
+                   //f_s_scatter *= phi_c;
+                    f_s_scatter *= S_f;
                 }
                 
-                AtRGB f_scatter_back = 2.0f * data->A_b[idx] * gn(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
+                AtRGB f_scatter_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
 
                 float directFraction = 0.0f;
                 AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
@@ -1069,14 +1010,14 @@ struct HairBsdf
             AiAOVSetRGB(sg, "localDirect", result_Pl_direct);
             AiAOVSetRGB(sg, "globalIndirect", result_Pg_indirect);
             AiAOVSetRGB(sg, "localIndirect", result_Pl_indirect);
-            AiAOVSetRGB(sg, "id1", result_id1);
-            AiAOVSetRGB(sg, "id2", result_id2);
-            AiAOVSetRGB(sg, "id3", result_id3);
-            AiAOVSetRGB(sg, "id4", result_id4);
-            AiAOVSetRGB(sg, "id5", result_id5);
-            AiAOVSetRGB(sg, "id6", result_id6);
-            AiAOVSetRGB(sg, "id7", result_id7);
-            AiAOVSetRGB(sg, "id8", result_id8);
+            AiAOVSetRGB(sg, "id_1", result_id1);
+            AiAOVSetRGB(sg, "id_2", result_id2);
+            AiAOVSetRGB(sg, "id_3", result_id3);
+            AiAOVSetRGB(sg, "id_4", result_id4);
+            AiAOVSetRGB(sg, "id_5", result_id5);
+            AiAOVSetRGB(sg, "id_6", result_id6);
+            AiAOVSetRGB(sg, "id_7", result_id7);
+            AiAOVSetRGB(sg, "id_8", result_id8);
         }
 
         sg->out.RGB =   result_diffuse_direct +
@@ -1208,15 +1149,18 @@ struct HairBsdf
     AtSamplerIterator* sampit;
 
     AtVector wo;
-    float theta_htt;
+
+    AtFloat theta_htt;
+    AtRGB absorption;
+    float phi_d;
 };
 
 
 node_parameters
 {
     AiParameterFlt("ior", 1.55f);
-    AiParameterFlt("diffuseStrength", 0.2f);
-    AiParameterRGB("diffuseColor", 0.31f, 0.08f, 0.005f);
+    AiParameterFlt("hairColorDensity", 1.f);
+    AiParameterRGB("hairColor", 0.31f, 0.08f, 0.005f);
     AiParameterFlt("specularShift", 7.0f);
     AiParameterFlt("specularWidth", 5.0f);
     AiParameterInt("extraSamples", 0);
@@ -1313,6 +1257,7 @@ node_update
 
 shader_evaluate
 {
+    
     // Get shader data
     HairBsdf::ShaderData* data = (HairBsdf::ShaderData*)AiNodeGetLocalData(node);
 
@@ -1359,21 +1304,22 @@ shader_evaluate
         // early-out regardless if we're in a shadow ray, or if opacity is zero
         if (sg->Rt & AI_RAY_SHADOW || AiShaderGlobalsApplyOpacity(sg, opacity)) return; 
     }
+
     #define PHI_DEBUG
+
 #ifdef PHI_DEBUG
     hb.integrateDirect(sg);
 #else    
     // Do direct illumination
     hb.integrateDirectDual(sg);
 
-    //if (sg->Rr_gloss < 1)
-    //    hb.integrateIndirect(sg);
-    //else
-        hb.integrateIndirectDual(sg);
+    //hb.integrateIndirectDual(sg);
 
 #endif
     // Writeshader result
     hb.writeResult(sg);
+
+
 }
 
 
