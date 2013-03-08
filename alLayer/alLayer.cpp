@@ -57,7 +57,7 @@ node_finish
 
 }
 
-#define NUM_AOVs 23
+#define NUM_AOVs 31
 static const char* AOVs[NUM_AOVs] = {
 	"diffuse_color",
 	"direct_diffuse",
@@ -81,7 +81,15 @@ static const char* AOVs[NUM_AOVs] = {
 	"light_group_5",
 	"light_group_6",
 	"light_group_7",
-	"light_group_8"
+	"light_group_8",
+	"id_1",
+	"id_2",
+	"id_3",
+	"id_4",
+	"id_5",
+	"id_6",
+	"id_7",
+	"id_8"
 };
 
 

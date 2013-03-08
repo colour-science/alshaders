@@ -35,6 +35,19 @@ static const char* lightGroupNames[NUM_LIGHT_GROUPS] =
     "light_group_8"
 };
 
+#define NUM_ID_AOVS 8
+static const char* idAovNames[NUM_ID_AOVS] = 
+{
+    "id_1",
+    "id_2",
+    "id_3",
+    "id_4",
+    "id_5",
+    "id_6",
+    "id_7",
+    "id_8"
+};
+
 enum alSurfaceParams
 {
     // diffuse
@@ -89,6 +102,14 @@ enum alSurfaceParams
     p_transmissionEnableCaustics,
     p_transmissionExtraSamples,
 
+    p_id1,
+    p_id2,
+    p_id3,
+    p_id4,
+    p_id5,
+    p_id6,
+    p_id7,
+    p_id8,
 
     p_bump
 };
@@ -144,6 +165,15 @@ node_parameters
     AiParameterFLT("transmissionRoughnessDepthScale", 1.0f);
     AiParameterBOOL("transmissionEnableCaustics", true);
     AiParameterINT("transmissionExtraSamples", 0);
+
+    AiParameterRGB("id1", 0.0f, 0.0f, 0.0f);
+    AiParameterRGB("id2", 0.0f, 0.0f, 0.0f);
+    AiParameterRGB("id3", 0.0f, 0.0f, 0.0f);
+    AiParameterRGB("id4", 0.0f, 0.0f, 0.0f);
+    AiParameterRGB("id5", 0.0f, 0.0f, 0.0f);
+    AiParameterRGB("id6", 0.0f, 0.0f, 0.0f);
+    AiParameterRGB("id7", 0.0f, 0.0f, 0.0f);
+    AiParameterRGB("id8", 0.0f, 0.0f, 0.0f);
 
 }
 
@@ -212,6 +242,14 @@ node_update
     AiAOVRegister("light_group_6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("light_group_7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("light_group_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("id_1", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("id_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("id_3", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("id_4", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("id_5", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("id_6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("id_7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("id_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 
     // store some options we'll reuse later
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
@@ -763,6 +801,18 @@ shader_evaluate
         {
             lightGroup[i] = lightGroupDiffuse[i] + lightGroupSpecular[i] + lightGroupSpecular2[i];
             AiAOVSetRGB(sg, lightGroupNames[i], lightGroup[i]);
+        }
+
+        // write IDs
+        for (int i=0; i < NUM_ID_AOVS; ++i)
+        {
+            AtRGB tmp;
+            // check if output is enabled first in case we have an expensive network upstream
+            if (AiAOVEnabled(idAovNames[i], AI_TYPE_RGB))
+            {
+                tmp = AiShaderEvalParamRGB(p_id1 + i);
+                AiAOVSetRGB(sg, idAovNames[i], tmp);
+            }
         }
 
         // write data AOVs
