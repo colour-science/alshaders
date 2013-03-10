@@ -1,5 +1,8 @@
-// Hair shader based on ISHair: Importance Sampling for Hair Scattering by Ou et. al 2012
+// Hair shader based on 
+// [1] ISHair: Importance Sampling for Hair Scattering by Ou et al. 2012
 // http://www.cs.dartmouth.edu/~ouj/site/Research/Entries/2012/6/21_ISHair__Importance_Sampling_for_Hair_Scattering.html
+// [2] Dual Scattering Approximation For Fast Multiple Scattering in Hair by Zinke et al. 2008
+
 
 #include <ai.h>
 #include "alUtil.h"
@@ -305,11 +308,17 @@ struct HairBsdf
                     for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
                     {
                         float cosphi2 = cosf(phi*0.5f);
+                        
+                        // [2] eq (6)
+                        // Compute average forward-scattering attenuation, i.e. total forward-scattered radiance
+                        // TODO: Should be multiplying by cos_theta_d and fresnel here too
+                        // {
                         AtRGB f_R = bsdfR(sp.beta_R2, sp.alpha_R, theta_h, cosphi2) * sp.specular1Color;
                         AtRGB f_TT = bsdfTT(sp.beta_TT2, sp.alpha_TT, theta_h, sp.gamma_TT, phi) * sp.transmissionColor;
                         AtRGB f_TRT = bsdfTRT(sp.beta_TRT2, sp.alpha_TRT, theta_h, cosphi2) * sp.specular2Color
                                         + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength;
                         a_bar_f[idx] += f_R + f_TT + f_TRT;
+                        // }
                         alpha_f[idx] += f_R*sp.alpha_R + f_TT*sp.alpha_TT + f_TRT*sp.alpha_TRT;
                         beta_f[idx] += f_R*sp.beta_R2 + f_TT*sp.beta_TT2 + f_TRT*sp.beta_TRT2;
                     }
@@ -318,11 +327,16 @@ struct HairBsdf
                     for (float phi = 0.0f; phi < AI_PIOVER2; phi += phi_step)
                     {
                         float cosphi2 = cosf(phi*0.5f);
+                        // [2] eq (11)
+                        // Compute average back-scattering attenuation, i.e. total back-scattered radiance
+                        // TODO: should be multiplying by fresnel and cos_theta_d here too...
+                        // {
                         AtRGB f_R = bsdfR(sp.beta_R2, sp.alpha_R, theta_h, cosphi2) * sp.specular1Color;
                         AtRGB f_TT = bsdfTT(sp.beta_TT2, sp.alpha_TT, theta_h, sp.gamma_TT, phi) * sp.transmissionColor;
                         AtRGB f_TRT = bsdfTRT(sp.beta_TRT2, sp.alpha_TRT, theta_h, cosphi2) * sp.specular2Color
                                         + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength;
                         a_bar_b[idx] += f_R + f_TT + f_TRT;
+                        // }
                         alpha_b[idx] += f_R*sp.alpha_R + f_TT*sp.alpha_TT + f_TRT*sp.alpha_TRT;
                         beta_b[idx] += f_R*sp.beta_R2 + f_TT*sp.beta_TT2 + f_TRT*sp.beta_TRT2;
                     }
@@ -349,13 +363,17 @@ struct HairBsdf
                 AtRGB ab2 = a_bar_b[i]*a_bar_b[i];
                 AtRGB omaf2 = AI_RGB_WHITE - af2;
 
-                // average backscattering attenuation (eq. 10)
+                // [2] eq (14)
+                // Average back-scattered attenuation for up to 3 scattering events
                 A_b[i] = (a_bar_b[i]*af2)/omaf2 + (ab2*a_bar_b[i]*af2)/(omaf2*omaf2);
 
-                // average longitudinal shift (eq. 11)
+                // [2] eq. (16)
+                // Average back-scattering longitudinal shift for up to 3 scattering events
                 delta_b[i] = alpha_b[i] * (1.0f - (2.0f*a_bar_b[i]*a_bar_b[i])/(omaf2*omaf2)) 
                             + alpha_f[i] * ((2.0f*omaf2*omaf2) + 4.0f * af2 * ab2) / (omaf2*omaf2*omaf2);
 
+                // [2] eq. (17)
+                // Average longitudinal variance for up to 3 scattering events
                 AtRGB rtbfbb = sqrt(2.0f*beta_f[i] + beta_b[i]);
                 sigma_b[i] = (1.0f + 0.7f*af2) * (a_bar_b[i]*rtbfbb + ab2*a_bar_b[i]*rtbfbb) / (a_bar_b[i] + ab2*a_bar_b[i] * (2.0f*beta_f[i] + 3.0f*beta_b[i]));
             }
@@ -368,6 +386,8 @@ struct HairBsdf
             {
                 for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
                 {
+                    // [2] eq. (25)
+                    // BCSDF due to forward scattering
                     N_G_R[idx] += rgb(cosf(phi*0.5f));
                     N_G_TT[idx] += rgb(g(sp.gamma_TT, 0.0f, AI_PI-phi));
                     N_G_TRT[idx] += rgb(cosf(phi*0.5f) + g(sp.gamma_g, 0.0f, phi - sp.phi_g));
