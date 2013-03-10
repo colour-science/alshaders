@@ -1,0 +1,4 @@
+[node alLightGroups]
+    desc                    STRING      "Layered shader for mixing two surface shaders"
+    maya.name               STRING      "alLightGroups"
+    maya.classification     STRING      "shader/surface"
