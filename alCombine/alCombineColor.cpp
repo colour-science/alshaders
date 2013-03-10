@@ -26,7 +26,8 @@ static const char* combineOpNames[] =
 	"add 1+2",
 	"divide 1/2",
 	"subtract 1-2",
-	"lerp(1, 2, 3)"
+	"lerp(1, 2, 3)",
+	NULL
 };
 
 node_parameters

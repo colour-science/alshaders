@@ -150,7 +150,7 @@ inline float sphericalPhi(const AtVector &v)
 
 inline float sphericalTheta(const AtVector& w, const AtVector& U)
 {
-    return acosf(AiV3Dot(U, w));
+    return acosf(clamp(AiV3Dot(U, w), -1.0f, 1.0f));
 }
 
 inline float sphericalPhi(const AtVector& w, const AtVector& V, const AtVector& W)

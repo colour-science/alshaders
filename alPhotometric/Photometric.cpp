@@ -6,6 +6,8 @@
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 
+#define PM_PI 3.141592653589793
+
 PhotometricData::PhotometricData(const std::string& fn)
 : _xres(1024), _yres(512), _valid(false), _data(NULL)
 {
@@ -137,7 +139,7 @@ void PhotometricData::readIES(std::ifstream& in)
 			{
 				_anglesV[i] -= 90.0f;
 			}
-			_anglesV[i] *= M_PI / 180.0f;
+			_anglesV[i] *= PM_PI / 180.0f;
 		}
 
 		// now read the set of horizontal angles
@@ -167,7 +169,7 @@ void PhotometricData::readIES(std::ifstream& in)
 		// convert to radians
 		for (int i=0; i < _numH; ++i)
 		{
-			_anglesH[i] *= M_PI / 180.0f;
+			_anglesH[i] *= PM_PI / 180.0f;
 		}
 
 		// now read the candela values

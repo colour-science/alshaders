@@ -13,6 +13,7 @@ class AEalInputVectorTemplate(alShadersTemplate):
 
         self.beginLayout('Transform', collapse=True)
         self.addControl('matrix', label='Matrix')
+        self.addControl('coordinates')
         self.endLayout() # end Transform
 
         pm.mel.AEdependNodeTemplate(self.nodeName)
