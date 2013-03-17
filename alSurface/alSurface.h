@@ -30,4 +30,5 @@ struct ShaderData
    std::map<AtNode*, int> lightGroups;
    bool specular1NormalConnected;
    bool specular2NormalConnected;
+   bool lightGroupsIndirect;
 };

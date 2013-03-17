@@ -91,6 +91,9 @@ class AEalSurfaceTemplate(alShadersTemplate):
             self.addControl('id'+str(i))
         self.endLayout() # end IDs
 
+        self.beginLayout('Advanced', collapse=True)
+        self.addControl('lightGroupsIndirect', label='Indirect light groups')
+        self.endLayout() # end Advanced
 
         self.addBumpLayout()
 

@@ -102,6 +102,8 @@ enum alSurfaceParams
     p_transmissionEnableCaustics,
     p_transmissionExtraSamples,
 
+    p_lightGroupsIndirect,
+
     p_id1,
     p_id2,
     p_id3,
@@ -165,6 +167,8 @@ node_parameters
     AiParameterFLT("transmissionRoughnessDepthScale", 1.0f);
     AiParameterBOOL("transmissionEnableCaustics", true);
     AiParameterINT("transmissionExtraSamples", 0);
+
+    AiParameterBOOL("lightGroupsIndirect", true);
 
     AiParameterRGB("id1", 0.0f, 0.0f, 0.0f);
     AiParameterRGB("id2", 0.0f, 0.0f, 0.0f);
@@ -294,6 +298,7 @@ node_update
         data->lightGroups[light] = AiNodeGetInt(light, "lightGroup") - 1;
     }
     AiNodeIteratorDestroy(it);
+    data->lightGroupsIndirect = params[p_lightGroupsIndirect].BOOL;
 
     // check whether the normal parameters are connected or not
     data->specular1NormalConnected = AiNodeIsLinked(node, "specular1Normal");
@@ -510,7 +515,7 @@ shader_evaluate
 
 
     if (sg->Rr_gloss > data->GI_glossy_depth
-                || (sg->Rr_diff > 0)            // disable glossy->diffuse caustics
+                || (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
                 || maxh(specular1Color) < IMPORTANCE_EPS                // skip evaluations that aren't important
                 || (sg->Rr_refr > 1 && !transmissionEnableCaustics))    // disable glossy->transmitted caustics
     {
@@ -518,7 +523,7 @@ shader_evaluate
     }
 
     if (sg->Rr_gloss > data->GI_glossy_depth
-            || (sg->Rr_diff > 0)            // disable glossy->diffuse caustics
+            || (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
             || maxh(specular2Color) < IMPORTANCE_EPS                // skip evaluations that aren't important
             || (sg->Rr_refr > 1 && !transmissionEnableCaustics))    // disable glossy->transmitted caustics
     {
@@ -567,10 +572,13 @@ shader_evaluate
     AtRGB* deepGroupPtr = NULL;
     AtRGB result_directGroup[NUM_LIGHT_GROUPS];
     for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
-    bool doDeepGroups = true;
+    bool doDeepGroups = data->lightGroupsIndirect;
     int idx = 0;
-#define DEEP_DEBUG_DEPTH 5 
+
+#define DEEP_DEBUG_DEPTH 5
+#ifdef DEEP_DEBUG    
     AtRGB* deepDebugPtr = NULL;
+#endif
     if (doDeepGroups && sg->Rt & AI_RAY_CAMERA)
     {
         // if this is a camera ray allocate the group storage
@@ -578,10 +586,12 @@ shader_evaluate
         memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS*data->total_samples);
         AiStateSetMsgPtr("als_deepGroupPtr", deepGroupPtr);
 
+#ifdef DEEP_DEBUG
         // for debugging...
         deepDebugPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*DEEP_DEBUG_DEPTH * 5);
         memset(deepDebugPtr, 0, sizeof(AtRGB)*DEEP_DEBUG_DEPTH * 5);
         AiStateSetMsgPtr("als_deepDebugPtr", deepDebugPtr);
+#endif
     }
     else if (doDeepGroups)
     {
@@ -592,8 +602,9 @@ shader_evaluate
         // Get the current sample index from the state
         // This wil be overriden if we're in a child event
         if (!AiStateGetMsgInt("als_sampleIndex", &idx)) doDeepGroups = false;
-
+#ifdef DEEP_DEBUG
         AiStateGetMsgPtr("als_deepDebugPtr", (void**)&deepDebugPtr);
+#endif
     }
 
     // Accumulator for transmission integrated according to the specular1 brdf. Will be used to attenuate diffuse,
@@ -1050,11 +1061,13 @@ shader_evaluate
     }
 
     // Now accumulate the deep group brdf results onto the relevant samples
+#ifdef DEEP_DEBUG
     deepDebugPtr[sg->Rr * 5 + 0] = deepGroupsDiffuse[0]; 
     deepDebugPtr[sg->Rr * 5 + 1] =  deepGroupsGlossy[0]; 
     deepDebugPtr[sg->Rr * 5 + 2] = deepGroupsGlossy2[0]; 
     deepDebugPtr[sg->Rr * 5 + 3] = deepGroupsTransmission[0]; 
     deepDebugPtr[sg->Rr * 5 + 4] = lightGroupsDirect[0];
+#endif
     if (sg->Rt & AI_RAY_CAMERA)
     {
         if (doDeepGroups)
@@ -1117,6 +1130,7 @@ shader_evaluate
             }
         }
 
+#ifdef DEEP_DEBUG
         char deepDebugName[32];
         for (int i=0; i < DEEP_DEBUG_DEPTH; ++i)
         {
@@ -1131,6 +1145,7 @@ shader_evaluate
             sprintf(deepDebugName, "deep_direct_%d", i);
             AiAOVSetRGB(sg, deepDebugName, deepDebugPtr[i*5+4]);
         }
+#endif
 
         // write data AOVs
         AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
