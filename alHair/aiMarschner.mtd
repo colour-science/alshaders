@@ -1,4 +1,0 @@
-[node aiMarschner]
-    desc                    STRING      ""
-    maya.name               STRING      "aiMarschner"
-    maya.classification     STRING      "shader/surface"
