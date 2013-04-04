@@ -153,7 +153,7 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
                 float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
 
                 float iFr = fresnel(gamma_t, n_p, n_pp, true);
-                Fr += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l*2);
+                Fr += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l);
             }
         }
         kfr[p] = Fr;
@@ -297,6 +297,7 @@ struct HairBsdf
             AtRGB kfr[3];
             for (float theta_i = 0; theta_i < AI_PIOVER2; theta_i+=theta_i_step)
             {
+                float cos_theta_i = cosf(theta_i);
                 for (float theta_r = -AI_PIOVER2; theta_r < AI_PIOVER2; theta_r += theta_r_step)
                 {
                     float theta_h = (theta_i + theta_r) * 0.5f;
@@ -305,17 +306,18 @@ struct HairBsdf
                     // forward scattering
                     for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
                     {
-                        hairAttenuation(1.55, cosf(theta_i), theta_d, phi, sp.absorption, kfr);
+                        hairAttenuation(1.55, cos_theta_i, theta_d, phi, sp.absorption, kfr);
                         float cosphi2 = cosf(phi*0.5f);
                         
                         // [2] eq (6)
                         // Compute average forward-scattering attenuation, i.e. total forward-scattered radiance
-                        // TODO: Should be multiplying by cos_theta_d here too?
+                        // TODO: Should be multiplying by cos_theta_i here too?
                         // {
-                        AtRGB f_R = bsdfR(sp.beta_R2, sp.alpha_R, theta_h, cosphi2) * sp.specular1Color * kfr[0];
-                        AtRGB f_TT = bsdfTT(sp.beta_TT2, sp.alpha_TT, theta_h, sp.gamma_TT, phi) * sp.transmissionColor * kfr[1];
+                        AtRGB f_R = bsdfR(sp.beta_R2, sp.alpha_R, theta_h, cosphi2) * sp.specular1Color * kfr[0] * cos_theta_i;
+                        AtRGB f_TT = bsdfTT(sp.beta_TT2, sp.alpha_TT, theta_h, sp.gamma_TT, phi) * sp.transmissionColor * kfr[1] * cos_theta_i;
                         AtRGB f_TRT = (bsdfTRT(sp.beta_TRT2, sp.alpha_TRT, theta_h, cosphi2) * sp.specular2Color
-                                        + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength) * kfr[2];
+                                    + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength)
+                                    * kfr[2] * cos_theta_i;
                         a_bar_f[idx] += f_R + f_TT + f_TRT;
                         // }
                         alpha_f[idx] += f_R*sp.alpha_R + f_TT*sp.alpha_TT + f_TRT*sp.alpha_TRT;
@@ -329,12 +331,13 @@ struct HairBsdf
                         float cosphi2 = cosf(phi*0.5f);
                         // [2] eq (11)
                         // Compute average back-scattering attenuation, i.e. total back-scattered radiance
-                        // TODO: should be multiplying by cos_theta_d here too..?
+                        // TODO: should be multiplying by cos_theta_i here too..?
                         // {
-                        AtRGB f_R = bsdfR(sp.beta_R2, sp.alpha_R, theta_h, cosphi2) * sp.specular1Color * kfr[0];
-                        AtRGB f_TT = bsdfTT(sp.beta_TT2, sp.alpha_TT, theta_h, sp.gamma_TT, phi) * sp.transmissionColor * kfr[1];
+                        AtRGB f_R = bsdfR(sp.beta_R2, sp.alpha_R, theta_h, cosphi2) * sp.specular1Color * kfr[0] * cos_theta_i;
+                        AtRGB f_TT = bsdfTT(sp.beta_TT2, sp.alpha_TT, theta_h, sp.gamma_TT, phi) * sp.transmissionColor * kfr[1] * cos_theta_i;
                         AtRGB f_TRT = (bsdfTRT(sp.beta_TRT2, sp.alpha_TRT, theta_h, cosphi2) * sp.specular2Color
-                                        + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength) * kfr[2];
+                                    + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength) 
+                                    * kfr[2] * cos_theta_i;
                         a_bar_b[idx] += f_R + f_TT + f_TRT;
                         // }
                         alpha_b[idx] += f_R*sp.alpha_R + f_TT*sp.alpha_TT + f_TRT*sp.alpha_TRT;
@@ -886,8 +889,8 @@ struct HairBsdf
                 AiStateGetMsgRGB("als_T_f", &als_T_f);
                 AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
 
-                //int idx = int((theta_i / AI_PIOVER2 + 0.5f)*(DS_NUMSTEPS-1));
-                int idx = int((fabsf(theta_i) / AI_PIOVER2)*(DS_NUMSTEPS-1));
+                int idx = int((theta_i / AI_PIOVER2 + 0.5f)*(DS_NUMSTEPS-1));
+                //int idx = int((fabsf(theta_i) / AI_PIOVER2)*(DS_NUMSTEPS-1));
                 AtRGB theta_hr = rgb(theta_h);
                 AtRGB f_direct_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
                 AtRGB occlusion = AI_RGB_WHITE - scrs.opacity; 
@@ -1193,19 +1196,19 @@ node_parameters
 {
     AiParameterFlt("ior", 1.55f);
     AiParameterFlt("hairColorDensity", 1.f);
-    AiParameterRGB("hairColor", 0.31f, 0.08f, 0.005f);
+    AiParameterRGB("hairColor", 0.97f, 0.93f, 0.85f);
     AiParameterFlt("specularShift", 7.0f);
     AiParameterFlt("specularWidth", 5.0f);
     AiParameterInt("extraSamples", 0);
     AiParameterFlt("specular1Strength", 1.0f);
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f);
     AiParameterFlt("specular2Strength", 1.0f);
-    AiParameterRGB("specular2Color", 0.31f, 0.08f, 0.005f);
+    AiParameterRGB("specular2Color",1.0f, 1.0f, 1.0f);
     AiParameterFlt("glintStrength", 2.0f);
     AiParameterFlt("glintRolloff", 5.0f);
     AiParameterFlt("glintSeparation", 35.0f);
     AiParameterFlt("transmissionStrength", 1.0f);
-    AiParameterRGB("transmissionColor", 0.92f, 0.7f, 0.64f);
+    AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f);
     AiParameterFlt("transmissionRolloff", 30.0f);
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
     AiParameterFlt("densityFront", 0.7f);
@@ -1328,7 +1331,8 @@ shader_evaluate
             && AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f))
         {
             float theta_i = AI_PIOVER2 - sphericalTheta(sg->Rd, hb.U);
-            int idx = int(fabsf(theta_i / AI_PIOVER2)*(DS_NUMSTEPS-1));
+            //int idx = int(fabsf(theta_i / AI_PIOVER2)*(DS_NUMSTEPS-1));
+            int idx = int((theta_i / AI_PIOVER2 + 0.5f)*(DS_NUMSTEPS-1));
             
             als_T_f *= hb.data->a_bar_f[idx];
             AiStateSetMsgRGB("als_T_f", als_T_f);
