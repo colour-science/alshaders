@@ -45,6 +45,17 @@ inline AtRGB clamp(const AtRGB& a, const AtRGB& mn, const AtRGB& mx)
     return min(max(a, mn), mx);
 }
 
+inline bool finite(const AtRGB& c)
+{
+    return finite(c.r) && finite(c.g) && finite(c.b);
+}
+
+inline std::ostream& operator<<(std::ostream& os, const AtRGB& c)
+{
+    os << "(" << c.r << ", " << c.g << ", " << c.b << ")" << std::endl;
+    return os;
+}
+
 
 // concentricSampleDisk and cosineSampleHemisphere lifted from PBRT
 /*
