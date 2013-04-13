@@ -147,7 +147,7 @@ node_parameters
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
     AiParameterFLT("specular1Roughness", 0.3f );
     AiParameterFLT("specular1Ior", 1.4f );
-    AiParameterFLT("specular1RoughnessDepthScale", 1.0f);
+    AiParameterFLT("specular1RoughnessDepthScale", 1.5f);
     AiParameterINT("specular1ExtraSamples", 0);
     AiParameterVec("specular1Normal", 0, 0, 0);
 
@@ -155,7 +155,7 @@ node_parameters
     AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
     AiParameterFLT("specular2Roughness", 0.3f );
     AiParameterFLT("specular2Ior", 1.4f );
-    AiParameterFLT("specular2RoughnessDepthScale", 1.0f);
+    AiParameterFLT("specular2RoughnessDepthScale", 1.5f);
     AiParameterINT("specular2ExtraSamples", 0);
     AiParameterVec("specular2Normal", 0, 0, 0);
 
@@ -164,7 +164,7 @@ node_parameters
     AiParameterBOOL("transmissionLinkToSpecular1", true);
     AiParameterFLT("transmissionRoughness", 0.1f );
     AiParameterFLT("transmissionIor", 1.4f );
-    AiParameterFLT("transmissionRoughnessDepthScale", 1.0f);
+    AiParameterFLT("transmissionRoughnessDepthScale", 1.5f);
     AiParameterBOOL("transmissionEnableCaustics", true);
     AiParameterINT("transmissionExtraSamples", 0);
 
@@ -530,19 +530,15 @@ shader_evaluate
         do_glossy2 = false;
     }
 
-    // TODO: This was inverted from what it should have been. 
-    // Still to investogate whether the correct way round can actually help or not.
-    /*
-    if (sg->Rr_gloss > 0 && do_glossy)
+    // Grab the roughness from the previous surface and make sure we're slightly rougher than it to avoid glossy-glossy fireflies
+    float alsPreviousRoughness = 0.05f;
+    AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
+    if (sg->Rr > 0)
     {
-        roughness *= powf(specular1RoughnessDepthScale, sg->Rr_gloss);
-        roughness2 *= powf(specular2RoughnessDepthScale, sg->Rr_gloss);
+        roughness = std::max(roughness, alsPreviousRoughness*specular1RoughnessDepthScale);
+        roughness2 = std::max(roughness2, alsPreviousRoughness*specular2RoughnessDepthScale);
+        transmissionRoughness = std::max(transmissionRoughness, alsPreviousRoughness*transmissionRoughnessDepthScale);
     }
-    if (sg->Rr_refr > 0 && do_transmission)
-    {
-        transmissionRoughness *= powf(transmissionRoughnessDepthScale, sg->Rr_refr);
-    }
-    */
 
     if (sg->Rr_diff > 0 || sg->Rr_gloss > 1 || sssMix < 0.01f)
     {
@@ -755,6 +751,7 @@ shader_evaluate
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti = 0.0f;
+        AiStateSetMsgFlt("alsPreviousRoughness", roughness);
         while(AiSamplerGetSample(sampit, samples))
         {
             wi = GlossyMISSample(mis, samples[0], samples[1]);
@@ -810,6 +807,7 @@ shader_evaluate
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti2 = 0.0f;
+        AiStateSetMsgFlt("alsPreviousRoughness", roughness2);
         while(AiSamplerGetSample(sampit, samples))
         {
             wi = GlossyMISSample(mis2, samples[0], samples[1]);
