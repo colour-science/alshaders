@@ -48,12 +48,26 @@ static const char* idAovNames[NUM_ID_AOVS] =
     "id_8"
 };
 
+inline void flipNormals(AtShaderGlobals* sg)
+{
+    sg->N = -sg->N;
+    sg->Nf = -sg->Nf;
+    sg->Ng = -sg->Ng;
+    sg->Ngf = -sg->Ngf;
+    sg->Ns = -sg->Ns;
+}
+
 enum alSurfaceParams
 {
     // diffuse
     p_diffuseStrength=0,
     p_diffuseColor,
     p_diffuseRoughness,
+
+    // backlight
+    p_backlightStrength,
+    p_backlightColor,
+
     p_emissionStrength,
     p_emissionColor,
 
@@ -121,6 +135,10 @@ node_parameters
     AiParameterFLT("diffuseStrength", 1.0f );
     AiParameterRGB("diffuseColor", 0.18f, 0.18f, 0.18f );
     AiParameterFLT("diffuseRoughness", 0.0f );
+
+    AiParameterFLT("backlightStrength", 0.0f );
+    AiParameterRGB("backlightColor", 0.18f, 0.18f, 0.18f );
+
     AiParameterFLT("emissionStrength", 0.0f );
     AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
@@ -444,6 +462,7 @@ shader_evaluate
     // Initialize parameter temporaries
     // TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
     AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
+    AtRGB backlightColor = AiShaderEvalParamRGB(p_backlightColor) * AiShaderEvalParamFlt(p_backlightStrength);
     float diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
     bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
@@ -488,10 +507,12 @@ shader_evaluate
     // Initialize result temporaries
     AtRGB result_diffuseDirect = AI_RGB_BLACK;
     AtRGB result_diffuseDirectRaw = AI_RGB_BLACK;
+    AtRGB result_backlightDirect = AI_RGB_BLACK;
     AtRGB result_glossyDirect = AI_RGB_BLACK;
     AtRGB result_glossy2Direct = AI_RGB_BLACK;
     AtRGB result_diffuseIndirect = AI_RGB_BLACK;
     AtRGB result_diffuseIndirectRaw = AI_RGB_BLACK;
+    AtRGB result_backlightIndirect = AI_RGB_BLACK;
     AtRGB result_glossyIndirect = AI_RGB_BLACK;
     AtRGB result_glossy2Indirect = AI_RGB_BLACK;
     AtRGB result_sss = AI_RGB_BLACK;
@@ -500,6 +521,7 @@ shader_evaluate
     AtColor result_emission = AI_RGB_BLACK;
     // Set up flags to early out of calculations based on where we are in the ray tree
     bool do_diffuse = true;
+    bool do_backlight = true;
     bool do_glossy = true;
     bool do_glossy2 = true;
     bool do_ss = true;
@@ -513,6 +535,10 @@ shader_evaluate
         do_diffuse = false;
     }
 
+    if (maxh(backlightColor) < IMPORTANCE_EPS)
+    {
+        do_backlight = false;
+    }
 
     if (sg->Rr_gloss > data->GI_glossy_depth
                 || (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
@@ -650,19 +676,19 @@ shader_evaluate
 
     void* dmis;
     dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
-    BrdfData_wrap brdfd;
-    brdfd.brdf_data = dmis;
-    brdfd.sg = sg;
-    brdfd.eta = eta;
-    brdfd.V = wo;
-    brdfd.N = sg->N;
-    brdfd.kr = 0.0f;
+
+    flipNormals(sg);
+    void* bmis;
+    bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
+    flipNormals(sg);
+
+    if (do_backlight) sg->fhemi = false;
 
     // Light loop
     AiLightsPrepare(sg);
     if (doDeepGroups || (sg->Rt & AI_RAY_CAMERA)) 
     {
-        AtRGB LdiffuseDirect, LspecularDirect, Lspecular2Direct;
+        AtRGB LdiffuseDirect, LbacklightDirect, LspecularDirect, Lspecular2Direct;
         while(AiLightsGetSample(sg))
         {
             int lightGroup = data->lightGroups[sg->Lp];
@@ -692,17 +718,30 @@ shader_evaluate
                 result_glossy2Direct += Lspecular2Direct;
                 sg->N = Nold;
             }
+            AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
             if (do_diffuse)
             {
-                AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
                 LdiffuseDirect =
-                AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+                    AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
                                         * r;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += LdiffuseDirect * diffuseColor;
                 }
                 result_diffuseDirect += LdiffuseDirect;
+            }
+            if (do_backlight)
+            {
+                flipNormals(sg);
+                LbacklightDirect = 
+                    std::max(0.0f, AiV3Dot(sg->N, sg->Ld)) * sg->we * sg->Li
+                                        * r;
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
+                }
+                result_backlightDirect += LbacklightDirect;
+                flipNormals(sg);
             }
         }
     }
@@ -728,12 +767,27 @@ shader_evaluate
                                         * (1.0f - brdfw.kr*maxh(specular1Color))
                                         * (1.0f - brdfw2.kr*maxh(specular2Color));
             }
+            if (do_backlight)
+            {
+                flipNormals(sg);
+                result_backlightDirect +=
+                /*
+                AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+                */
+                std::max(0.0f, AiV3Dot(sg->N, sg->Ld)) * sg->we * sg->Li
+                                        * (1.0f - brdfw.kr*maxh(specular1Color))
+                                        * (1.0f - brdfw2.kr*maxh(specular2Color));
+                flipNormals(sg);
+            }
         }
     }
+
+    sg->fhemi = true;
 
     // Multiply by the colors
     result_diffuseDirectRaw = result_diffuseDirect;
     result_diffuseDirect *= diffuseColor;
+    result_backlightDirect *= backlightColor;
     result_glossyDirect *= specular1Color;
     result_glossy2Direct *= specular2Color;       
 
@@ -1105,6 +1159,7 @@ shader_evaluate
         AiAOVSetRGB(sg, "diffuse_color", diffuseColor);
         AiAOVSetRGB(sg, "direct_diffuse", result_diffuseDirect);
         AiAOVSetRGB(sg, "direct_diffuse_raw", result_diffuseDirectRaw);
+        AiAOVSetRGB(sg, "direct_backlight", result_diffuseDirect);
         AiAOVSetRGB(sg, "sss", result_sss);
         AiAOVSetRGB(sg, "direct_specular", result_glossyDirect);
         AiAOVSetRGB(sg, "direct_specular_2", result_glossy2Direct);
@@ -1156,6 +1211,7 @@ shader_evaluate
     // Sum final result from temporaries
     //
     sg->out.RGB =    result_diffuseDirect
+                    +result_backlightDirect
                     +result_sss
                     +result_glossyDirect
                     +result_glossy2Direct

@@ -12,6 +12,11 @@ class AEalSurfaceTemplate(alShadersTemplate):
         self.addControl('diffuseColor', label='Color')
         self.addControl('diffuseRoughness', label='Roughness')
 
+        self.beginLayout('Backlight', collapse=True)
+        self.addControl('backlightStrength', label='Strength')
+        self.addControl('backlightColor', label='Color')
+        self.endLayout() # end Backlight
+    
         self.beginLayout('Subsurface scattering')
         self.addControl('sssMix', label='Mix')
         self.addControl('sssRadius', label='Distance')
