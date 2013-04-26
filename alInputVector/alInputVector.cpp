@@ -26,6 +26,7 @@ enum Inputs
 	IN_dPdv,
 	IN_Ld,
 	IN_Rd,
+	IN_UV,
 	IN_USER,
 	IN_CUSTOM
 };
@@ -42,6 +43,7 @@ static const char* InputNames[] = {
 	"dPdv",
 	"Ld",
 	"Rd",
+	"uv",
 	"User",
 	"Custom",
 	NULL
@@ -158,6 +160,9 @@ shader_evaluate
 		break;
 	case IN_Rd:
 		vector = sg->Rd;
+		break;
+	case IN_UV:
+		AiV3Create(vector, sg->u, sg->v, 0);
 		break;
 	case IN_USER:
 		AiUDataGetPnt(userName, &vector);
