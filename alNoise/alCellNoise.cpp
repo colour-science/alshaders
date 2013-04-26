@@ -146,7 +146,7 @@ node_update
 	data->space = params[p_space].INT;
 	data->frequency = params[p_frequency].FLT;
 	data->mode = params[p_mode].INT;
-	data->octaves = params[p_mode].INT;
+	data->octaves = params[p_octaves].INT;
 	data->randomness= params[p_randomness].FLT;
 	data->lacunarity = params[p_lacunarity].FLT;
 	data->f1w = params[p_f1w].FLT;
