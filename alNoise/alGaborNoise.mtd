@@ -5,30 +5,30 @@
     maya.id             INT         0x00116410
 
     [attr space]
-        linkable FALSE
+        linkable BOOL false
 
     [attr frequency]
-        linkable FALSE
-        min 0.000000001
+        linkable BOOL false
+        min FLOAT 0.000000001
 
     [attr bandwidth]
-        linkable FALSE
-        min 0.01
-        max 100
+        linkable BOOL false
+        min FLOAT 0.01
+        max FLOAT 100
 
     [attr impulses]
-        linkable FALSE
-        min 1
-        max 32
+        linkable BOOL false
+        min FLOAT 1
+        max FLOAT 32
 
     [attr anisotropy]
-        linkable FALSE
+        linkable BOOL false
 
     [attr anisotropyDirection]
-        linkable FALSE
+        linkable BOOL false
 
     [attr filter]
-        linkable FALSE
+        linkable BOOL false
 
     [attr turbulent]
-        linkable FALSE
+        linkable BOOL false

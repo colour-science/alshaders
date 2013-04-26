@@ -5,28 +5,28 @@
     maya.id             INT         0x00116409
 
     [attr space]
-        linkable FALSE
+        linkable BOOL false
 
     [attr frequency]
-        linkable FALSE
+        linkable BOOL false
 
     [attr scale]
-        linkable FALSE
+        linkable BOOL false
 
     [attr time]
-        linkable FALSE
+        linkable BOOL false
 
     [attr octaves]
-        linkable FALSE
+        linkable BOOL false
 
     [attr lacunarity]
-        linkable FALSE
+        linkable BOOL false
 
     [attr gain]
-        linkable FALSE
+        linkable BOOL false
 
     [attr turbulent]
-        linkable FALSE
+        linkable BOOL false
 
     [attr ridged]
-        linkable FALSE
+        linkable BOOL false

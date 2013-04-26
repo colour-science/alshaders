@@ -5,52 +5,52 @@
     maya.id             INT         0x00116408
 
     [attr space]
-        linkable FALSE
+        linkable BOOL false
 
     [attr frequency]
-        linkable FALSE
+        linkable BOOL false
 
     [attr mode]
-        linkable FALSE
+        linkable BOOL false
 
     [attr octaves]
-        linkable FALSE
+        linkable BOOL false
 
     [attr randomness]
-        linkable FALSE
+        linkable BOOL false
 
     [attr lacunarity]
-        linkable FALSE
+        linkable BOOL false
 
     [attr f1w]
-        linkable FALSE
+        linkable BOOL false
 
     [attr f2w]
-        linkable FALSE
+        linkable BOOL false
 
     [attr f3w]
-        linkable FALSE
+        linkable BOOL false
 
     [attr f4w]
-        linkable FALSE
+        linkable BOOL false
 
     [attr mynkowskiShape]
-        linkable FALSE
+        linkable BOOL false
 
     [attr smoothChips]
-        linkable FALSE
+        linkable BOOL false
 
     [attr chipProb1]
-        linkable FALSE
+        linkable BOOL false
 
     [attr chipProb2]
-        linkable FALSE
+        linkable BOOL false
 
     [attr chipProb3]
-        linkable FALSE
+        linkable BOOL false
 
     [attr chipProb4]
-        linkable FALSE
+        linkable BOOL false
 
     [attr chipProb5]
-        linkable FALSE
+        linkable BOOL false
