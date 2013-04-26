@@ -1,4 +1,4 @@
-set(SHADERS alFractal alCellNoise alFlowNoise)
+set(SHADERS alFractal alCellNoise alFlowNoise alGaborNoise)
 
 foreach(SHADER ${SHADERS})
 	set(SRC ${SHADER}.cpp ../common/alUtil.cpp)
