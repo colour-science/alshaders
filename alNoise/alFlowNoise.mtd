@@ -1,0 +1,5 @@
+[node alFlowNoise]
+    desc                STRING      "Flow noise based on the implementation Stefan Gustafson"
+    maya.name           STRING      "alFlowNoise"
+    maya.classification STRING      "texture"
+    maya.id             INT         0x0011640F
