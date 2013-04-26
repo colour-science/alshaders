@@ -10,10 +10,10 @@ class AEalGaborNoiseTemplate(alShadersTemplate):
         self.addControl('frequency')
         self.addControl('anisotropy')
         self.addControl('anistropyDirection')
-        self.addControl('filter')
+        #self.addControl('filter')
         self.addControl('bandwidth')
         self.addControl('impulses')
-
+        self.addControl('turbulent')
 
         self.addRemapControls()
 

@@ -86,16 +86,6 @@ struct GaborParams
     }
 };
 
-struct ShaderData
-{
-    ShaderData() : gp(NULL) {}
-    ~ShaderData() {delete gp;}
-    GaborParams* gp;
-
-    int space;
-    float frequency;
-};
-
 /// gabor kernel. cosine weighted by a gaussian, augmented with a phase as per [1]
 /// @param weight magnitude of the pulse
 /// @param omega orientation of the harmonic
@@ -229,7 +219,7 @@ enum alGaborNoiseParams
     p_filter,
     p_bandwidth,
     p_impulses,
-
+    p_turbulent,
     REMAP_FLOAT_PARAM_ENUM,
 
     p_color1,
@@ -249,6 +239,7 @@ node_parameters
     AiParameterBool("filter", false);
     AiParameterFlt("bandwidth", 1.0f);
     AiParameterFlt("impulses", 8.0f);
+    AiParameterBool("turbulent", false);
     REMAP_FLOAT_PARAM_DECLARE;
     AiParameterRGB("color1", 0.0f, 0.0f, 0.0f);
     AiParameterRGB("color2", 1.0f, 1.0f, 1.0f);
@@ -266,6 +257,17 @@ node_loader
     ::strcpy(node->version, AI_VERSION);
     return TRUE;
 }
+
+struct ShaderData
+{
+    ShaderData() : gp(NULL) {}
+    ~ShaderData() {delete gp;}
+    GaborParams* gp;
+
+    int space;
+    float frequency;
+    bool turbulent;
+};
 
 node_initialize
 {
@@ -290,6 +292,7 @@ node_update
                                 params[p_impulses].FLT);
     data->space = params[p_space].INT;
     data->frequency = params[p_frequency].FLT;
+    data->turbulent = params[p_turbulent].BOOL;
 
 }
 
@@ -331,6 +334,7 @@ shader_evaluate
     P *= data->frequency;
     
     float result = gabor(P, *(data->gp));
+    if (data->turbulent) result = fabsf(result);
 
     RemapFloat r = REMAP_FLOAT_CREATE;
     result = r.remap(result);
