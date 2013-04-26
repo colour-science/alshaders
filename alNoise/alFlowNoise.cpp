@@ -547,31 +547,47 @@ node_loader
     return TRUE;
 }
 
+
+struct ShaderData
+{
+    int space;
+    float frequency;
+    int octaves;
+    float lacunarity;
+    float gain;
+    float angle;
+    float advection;
+    bool turbulent;
+};
+
 node_initialize
 {
-    
+    ShaderData* data = new ShaderData;
+    AiNodeSetLocalData(node, data);
 }
 
 node_finish
 {
-    
+    ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
+    delete data;
 }
 
 node_update
 {
-    
+    ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
+    data->space = params[p_space].INT;
+    data->frequency = params[p_frequency].FLT;
+    data->octaves = params[p_octaves].INT;
+    data->lacunarity = params[p_lacunarity].FLT;
+    data->gain = params[p_gain].FLT;
+    data->angle = params[p_angle].FLT;
+    data->advection = params[p_advection].FLT;
+    data->turbulent = params[p_turbulent].BOOL;
 }
 
 shader_evaluate
 {
-    int space = AiShaderEvalParamInt(p_space);
-    float frequency = AiShaderEvalParamFlt(p_frequency);
-    int octaves = AiShaderEvalParamInt(p_octaves);
-    float lacunarity = AiShaderEvalParamFlt(p_lacunarity);
-    float gain = AiShaderEvalParamFlt(p_gain);
-    float angle = AiShaderEvalParamFlt(p_angle);
-    float advection = AiShaderEvalParamFlt(p_advection);
-    bool turbulent = AiShaderEvalParamBool(p_turbulent);
+    ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
     AtRGB color1 = AiShaderEvalParamRGB(p_color1);
     AtRGB color2 = AiShaderEvalParamRGB(p_color2);
 
@@ -584,7 +600,7 @@ shader_evaluate
     }
     else
     {
-        switch (space)
+        switch (data->space)
         {
         case NS_OBJECT:
             P = sg->Po;
@@ -604,7 +620,7 @@ shader_evaluate
         }
     }
 
-    P *= frequency;
+    P *= data->frequency;
 
     float amp = 1.0f;
     float g = 1.0f;
@@ -612,18 +628,16 @@ shader_evaluate
     AtVector deriv, advect;
     AiV3Create(advect, 0, 0, 0);
     float n;
-    for (int i=0; i < octaves; ++i)
+    for (int i=0; i < data->octaves; ++i)
     {
-        n = srdnoise(P+advect, angle, deriv);
-        if (turbulent) n = fabsf(n);
+        n = srdnoise(P+advect, data->angle, deriv);
+        if (data->turbulent) n = fabsf(n);
         result += n * g;
-        advect -= deriv * advection * g;
+        advect -= deriv * data->advection * g;
 
-        P *= lacunarity;
-        g *= gain;
+        P *= data->lacunarity;
+        g *= data->gain;
     }
-    // magic number weighting?
-    //result = 0.5f + result * 0.4f;
 
     RemapFloat r = REMAP_FLOAT_CREATE;
     result = r.remap(result);
