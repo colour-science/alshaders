@@ -31,6 +31,7 @@ class AEalCellNoiseTemplate(alShadersTemplate):
         self.endLayout() # end Features
 
         self.beginLayout('Chips', collapse=False)
+        self.addControl('smoothChips')
         self.addControl('chipColor1', label='Color 1')
         self.addControl('chipProb1', label='Probability 1')
         self.addControl('chipColor2', label='Color 2')
