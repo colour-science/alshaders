@@ -500,6 +500,114 @@ inline float sampleTEAFloat(AtUInt32 v0, AtUInt32 v1, int rounds = 4) {
 #define M_RAN_INVM32 2.32830643653869628906e-010
 inline double random(AtUInt32 ui) { return ui * M_RAN_INVM32; }
 
+/// Stolen from https://github.com/imageworks/OpenShadingLanguage/blob/master/src/liboslexec/noiseimpl.h
+/// hash an array of N 32 bit values into a pseudo-random value
+/// based on my favorite hash: http://burtleburtle.net/bob/c/lookup3.c
+/// templated so that the compiler can unroll the loops for us
+template <int N>
+inline unsigned int
+inthash (const unsigned int k[N]) 
+{
+// define some handy macros
+#define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
+#define mix(a,b,c) \
+{ \
+a -= c; a ^= rot(c, 4); c += b; \
+b -= a; b ^= rot(a, 6); a += c; \
+c -= b; c ^= rot(b, 8); b += a; \
+a -= c; a ^= rot(c,16); c += b; \
+b -= a; b ^= rot(a,19); a += c; \
+c -= b; c ^= rot(b, 4); b += a; \
+}
+#define final(a,b,c) \
+{ \
+c ^= b; c -= rot(b,14); \
+a ^= c; a -= rot(c,11); \
+b ^= a; b -= rot(a,25); \
+c ^= b; c -= rot(b,16); \
+a ^= c; a -= rot(c,4); \
+b ^= a; b -= rot(a,14); \
+c ^= b; c -= rot(b,24); \
+}
+    // now hash the data!
+    unsigned int a, b, c, len = N;
+    a = b = c = 0xdeadbeef + (len << 2) + 13;
+    while (len > 3) {
+        a += k[0];
+        b += k[1];
+        c += k[2];
+        mix(a, b, c);
+        len -= 3;
+        k += 3;
+    }
+    switch (len) {
+        case 3 : c += k[2];
+        case 2 : b += k[1];
+        case 1 : a += k[0];
+        final(a, b, c);
+        case 0:
+            break;
+    }
+    return c;
+    // macros not needed anymore
+#undef rot
+#undef mix
+#undef final
+}
+
+
+
+/// return the greatest integer <= x
+/// stolen from https://github.com/imageworks/OpenShadingLanguage/blob/master/src/liboslexec/noiseimpl.h
+inline int quickFloor(float x) 
+{
+    return (int) x - ((x < 0) ? 1 : 0);
+}
+
+/// linear congruential generator.
+/// stolen from https://github.com/imageworks/OpenShadingLanguage/blob/master/src/liboslexec/gabornoise.cpp
+class LCG
+{
+public:
+    LCG(const AtVector& P, AtUInt32 seed=0)
+    {
+        // Seed based on cell P is in
+        AtUInt32 pi[4] = 
+        {
+            floorf(P.x),
+            floorf(P.y),
+            floorf(P.z),
+            seed
+        };
+        _seed = inthash<4>(pi);
+        if (!_seed) _seed = 1;
+    }
+
+    /// return float on [0,1)
+    float operator()()
+    {
+        _seed *= 3039177861u;
+        return float(_seed) / float(UINT_MAX);
+    }
+
+    /// poisson distribution
+    float poisson(float mean)
+    {
+        float g = fast_exp(-mean);
+        AtUInt32 em = 0;
+        float t = (*this)();
+        while (t > g)
+        {
+            ++em;
+            t *= (*this)();
+        }
+        return em;
+    }
+
+private:
+    AtUInt32 _seed;
+};
+
 // Polynomial solvers below adapted from Cortex (which appear to themselves have been hoisted from Imath)
 // http://cortex-vfx.googlecode.com/svn-history/r2684/trunk/rsl/IECoreRI/Roots.h
 //////////////////////////////////////////////////////////////////////////
@@ -629,4 +737,34 @@ inline float solveCubic(float a, float b, float c, float d, float roots[3])
         return solveQuadratic (b, c, d, roots);
     }
     return solveNormalizedCubic (b / a, c / a, d / a, roots);
+}
+
+/// simultaneous sin and cos
+#ifndef __linux__
+inline void sincosf(float x, float* sx, float* cx)
+{
+    *sx = sinf(x);
+    *cx = sqrtf(1.0f - SQR(*sx));
+}
+#endif
+
+inline float wrap(float s, float period)
+{
+    period = floorf(period);
+    if (period < 1.0f) period = 1.0f;
+    return s - period * floorf(s/period);
+}
+
+inline AtVector wrap(const AtVector& s, const AtVector& period)
+{
+    AtVector r;
+    AiV3Create(r, wrap(s.x, period.x), wrap(s.y, period.y), wrap(s.z, period.z));
+    return r;
+}
+
+inline AtVector floor(const AtVector& v)
+{
+    AtVector r;
+    AiV3Create(r, floorf(v.x), floorf(v.y), floorf(v.z));
+    return r;
 }
