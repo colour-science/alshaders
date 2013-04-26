@@ -4,13 +4,31 @@
     maya.classification STRING      "texture"
     maya.id             INT         0x00116410
 
+    [attr space]
+        linkable FALSE
+
     [attr frequency]
+        linkable FALSE
         min 0.000000001
 
     [attr bandwidth]
+        linkable FALSE
         min 0.01
         max 100
 
     [attr impulses]
+        linkable FALSE
         min 1
         max 32
+
+    [attr anisotropy]
+        linkable FALSE
+
+    [attr anisotropyDirection]
+        linkable FALSE
+
+    [attr filter]
+        linkable FALSE
+
+    [attr turbulent]
+        linkable FALSE

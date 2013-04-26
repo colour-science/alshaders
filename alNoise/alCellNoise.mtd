@@ -3,3 +3,54 @@
     maya.name           STRING      "alCellNoise"
     maya.classification STRING      "texture"
     maya.id             INT         0x00116408
+
+    [attr space]
+        linkable FALSE
+
+    [attr frequency]
+        linkable FALSE
+
+    [attr mode]
+        linkable FALSE
+
+    [attr octaves]
+        linkable FALSE
+
+    [attr randomness]
+        linkable FALSE
+
+    [attr lacunarity]
+        linkable FALSE
+
+    [attr f1w]
+        linkable FALSE
+
+    [attr f2w]
+        linkable FALSE
+
+    [attr f3w]
+        linkable FALSE
+
+    [attr f4w]
+        linkable FALSE
+
+    [attr mynkowskiShape]
+        linkable FALSE
+
+    [attr smoothChips]
+        linkable FALSE
+
+    [attr chipProb1]
+        linkable FALSE
+
+    [attr chipProb2]
+        linkable FALSE
+
+    [attr chipProb3]
+        linkable FALSE
+
+    [attr chipProb4]
+        linkable FALSE
+
+    [attr chipProb5]
+        linkable FALSE

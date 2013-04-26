@@ -3,3 +3,27 @@
     maya.name           STRING      "alFlowNoise"
     maya.classification STRING      "texture"
     maya.id             INT         0x0011640F
+
+    [attr space]
+        linkable FALSE
+
+    [attr frequency]
+        linkable FALSE
+
+    [attr octaves]
+        linkable FALSE
+
+    [attr lacunarity]
+        linkable FALSE
+
+    [attr gain]
+        linkable FALSE
+
+    [attr turbulent]
+        linkable FALSE
+
+    [attr angle]
+        linkable FALSE
+
+    [attr advection]
+        linkable FALSE

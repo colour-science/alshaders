@@ -3,3 +3,30 @@
     maya.name           STRING      "alFractal"
     maya.classification STRING      "texture"
     maya.id             INT         0x00116409
+
+    [attr space]
+        linkable FALSE
+
+    [attr frequency]
+        linkable FALSE
+
+    [attr scale]
+        linkable FALSE
+
+    [attr time]
+        linkable FALSE
+
+    [attr octaves]
+        linkable FALSE
+
+    [attr lacunarity]
+        linkable FALSE
+
+    [attr gain]
+        linkable FALSE
+
+    [attr turbulent]
+        linkable FALSE
+
+    [attr ridged]
+        linkable FALSE
