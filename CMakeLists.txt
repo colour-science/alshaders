@@ -52,7 +52,6 @@ set(SUBDIRECTORIES
         alPhotometric
         alInputVector
         alHair
-        alLightGroups
         common
 )
 
