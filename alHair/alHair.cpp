@@ -450,8 +450,6 @@ struct HairBsdf
         V = AiV3Cross(U, sg->N);
         W = AiV3Cross(V, U);
 
-        result_diffuse_direct = AI_RGB_BLACK;
-        result_diffuse_indirect = AI_RGB_BLACK;
         result_R_direct = AI_RGB_BLACK;
         result_R_indirect = AI_RGB_BLACK;
         result_TT_direct = AI_RGB_BLACK;
@@ -754,7 +752,8 @@ struct HairBsdf
         invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
     }
 
-    /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the indirect sampling loop
+    /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the 
+    /// indirect sampling loop
     /// @param wi The incident direction 
     inline void prepareIndirectSample(AtVector& wi)
     {
@@ -767,8 +766,6 @@ struct HairBsdf
         phi_d = phi;
         if (phi_d < 0) phi_d += AI_PITIMES2;
         phi_i = phi_r - phi;
-        //if (phi_i < -AI_PI) phi_i += AI_PITIMES2;
-        //if (phi_i > AI_PI) phi_i -= AI_PITIMES2;
         phi = phi_d - AI_PI;
         phi = AI_PI - fabsf(phi);
         cosphi2 = cosf(phi*0.5f);
@@ -798,7 +795,6 @@ struct HairBsdf
             } 
 
         }
-        result_diffuse_direct *= diffuseColor;
         result_R_direct *= specular1Color;
         result_TT_direct *= transmissionColor;
         result_TRT_direct *= specular2Color;
@@ -829,6 +825,7 @@ struct HairBsdf
     {
         if (sg->Rt & AI_RAY_DIFFUSE)
         {
+            /*
             // if we're in a diffuse ray then don't do the full brdf, just do a kajiya kay diffuse approximation
             // or the result will be noisy as hell (hair caustics!)
             sg->fhemi = false;
@@ -839,6 +836,7 @@ struct HairBsdf
             }
             result_diffuse_direct *= specular2Color;
             sg->fhemi = true;
+            */
         }
         else
         {
@@ -882,6 +880,7 @@ struct HairBsdf
                     result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
                     result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
                     result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[2];
+                    result_id6 += kfr[1] * sg->we;
                 }
                 if (directFraction < 1.0f)
                 {
@@ -895,9 +894,6 @@ struct HairBsdf
                         f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[ngidx]
                                         + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[ngidx]
                                         + g(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[ngidx];
-                        // TODO: without this suppression term we get a hard line in f_s_scatter, which probably means we've made
-                        // a mistake somewhere further up the chain...                
-                        //f_s_scatter *= phi_c;
                         f_s_scatter *= S_f;
                     }
                     
@@ -981,10 +977,6 @@ struct HairBsdf
                     f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[ngidx]
                                     + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[ngidx]
                                     + g(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[ngidx];
-
-                    // TODO: without this suppression term we get a hard line in f_s_scatter, which probably means we've made
-                    // a mistake somewhere further up the chain...                
-                   //f_s_scatter *= phi_c;
                     f_s_scatter *= S_f;
                 }
                 
@@ -1011,8 +1003,6 @@ struct HairBsdf
     {
         if (sg->Rt & AI_RAY_CAMERA)
         {
-            AiAOVSetRGB(sg, "direct_diffuse", result_diffuse_direct);
-            AiAOVSetRGB(sg, "indirect_diffuse", result_diffuse_indirect);
             AiAOVSetRGB(sg, "direct_specular", result_R_direct);
             AiAOVSetRGB(sg, "indirect_specular", result_R_indirect);
             AiAOVSetRGB(sg, "direct_specular2", result_TRT_direct);
@@ -1035,9 +1025,7 @@ struct HairBsdf
             AiAOVSetRGB(sg, "id_8", result_id8);
         }
 
-        sg->out.RGB =   result_diffuse_direct +
-                        result_diffuse_indirect +
-                        result_R_direct +
+        sg->out.RGB =   result_R_direct +
                         result_R_indirect +
                         result_TT_direct +
                         result_TT_indirect +
@@ -1064,7 +1052,6 @@ struct HairBsdf
             opacity *= geo_opacity;
         }
 
-        //if (!(sg->Rt & AI_RAY_SHADOW || sg->Rt & AI_RAY_CAMERA))
         if (sg->transp_index > 5)
         {
             opacity = 1.0f;
@@ -1124,8 +1111,6 @@ struct HairBsdf
     float density_front;
     float density_back;
 
-    AtRGB result_diffuse_direct;
-    AtRGB result_diffuse_indirect;
     AtRGB result_R_direct;
     AtRGB result_R_indirect;
     AtRGB result_TT_direct;
@@ -1257,8 +1242,6 @@ node_update
 
     AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("indirect_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("direct_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("indirect_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("direct_specular2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("indirect_specular2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("direct_transmission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
