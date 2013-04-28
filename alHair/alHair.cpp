@@ -899,7 +899,6 @@ struct HairBsdf
                     
                     AtRGB f_scatter_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
 
-                    
                     AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
 
                     result_Pg_direct += sg->Li * sg->we * occlusion * F_scatter * cos_theta_i * (1.0f-directFraction);
