@@ -61,23 +61,23 @@
         max                 FLOAT           1
         
     # AOVs
-    [attr diffuseDirect]
+    [attr direct_diffuse]
     aov.type                INT     0x05
-    [attr diffuseIndirect]
+    [attr indirect_diffuse]
     aov.type                INT     0x05
-    [attr specularDirect]
+    [attr direct_specular]
     aov.type                INT     0x05
-    [attr specularIndirect]
+    [attr indirect_specular]
     aov.type                INT     0x05    
-    [attr specular2Direct]
+    [attr direct_specular2]
     aov.type                INT     0x05
-    [attr specular2Indirect]
+    [attr indirect_specular2]
     aov.type                INT     0x05
-    [attr singleScatter]
+    [attr single_scatter]
     aov.type                INT     0x05
-    [attr multiScatter]
+    [attr sss]
     aov.type                INT     0x05
-    [attr transmissionIndirect]
+    [attr refraction]
     aov.type                INT     0x05
     [attr emission]
     aov.type                INT     0x05
@@ -85,20 +85,36 @@
     aov.type                INT     0x05
     [attr depth]
     aov.type                INT     0x05
-    [attr lightGroup1]
+    [attr light_group_1]
     aov.type                INT     0x05
-    [attr lightGroup2]
+    [attr light_group_2]
     aov.type                INT     0x05
-    [attr lightGroup3]
+    [attr light_group_3]
     aov.type                INT     0x05
-    [attr lightGroup4]
+    [attr light_group_4]
     aov.type                INT     0x05
-    [attr lightGroup5]
+    [attr light_group_5]
     aov.type                INT     0x05
-    [attr lightGroup6]
+    [attr light_group_6]
     aov.type                INT     0x05
-    [attr lightGroup7]
+    [attr light_group_7]
     aov.type                INT     0x05
-    [attr lightGroup8]
+    [attr light_group_8]
+    aov.type                INT     0x05
+    [attr id_1]
+    aov.type                INT     0x05
+    [attr id_2]
+    aov.type                INT     0x05
+    [attr id_3]
+    aov.type                INT     0x05
+    [attr id_4]
+    aov.type                INT     0x05
+    [attr id_5]
+    aov.type                INT     0x05
+    [attr id_6]
+    aov.type                INT     0x05
+    [attr id_7]
+    aov.type                INT     0x05
+    [attr id_8]
     aov.type                INT     0x05
         

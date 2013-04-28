@@ -6,12 +6,12 @@ class AEalPhotometricTemplate(alShadersTemplate):
     
     def filenameEdit(self, data):
         attr = self.nodeAttr('filename')
-        cmds.setAttr(attr, data)
+        cmds.setAttr(attr, data, type='string')
 
     def fileDialog(self, *args):
         fn = cmds.fileDialog2(fileFilter='*.ies *.IES', dialogStyle=2, cap='Load IES file', okc='Load', fm=1)
         if fn is not None and len(fn):
-            filenameEdit(fn[0])
+            self.filenameEdit(fn[0])
             cmds.textFieldButtonGrp('filenameGrp', edit=True, text=fn[0])
 
     def filenameNew(self, nodeName):

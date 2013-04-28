@@ -1,6 +1,6 @@
 set(SHADER alSurface)
 
-set(SRC ${SHADER}.cpp BeckmannMicrofacet.cpp ../common/alUtil.cpp)
+set(SRC ${SHADER}.cpp ../common/alUtil.cpp)
 set(MTD ${SHADER}.mtd)
 set(UI ${SHADER}Template.py)
 

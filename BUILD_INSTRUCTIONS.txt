@@ -15,6 +15,8 @@ the root of your Arnold installation (in order to find the include files and lib
 the root of your MtoA installation if you want to install the shaders and AEtemplates there. If you want to install the
 shaders and AEtemplates somewhere else, set MTOA_SHADERS and MTOA_SCRIPTS appropriately.
 
+In order to build alPhotometric you also need to define BOOST_INCLUDE_PATH to point to the directory where you have the boost headers installed (it requires the headers only, not the libraries themselves).
+
 Once those variables are set, cd to the top-level alShaders directory (assuming that's where you cloned it to), then:
 > mkdir build
 > cd build

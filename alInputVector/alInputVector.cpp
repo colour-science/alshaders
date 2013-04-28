@@ -9,7 +9,8 @@ enum alInputVectorParams
 	p_type,
 	p_userName,
 	p_vector,
-	p_matrix
+	p_matrix,
+	p_coordinates
 };
 
 enum Inputs
@@ -23,6 +24,9 @@ enum Inputs
 	IN_Ns,
 	IN_dPdu,
 	IN_dPdv,
+	IN_Ld,
+	IN_Rd,
+	IN_UV,
 	IN_USER,
 	IN_CUSTOM
 };
@@ -37,6 +41,9 @@ static const char* InputNames[] = {
 	"Ns",
 	"dPdu",
 	"dPdv",
+	"Ld",
+	"Rd",
+	"uv",
 	"User",
 	"Custom",
 	NULL
@@ -55,6 +62,21 @@ static const char* TypeNames[] =
 	NULL
 };
 
+enum Coordinates
+{
+	CS_CARTESIAN = 0,
+	CS_SPHERICAL,
+	CS_NORM_SPHERICAL
+};
+
+static const char* coordinatesNames[] = 
+{
+	"cartesian",
+	"spherical",
+	"normalized spherical",
+	NULL
+};
+
 node_parameters
 {
 	AiParameterEnum("input", IN_P, InputNames);
@@ -64,6 +86,7 @@ node_parameters
 	AtFloat mtx[4][4];
 	AiM4Identity(mtx);
 	AiParameterMtx("matrix", mtx);
+	AiParameterEnum("coordinates", CS_CARTESIAN, coordinatesNames);
 }
 
 node_loader
@@ -99,6 +122,7 @@ shader_evaluate
 	const char* userName = AiShaderEvalParamStr(p_userName);
 	AtVector vector = AiShaderEvalParamVec(p_vector);
 	AtMatrix& mtx = *(AiShaderEvalParamMtx(p_matrix));
+	int coordinates = AiShaderEvalParamInt(p_coordinates);
 	AtVector result;
 
 	// first select the input vector to use
@@ -131,6 +155,15 @@ shader_evaluate
 	case IN_dPdv:
 		vector = sg->dPdv;
 		break;
+	case IN_Ld:
+		vector = sg->Ld;
+		break;
+	case IN_Rd:
+		vector = sg->Rd;
+		break;
+	case IN_UV:
+		AiV3Create(vector, sg->u, sg->v, 0);
+		break;
 	case IN_USER:
 		AiUDataGetPnt(userName, &vector);
 		break;
@@ -146,6 +179,23 @@ shader_evaluate
 	else
 	{
 		AiM4VectorByMatrixMult(&result, mtx, &vector);
+	}
+
+	// convert to spherical coordinates
+	if (coordinates > CS_CARTESIAN)
+	{
+		float theta = acosf(result.z);
+		float phi = atan2f(result.z, result.x);
+
+		if (coordinates == CS_NORM_SPHERICAL)
+		{
+			theta /= AI_PI;
+			phi = phi / AI_PITIMES2 + 0.5f;
+		}
+
+		result.x = phi;
+		result.y = theta;
+		result.z = 0.0f;
 	}
 
 	sg->out.VEC = result;

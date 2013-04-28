@@ -86,6 +86,15 @@ class AEalSurfaceTemplate(alShadersTemplate):
         self.addControl('emissionColor', label='Color')
         self.endLayout() # end Emission
 
+        self.beginLayout('IDs', collapse=True)
+        for i in range(0,8):
+            self.addControl('id'+str(i))
+        self.endLayout() # end IDs
+
+        self.beginLayout('Advanced', collapse=True)
+        self.addControl('lightGroupsIndirect', label='Indirect light groups')
+        self.endLayout() # end Advanced
+
         self.addBumpLayout()
 
         pm.mel.AEdependNodeTemplate(self.nodeName)

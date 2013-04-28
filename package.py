@@ -16,33 +16,33 @@ def mkdir_p(path):
         else: raise
 
 MAJOR_VERSION = 0
-MINOR_VERSION = 2
-PATCH_VERSION = 1
+MINOR_VERSION = 3
+PATCH_VERSION = 0
 
 subdirs = [
     'alBlackbody', 
     'alCombine',
     'alCurvature',
+	'alHair',
+	'alInputVector',
     'alLayer',
     'alNoise',
     'alPattern',
     'alPhotometric',
     'alRemap',
     'alSurface',
-    'alInputVector',
-    'alHair',
     'common'
 ] 
 
 # pattern for files to include in the source distribution
 name_src = 'alShaders-src-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
-ptrn_src_src = ['*.cpp', '*.h', '*.mtd', '*.mel', '*.txt']
+ptrn_src_src = ['*.cpp', '*.h', '*.mtd', '*.mel', '*.txt', '*.py']
 ptrn_src_bin = []
 files_src = ['BUILD_INSTRUCTIONS.txt', 'CMakeLists.txt', 'package.py', 'README', 'TODO.txt']
 
 # patterns for files to include in the osx binary distribution
 name_osx = 'alShaders-osx-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
-ptrn_osx_src = ['*.mtd', '*.mel']
+ptrn_osx_src = ['*.mtd', '*.mel', '*.py']
 ptrn_osx_bin  = ['*.dylib']
 files_osx = ['BUILD_INSTRUCTIONS.txt', 'README']
 

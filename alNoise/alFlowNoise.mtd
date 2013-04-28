@@ -1,19 +1,13 @@
-[node alFractal]
-    desc                STRING      "Procedural fractal node"
-    maya.name           STRING      "alFractal"
+[node alFlowNoise]
+    desc                STRING      "Flow noise based on the implementation Stefan Gustafson"
+    maya.name           STRING      "alFlowNoise"
     maya.classification STRING      "texture"
-    maya.id             INT         0x00116409
+    maya.id             INT         0x0011640F
 
     [attr space]
         linkable BOOL false
 
     [attr frequency]
-        linkable BOOL false
-
-    [attr scale]
-        linkable BOOL false
-
-    [attr time]
         linkable BOOL false
 
     [attr octaves]
@@ -28,5 +22,8 @@
     [attr turbulent]
         linkable BOOL false
 
-    [attr ridged]
+    [attr angle]
+        linkable BOOL false
+
+    [attr advection]
         linkable BOOL false
