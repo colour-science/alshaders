@@ -23,7 +23,11 @@
 		[
 			"-I${folder:${project_path:alshaders.sublime-project}}/*",
 			"-I/Users/anders/vfx/arnold/4.0.10.2/include",
-            "-I/Users/anders/vfx/boost/1.43.0/include"
+            "-I/Users/anders/vfx/boost/1.43.0/include",
+            "-I/Users/anders/vfx/openexr/1.7.1/include",
+            "-I/Users/anders/vfx/openexr/1.7.1/include/OpenEXR",
+            "-I/Users/anders/vfx/ilmbase/1.0.3/include",
+            "-I/Users/anders/vfx/ilmbase/1.0.3/include/OpenEXR"
 		]
 	}
 }

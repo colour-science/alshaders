@@ -9,6 +9,8 @@
 #include <vector>
 #include <algorithm>
 
+#include "exr.h"
+
 AI_SHADER_NODE_EXPORT_METHODS(alHair)
 
 enum alHairParams
@@ -394,7 +396,7 @@ struct HairBsdf
                     // BCSDF due to forward scattering
                     // TODO: including a constant cos_theta_i here just isn't cool.
                     // {
-                    hairAttenuation(1.55, 0.1, theta_d, phi, sp.absorption, kfr);
+                    hairAttenuation(1.55, 0.5, theta_d, phi, sp.absorption, kfr);
 
                     N_G_R[idx] += rgb(cosf(phi*0.5f)) * kfr[0];
                     N_G_TT[idx] += rgb(g(sp.gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
@@ -408,6 +410,18 @@ struct HairBsdf
 
                 ++idx;
             }
+
+            writeThickRGBEXR("/tmp/a_bar_f.exr", (float*)a_bar_f, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/a_bar_b.exr", (float*)a_bar_b, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/alpha_f.exr", (float*)alpha_f, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/alpha_b.exr", (float*)alpha_b, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/delta_b.exr", (float*)delta_b, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/sigma_b.exr", (float*)sigma_b, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/A_b.exr", (float*)A_b, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/N_G_R.exr", (float*)N_G_R, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/N_G_TT.exr", (float*)N_G_TT, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/N_G_TRT.exr", (float*)N_G_TRT, DS_NUMSTEPS, 1);
+            
             
         }
 
@@ -880,7 +894,13 @@ struct HairBsdf
                     result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
                     result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
                     result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[2];
-                    result_id6 += kfr[1] * sg->we;
+                    result_id1 = data->A_b[idx];
+                    result_id2 = g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr);
+                    result_id3 = data->sigma_b[idx];
+                    result_id4 = als_sigma_bar_f;
+                    result_id5 = data->delta_b[idx];
+                    result_id7 = theta_hr;
+                    result_id6 = f_direct_back;
                 }
                 if (directFraction < 1.0f)
                 {
@@ -902,12 +922,13 @@ struct HairBsdf
                     AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
 
                     result_Pg_direct += sg->Li * sg->we * occlusion * F_scatter * cos_theta_i * (1.0f-directFraction);
-
+                    /*
                     result_id1 += f_s_scatter;
                     result_id2 += f_scatter_back;
                     result_id3 += T_f;
                     result_id4 += data->sigma_b[idx];
                     result_id5 += data->delta_b[idx];
+                    */
                 }
             } // END light loop
 
