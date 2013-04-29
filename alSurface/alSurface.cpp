@@ -50,11 +50,11 @@ static const char* idAovNames[NUM_ID_AOVS] =
 
 inline void flipNormals(AtShaderGlobals* sg)
 {
-    sg->N = -sg->N;
+    //sg->N = -sg->N;
     sg->Nf = -sg->Nf;
-    sg->Ng = -sg->Ng;
+    //sg->Ng = -sg->Ng;
     sg->Ngf = -sg->Ngf;
-    sg->Ns = -sg->Ns;
+    //sg->Ns = -sg->Ns;
 }
 
 enum alSurfaceParams
@@ -674,6 +674,7 @@ shader_evaluate
 
     sg->N = Nold;
 
+    if (do_backlight) sg->fhemi = false;
     void* dmis;
     dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
 
@@ -681,8 +682,6 @@ shader_evaluate
     void* bmis;
     bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
     flipNormals(sg);
-
-    if (do_backlight) sg->fhemi = false;
 
     // Light loop
     AiLightsPrepare(sg);
@@ -734,7 +733,7 @@ shader_evaluate
             {
                 flipNormals(sg);
                 LbacklightDirect = 
-                    std::max(0.0f, AiV3Dot(sg->N, sg->Ld)) * sg->we * sg->Li
+                    AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
                                         * r;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
@@ -771,12 +770,9 @@ shader_evaluate
             {
                 flipNormals(sg);
                 result_backlightDirect +=
-                /*
                 AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                */
-                std::max(0.0f, AiV3Dot(sg->N, sg->Ld)) * sg->we * sg->Li
-                                        * (1.0f - brdfw.kr*maxh(specular1Color))
-                                        * (1.0f - brdfw2.kr*maxh(specular2Color));
+                    * (1.0f - brdfw.kr*maxh(specular1Color))
+                    * (1.0f - brdfw2.kr*maxh(specular2Color));
                 flipNormals(sg);
             }
         }
@@ -959,6 +955,12 @@ shader_evaluate
         }
     } // if (do_diffuse)
 
+    if (do_backlight)
+    {
+        flipNormals(sg);
+        result_backlightIndirect = AiIndirectDiffuse(&sg->Nf, sg) * backlightColor;
+        flipNormals(sg);
+    }
 
     // Emission
     result_emission = emissionColor;
@@ -1216,6 +1218,7 @@ shader_evaluate
                     +result_glossyDirect
                     +result_glossy2Direct
                     +result_diffuseIndirect
+                    +result_backlightIndirect
                     +result_glossyIndirect
                     +result_glossy2Indirect
                     +result_ss
