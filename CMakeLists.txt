@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(alShaders)
 
 set(CMAKE_BUILD_TYPE RELEASE)
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
+set(CMAKE_VERBOSE_MAKEFILE FALSE)
 set(CMAKE_SKIP_RPATH TRUE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
