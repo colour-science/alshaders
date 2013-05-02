@@ -43,63 +43,63 @@ enum alHairParams
 
 float fresnel(float incidenceAngle, float etaPerp, float etaParal, float invert)
 {
-        float n1, n2;
-        float rPerp = 1;
-        float rParal = 1;
+    float n1, n2;
+    float rPerp = 1;
+    float rParal = 1;
 
 
-        float angle = abs(incidenceAngle);
-        if (angle > AI_PIOVER2)
-        {
-            angle = AI_PI - angle;
-        }
+    float angle = abs(incidenceAngle);
+    if (angle > AI_PIOVER2)
+    {
+        angle = AI_PI - angle;
+    }
 
-        if ( invert )
-        {
-            n1 = etaPerp;
-            n2 = 1;
-        }
-        else
-        {
-            n1 = 1;
-            n2 = etaPerp;
-        }
+    if ( invert )
+    {
+        n1 = etaPerp;
+        n2 = 1;
+    }
+    else
+    {
+        n1 = 1;
+        n2 = etaPerp;
+    }
 
-        // Perpendicular light reflectance
-        float a = (n1/n2)*sin(angle);
-        a *= a;
-        if ( a <= 1 )
-        {
+    // Perpendicular light reflectance
+    float a = (n1/n2)*sin(angle);
+    a *= a;
+    if ( a <= 1 )
+    {
 
-            float b = n2*sqrt(1-a);
-            float c = n1*cos(angle);
-            rPerp =  ( c - b ) / ( c + b );
-            rPerp *= rPerp;
-            rPerp = std::min(1.0f, rPerp );
-        }
-        if ( invert )
-        {
-            n1 = etaParal;
-            n2 = 1;
-        }
-        else
-        {
-            n1 = 1;
-            n2 = etaParal;
-        }
-        // Parallel light reflectance
-        float d = (n1/n2)*sin(angle);
-        d *= d;
-        if ( d <= 1 )
-        {
+        float b = n2*sqrt(1-a);
+        float c = n1*cos(angle);
+        rPerp =  ( c - b ) / ( c + b );
+        rPerp *= rPerp;
+        rPerp = std::min(1.0f, rPerp );
+    }
+    if ( invert )
+    {
+        n1 = etaParal;
+        n2 = 1;
+    }
+    else
+    {
+        n1 = 1;
+        n2 = etaParal;
+    }
+    // Parallel light reflectance
+    float d = (n1/n2)*sin(angle);
+    d *= d;
+    if ( d <= 1 )
+    {
 
-            float e = n1*sqrt(1-d);
-            float f = n2*cos(angle);
-            rParal = ( e - f ) / ( e + f );
-            rParal *= rParal;
-            rParal = std::min( 1.0f, rParal );
-        }
-        return 0.5 * (rPerp + rParal);
+        float e = n1*sqrt(1-d);
+        float f = n2*cos(angle);
+        rParal = ( e - f ) / ( e + f );
+        rParal *= rParal;
+        rParal = std::min( 1.0f, rParal );
+    }
+    return 0.5 * (rPerp + rParal);
 }
 
 
@@ -160,7 +160,6 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
         }
         kfr[p] = Fr;
     }
-    //kfr[0] = kfr[1] = kfr[2] = 0.1f;
 }
 
 #define PIOVER4 0.7853981633974483f
@@ -321,7 +320,6 @@ struct HairBsdf
                                     + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength)
                                     * kfr[2] * cos_theta_i;
                         a_bar_f[idx] += f_R + f_TT + f_TRT;
-                        
                         // }
                         alpha_f[idx] += f_R*sp.alpha_R + f_TT*sp.alpha_TT + f_TRT*sp.alpha_TRT;
                         beta_f[idx] += f_R*sp.beta_R2 + f_TT*sp.beta_TT2 + f_TRT*sp.beta_TRT2;
@@ -389,6 +387,12 @@ struct HairBsdf
             memset(N_G_TT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             memset(N_G_TRT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             float theta_d_step = AI_PITIMES2 / DS_NUMSTEPS;
+            AtRGB kf_R[DS_NUMSTEPS];
+            AtRGB kf_TT[DS_NUMSTEPS];
+            AtRGB kf_TRT[DS_NUMSTEPS];
+            memset(kf_R, 0, sizeof(AtRGB)*DS_NUMSTEPS);
+            memset(kf_TT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
+            memset(kf_TRT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             for (float theta_d = -AI_PI; theta_d < AI_PI; theta_d+=theta_d_step)
             {
                 for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i += theta_r_step)
@@ -398,13 +402,15 @@ struct HairBsdf
                     {
                         // [2] eq. (25)
                         // BCSDF due to forward scattering
-                        // TODO: including a constant cos_theta_i here just isn't cool.
                         // {
                         hairAttenuation(1.55, cosf(theta_i), theta_d, phi, sp.absorption, kfr);
 
                         N_G_R[idx] += rgb(cosf(phi*0.5f)) * kfr[0];
                         N_G_TT[idx] += rgb(g(sp.gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
                         N_G_TRT[idx] += rgb(cosf(phi*0.5f) + g(sp.gamma_g, 0.0f, phi - sp.phi_g)) * kfr[2];
+                        kf_R[idx] += kfr[0];
+                        kf_TT[idx] += kfr[1];
+                        kf_TRT[idx] += kfr[2];
                         // }
                     }
                 }
@@ -412,7 +418,9 @@ struct HairBsdf
                 N_G_R[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
                 N_G_TT[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
                 N_G_TRT[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
-
+                kf_R[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
+                kf_TT[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
+                kf_TRT[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
                 ++idx;
             }
 
@@ -426,6 +434,9 @@ struct HairBsdf
             writeThickRGBEXR("/tmp/N_G_R.exr", (float*)N_G_R, DS_NUMSTEPS, 1);
             writeThickRGBEXR("/tmp/N_G_TT.exr", (float*)N_G_TT, DS_NUMSTEPS, 1);
             writeThickRGBEXR("/tmp/N_G_TRT.exr", (float*)N_G_TRT, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/kf_R.exr", (float*)kf_R, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/kf_TT.exr", (float*)kf_TT, DS_NUMSTEPS, 1);
+            writeThickRGBEXR("/tmp/kf_TRT.exr", (float*)kf_TRT, DS_NUMSTEPS, 1);
             
             
         }
@@ -460,7 +471,7 @@ struct HairBsdf
     };
 
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
-    node(n), data(d), numBlendHairs(5), density_front(0.7f), density_back(0.7f)
+    node(n), data(d), numBlendHairs(2), density_front(0.7f), density_back(0.7f)
     {
         depth = sg->Rr;
 
@@ -702,8 +713,8 @@ struct HairBsdf
         AtFloat p = invariant / pdfUniform();
         AtScrSample scrs;
 
-        if (p > IMPORTANCE_EPS*0.1)
-        {
+        //if (p > IMPORTANCE_EPS*0.1)
+        //{
             // trace our ray
             AiTrace(&wi_ray, &scrs);
 
@@ -716,7 +727,7 @@ struct HairBsdf
             result_TRT_indirect += scrs.color * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * p * kfr[2];
             result_TRTg_indirect += scrs.color * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * p * kfr[2];
 
-        }
+        //}
     }
 
     /// PDF for uniformly sampling all glossy lobes
@@ -1297,9 +1308,7 @@ node_update
     AiAOVRegister("id_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 }
 
-
-
-
+#define DUAL
 
 shader_evaluate
 {
@@ -1321,7 +1330,11 @@ shader_evaluate
     {
         opacity *= geo_opacity;
     }
-    if (sg->Rt & AI_RAY_SHADOW || sg->Rt & AI_RAY_GLOSSY)
+
+    bool do_dual = false;
+    if (sg->Rr >= 100) do_dual = true;
+    
+    if (do_dual && ((sg->Rt & AI_RAY_SHADOW) || (sg->Rt & AI_RAY_GLOSSY)))
     {
         if (AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections) 
             && AiStateGetMsgRGB("als_T_f", &als_T_f)
@@ -1346,19 +1359,20 @@ shader_evaluate
         {
             sg->out_opacity = AI_RGB_WHITE;
         }
-
-        // early-out regardless if we're in a shadow ray, or if opacity is zero
-        if (sg->Rt & AI_RAY_SHADOW || AiShaderGlobalsApplyOpacity(sg, opacity)) return; 
     }
+    // early-out regardless if we're in a shadow ray, or if opacity is zero
+    if (sg->Rt & AI_RAY_SHADOW || AiShaderGlobalsApplyOpacity(sg, opacity)) return; 
 
-    // Do direct illumination
-    hb.integrateDirectDual(sg);
-    //hb.integrateDirect(sg);
-
-    // Do indirect illumination
-    hb.integrateIndirectDual(sg);
-    //hb.integrateIndirect(sg);
-
+    if (do_dual)
+    {
+        hb.integrateDirectDual(sg);
+        hb.integrateIndirectDual(sg);
+    } 
+    else
+    {
+        hb.integrateDirect(sg);
+        hb.integrateIndirect(sg);
+    }
     // Write shader result
     hb.writeResult(sg);
 
