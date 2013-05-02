@@ -9,10 +9,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 
 # pre-set the arnold and mtoa versions and root paths
-set(ARNOLD_VERSION 4.0.10.2)
+set(ARNOLD_VERSION 4.0.14.0)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 
-set(MTOA_VERSION 0.22.1)
+set(MTOA_VERSION 0.23.0)
 set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
 
 #set boost root path
@@ -30,6 +30,15 @@ endif()
 
 include_directories(${ARNOLD_ROOT}/include)
 link_directories(${ARNOLD_ROOT}/bin)
+# fix for windows paths
+# FIXME: ugly double-if because OR wants to spit a warning
+if (WIN32)
+link_directories(${ARNOLD_ROOT}/lib)
+endif()
+if (WIN64)
+link_directories(${ARNOLD_ROOT}/lib)
+endif()
+
 
 set(MTOA_SHADERS ${MTOA_ROOT}/shaders)
 set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
