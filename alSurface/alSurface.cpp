@@ -690,11 +690,14 @@ shader_evaluate
         while(AiLightsGetSample(sg))
         {
             int lightGroup = data->lightGroups[sg->Lp];
+            float specular_strength = AiLightGetSpecular(sg->Lp);
+            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
             if (do_glossy)
             {
                 sg->N = sg->Nf = specular1Normal;
                 LspecularDirect =
-                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
+                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+                    * specular_strength;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += LspecularDirect * specular1Color;
@@ -708,7 +711,7 @@ shader_evaluate
                 AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color));
                 Lspecular2Direct =
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                                        * r;
+                                        * r * specular_strength;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += Lspecular2Direct * specular2Color;
@@ -721,7 +724,7 @@ shader_evaluate
             {
                 LdiffuseDirect =
                     AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * r;
+                                        * r * diffuse_strength;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += LdiffuseDirect * diffuseColor;
@@ -733,7 +736,7 @@ shader_evaluate
                 flipNormals(sg);
                 LbacklightDirect = 
                     AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * r;
+                                        * r * diffuse_strength;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
@@ -747,23 +750,28 @@ shader_evaluate
     {
         while(AiLightsGetSample(sg))
         {
+            float specular_strength = AiLightGetSpecular(sg->Lp);
+            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
             if (do_glossy)
             {
                 result_glossyDirect +=
-                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
+                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+                    * specular_strength;
             }
             if (do_glossy2)
             {
                 result_glossy2Direct +=
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                                        * (1.0f - brdfw.kr*maxh(specular1Color));
+                                        * (1.0f - brdfw.kr*maxh(specular1Color)) 
+                                        * specular_strength;
             }
             if (do_diffuse)
             {
                 result_diffuseDirect +=
                 AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
                                         * (1.0f - brdfw.kr*maxh(specular1Color))
-                                        * (1.0f - brdfw2.kr*maxh(specular2Color));
+                                        * (1.0f - brdfw2.kr*maxh(specular2Color))
+                                        * diffuse_strength;
             }
             if (do_backlight)
             {
@@ -771,7 +779,8 @@ shader_evaluate
                 result_backlightDirect +=
                 AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
                     * (1.0f - brdfw.kr*maxh(specular1Color))
-                    * (1.0f - brdfw2.kr*maxh(specular2Color));
+                    * (1.0f - brdfw2.kr*maxh(specular2Color))
+                    * diffuse_strength;
                 flipNormals(sg);
             }
         }
