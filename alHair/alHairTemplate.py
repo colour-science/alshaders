@@ -37,6 +37,7 @@ class AEalHairTemplate(alShadersTemplate):
         self.endLayout() # end Transmission
 
         self.beginLayout('Dual scattering', collapse=False)
+        self.addControl('dualDepth', 'Depth')
         self.addControl('densityFront')
         self.addControl('densityBack')
         self.endLayout() # end Dual scattering
