@@ -124,6 +124,10 @@ enum alSurfaceParams
     p_id7,
     p_id8,
 
+    p_aiEnableMatte,
+    p_aiMatteColor,
+    p_aiMatteColorA,
+
     p_bump
 };
 
@@ -193,6 +197,10 @@ node_parameters
     AiParameterRGB("id6", 0.0f, 0.0f, 0.0f);
     AiParameterRGB("id7", 0.0f, 0.0f, 0.0f);
     AiParameterRGB("id8", 0.0f, 0.0f, 0.0f);
+
+    AiParameterBOOL("aiEnableMatte", false);
+    AiParameterRGB("aiMatteColor", 0.0f, 0.0f, 0.0f);
+    AiParameterFlt("aiMatteColorA", 0.0f);
 
 }
 
@@ -674,12 +682,11 @@ shader_evaluate
     sg->N = Nold;
 
     if (do_backlight) sg->fhemi = false;
-    void* dmis;
-    dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
+    
+    void* dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
 
     flipNormals(sg);
-    void* bmis;
-    bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
+    void* bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
     flipNormals(sg);
 
     // Light loop
