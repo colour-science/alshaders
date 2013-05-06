@@ -142,7 +142,7 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
                 float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
                 float cos_theta_t = cosf(theta_t);
                 float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
-                Fr = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l*2);
+                Fr = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
             }
         }
         else 
@@ -156,7 +156,7 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
                 float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
 
                 float iFr = fresnel(gamma_t, n_p, n_pp, true);
-                Fr += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l*2);
+                Fr += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l);
             }
         }
         kfr[p] = Fr;
@@ -167,7 +167,7 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
 #define ONEOVER4PI 0.07957747154594767
 #define FOURPI 12.566370614359172
 
-#define DS_NUMSTEPS 128
+#define DS_NUMSTEPS 256
 
 #define NORMALIZED_GAUSSIAN
 #ifdef NORMALIZED_GAUSSIAN
@@ -1447,7 +1447,7 @@ node_update
     AiAOVRegister("id_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 }
 
-//#define DUAL
+#define DUAL
 
 shader_evaluate
 {
