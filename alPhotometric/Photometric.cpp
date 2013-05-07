@@ -6,6 +6,7 @@
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 
+#define _USE_MATH_DEFINES
 #define PM_PI 3.141592653589793
 
 PhotometricData::PhotometricData(const std::string& fn)

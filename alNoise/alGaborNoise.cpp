@@ -2,6 +2,9 @@
 /// Improved Gabor Noise based on:
 /// [1] Improving Gabor Noise - Lagae et al. - 2011
 /// [2] OSL https://github.com/imageworks/OpenShadingLanguage/blob/master/src/liboslexec/gabornoise.cpp
+
+#define _USE_MATH_DEFINES
+
 #include "Remap.h"
 #include <ai.h>
 #include <cmath>
