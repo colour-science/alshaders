@@ -49,64 +49,65 @@ enum alHairParams
 
 float fresnel(float incidenceAngle, float etaPerp, float etaParal, float invert)
 {
-    float n1, n2;
-    float rPerp = 1;
-    float rParal = 1;
+        float n1, n2;
+        float rPerp = 1;
+        float rParal = 1;
 
+        etaPerp = std::max(1.0f, etaPerp);
+        etaParal = std::max(1.0f, etaParal);
 
-    float angle = abs(incidenceAngle);
-    if (angle > AI_PIOVER2)
-    {
-        angle = AI_PI - angle;
-    }
+        float angle = fabsf(incidenceAngle);
+        if (angle > AI_PIOVER2)
+        {
+            angle = AI_PI - angle;
+        }
 
-    if ( invert )
-    {
-        n1 = etaPerp;
-        n2 = 1;
-    }
-    else
-    {
-        n1 = 1;
-        n2 = etaPerp;
-    }
+        if ( invert )
+        {
+            n1 = etaPerp;
+            n2 = 1;
+        }
+        else
+        {
+            n1 = 1;
+            n2 = etaPerp;
+        }
 
-    // Perpendicular light reflectance
-    float a = (n1/n2)*sin(angle);
-    a *= a;
-    if ( a <= 1 )
-    {
+        // Perpendicular light reflectance
+        float a = (n1/n2)*sin(angle);
+        a *= a;
+        if ( a <= 1 )
+        {
 
-        float b = n2*sqrt(1-a);
-        float c = n1*cos(angle);
-        rPerp =  ( c - b ) / ( c + b );
-        rPerp *= rPerp;
-        rPerp = std::min(1.0f, rPerp );
-    }
-    if ( invert )
-    {
-        n1 = etaParal;
-        n2 = 1;
-    }
-    else
-    {
-        n1 = 1;
-        n2 = etaParal;
-    }
-    // Parallel light reflectance
-    float d = (n1/n2)*sin(angle);
-    d *= d;
-    if ( d <= 1 )
-    {
+            float b = n2*sqrtf(1.0f-a);
+            float c = n1*cosf(angle);
+            rPerp =  ( c - b ) / ( c + b );
+            rPerp *= rPerp;
+            rPerp = std::min(1.0f, rPerp );
+        }
+        if ( invert )
+        {
+            n1 = etaParal;
+            n2 = 1;
+        }
+        else
+        {
+            n1 = 1;
+            n2 = etaParal;
+        }
+        // Parallel light reflectance
+        float d = (n1/n2)*sinf(angle);
+        d *= d;
+        if ( d <= 1 )
+        {
 
-        float e = n1*sqrt(1-d);
-        float f = n2*cos(angle);
-        rParal = ( e - f ) / ( e + f );
-        rParal *= rParal;
-        rParal = std::min( 1.0f, rParal );
-    }
-    return 0.5 * (rPerp + rParal);
-    //return rParal;
+            float e = n1*sqrtf(1-d);
+            float f = n2*cosf(angle);
+            rParal = ( e - f ) / ( e + f );
+            rParal *= rParal;
+            rParal = std::min( 1.0f, rParal );
+        }
+        return 0.5 * (rPerp + rParal);
 }
 
 
@@ -138,21 +139,17 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
         if (p < 2)
         {
             float gamma_i = roots[0];
-            if (gamma_i <= AI_PIOVER2)
+            if (p==0)
             {
-                if (p==0)
-                {
-                    Fr = rgb(fresnel(gamma_i, n_p, n_pp, false));
-                    //Fr = rgb(gamma_i, phi_p, c);
-                }
-                else
-                {
-                    float gamma_t = asinf(sinf(gamma_i)/n_p);
-                    float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
-                    float cos_theta_t = cosf(theta_t);
-                    float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
-                    Fr = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true));// * exp(-absorption*l);
-                }
+                Fr = rgb(fresnel(gamma_i, n_p, n_pp, false));
+            }
+            else
+            {
+                float gamma_t = asinf(sinf(gamma_i)/n_p);
+                float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
+                float cos_theta_t = cosf(theta_t);
+                float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
+                Fr = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
             }
         }
         else 
@@ -160,21 +157,19 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
             for (int i=0; i < numRoots; ++i)
             {
                 float gamma_i = roots[i];
-                if (gamma_i <= AI_PIOVER2)
-                {
-                    float gamma_t = asinf(sinf(gamma_i)/n_p);
-                    float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
-                    float cos_theta_t = cosf(theta_t);
-                    float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
+                float gamma_t = asinf(sinf(gamma_i)/n_p);
+                float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
+                float cos_theta_t = cosf(theta_t);
+                float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
 
-                    float iFr = fresnel(gamma_t, n_p, n_pp, true);
-                    Fr += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr;// * exp(-absorption*l);
-                }
+                float iFr = fresnel(gamma_t, n_p, n_pp, true);
+                Fr += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l);
             }
         }
         kfr[p] = Fr;
     }
 }
+
 
 
 
@@ -445,13 +440,16 @@ struct HairBsdf
                 ++idx;
             }*/
             theta_d_step = AI_PI / DS_NUMSTEPS;
-            for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)        
+            //for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
+            int p = 0;    
+            for (float phi = AI_PIOVER2; p < DS_NUMSTEPS; ++p, phi += phi_step)        
             {
-                for (float theta_d = -AI_PIOVER2; theta_d < AI_PIOVER2; theta_d += theta_d_step)
+                int t =0;
+                for (float theta_d = -AI_PIOVER2; t < DS_NUMSTEPS; ++t, theta_d += theta_d_step)
                 {
-                    int ng_x = (phi*AI_ONEOVERPI*2.0f - 1.0f) * (DS_NUMSTEPS-1);
-                    int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
-                    int ng_idx = ng_y*DS_NUMSTEPS+ng_x;
+                    //int ng_x = (phi*AI_ONEOVERPI*2.0f - 1.0f) * (DS_NUMSTEPS-1);
+                    //int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
+                    int ng_idx = t*DS_NUMSTEPS+p;
 
                     for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i += theta_r_step)
                     {
