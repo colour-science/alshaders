@@ -479,13 +479,13 @@ shader_evaluate
     float sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
     AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
     AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
-    AtVector specular1Normal = sg->N;
+    AtVector specular1Normal = sg->Nf;
     if (data->specular1NormalConnected)
     {
         specular1Normal = AiShaderEvalParamVec(p_specular1Normal);
     }
 
-    AtVector specular2Normal = sg->N;
+    AtVector specular2Normal = sg->Nf;
     if (data->specular2NormalConnected)
     {
         specular2Normal = AiShaderEvalParamVec(p_specular2Normal);
@@ -656,6 +656,7 @@ shader_evaluate
 
     // Create the BRDF data structures for MIS
     AtVector Nold = sg->N;
+    AtVector Nfold = sg->Nf;
     sg->N = sg->Nf = specular1Normal;
     void* mis;
     mis = GlossyMISCreateData(sg,&U,&V,roughness,roughness);
@@ -681,9 +682,11 @@ shader_evaluate
 
     sg->N = Nold;
 
-    if (do_backlight) sg->fhemi = false;
+    
     
     void* dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
+
+    if (do_backlight) sg->fhemi = false;
 
     flipNormals(sg);
     void* bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
@@ -701,7 +704,7 @@ shader_evaluate
             float diffuse_strength = AiLightGetDiffuse(sg->Lp);
             if (do_glossy)
             {
-                sg->N = sg->Nf = specular1Normal;
+                sg->Nf = specular1Normal;
                 LspecularDirect =
                 AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
                     * specular_strength;
@@ -710,11 +713,11 @@ shader_evaluate
                     lightGroupsDirect[lightGroup] += LspecularDirect * specular1Color;
                 }
                 result_glossyDirect += LspecularDirect;
-                sg->N = Nold;
+                sg->Nf = Nfold;
             }
             if (do_glossy2)
             {
-                sg->N = sg->Nf = specular2Normal;
+                sg->Nf = specular2Normal;
                 AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color));
                 Lspecular2Direct =
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
@@ -724,7 +727,7 @@ shader_evaluate
                     lightGroupsDirect[lightGroup] += Lspecular2Direct * specular2Color;
                 }
                 result_glossy2Direct += Lspecular2Direct;
-                sg->N = Nold;
+                sg->Nf = Nfold;
             }
             AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
             if (do_diffuse)
@@ -817,6 +820,7 @@ shader_evaluate
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti = 0.0f;
         AiStateSetMsgFlt("alsPreviousRoughness", roughness);
+        sg->Nf = specular1Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
             wi = GlossyMISSample(mis, samples[0], samples[1]);
@@ -850,6 +854,7 @@ shader_evaluate
                     }
                 }
             }
+            sg->Nf = Nfold;
             count++;
         }
         result_glossyIndirect *= AiSamplerGetSampleInvCount(sampit);
@@ -873,6 +878,7 @@ shader_evaluate
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti2 = 0.0f;
         AiStateSetMsgFlt("alsPreviousRoughness", roughness2);
+        sg->Nf = specular2Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
             wi = GlossyMISSample(mis2, samples[0], samples[1]);
@@ -906,6 +912,7 @@ shader_evaluate
                     }
                 }
             }
+            sg->Nf = Nfold;
             count++;
         }
         result_glossy2Indirect*= AiSamplerGetSampleInvCount(sampit);
