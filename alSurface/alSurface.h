@@ -31,4 +31,5 @@ struct ShaderData
    bool specular1NormalConnected;
    bool specular2NormalConnected;
    bool lightGroupsIndirect;
+   int numLights;
 };
