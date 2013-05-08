@@ -441,16 +441,19 @@ struct HairBsdf
             }*/
             theta_d_step = AI_PI / DS_NUMSTEPS;
             //for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
-            int p = 0;    
-            for (float phi = AI_PIOVER2; p < DS_NUMSTEPS; ++p, phi += phi_step)        
+            
+            // phi [pi/2, PI]
+            for (int p = 0; p < DS_NUMSTEPS; ++p)        
             {
-                int t =0;
-                for (float theta_d = -AI_PIOVER2; t < DS_NUMSTEPS; ++t, theta_d += theta_d_step)
+                float phi = p * phi_step + AI_PIOVER2;
+                // theta_d [-pi/2, pi]
+                //for (float theta_d = -AI_PIOVER2; t < DS_NUMSTEPS; ++t, theta_d += theta_d_step)
+                for (int t=0; t < DS_NUMSTEPS; ++t)
                 {
                     //int ng_x = (phi*AI_ONEOVERPI*2.0f - 1.0f) * (DS_NUMSTEPS-1);
                     //int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
+                    float theta_d = t * theta_d_step - AI_PIOVER2;
                     int ng_idx = t*DS_NUMSTEPS+p;
-
                     for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i += theta_r_step)
                     {
                         // [2] eq. (25)
