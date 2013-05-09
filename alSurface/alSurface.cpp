@@ -943,23 +943,31 @@ shader_evaluate
                 AiStateSetMsgInt("als_sampleIndex", idx);
             }
 
-            // FIXME: Why do we sometimes generate samples that have pdf 0?
-            wi = AiOrenNayarMISSample(dmis, samples[0], samples[1]);
-            float p = AiOrenNayarMISPDF(dmis, &wi);
-            if (p > 0.0f)
-            {
-                wi_ray.dir = wi;
-                AiTrace(&wi_ray, &scrs);
-                AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
-                result_diffuseIndirectRaw += scrs.color * f;
+            // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
+            float stheta = sqrtf(samples[0]);
+            float phi = AI_PITIMES2 * samples[1];
+            wi.x = stheta * cosf(phi);
+            wi.y = stheta * sinf(phi);
+            wi.z = sqrtf(1.0f - samples[0]);
+            AiV3RotateToFrame(wi, U, V, sg->Nf);
 
-                // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
+            float cos_theta = AiV3Dot(wi, sg->Nf);
+            if (cos_theta <= 0.0f) continue;
+
+            float p = cos_theta * AI_ONEOVERPI;
+            
+            // trace the ray
+            wi_ray.dir = wi;
+            AiTrace(&wi_ray, &scrs);
+            AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
+            result_diffuseIndirectRaw += scrs.color * f;
+
+            // accumulate the lightgroup contributions calculated by the child shader
+            if (doDeepGroups)
+            {
+                for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                 {
-                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
-                    {
-                        deepGroupsDiffuse[i] += deepGroupPtr[i*data->total_samples+idx] * f;
-                    }
+                    deepGroupsDiffuse[i] += deepGroupPtr[i*data->total_samples+idx] * f;
                 }
             }
 
