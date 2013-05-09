@@ -518,7 +518,7 @@ struct HairBsdf
         float kr[FRESNEL_SAMPLES];
         float invFresnelSamples;
 
-        bool dual_depth;
+        int dual_depth;
 
         AtRGB a_bar_f[DS_NUMSTEPS];
         AtRGB a_bar_b[DS_NUMSTEPS];
@@ -1548,7 +1548,8 @@ shader_evaluate
     int als_hairNumIntersections = 0;
     AtRGB als_T_f = AI_RGB_BLACK;
     AtRGB als_sigma_bar_f = AI_RGB_BLACK;
-    bool do_dual = (sg->Rr >= data->dual_depth);
+    bool do_dual = false;
+    if (sg->Rr >= data->dual_depth) do_dual = true;
     
     if (do_dual && ((sg->Rt & AI_RAY_SHADOW) || (sg->Rt & AI_RAY_GLOSSY)))
     {
