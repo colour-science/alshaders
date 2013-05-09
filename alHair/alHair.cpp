@@ -402,56 +402,23 @@ struct HairBsdf
             memset(N_G_TT, 0, sizeof(AtRGB)*DS_NUMSTEPS*DS_NUMSTEPS);
             memset(N_G_TRT, 0, sizeof(AtRGB)*DS_NUMSTEPS*DS_NUMSTEPS);
             float theta_d_step = AI_PITIMES2 / DS_NUMSTEPS;
+#ifdef DEBUG_FRESNEL
             AtRGB* kf_R = new AtRGB[DS_NUMSTEPS*DS_NUMSTEPS];
             AtRGB* kf_TT = new AtRGB[DS_NUMSTEPS*DS_NUMSTEPS]; 
             AtRGB* kf_TRT = new AtRGB[DS_NUMSTEPS*DS_NUMSTEPS]; 
             memset(kf_R, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             memset(kf_TT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             memset(kf_TRT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            /*
-            for (float theta_d = -AI_PI; theta_d < AI_PI; theta_d+=theta_d_step)
-            {
-                for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i += theta_r_step)
-                {
-
-                    for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
-                    {
-                        // [2] eq. (25)
-                        // BCSDF due to forward scattering
-                        // {
-                        hairAttenuation(1.55, cosf(theta_i), theta_d, phi, sp.absorption, kfr);
-
-                        N_G_R[idx] += rgb(cosf(phi*0.5f)) * kfr[0];
-                        N_G_TT[idx] += rgb(g(sp.gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
-                        N_G_TRT[idx] += rgb(cosf(phi*0.5f) + g(sp.gamma_g, 0.0f, phi - sp.phi_g)) * kfr[2];
-                        kf_R[idx] += kfr[0];
-                        kf_TT[idx] += kfr[1];
-                        kf_TRT[idx] += kfr[2];
-                        // }
-                    }
-                }
-
-                N_G_R[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
-                N_G_TT[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
-                N_G_TRT[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
-                kf_R[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
-                kf_TT[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
-                kf_TRT[idx] *= 2.0 * AI_ONEOVERPI * phi_step * theta_r_step;
-                ++idx;
-            }*/
+#endif            
             theta_d_step = AI_PI / DS_NUMSTEPS;
-            //for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
             
             // phi [pi/2, PI]
             for (int p = 0; p < DS_NUMSTEPS; ++p)        
             {
                 float phi = p * phi_step + AI_PIOVER2;
-                // theta_d [-pi/2, pi]
-                //for (float theta_d = -AI_PIOVER2; t < DS_NUMSTEPS; ++t, theta_d += theta_d_step)
+                // theta_d [-pi/2, pi/2]
                 for (int t=0; t < DS_NUMSTEPS; ++t)
                 {
-                    //int ng_x = (phi*AI_ONEOVERPI*2.0f - 1.0f) * (DS_NUMSTEPS-1);
-                    //int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
                     float theta_d = t * theta_d_step - AI_PIOVER2;
                     int ng_idx = t*DS_NUMSTEPS+p;
                     for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i += theta_r_step)
@@ -464,24 +431,25 @@ struct HairBsdf
                         N_G_R[ng_idx] += rgb(cosf(phi*0.5f)) * kfr[0];
                         N_G_TT[ng_idx] += rgb(g(sp.gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
                         N_G_TRT[ng_idx] += rgb(cosf(phi*0.5f) + g(sp.gamma_g, 0.0f, phi - sp.phi_g)) * kfr[2];
+#ifdef DEBUG_FRESNEL
                         kf_R[ng_idx] += kfr[0];
                         kf_TT[ng_idx] += kfr[1];
                         kf_TRT[ng_idx] += kfr[2];
-
+#endif
                         // }
                     }
 
                     N_G_R[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     N_G_TT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     N_G_TRT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
+#ifdef DEBUG_FRESNEL
                     kf_R[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     kf_TT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     kf_TRT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
+#endif
                 }
-
-                
-
             }
+
             AtUInt32 t1 = AiMsgUtilGetElapsedTime();
             float t = float(t1 - t0)/1000.0f;
             AiMsgInfo("[alHair] DS precalc took %.1f seconds", t);
@@ -496,9 +464,11 @@ struct HairBsdf
             writeRGBEXR("/tmp/N_G_R.exr", (float*)N_G_R, DS_NUMSTEPS, DS_NUMSTEPS);
             writeRGBEXR("/tmp/N_G_TT.exr", (float*)N_G_TT, DS_NUMSTEPS, DS_NUMSTEPS);
             writeRGBEXR("/tmp/N_G_TRT.exr", (float*)N_G_TRT, DS_NUMSTEPS, DS_NUMSTEPS);
+#ifdef DEBUG_FRESNEL
             writeRGBEXR("/tmp/kf_R.exr", (float*)kf_R, DS_NUMSTEPS, DS_NUMSTEPS);
             writeRGBEXR("/tmp/kf_TT.exr", (float*)kf_TT, DS_NUMSTEPS, DS_NUMSTEPS);
             writeRGBEXR("/tmp/kf_TRT.exr", (float*)kf_TRT, DS_NUMSTEPS, DS_NUMSTEPS);
+#endif
             
             dual_depth = sp.dual_depth;
         }
@@ -1038,16 +1008,6 @@ struct HairBsdf
         weight = AiSamplerGetSampleInvCount(sampit);
         result_TRT_indirect *= weight * specular2Color;
 #endif
-
-#if 0
-        if (sg->Rr > 0) 
-        {
-            result_R_indirect *= rgb(1,0,0);
-            result_TT_indirect *= rgb(0,1,0);
-            result_TRT_indirect *= rgb(0,0,1);
-            result_TRTg_indirect *= rgb(0,0,1);
-        }
-#endif
     }
 
 
@@ -1113,20 +1073,6 @@ struct HairBsdf
                     result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
                     result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[2];
 
-                    result_id1 += g(beta_TT2, alpha_TT, theta_h) * sg->we;
-                    result_id2 += g(gamma_TT, 0.0f, AI_PI-phi) * sg->we;
-                    result_id3 += kfr[1] * sg->we;
-                    result_id4 += rgb(phi, (AI_PI-phi), theta_h) * sg->we;
-
-                    /*
-                    result_id1 = data->A_b[idx];
-                    result_id2 = g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr);
-                    result_id3 = data->sigma_b[idx];
-                    result_id4 = float(idx)/float(DS_NUMSTEPS);
-                    result_id5 = data->delta_b[idx];
-                    result_id7 = theta_hr;
-                    result_id6 = f_direct_back;
-                    */
                 }
                 if (directFraction < 1.0f)
                 {
@@ -1134,8 +1080,6 @@ struct HairBsdf
                     AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
 
                     AtRGB f_s_scatter = AI_RGB_BLACK;
-                    //int ngidx = (fabsf(theta_d) / AI_PIOVER2) * DS_NUMSTEPS;
-                    //int ngidx = (theta_d * AI_ONEOVER2PI + 0.5f) * (DS_NUMSTEPS-1);
                     int ng_x = int((phi*AI_ONEOVERPI)*2.0f - 1.0f) * (DS_NUMSTEPS-1);
                     int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
                     int ng_idx = ng_y*DS_NUMSTEPS+ng_x;
@@ -1152,13 +1096,7 @@ struct HairBsdf
                     AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
 
                     result_Pg_direct += sg->Li * sg->we * occlusion * F_scatter * cos_theta_i * (1.0f-directFraction);
-                    /*
-                    result_id1 += f_s_scatter;
-                    result_id2 += f_scatter_back;
-                    result_id3 += T_f;
-                    result_id4 += data->sigma_b[idx];
-                    result_id5 += data->delta_b[idx];
-                    */
+
                 }
             } // END light loop
 
@@ -1223,8 +1161,6 @@ struct HairBsdf
 
                 if (phi >= AI_PIOVER2) // forward scattering directions only
                 {
-                    //int ngidx = (fabsf(theta_d) / AI_PIOVER2) * DS_NUMSTEPS;
-                    //int ngidx = (theta_d * AI_ONEOVER2PI + 0.5f) * (DS_NUMSTEPS-1);
                     int ng_x = int((phi*AI_ONEOVERPI)*2.0f - 1.0f) * (DS_NUMSTEPS-1);
                     int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
                     int ng_idx = ng_y*DS_NUMSTEPS+ng_x;
@@ -1458,12 +1394,6 @@ node_finish
         HairBsdf::ShaderData* data = (HairBsdf::ShaderData*)AiNodeGetLocalData(node);
         delete data;
     }
-    /*
-    AiMsgInfo("td_d_mn: %f", td_d_mn/AI_PI);
-    AiMsgInfo("td_d_mx: %f", td_d_mx/AI_PI);
-    AiMsgInfo("td_i_mn: %f", td_i_mn/AI_PI);
-    AiMsgInfo("td_i_mx: %f", td_i_mx/AI_PI);
-    */
 }
 
 node_update
