@@ -9,14 +9,11 @@
 #include <vector>
 #include <algorithm>
 
+#ifdef DEBUG_LUTS
 #include "exr.h"
+#endif
 
 AI_SHADER_NODE_EXPORT_METHODS(alHair);
-
-float td_d_mn = HUGE_VALF;
-float td_d_mx = -HUGE_VALF;
-float td_i_mn = HUGE_VALF;
-float td_i_mx = -HUGE_VALF;
 
 enum alHairParams
 {
@@ -244,52 +241,29 @@ inline float bsdfg(float beta_TRT, float alpha_TRT, float theta_h, float gamma_g
 
 struct HairBsdf
 {
-    struct ScatteringParameters
-    {
-        float beta_R;       //< R width
-        float beta_R2;
-        float alpha_R;      //< R shift
-        float beta_TT;      //< TT width
-        float beta_TT2;
-        float alpha_TT;     //< TT shift
-        float beta_TRT;     //< TRT width
-        float beta_TRT2;
-        float alpha_TRT;    //< TRT shift
-        float gamma_TT;     //< TT rolloff
-        float gamma_g;      //< g rolloff
-        float phi_g;        //< g separation
-
-        AtRGB specular1Color;
-        AtRGB specular2Color;
-        AtRGB transmissionColor;
-        float glintStrength;
-
-        AtRGB absorption;
-
-        int dual_depth;
-    };
-
     struct ShaderData
     {
         ShaderData()
-        : sampler_diffuse(NULL), sampler_R(NULL), sampler_TT(NULL), sampler_TRT(NULL), sampler_g(NULL)
+        : sampler_R(NULL), sampler_TT(NULL), sampler_TRT(NULL), sampler_g(NULL)
         {}
 
         ~ShaderData()
         {
-            AiSamplerDestroy(sampler_diffuse);
             AiSamplerDestroy(sampler_R);
             AiSamplerDestroy(sampler_TT);
             AiSamplerDestroy(sampler_TRT);
             AiSamplerDestroy(sampler_g);
         }
 
-        void update(const ScatteringParameters& sp, int diffuse_samples, int glossy_samples)
+        void update(AtParamValue* params)
         {
             AtUInt32 t0 = AiMsgUtilGetElapsedTime();
 
-            AiSamplerDestroy(sampler_diffuse);
-            sampler_diffuse = AiSampler(diffuse_samples, 2);
+            AtNode *options   = AiUniverseGetOptions();
+            int glossy_samples = std::max(0, AiNodeGetInt(options, "GI_glossy_samples") + params[p_extraSamples].INT);
+
+            ior = params[p_ior].FLT;
+
             AiSamplerDestroy(sampler_R);
             sampler_R = AiSampler(glossy_samples, 2);
             AiSamplerDestroy(sampler_TT);
@@ -298,6 +272,30 @@ struct HairBsdf
             sampler_TRT = AiSampler(glossy_samples, 2);
             AiSamplerDestroy(sampler_g);
             sampler_g = AiSampler(glossy_samples, 2);
+
+            alpha_R = -params[p_specularShift].FLT * AI_DTOR;
+            beta_R = params[p_specularWidth].FLT * AI_DTOR;
+            
+            beta_TT = beta_R * 0.5f;
+            
+            alpha_TT = alpha_R * 0.5f;
+
+            beta_TRT = beta_R * 2.0f;
+            alpha_TRT = alpha_R * 1.5f;
+
+            beta_R2 = beta_R*beta_R;
+            beta_TT2 = beta_TT*beta_TT;
+            beta_TRT2 = beta_TRT*beta_TRT;
+
+            gamma_TT = params[p_transmissionRolloff].FLT * AI_DTOR;
+            gamma_g = 35.0f * AI_DTOR;
+
+            glintStrength = params[p_glintStrength].FLT;
+
+            absorption = (AI_RGB_WHITE - min(rgb(0.9999f, 0.9999f, 0.9999f), params[p_hairColor].RGB)) * params[p_hairDensity].FLT;
+
+            dual_depth = params[p_dualDepth].INT;
+
 
             // precalculate scattering LUTs
             float theta_i_step = AI_PIOVER2 / DS_NUMSTEPS;
@@ -322,42 +320,42 @@ struct HairBsdf
                     // forward scattering
                     for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
                     {
-                        hairAttenuation(1.55, cos_theta_i, theta_d, phi, sp.absorption, kfr);
+                        hairAttenuation(1.55, cos_theta_i, theta_d, phi, absorption, kfr);
                         float cosphi2 = cosf(phi*0.5f);
                         
                         // [2] eq (6)
                         // Compute average forward-scattering attenuation, i.e. total forward-scattered radiance
                         // TODO: Should be multiplying by cos_theta_i here too?
                         // {
-                        AtRGB f_R = bsdfR(sp.beta_R2, sp.alpha_R, theta_h, cosphi2) * sp.specular1Color * kfr[0] * cos_theta_i;
-                        AtRGB f_TT = bsdfTT(sp.beta_TT2, sp.alpha_TT, theta_h, sp.gamma_TT, phi) * sp.transmissionColor * kfr[1] * cos_theta_i;
-                        AtRGB f_TRT = (bsdfTRT(sp.beta_TRT2, sp.alpha_TRT, theta_h, cosphi2) * sp.specular2Color
-                                    + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength)
+                        AtRGB f_R = bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0] * cos_theta_i;
+                        AtRGB f_TT = bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1] * cos_theta_i;
+                        AtRGB f_TRT = (bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2)
+                                    + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * glintStrength)
                                     * kfr[2] * cos_theta_i;
                         a_bar_f[idx] += f_R + f_TT + f_TRT;
                         // }
-                        alpha_f[idx] += f_R*sp.alpha_R + f_TT*sp.alpha_TT + f_TRT*sp.alpha_TRT;
-                        beta_f[idx] += f_R*sp.beta_R2 + f_TT*sp.beta_TT2 + f_TRT*sp.beta_TRT2;
+                        alpha_f[idx] += f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT;
+                        beta_f[idx] += f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2;
                     }
 
                     // backward scattering
                     for (float phi = 0.0f; phi < AI_PIOVER2; phi += phi_step)
                     {
-                        hairAttenuation(1.55, cosf(theta_i), theta_d, phi, sp.absorption, kfr);
+                        hairAttenuation(1.55, cosf(theta_i), theta_d, phi, absorption, kfr);
                         float cosphi2 = cosf(phi*0.5f);
                         // [2] eq (11)
                         // Compute average back-scattering attenuation, i.e. total back-scattered radiance
                         // TODO: should be multiplying by cos_theta_i here too..?
                         // {
-                        AtRGB f_R = bsdfR(sp.beta_R2, sp.alpha_R, theta_h, cosphi2) * sp.specular1Color * kfr[0] * cos_theta_i;
-                        AtRGB f_TT = bsdfTT(sp.beta_TT2, sp.alpha_TT, theta_h, sp.gamma_TT, phi) * sp.transmissionColor * kfr[1] * cos_theta_i;
-                        AtRGB f_TRT = (bsdfTRT(sp.beta_TRT2, sp.alpha_TRT, theta_h, cosphi2) * sp.specular2Color
-                                    + bsdfg(sp.beta_TRT2, sp.alpha_TRT, theta_h, sp.gamma_g, phi, sp.phi_g) * sp.specular2Color * sp.glintStrength) 
+                        AtRGB f_R = bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0] * cos_theta_i;
+                        AtRGB f_TT = bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1] * cos_theta_i;
+                        AtRGB f_TRT = (bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2)
+                                    + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * glintStrength) 
                                     * kfr[2] * cos_theta_i;
                         a_bar_b[idx] += f_R + f_TT + f_TRT;
                         // }
-                        alpha_b[idx] += f_R*sp.alpha_R + f_TT*sp.alpha_TT + f_TRT*sp.alpha_TRT;
-                        beta_b[idx] += f_R*sp.beta_R2 + f_TT*sp.beta_TT2 + f_TRT*sp.beta_TRT2;
+                        alpha_b[idx] += f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT;
+                        beta_b[idx] += f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2;
                     }
                 }
 
@@ -426,11 +424,11 @@ struct HairBsdf
                         // [2] eq. (25)
                         // BCSDF due to forward scattering
                         // {
-                        hairAttenuation(1.55, cosf(theta_i), theta_d, phi, sp.absorption, kfr);
+                        hairAttenuation(1.55, cosf(theta_i), theta_d, phi, absorption, kfr);
 
                         N_G_R[ng_idx] += rgb(cosf(phi*0.5f)) * kfr[0];
-                        N_G_TT[ng_idx] += rgb(g(sp.gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
-                        N_G_TRT[ng_idx] += rgb(cosf(phi*0.5f) + g(sp.gamma_g, 0.0f, phi - sp.phi_g)) * kfr[2];
+                        N_G_TT[ng_idx] += rgb(g(gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
+                        N_G_TRT[ng_idx] += rgb(cosf(phi*0.5f) + g(gamma_g, 0.0f, phi - phi_g)) * kfr[2];
 #ifdef DEBUG_FRESNEL
                         kf_R[ng_idx] += kfr[0];
                         kf_TT[ng_idx] += kfr[1];
@@ -453,7 +451,7 @@ struct HairBsdf
             AtUInt32 t1 = AiMsgUtilGetElapsedTime();
             float t = float(t1 - t0)/1000.0f;
             AiMsgInfo("[alHair] DS precalc took %.1f seconds", t);
-
+#ifdef DEBUG_LUTS
             writeThickRGBEXR("/tmp/a_bar_f.exr", (float*)a_bar_f, DS_NUMSTEPS, 1);
             writeThickRGBEXR("/tmp/a_bar_b.exr", (float*)a_bar_b, DS_NUMSTEPS, 1);
             writeThickRGBEXR("/tmp/alpha_f.exr", (float*)alpha_f, DS_NUMSTEPS, 1);
@@ -469,14 +467,7 @@ struct HairBsdf
             writeRGBEXR("/tmp/kf_TT.exr", (float*)kf_TT, DS_NUMSTEPS, DS_NUMSTEPS);
             writeRGBEXR("/tmp/kf_TRT.exr", (float*)kf_TRT, DS_NUMSTEPS, DS_NUMSTEPS);
 #endif
-            
-            dual_depth = sp.dual_depth;
-        }
-
-        float fresnelLookup(float phi)
-        {
-            int idx = std::min(FRESNEL_SAMPLES-1, static_cast<int>(floorf((phi * AI_ONEOVERPI * FRESNEL_SAMPLES))));
-            return kr[idx];
+#endif
         }
 
         AtSampler* sampler_diffuse;
@@ -484,9 +475,6 @@ struct HairBsdf
         AtSampler* sampler_TT;
         AtSampler* sampler_TRT;
         AtSampler* sampler_g;
-
-        float kr[FRESNEL_SAMPLES];
-        float invFresnelSamples;
 
         int dual_depth;
 
@@ -502,6 +490,25 @@ struct HairBsdf
         AtRGB N_G_R[DS_NUMSTEPS*DS_NUMSTEPS];
         AtRGB N_G_TT[DS_NUMSTEPS*DS_NUMSTEPS];
         AtRGB N_G_TRT[DS_NUMSTEPS*DS_NUMSTEPS];
+
+        float beta_R;       //< R width
+        float beta_R2;
+        float alpha_R;      //< R shift
+        float beta_TT;      //< TT width
+        float beta_TT2;
+        float alpha_TT;     //< TT shift
+        float beta_TRT;     //< TRT width
+        float beta_TRT2;
+        float alpha_TRT;    //< TRT shift
+        float gamma_TT;     //< TT rolloff
+        float gamma_g;      //< g rolloff
+        float phi_g;        //< g separation
+
+        float glintStrength;
+
+        AtRGB absorption;
+
+        float ior;
     };
 
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
@@ -537,7 +544,7 @@ struct HairBsdf
     }
 
     /// Parameter evaluation. This should be called after opacity() and before anything else.
-    inline void evaluateParameters(AtShaderGlobals* sg)
+    inline void evaluateParameters(AtShaderGlobals* sg, ShaderData* data)
     {
         // Get the spherical angles of the exitant direction relative to the hair fibre
         wo = -sg->Rd;
@@ -553,34 +560,32 @@ struct HairBsdf
             cn = AiCellNoise2(p);
         }
 
-        beta_R = AiShaderEvalParamFlt(p_specularWidth) * AI_DTOR;
-        alpha_R = -AiShaderEvalParamFlt(p_specularShift) * AI_DTOR;
+        beta_R = data->beta_R;
+        alpha_R = data->alpha_R;
 
-        beta_TT = beta_R * 0.5f;
-        alpha_TT = alpha_R * 0.5f;
+        beta_TT = data->beta_TT;
+        alpha_TT = data->alpha_TT;
 
-        beta_TRT = beta_R * 2.0f;
-        alpha_TRT = alpha_R * 1.5f;
+        beta_TRT = data->beta_TRT;
+        alpha_TRT = data->alpha_TRT;
 
-        beta_R2 = beta_R*beta_R;
-        beta_TT2 = beta_TT*beta_TT;
-        beta_TRT2 = beta_TRT*beta_TRT;
+        beta_R2 = data->beta_R2;
+        beta_TT2 = data->beta_TT2;
+        beta_TRT2 = data->beta_TRT2;
 
-        gamma_TT = AiShaderEvalParamFlt(p_transmissionRolloff) * AI_DTOR;
-        gamma_g = AiShaderEvalParamFlt(p_glintRolloff) * AI_DTOR;
+        gamma_TT = data->gamma_TT;
+        gamma_g = data->gamma_g;
         phi_g = lerp(30.0f*AI_DTOR, 45.0f*AI_DTOR, cn);
 
         AB(theta_r, alpha_R, beta_R, A_R, B_R);
         AB(theta_r, alpha_TT, beta_TT, A_TT, B_TT);
         AB(theta_r, alpha_TRT, beta_TRT, A_TRT, B_TRT);
 
-        AtRGB hairColor = AiShaderEvalParamRGB(p_hairColor);
-        float hairColorDensity = AiShaderEvalParamFlt(p_hairDensity);
-        absorption = (AI_RGB_WHITE - min(rgb(0.9999f, 0.9999f, 0.9999f), hairColor)) * hairColorDensity;
+        absorption = data->absorption;
         specular1Color = AiShaderEvalParamRGB(p_specular1Color) * AiShaderEvalParamFlt(p_specular1Strength);
         specular2Color = AiShaderEvalParamRGB(p_specular2Color) * AiShaderEvalParamFlt(p_specular2Strength);
         transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
-        glintStrength = AiShaderEvalParamFlt(p_glintStrength) * cn;
+        glintStrength = data->glintStrength;
 
         density_front = AiShaderEvalParamFlt(p_densityFront);
         density_back = AiShaderEvalParamFlt(p_densityBack);
@@ -837,9 +842,6 @@ struct HairBsdf
         cos_theta_d = cosf(theta_d);
         inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
         invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
-
-        //td_d_mn = std::min(theta_d, td_d_mn);
-        //td_d_mx = std::max(theta_d, td_d_mx);
     }
 
     /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the 
@@ -861,9 +863,6 @@ struct HairBsdf
         cosphi2 = cosf(phi*0.5f);
         sphericalDirection(theta_i, phi_i, V, W, U, wi);
         invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
-
-        //td_i_mn = std::min(theta_d, td_i_mn);
-        //td_i_mx = std::max(theta_d, td_i_mx);
     }
 
     /// Integrate the direct illumination for all diffuse and glossy lobes
@@ -1399,39 +1398,7 @@ node_finish
 node_update
 {
     HairBsdf::ShaderData* data = (HairBsdf::ShaderData*)AiNodeGetLocalData(node);
-    AtNode *options   = AiUniverseGetOptions();
-    int diffuse_samples = AiNodeGetInt(options, "GI_diffuse_samples");
-    int glossy_samples = std::max(0, AiNodeGetInt(options, "GI_glossy_samples") + params[p_extraSamples].INT);
-    
-
-    HairBsdf::ScatteringParameters sp;
-    sp.alpha_R = params[p_specularShift].FLT * AI_DTOR;
-    sp.beta_R = params[p_specularWidth].FLT * AI_DTOR;
-    
-    sp.beta_TT = sp.beta_R * 0.5f;
-    
-    sp.alpha_TT = sp.alpha_R * 0.5f;
-
-    sp.beta_TRT = sp.beta_R * 2.0f;
-    sp.alpha_TRT = sp.alpha_R * 1.5f;
-
-    sp.beta_R2 = sp.beta_R*sp.beta_R;
-    sp.beta_TT2 = sp.beta_TT*sp.beta_TT;
-    sp.beta_TRT2 = sp.beta_TRT*sp.beta_TRT;
-
-    sp.gamma_TT = params[p_transmissionRolloff].FLT * AI_DTOR;
-    sp.gamma_g = 35.0f * AI_DTOR;
-
-    sp.specular1Color = params[p_specular1Color].RGB * params[p_specular1Strength].FLT;
-    sp.specular2Color = params[p_specular2Color].RGB * params[p_specular2Strength].FLT;
-    sp.transmissionColor = params[p_transmissionColor].RGB * params[p_transmissionStrength].FLT;
-    sp.glintStrength = params[p_glintStrength].FLT;
-
-    sp.absorption = (AI_RGB_WHITE - min(rgb(0.9999f, 0.9999f, 0.9999f), params[p_hairColor].RGB)) * params[p_hairDensity].FLT;
-
-    sp.dual_depth = params[p_dualDepth].INT;
-
-    data->update(sp, diffuse_samples, glossy_samples);
+    data->update(params);
 
     AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("indirect_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
@@ -1465,7 +1432,7 @@ shader_evaluate
     // Create HairBsdf object 
     HairBsdf hb(node, sg, data);
     // Get parameters
-    hb.evaluateParameters(sg);
+    hb.evaluateParameters(sg, data);
 
     AtRGB opacity = AiShaderEvalParamRGB(p_opacity);
     float geo_opacity = 1.0f;
