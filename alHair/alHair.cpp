@@ -298,7 +298,7 @@ struct HairBsdf
 
 
             // precalculate scattering LUTs
-            float theta_i_step = AI_PIOVER2 / DS_NUMSTEPS;
+            float theta_i_step = AI_PI / DS_NUMSTEPS;
             float theta_r_step = AI_PI/ DS_NUMSTEPS;
             float phi_step = AI_PIOVER2 / DS_NUMSTEPS;
             int idx = 0;
@@ -309,7 +309,7 @@ struct HairBsdf
             memset(beta_f, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             memset(beta_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             AtRGB kfr[3];
-            for (float theta_i = 0; theta_i < AI_PIOVER2; theta_i+=theta_i_step)
+            for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i+=theta_i_step)
             {
                 float cos_theta_i = cosf(theta_i);
                 for (float theta_r = -AI_PIOVER2; theta_r < AI_PIOVER2; theta_r += theta_r_step)
@@ -320,7 +320,7 @@ struct HairBsdf
                     // forward scattering
                     for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
                     {
-                        hairAttenuation(1.55, cos_theta_i, theta_d, phi, absorption, kfr);
+                        hairAttenuation(ior, cos_theta_i, theta_d, phi, absorption, kfr);
                         float cosphi2 = cosf(phi*0.5f);
                         
                         // [2] eq (6)
@@ -341,7 +341,7 @@ struct HairBsdf
                     // backward scattering
                     for (float phi = 0.0f; phi < AI_PIOVER2; phi += phi_step)
                     {
-                        hairAttenuation(1.55, cosf(theta_i), theta_d, phi, absorption, kfr);
+                        hairAttenuation(ior, cosf(theta_i), theta_d, phi, absorption, kfr);
                         float cosphi2 = cosf(phi*0.5f);
                         // [2] eq (11)
                         // Compute average back-scattering attenuation, i.e. total back-scattered radiance
@@ -424,7 +424,7 @@ struct HairBsdf
                         // [2] eq. (25)
                         // BCSDF due to forward scattering
                         // {
-                        hairAttenuation(1.55, cosf(theta_i), theta_d, phi, absorption, kfr);
+                        hairAttenuation(ior, cosf(theta_i), theta_d, phi, absorption, kfr);
 
                         N_G_R[ng_idx] += rgb(cosf(phi*0.5f)) * kfr[0];
                         N_G_TT[ng_idx] += rgb(g(gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
@@ -559,6 +559,8 @@ struct HairBsdf
             AtPoint2 p; p.x = float(curve_id); p.y = 0.0f;
             cn = AiCellNoise2(p);
         }
+
+        ior = data->ior;
 
         beta_R = data->beta_R;
         alpha_R = data->alpha_R;
@@ -879,7 +881,7 @@ struct HairBsdf
             AtRGB L = sg->Li * sg->we * invariant;
             if (maxh(L) > IMPORTANCE_EPS)
             {
-                hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
+                hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
 
                 result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
                 result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
@@ -909,7 +911,7 @@ struct HairBsdf
         AiTrace(&wi_ray, &scrs);
 
         AtRGB kfr[3];
-        hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
+        hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
 
         // calculate result
         switch (lobe)
@@ -959,7 +961,7 @@ struct HairBsdf
             AiTrace(&wi_ray, &scrs);
 
             AtRGB kfr[3];
-            hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
+            hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
 
             // calculate result
             result_R_indirect += scrs.color * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * p * kfr[0];
@@ -979,7 +981,7 @@ struct HairBsdf
             AiTrace(&wi_ray, &scrs);
 
             AtRGB kfr[3];
-            hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
+            hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
 
             // calculate result
             result_TT_indirect += scrs.color * bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * p * kfr[1];
@@ -999,7 +1001,7 @@ struct HairBsdf
             AiTrace(&wi_ray, &scrs);
 
             AtRGB kfr[3];
-            hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
+            hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
 
             // calculate result
             result_TRT_indirect += scrs.color * bsdfTRT(beta_R2, alpha_R, theta_h, cosphi2) * p * kfr[2];
@@ -1063,7 +1065,7 @@ struct HairBsdf
                 if (directFraction > 0.0f)
                 {
                     AtRGB kfr[3];
-                    hairAttenuation(1.55, cos_theta_i, theta_d, phi_d, absorption, kfr);
+                    hairAttenuation(ior, cos_theta_i, theta_d, phi_d, absorption, kfr);
                     result_Pl_direct += sg->Li * sg->we * occlusion * density_back * f_direct_back * cos_theta_i * directFraction;
                     AtRGB L = sg->Li * sg->we * invariant * occlusion * directFraction;
                     
@@ -1142,7 +1144,7 @@ struct HairBsdf
             if (directFraction > 0.0f)
             {
                 AtRGB kfr[3];
-                hairAttenuation(1.55, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
+                hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, absorption, kfr);
                 result_Pl_indirect += scrs.color * density_back * f_direct_back * cos_theta_i * directFraction;
                 AtRGB L = scrs.color * invariant * p * directFraction;
                 result_R_indirect += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
@@ -1255,6 +1257,7 @@ struct HairBsdf
     float phi_r;        //< existant spherical phi
     float cn;           //< random value per curve in [0,1)
 
+    float ior;
     float beta_R;       //< R width
     float beta_R2;
     float alpha_R;      //< R shift
