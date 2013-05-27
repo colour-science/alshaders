@@ -9,6 +9,8 @@
 #include <vector>
 #include <algorithm>
 
+#define DEBUG_LUTS
+#define DEBUG_FRESNEL
 #ifdef DEBUG_LUTS
 #include "exr.h"
 #endif
@@ -436,14 +438,18 @@ struct HairBsdf
 #endif
                         // }
                     }
-
+                    //N_G_R[ng_idx] = rgb(theta_d, phi, 0.0f);
+                    
                     N_G_R[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     N_G_TT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     N_G_TRT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
+                    
 #ifdef DEBUG_FRESNEL
+                    
                     kf_R[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     kf_TT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     kf_TRT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
+                    
 #endif
                 }
             }
