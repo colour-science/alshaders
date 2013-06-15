@@ -9,6 +9,7 @@ struct ShaderData
    AtSampler* glossy_sampler;
    AtSampler* glossy2_sampler;
    AtSampler* refraction_sampler;
+   AtSampler* backlight_sampler;
    int GI_diffuse_depth;
    int GI_reflection_depth;
    int GI_refraction_depth;
@@ -25,6 +26,7 @@ struct ShaderData
    int glossy_sample_offset;
    int glossy2_sample_offset;
    int refraction_sample_offset;
+   int backlight_sample_offset;
    int total_samples;
    AtCritSec cs;
    std::map<AtNode*, int> lightGroups;
