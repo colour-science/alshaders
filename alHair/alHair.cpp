@@ -699,7 +699,7 @@ node_loader
 {
    if (i>0) return 0;
    node->methods     = alHair;
-   node->output_type = AI_TYPE_RGBA;
+   node->output_type = AI_TYPE_RGB;
    node->name        = "alHair";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
