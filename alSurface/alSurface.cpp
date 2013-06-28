@@ -298,15 +298,6 @@ node_update
     data->GI_refraction_samples = AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT;
     data->refraction_samples2 = SQR(data->GI_refraction_samples);
 
-    // set up sample offsets for deep groups
-    // order of execution is glossy->glossy2->diffuse->refraction
-    data->glossy_sample_offset = 0;
-    data->glossy2_sample_offset = data->glossy_sample_offset + data->glossy_samples2;
-    data->diffuse_sample_offset = data->glossy2_sample_offset + data->glossy2_samples2;
-    data->refraction_sample_offset = data->diffuse_sample_offset + data->diffuse_samples2;
-    data->backlight_sample_offset = data->refraction_sample_offset + data->refraction_samples2;
-    data->total_samples = data->backlight_sample_offset + data->diffuse_samples2;
-
     // setup samples
     AiSamplerDestroy(data->diffuse_sampler);
     AiSamplerDestroy(data->glossy_sampler);
@@ -613,13 +604,12 @@ shader_evaluate
     AtRGB result_directGroup[NUM_LIGHT_GROUPS];
     for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
     bool doDeepGroups = data->lightGroupsIndirect;
-    int idx = 0;
 
     if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
     {
         // if this is a camera ray allocate the group storage
-        deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS*data->total_samples);
-        memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS*data->total_samples);
+        deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+        memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
         AiStateSetMsgPtr("als_deepGroupPtr", deepGroupPtr);
     }
     else if (doDeepGroups)
@@ -628,9 +618,6 @@ shader_evaluate
         // if the pointer hasn't been set we're being called from a BSDF that doesn't have deep group support
         // so don't try and do it or we'll be in (crashy) trouble!
         if (!AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr)) doDeepGroups = false;
-        // Get the current sample index from the state
-        // This wil be overriden if we're in a child event
-        if (!AiStateGetMsgInt("als_sampleIndex", &idx)) doDeepGroups = false;
     }
 
     // Accumulator for transmission integrated according to the specular1 brdf. Will be used to attenuate diffuse,
@@ -840,22 +827,18 @@ shader_evaluate
                 if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
                     // if we're in a camera ray, pass the sample index down to the child SG
-                    if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
+                    if (AiTrace(&wi_ray, &scrs))
                     {
-                        idx = count++;
-                        AiStateSetMsgInt("als_sampleIndex", idx);
-                    }
-                    AiTrace(&wi_ray, &scrs);
+                        AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
+                        result_glossyIndirect += scrs.color * f;
 
-                    AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
-                    result_glossyIndirect += scrs.color * f;
-
-                    // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
-                    {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        // accumulate the lightgroup contributions calculated by the child shader
+                        if (doDeepGroups)
                         {
-                            deepGroupsGlossy[i] += deepGroupPtr[i] * f;
+                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                            {
+                                deepGroupsGlossy[i] += deepGroupPtr[i] * f;
+                            }
                         }
                     }
                 }
@@ -897,13 +880,6 @@ shader_evaluate
                 kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
                 if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
-                    // if we're in a camera ray, pass the sample index down to the child SG
-                    if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-                    {
-                        idx = count++;
-                        AiStateSetMsgInt("als_sampleIndex", idx);
-                    }
-
                     if (AiTrace(&wi_ray, &scrs))
                     {
                         AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
@@ -963,13 +939,6 @@ shader_evaluate
             
             // trace the ray
             wi_ray.dir = wi;
-            // if we're in a camera ray, pass the sample index down to the child SG
-            if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-            {
-                idx = count++;
-                AiStateSetMsgInt("als_sampleIndex", idx);
-            }
-            
             if (AiTrace(&wi_ray, &scrs))
             {
                 AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
@@ -1063,13 +1032,6 @@ shader_evaluate
                 float pdf = pm * (transmissionIor * transmissionIor) * fabsf(cosHI) / Ht2;
 
                 wi_ray.dir = wi;
-                // if we're in a camera ray, pass the sample index down to the child SG
-                if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-                {
-                    idx = count++;
-                    AiStateSetMsgInt("als_sampleIndex", idx);
-                }
-                
                 if (AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
@@ -1103,13 +1065,6 @@ shader_evaluate
             else if (AiV3IsZero(wi)) // total internal reflection
             {
                 wi_ray.dir = R;
-                // if we're in a camera ray, pass the sample index down to the child SG
-                if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-                {
-                    idx = count++;
-                    AiStateSetMsgInt("als_sampleIndex", idx);
-                }
-                
                 if (AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
@@ -1171,13 +1126,6 @@ shader_evaluate
             
             // trace the ray
             wi_ray.dir = wi;
-            // if we're in a camera ray, pass the sample index down to the child SG
-            if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-            {
-                idx = count++;
-                AiStateSetMsgInt("als_sampleIndex", idx);
-            }
-            
             if (AiTrace(&wi_ray, &scrs))
             {
                 AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
