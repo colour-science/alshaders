@@ -903,17 +903,20 @@ shader_evaluate
                         idx = count++;
                         AiStateSetMsgInt("als_sampleIndex", idx);
                     }
-                    AiTrace(&wi_ray, &scrs);
-                    AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
-                    result_glossy2Indirect += scrs.color*f;
-                    kti2 += kr; 
-                    
-                    // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
+
+                    if (AiTrace(&wi_ray, &scrs))
                     {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
+                        result_glossy2Indirect += scrs.color*f;
+                        kti2 += kr; 
+                        
+                        // accumulate the lightgroup contributions calculated by the child shader
+                        if (doDeepGroups)
                         {
-                            deepGroupsGlossy2[i] += deepGroupPtr[i] * f;
+                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                            {
+                                deepGroupsGlossy2[i] += deepGroupPtr[i] * f;
+                            }
                         }
                     }
                 }
@@ -966,19 +969,21 @@ shader_evaluate
                 idx = count++;
                 AiStateSetMsgInt("als_sampleIndex", idx);
             }
-            AiTrace(&wi_ray, &scrs);
-            AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
-            result_diffuseIndirectRaw += scrs.color * f;
-
-            // accumulate the lightgroup contributions calculated by the child shader
-            if (doDeepGroups)
+            
+            if (AiTrace(&wi_ray, &scrs))
             {
-                for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
+                result_diffuseIndirectRaw += scrs.color * f;
+
+                // accumulate the lightgroup contributions calculated by the child shader
+                if (doDeepGroups)
                 {
-                    deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    {
+                        deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
+                    }
                 }
             }
-
             
         }
         result_diffuseIndirectRaw *= AiSamplerGetSampleInvCount(sampit);
@@ -1064,32 +1069,35 @@ shader_evaluate
                     idx = count++;
                     AiStateSetMsgInt("als_sampleIndex", idx);
                 }
-                AiTrace(&wi_ray, &sample);
-                AtRGB transmittance = AI_RGB_WHITE;
-                if (maxh(sigma_t) > 0.0f && !inside)
+                
+                if (AiTrace(&wi_ray, &sample))
                 {
-                    transmittance.r = fast_exp(-sample.z * sigma_t.r);
-                    transmittance.g = fast_exp(-sample.z * sigma_t.g);
-                    transmittance.b = fast_exp(-sample.z * sigma_t.b);
-                }
-                AtRGB f = brdf/pdf * transmittance;
-                result_transmission += sample.color * f;
-                // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
-                {
-                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    AtRGB transmittance = AI_RGB_WHITE;
+                    if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        deepGroupsTransmission[i] += deepGroupPtr[i] * f;
+                        transmittance.r = fast_exp(-sample.z * sigma_t.r);
+                        transmittance.g = fast_exp(-sample.z * sigma_t.g);
+                        transmittance.b = fast_exp(-sample.z * sigma_t.b);
                     }
-                }
+                    AtRGB f = brdf/pdf * transmittance;
+                    result_transmission += sample.color * f;
+                    // accumulate the lightgroup contributions calculated by the child shader
+                    if (doDeepGroups)
+                    {
+                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        {
+                            deepGroupsTransmission[i] += deepGroupPtr[i] * f;
+                        }
+                    }
 
-                // single scattering
-                if (ssStrength > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside && ssInScattering)
-                {
-                    AtVector N = sg->N;
-                    sg->N = m;
-                    result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor) * ssStrength;
-                    sg->N = N;
+                    // single scattering
+                    if (ssStrength > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside && ssInScattering)
+                    {
+                        AtVector N = sg->N;
+                        sg->N = m;
+                        result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor) * ssStrength;
+                        sg->N = N;
+                    }
                 }
             }
             else if (AiV3IsZero(wi)) // total internal reflection
@@ -1101,21 +1109,24 @@ shader_evaluate
                     idx = count++;
                     AiStateSetMsgInt("als_sampleIndex", idx);
                 }
-                AiTrace(&wi_ray, &sample);
-                AtRGB transmittance = AI_RGB_WHITE;
-                if (maxh(sigma_t) > 0.0f && !inside)
+                
+                if (AiTrace(&wi_ray, &sample))
                 {
-                    transmittance.r = fast_exp(-sample.z * sigma_t.r);
-                    transmittance.g = fast_exp(-sample.z * sigma_t.g);
-                    transmittance.b = fast_exp(-sample.z * sigma_t.b);
-                }
-                result_transmission += sample.color * transmittance;
-                // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
-                {
-                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    AtRGB transmittance = AI_RGB_WHITE;
+                    if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        deepGroupsTransmission[i] += deepGroupPtr[i] * transmittance;
+                        transmittance.r = fast_exp(-sample.z * sigma_t.r);
+                        transmittance.g = fast_exp(-sample.z * sigma_t.g);
+                        transmittance.b = fast_exp(-sample.z * sigma_t.b);
+                    }
+                    result_transmission += sample.color * transmittance;
+                    // accumulate the lightgroup contributions calculated by the child shader
+                    if (doDeepGroups)
+                    {
+                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        {
+                            deepGroupsTransmission[i] += deepGroupPtr[i] * transmittance;
+                        }
                     }
                 }
             }
@@ -1166,20 +1177,21 @@ shader_evaluate
                 idx = count++;
                 AiStateSetMsgInt("als_sampleIndex", idx);
             }
-            AiTrace(&wi_ray, &scrs);
-            AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
-            result_backlightIndirect += scrs.color * f;
-
-            // accumulate the lightgroup contributions calculated by the child shader
-            if (doDeepGroups)
+            
+            if (AiTrace(&wi_ray, &scrs))
             {
-                for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
+                result_backlightIndirect += scrs.color * f;
+
+                // accumulate the lightgroup contributions calculated by the child shader
+                if (doDeepGroups)
                 {
-                    deepGroupsBacklight[i] += deepGroupPtr[i] * f;
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    {
+                        deepGroupsBacklight[i] += deepGroupPtr[i] * f;
+                    }
                 }
             }
-
-            
         }
         result_backlightIndirect *= AiSamplerGetSampleInvCount(sampit) * backlightColor;
 
