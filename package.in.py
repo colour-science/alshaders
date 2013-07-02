@@ -15,9 +15,9 @@ def mkdir_p(path):
             pass
         else: raise
 
-MAJOR_VERSION = 0
-MINOR_VERSION = 3
-PATCH_VERSION = 0
+MAJOR_VERSION = @ALS_MAJOR_VERSION@
+MINOR_VERSION = @ALS_MINOR_VERSION@
+PATCH_VERSION = @ALS_PATCH_VERSION@
 
 subdirs = [
     'alBlackbody', 
