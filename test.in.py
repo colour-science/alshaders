@@ -26,7 +26,7 @@ output_dir = os.path.join(os.getcwd(), "test/output/%s" % VERSION)
 if not os.path.exists(output_dir):
 	os.makedirs(output_dir)
 
-
+test_results = {}
 for test_name,opaque in tests.items():
 	header = open("test/test_header.ass", "r").read()
 	output = 'include "test/test_%s.ass"\n' % test_name
@@ -43,10 +43,20 @@ for test_name,opaque in tests.items():
 	
 	if rc == 0:
 		print 'Test %s completed successfully in %.02f seconds' % (test_name, t.interval)
+		result = t.interval
 	else:
 		print 'Test %s FAILED after %.02f seconds' % (test_name, t.interval)
 		for line in proc.stdout:
 			print line[:-1]
+		result = 0
+
+	test_results[test_name] = result
+
+# write out the results to a single file
+results_file = open('test/output/%s/results.dat' % VERSION, 'w')
+for test_name, result in test_results.items():
+	results_file.write('%s %f\n' % (test_name, result))
+results_file.close()
 
 # clean up temporary files
 os.remove('test/test_tmp.ass')
