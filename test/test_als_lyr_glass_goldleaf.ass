@@ -1,0 +1,225 @@
+MayaShadingEngine
+{
+ name TARGET_SHADER
+ beauty als_lyr_glass_goldleaf
+}
+
+alLayer
+{
+ name als_lyr_glass_goldleaf
+ layer1 als_glass
+ layer2 bump2d5
+ mix als_layer_glass_goldleaf_ptrn.r
+ debug "off"
+}
+
+alSurface
+{
+ name als_glass
+ diffuseStrength 0
+ diffuseColor 0.180000007 0.180000007 0.180000007
+ diffuseRoughness 0
+ backlightStrength 0
+ backlightColor 0.180000007 0.180000007 0.180000007
+ emissionStrength 0
+ emissionColor 1 1 1
+ sssMix 0
+ sssRadius 3.5999999
+ sssRadiusColor 0.43900001 0.156000003 0.0780000016
+ sssDensityScale 1
+ ssStrength 0
+ ssBalance 0.5
+ ssTargetColor 0.43900001 0.156000003 0.0780000016
+ ssSpecifyCoefficients off
+ ssScattering 1 1 1
+ ssAbsorption 1 1 1
+ ssDensityScale 1
+ ssDirection 0
+ ssInScattering on
+ diffuseExtraSamples 0
+ diffuseEnableCaustics off
+ specular1Strength 1
+ specular1Color 1 1 1
+ specular1Roughness 0
+ specular1Ior 1.5
+ specular1RoughnessDepthScale 1.5
+ specular1ExtraSamples 0
+ specular1Normal 0 0 0
+ specular2Strength 0
+ specular2Color 1 1 1
+ specular2Roughness 0.300000012
+ specular2Ior 1.39999998
+ specular2RoughnessDepthScale 1.5
+ specular2ExtraSamples 0
+ specular2Normal 0 0 0
+ transmissionStrength 1
+ transmissionColor 1 1 1
+ transmissionLinkToSpecular1 on
+ transmissionRoughness 0.100000001
+ transmissionIor 1.39999998
+ transmissionRoughnessDepthScale 1.5
+ transmissionEnableCaustics on
+ transmissionExtraSamples 0
+ lightGroupsIndirect off
+ id1 0 0 0
+ id2 0 0 0
+ id3 0 0 0
+ id4 0 0 0
+ id5 0 0 0
+ id6 0 0 0
+ id7 0 0 0
+ id8 0 0 0
+ aiEnableMatte off
+ aiMatteColor 0 0 0
+ aiMatteColorA 0
+}
+
+alSurface
+{
+ name als_goldleaf
+ diffuseStrength 1
+ diffuseColor 0.0504158102 0.0309300367 0.00988784619
+ diffuseRoughness 0
+ backlightStrength 0
+ backlightColor 0.180000007 0.180000007 0.180000007
+ emissionStrength 0
+ emissionColor 1 1 1
+ sssMix 0
+ sssRadius 3.5999999
+ sssRadiusColor 0.43900001 0.156000003 0.0780000016
+ sssDensityScale 1
+ ssStrength 0
+ ssBalance 0.5
+ ssTargetColor 0.43900001 0.156000003 0.0780000016
+ ssSpecifyCoefficients off
+ ssScattering 1 1 1
+ ssAbsorption 1 1 1
+ ssDensityScale 1
+ ssDirection 0
+ ssInScattering on
+ diffuseExtraSamples 0
+ diffuseEnableCaustics off
+ specular1Strength 1
+ specular1Color 0.607843161 0.454615623 0.119184934
+ specular1Roughness 0.300000012
+ specular1Ior 100
+ specular1RoughnessDepthScale 1.5
+ specular1ExtraSamples 0
+ specular1Normal 0 0 0
+ specular2Strength 0
+ specular2Color 1 1 1
+ specular2Roughness 0.300000012
+ specular2Ior 1.39999998
+ specular2RoughnessDepthScale 1.5
+ specular2ExtraSamples 0
+ specular2Normal 0 0 0
+ transmissionStrength 0
+ transmissionColor 1 1 1
+ transmissionLinkToSpecular1 on
+ transmissionRoughness 0.100000001
+ transmissionIor 1.39999998
+ transmissionRoughnessDepthScale 1.5
+ transmissionEnableCaustics on
+ transmissionExtraSamples 0
+ lightGroupsIndirect off
+ id1 0 0 0
+ id2 0 0 0
+ id3 0 0 0
+ id4 0 0 0
+ id5 0 0 0
+ id6 0 0 0
+ id7 0 0 0
+ id8 0 0 0
+ aiEnableMatte off
+ aiMatteColor 0 0 0
+ aiMatteColorA 0
+}
+
+mayaBump2D
+{
+ name bump2d5
+ bump_map alFractal1.r
+ bump_height 0.0299999993
+ flip_r on
+ flip_g on
+ swap_tangents off
+ use_derivatives on
+ gamma_correct on
+ use_as "bump"
+ shader als_goldleaf
+}
+
+alFractal
+{
+ name alFractal1
+ mode "scalar"
+ space "world"
+ frequency 2
+ scale 1 1 1
+ time 0
+ octaves 8
+ distortion 0
+ lacunarity 2.12100005
+ gain 0.5
+ turbulent off
+ ridged off
+ ridgeOffset 0
+ RMPinputMin 0
+ RMPinputMax 1
+ RMPcontrast 1
+ RMPcontrastPivot 0.5
+ RMPbias 0.5
+ RMPgain 0.5
+ RMPoutputMin 1
+ RMPoutputMax 0
+ RMPclampEnable off
+ RMPthreshold off
+ RMPclampMin 0
+ RMPclampMax 1
+ color1 0 0 0
+ color2 1 1 1
+ P 0 0 0
+}
+
+alCellNoise
+{
+ name als_layer_glass_goldleaf_ptrn
+ space "world"
+ frequency 1
+ mode "features"
+ octaves 3
+ randomness 1
+ lacunarity 2.12100005
+ f1w -1
+ f2w 1
+ f3w 0
+ f4w 0
+ mynkowskiShape 2
+ color1 0 0 0
+ color2 1 1 1
+ smoothChips off
+ chipColor1 0.382999986 0.317999989 0.252000004
+ chipProb1 0.200000003
+ chipColor2 0.382999986 0.191 0.00999999978
+ chipProb2 0.400000006
+ chipColor3 0.63499999 0.611999989 0.563000023
+ chipProb3 0.600000024
+ chipColor4 0.509000003 0.361000001 0.213
+ chipProb4 0.800000012
+ chipColor5 0.592999995 0.472000003 0.247999996
+ chipProb5 1
+ P 0 0 0
+ RMPinputMin 0
+ RMPinputMax 1
+ RMPcontrast 1
+ RMPcontrastPivot 0.5
+ RMPbias 0.5
+ RMPgain 0.5
+ RMPoutputMin 0
+ RMPoutputMax 1
+ RMPclampEnable on
+ RMPthreshold on
+ RMPclampMin 0.300000012
+ RMPclampMax 0.300999999
+}
+
