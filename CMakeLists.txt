@@ -7,6 +7,16 @@ set(ALS_MINOR_VERSION 3)
 set(ALS_PATCH_VERSION 0)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
 
+configure_file(
+    "${PROJECT_SOURCE_DIR}/package.in.py"
+    "${PROJECT_SOURCE_DIR}/package.py"
+)
+
+configure_file(
+    "${PROJECT_SOURCE_DIR}/test.in.py"
+    "${PROJECT_SOURCE_DIR}/test.py"
+)
+
 
 set(CMAKE_BUILD_TYPE RELEASE)
 set(CMAKE_VERBOSE_MAKEFILE FALSE)
