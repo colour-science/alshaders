@@ -7,7 +7,6 @@
 
 #include "alUtil.h"
 #include "MIS.h"
-#include "BeckmannMicrofacet.h"
 #include "alSurface.h"
 
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
