@@ -64,7 +64,6 @@ shader_evaluate
 	
 	AtRGB result = input;
 
-	// first select the input vector to use
 	switch(sourceSpace)
 	{
 	case SS_SRGB:
