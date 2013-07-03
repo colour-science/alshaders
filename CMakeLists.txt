@@ -77,6 +77,7 @@ set(SUBDIRECTORIES
         alPhotometric
         alInputVector
         alHair
+        alColorSpace
         common
 )
 

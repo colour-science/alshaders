@@ -87,3 +87,45 @@ AtRGB xyzToRgb(const ColorSystem& cs, const AtColor& xyz)
 
     return rgb;
 }
+
+/// Function to convert sRGB to linear
+float sRgbToLin(float c)
+{
+	if (c > 1.0f) return c;
+	else if (c <= 0.04045) return c / 12.92f;
+	else return powf((c + 0.055f) / 1.055f, 2.4f);
+}
+
+AtRGB sRgbToLin(const AtRGB& c)
+{
+	return rgb(sRgbToLin(c.r), sRgbToLin(c.g), sRgbToLin(c.b));
+}
+
+/// Function to convert Cineon to linear
+float cineonToLin(float c)
+{
+	//return powf(10.0f, (c*1023.0f - 445.0f)*0.002/0.6f) * 0.18f;
+	static const float RefWhite = 685.0f;
+	static const float RefBlack = 95.f;
+	c *= 1023.0f;
+	static const float Gain = 1.0f / (1.0f - powf(10.0f, (RefBlack-RefWhite)*0.002/0.6));
+	static const float Offset = Gain - 1.0f;
+	c = powf(10.0f, (c-RefWhite)*0.002/0.6) * Gain - Offset;
+	return std::max(0.0f, c);
+}
+
+AtRGB cineonToLin(const AtRGB& c)
+{
+	return rgb(cineonToLin(c.r), cineonToLin(c.g), cineonToLin(c.b));
+}
+
+float logCToLin(float c)
+{
+	if (c > 0.1496582f) return (powf(10.0f, (c - 0.385537f) / 0.2471896f) - 0.052272f) / 5.555556f;
+	else return (c - 0.092809f) / 5.367655f;
+}
+
+AtRGB logCToLin(const AtRGB& c)
+{
+	return rgb(logCToLin(c.r), logCToLin(c.g), logCToLin(c.b));
+}
