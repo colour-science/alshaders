@@ -1,0 +1,130 @@
+MayaShadingEngine
+{
+ name TARGET_SHADER
+ beauty bump2d6
+ enable_matte off
+ matte_color 0 0 0 0
+}
+
+alSurface
+{
+ name als_ccoverbump
+ diffuseStrength 1
+ diffuseColor 0.180000007 0.180000007 0.180000007
+ diffuseRoughness 0
+ backlightStrength 0
+ backlightColor 0.180000007 0.180000007 0.180000007
+ emissionStrength 0
+ emissionColor 1 1 1
+ sssMix 0
+ sssRadius 3.5999999
+ sssRadiusColor 0.43900001 0.156000003 0.0780000016
+ sssDensityScale 1
+ ssStrength 0
+ ssBalance 0.5
+ ssTargetColor 0.43900001 0.156000003 0.0780000016
+ ssSpecifyCoefficients off
+ ssScattering 1 1 1
+ ssAbsorption 1 1 1
+ ssDensityScale 1
+ ssDirection 0
+ ssInScattering on
+ diffuseExtraSamples 0
+ diffuseEnableCaustics off
+ specular1Strength 1
+ specular1Color 1 1 1
+ specular1Roughness 0
+ specular1Ior 1.39999998
+ specular1RoughnessDepthScale 1.5
+ specular1ExtraSamples 0
+ specular1Normal alInputVector1
+ specular2Strength 0
+ specular2Color 1 1 1
+ specular2Roughness 0.300000012
+ specular2Ior 1.39999998
+ specular2RoughnessDepthScale 1.5
+ specular2ExtraSamples 0
+ specular2Normal 0 0 0
+ transmissionStrength 0
+ transmissionColor 1 1 1
+ transmissionLinkToSpecular1 on
+ transmissionRoughness 0.100000001
+ transmissionIor 1.39999998
+ transmissionRoughnessDepthScale 1.5
+ transmissionEnableCaustics on
+ transmissionExtraSamples 0
+ lightGroupsIndirect off
+ id1 0 0 0
+ id2 0 0 0
+ id3 0 0 0
+ id4 0 0 0
+ id5 0 0 0
+ id6 0 0 0
+ id7 0 0 0
+ id8 0 0 0
+ aiEnableMatte off
+ aiMatteColor 0 0 0
+ aiMatteColorA 0
+}
+
+alInputVector
+{
+ name alInputVector1
+ input "Ns"
+ type "Vector"
+ userName ""
+ vector 0 0 0
+ matrix 
+  1 0 0 0
+  0 1 0 0
+  0 0 1 0
+  0 0 0 1
+ coordinates "cartesian"
+}
+
+mayaBump2D
+{
+ name bump2d6
+ bump_map alFractal3.r
+ bump_height 0.300000012
+ flip_r on
+ flip_g on
+ swap_tangents off
+ use_derivatives on
+ gamma_correct on
+ use_as "bump"
+ shader als_ccoverbump
+}
+
+alFractal
+{
+ name alFractal3
+ mode "scalar"
+ space "world"
+ frequency 1
+ scale 1 1 1
+ time 0
+ octaves 8
+ distortion 0
+ lacunarity 2.12100005
+ gain 0.5
+ turbulent off
+ ridged off
+ ridgeOffset 0
+ RMPinputMin 0
+ RMPinputMax 1
+ RMPcontrast 1
+ RMPcontrastPivot 0.5
+ RMPbias 0.5
+ RMPgain 0.5
+ RMPoutputMin 0
+ RMPoutputMax 1
+ RMPclampEnable off
+ RMPthreshold off
+ RMPclampMin 0
+ RMPclampMax 1
+ color1 0 0 0
+ color2 1 1 1
+ P 0 0 0
+}
+
