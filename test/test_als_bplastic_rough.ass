@@ -1,14 +1,14 @@
 MayaShadingEngine
 {
  name TARGET_SHADER
- beauty als_bplastic_rough
+ beauty TARGET_SURFACE
  enable_matte off
  matte_color 0 0 0 0
 }
 
 alSurface
 {
- name als_bplastic_rough
+ name TARGET_SURFACE
  diffuseStrength 1
  diffuseColor 0.0992020145 0.209141284 0.386000007
  diffuseRoughness 0

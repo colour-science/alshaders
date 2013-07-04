@@ -8,7 +8,7 @@ MayaShadingEngine
 
 alSurface
 {
- name als_ccoverbump
+ name TARGET_SURFACE
  diffuseStrength 1
  diffuseColor 0.180000007 0.180000007 0.180000007
  diffuseRoughness 0
@@ -93,7 +93,7 @@ mayaBump2D
  use_derivatives on
  gamma_correct on
  use_as "bump"
- shader als_ccoverbump
+ shader TARGET_SURFACE
 }
 
 alFractal

@@ -2,14 +2,14 @@
 MayaShadingEngine
 {
  name TARGET_SHADER
- beauty als_metallicpaint
+ beauty TARGET_SURFACE
  enable_matte off
  matte_color 0 0 0 0
 }
 
 alSurface
 {
- name als_metallicpaint
+ name TARGET_SURFACE
  diffuseStrength 1
  diffuseColor 0.0240000002 0.000935999386 0.000935999386
  diffuseRoughness 0

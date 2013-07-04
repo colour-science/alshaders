@@ -1,14 +1,14 @@
 MayaShadingEngine
 {
  name TARGET_SHADER
- beauty als_skin
+ beauty TARGET_SURFACE
  enable_matte off
  matte_color 0 0 0 0
 }
 
 alSurface
 {
- name als_skin
+ name TARGET_SURFACE
  diffuseStrength 1
  diffuseColor 0.460999995 0.303614587 0.198690996
  diffuseRoughness 0

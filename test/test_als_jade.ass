@@ -1,14 +1,14 @@
 MayaShadingEngine
 {
  name TARGET_SHADER
- beauty als_jade
+ beauty TARGET_SURFACE
  enable_matte off
  matte_color 0 0 0 0
 }
 
 alSurface
 {
- name als_jade
+ name TARGET_SURFACE
  diffuseStrength 1
  diffuseColor jade:alCombineColor2
  diffuseRoughness 0
