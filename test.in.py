@@ -45,7 +45,9 @@ for test_name,opaque in tests.items():
 	test_tmp.write(output)
 	test_tmp.close()
 
-	cmd = 'kick -t 2 -dp -dw -set ringShape.opaque %d -set shellShape.opaque %d -set driver_exr_beauty.filename "test/output/%s/%s.exr" test/test_tmp.ass' % (opaque, opaque, VERSION, test_name)
+	log = open('%s/log_%s.txt' % (output_dir, test_name), 'w')
+
+	cmd = 'kick -v 6 -t 2 -dp -dw -set ringShape.opaque %d -set shellShape.opaque %d -set driver_exr_beauty.filename "test/output/%s/%s.exr" test/test_tmp.ass' % (opaque, opaque, VERSION, test_name)
 
 	sys.stdout.write('%s...' % test_name)
 	sys.stdout.flush()
@@ -59,9 +61,11 @@ for test_name,opaque in tests.items():
 		result = t.interval
 	else:
 		print 'FAILED after %.02f seconds' % t.interval
-		for line in proc.stdout:
-			print line[:-1]
 		result = 0
+
+	for line in proc.stdout:
+		log.write(line)
+	log.close()
 
 	test_results[test_name] = result
 
