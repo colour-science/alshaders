@@ -1,0 +1,160 @@
+#! /Applications/Nuke6.3v4/NukeX6.3v4.app/../Nuke6.3v4.app/Contents/MacOS/Nuke6.3v4 -nx
+version 6.3 v4
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="22" w="1440" h="874" screen="0">
+        <splitter orientation="1">
+            <split size="910"/>
+            <splitter orientation="1">
+                <split size="40"/>
+                <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                    <page id="Toolbar.1"/>
+                </dock>
+                <split size="866"/>
+                <splitter orientation="2">
+                    <split size="565"/>
+                    <dock id="" activePageId="Viewer.1">
+                        <page id="Viewer.1"/>
+                    </dock>
+                    <split size="283"/>
+                    <dock id="" activePageId="DAG.1">
+                        <page id="DAG.1"/>
+                        <page id="Curve Editor.1"/>
+                        <page id="DopeSheet.1"/>
+                    </dock>
+                </splitter>
+            </splitter>
+            <split size="526"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name /Users/anders/code/alShaders/test/aovs.nk
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/refraction/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name refraction
+ selected true
+ xpos 683
+ ypos -80
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/indirect_specular_2/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name indirect_specular_2
+ xpos 578
+ ypos -84
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/indirect_specular/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name indirect_specular
+ xpos 476
+ ypos -86
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/indirect_diffuse/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name indirect_diffuse
+ xpos 378
+ ypos -83
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/direct_specular_2/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name direct_specular_2
+ xpos -40
+ ypos -78
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/direct_backlight/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name direct_backlight
+ xpos 73
+ ypos -74
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/direct_diffuse/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name direct_diffuse
+ xpos -263
+ ypos -83
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/sss/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name sss
+ xpos 180
+ ypos -75
+}
+push 0
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/direct_specular/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name direct_specular
+ xpos -152
+ ypos -79
+}
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/single_scatter/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name single_scatter
+ xpos 278
+ ypos -81
+}
+Merge2 {
+ inputs 10+1
+ operation plus
+ name Merge1
+ xpos 209
+ ypos 94
+}
+set N16d7d9d0 [stack 0]
+push $N16d7d9d0
+push $N16d7d9d0
+Read {
+ inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/beauty/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ name Read1
+ xpos -87
+ ypos 79
+}
+Viewer {
+ inputs 4
+ frame 1
+ input_process false
+ name Viewer1
+ xpos -287
+ ypos 208
+}
