@@ -1,7 +1,7 @@
 #include "Remap.h"
 #include <ai.h>
 
-AI_SHADER_NODE_EXPORT_METHODS(alFractal)
+AI_SHADER_NODE_EXPORT_METHODS(alFractal);
 
 enum NoiseSpaceEnum
 {
@@ -20,8 +20,22 @@ static const char* noiseSpaceNames[] =
 		NULL
 };
 
+enum NoiseMode
+{
+	NM_SCALAR=0,
+	NM_VECTOR
+};
+
+static const char* noiseModeNames[] = 
+{
+	"scalar",
+	"vector",
+	NULL
+};
+
 enum alNoiseParams
 {
+	p_mode,
 	p_space,
 	p_frequency,
 	p_scale,
@@ -41,6 +55,7 @@ enum alNoiseParams
 
 node_parameters
 {
+	AiParameterENUM("mode", 0, noiseModeNames);
 	AiParameterENUM("space", 0, noiseSpaceNames);
 	AiParameterFLT("frequency", 1.0f);
 	AiParameterPNT("scale", 1.0f, 1.0f, 1.0f);
@@ -71,6 +86,7 @@ node_loader
 
 struct ShaderData
 {
+	int mode;
 	int space;
 	float frequency;
 	AtVector scale;
@@ -97,6 +113,7 @@ node_finish
 node_update
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
+	data->mode = params[p_mode].INT;
 	data->space = params[p_space].INT;
 	data->frequency = params[p_frequency].FLT;
 	data->scale = params[p_scale].PNT;
@@ -149,35 +166,66 @@ shader_evaluate
 
 	P *= data->scale;
 
-	AtFloat n = 0.0f;
-	AtFloat amp = 1.0f;
-	AtFloat weight = 1;
-	AtFloat v;
-	for (int i=0; i < data->octaves; ++i)
+	if (data->mode == NM_SCALAR)
 	{
-		AtPoint PP = P;
-		if (distortion != 0.0f)
-			PP += distortion * AiVNoise3(P, 1, 0, 0);
-		v = AiPerlin3(PP);
-		if (data->turbulent) v = fabs(v);
-		if (data->ridged)
+		AtFloat n = 0.0f;
+		AtFloat amp = 1.0f;
+		AtFloat weight = 1;
+		AtFloat v;
+		for (int i=0; i < data->octaves; ++i)
 		{
-			v = ridgeOffset - v;
-			v *= v;
-			v *= weight;
-			weight = v * 2;
-			weight = clamp(weight, 0.0f, 1.0f);
+			AtPoint PP = P;
+			if (distortion != 0.0f)
+				PP += distortion * AiVNoise3(P, 1, 0, 0);
+			v = AiPerlin3(PP);
+			if (data->turbulent) v = fabs(v);
+			if (data->ridged)
+			{
+				v = ridgeOffset - v;
+				v *= v;
+				v *= weight;
+				weight = v * 2;
+				weight = clamp(weight, 0.0f, 1.0f);
+			}
+			n += v * amp;
+			amp *= data->gain;
+
+			P *= data->lacunarity;
 		}
-		n += v * amp;
-		amp *= data->gain;
+		RemapFloat r = REMAP_FLOAT_CREATE;
+		n = r.remap(n);
 
-		P *= data->lacunarity;
+		sg->out.RGB = AiColorLerp(n, color1, color2);
 	}
+	else
+	{
+		AtRGB n= rgb(0, 0, 0);
+		AtFloat amp = 1.0f;
+		AtRGB weight = rgb(0, 0, 0);
+		AtRGB v;
+		for (int i=0; i < data->octaves; ++i)
+		{
+			AtPoint PP = P;
+			if (distortion != 0.0f)
+				PP += distortion * AiVNoise3(P, 1, 0, 0);
+			v = rgb(AiVNoise3(PP, 1, 0, 0));
+			if (data->turbulent) v = fabs(v);
+			if (data->ridged)
+			{
+				v = ridgeOffset - v;
+				v *= v;
+				v *= weight;
+				weight = v * 2;
+				weight = clamp(weight, AI_RGB_BLACK, AI_RGB_WHITE);
+			}
+			n += v * amp;
+			amp *= data->gain;
 
-	RemapFloat r = REMAP_FLOAT_CREATE;
-	n = r.remap(n);
+			P *= data->lacunarity;
+		}
 
-	sg->out.RGB = AiColorLerp(n, color1, color2);
+		sg->out.RGB = n;
+	}
 }
 
 

@@ -6,6 +6,7 @@ class AEalFractalTemplate(alShadersTemplate):
         self.addSwatch()
         self.beginScrollLayout()
 
+        self.addControl('mode')
         self.addControl('space')
         self.addControl('scale')
         self.addControl('frequency')

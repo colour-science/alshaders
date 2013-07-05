@@ -1,0 +1,5 @@
+[node alColorSpace]
+    desc                    STRING      ""
+    maya.name               STRING      "alColorSpace"
+    maya.classification     STRING      "shader/utility"
+    maya.id                 INT         0x00116411

@@ -5,3 +5,6 @@ local.cmake
 .DS_Store
 .settings
 alshaders.sublime-workspace
+test/output
+test.py
+package.py

@@ -3,6 +3,8 @@
 #include <ai.h>
 #include <string>
 
+#include "alUtil.h"
+
 /// A structure representing a color coordinate system
 struct ColorSystem
 {
@@ -62,3 +64,12 @@ AtColor spectrumToXyz(const SpecFunc& sf)
 
 /// Function to convert an XYZ color to RGB
 AtRGB xyzToRgb(const ColorSystem& cs, const AtColor& xyz);
+
+/// Function to convert sRGB to linear
+AtRGB sRgbToLin(const AtRGB& c);
+
+/// Function to convert Cineon to linear
+AtRGB cineonToLin(const AtRGB& c);
+
+/// Function to convert ARRI LogC to linear
+AtRGB logCToLin(const AtRGB& c);

@@ -1,0 +1,354 @@
+#! /Applications/Nuke6.3v4/NukeX6.3v4.app/../Nuke6.3v4.app/Contents/MacOS/Nuke6.3v4 -nx
+version 6.3 v4
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="0" y="22" w="1440" h="874" screen="0">
+        <splitter orientation="1">
+            <split size="910"/>
+            <splitter orientation="1">
+                <split size="40"/>
+                <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                    <page id="Toolbar.1"/>
+                </dock>
+                <split size="866"/>
+                <splitter orientation="2">
+                    <split size="424"/>
+                    <dock id="" activePageId="Viewer.1">
+                        <page id="Viewer.1"/>
+                    </dock>
+                    <split size="424"/>
+                    <dock id="" activePageId="DAG.1">
+                        <page id="DAG.1"/>
+                        <page id="Curve Editor.1"/>
+                        <page id="DopeSheet.1"/>
+                    </dock>
+                </splitter>
+            </splitter>
+            <split size="526"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name /Users/anders/code/alShaders/test/test.nk
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode1
+ tile_color 0x8e8e3800
+ label 0.3.0
+ note_font_size 42
+ xpos -276
+ ypos -397
+ bdwidth 1090
+ bdheight 166
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode2
+ tile_color 0x7171c600
+ note_font_size 42
+ xpos -274
+ ypos -26
+ bdwidth 1090
+ bdheight 166
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode3
+ tile_color 0x8e8e3800
+ label "0.3.0b1\n"
+ note_font_size 42
+ xpos -276
+ ypos -209
+ bdwidth 1090
+ bdheight 166
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_bplastic_rough.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read11
+ xpos -264
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_bplastic_shiny.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read12
+ xpos -154
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_ccover_bump.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read13
+ xpos -44
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_glass.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read14
+ xpos 66
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_goldleaf.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read15
+ xpos 176
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_lyr_glass_goldleaf.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read16
+ xpos 286
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_merlot.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read17
+ xpos 396
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_skin.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read18
+ xpos 506
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_metallicpaint.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read19
+ xpos 616
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.1/als_jade.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read20
+ xpos 726
+ ypos 54
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_bplastic_rough.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read1
+ xpos -266
+ ypos -317
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_bplastic_rough.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read21
+ xpos -266
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_bplastic_shiny.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read2
+ xpos -156
+ ypos -317
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_bplastic_shiny.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read22
+ xpos -156
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_ccover_bump.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read30
+ xpos -46
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_glass.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read29
+ xpos 64
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_goldleaf.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read28
+ xpos 174
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_lyr_glass_goldleaf.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read27
+ xpos 284
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_merlot.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read26
+ xpos 394
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_skin.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read25
+ xpos 504
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_metallicpaint.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read24
+ xpos 614
+ ypos -129
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_jade.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read10
+ selected true
+ xpos 724
+ ypos -317
+}
+set Nf1a45a0 [stack 0]
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_metallicpaint.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read9
+ xpos 614
+ ypos -317
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_skin.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read8
+ xpos 504
+ ypos -317
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_merlot.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read7
+ xpos 394
+ ypos -317
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_lyr_glass_goldleaf.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read6
+ xpos 284
+ ypos -317
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_goldleaf.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read5
+ xpos 174
+ ypos -318
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_glass.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read4
+ xpos 64
+ ypos -317
+}
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.3.0/als_ccover_bump.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read3
+ xpos -46
+ ypos -321
+}
+push $Nf1a45a0
+Read {
+ inputs 0
+ file "\[file dirname \[value root.name]]/output/0.2.2/als_jade.exr"
+ format "400 400 0 0 400 400 1 "
+ origset true
+ name Read23
+ xpos 724
+ ypos -129
+}
+Viewer {
+ inputs 10
+ input_number 1
+ input_process false
+ name Viewer1
+ xpos 118
+ ypos 191
+}

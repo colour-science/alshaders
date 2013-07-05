@@ -1,0 +1,157 @@
+MayaShadingEngine
+{
+ name TARGET_SHADER
+ beauty TARGET_SURFACE
+ enable_matte off
+ matte_color 0 0 0 0
+}
+
+alSurface
+{
+ name TARGET_SURFACE
+ diffuseStrength 1
+ diffuseColor jade:alCombineColor2
+ diffuseRoughness 0
+ backlightStrength 0
+ backlightColor 0.180000007 0.180000007 0.180000007
+ emissionStrength 0
+ emissionColor 1 1 1
+ sssMix 1
+ sssRadius 0.5
+ sssRadiusColor jade:alCombineColor2
+ sssDensityScale 10
+ ssStrength 1
+ ssBalance 0.783505142
+ ssTargetColor jade:alCombineColor2
+ ssSpecifyCoefficients off
+ ssScattering 1 1 1
+ ssAbsorption 1 1 1
+ ssDensityScale 20
+ ssDirection 0.5
+ ssInScattering on
+ diffuseExtraSamples 0
+ diffuseEnableCaustics off
+ specular1Strength 1
+ specular1Color 1 1 1
+ specular1Roughness 0
+ specular1Ior 1.39999998
+ specular1RoughnessDepthScale 1.5
+ specular1ExtraSamples 0
+ specular1Normal 0 0 0
+ specular2Strength 0
+ specular2Color 1 1 1
+ specular2Roughness 0.300000012
+ specular2Ior 1.39999998
+ specular2RoughnessDepthScale 1.5
+ specular2ExtraSamples 0
+ specular2Normal 0 0 0
+ transmissionStrength 1
+ transmissionColor 1 1 1
+ transmissionLinkToSpecular1 on
+ transmissionRoughness 0.5
+ transmissionIor 1.39999998
+ transmissionRoughnessDepthScale 1.5
+ transmissionEnableCaustics on
+ transmissionExtraSamples 0
+ lightGroupsIndirect off
+ id1 0 0 0
+ id2 0 0 0
+ id3 0 0 0
+ id4 0 0 0
+ id5 0 0 0
+ id6 0 0 0
+ id7 0 0 0
+ id8 0 0 0
+ aiEnableMatte off
+ aiMatteColor 0 0 0
+ aiMatteColorA 0
+}
+
+alCombineColor
+{
+ name jade:alCombineColor2
+ input1 0.0337660573 0.229000002 0.0304570049
+ input2 0.28607434 0.528999984 0.281957
+ input3 jade:alRemapColor1.r
+ combineOp "lerp(1, 2, 3)"
+}
+
+alRemapColor
+{
+ name jade:alRemapColor1
+ input jade:alPattern1
+ gamma 0.200000003
+ saturation 1
+ hueOffset 0
+ contrast 1
+ contrastPivot 0.180000007
+ gain 1
+ exposure 0
+ mask 1
+}
+
+alPattern
+{
+ name jade:alPattern1
+ space "world"
+ axis "Y"
+ shape "saw"
+ frequency 0.5
+ offset jade:alCombineFloat1
+ color1 0 0 0
+ color2 1 1 1
+ P 0 0 0
+ RMPinputMin 0
+ RMPinputMax 1
+ RMPcontrast 1
+ RMPcontrastPivot 0.5
+ RMPbias 0.5
+ RMPgain 0.5
+ RMPoutputMin 0
+ RMPoutputMax 1
+ RMPclampEnable off
+ RMPthreshold off
+ RMPclampMin 0
+ RMPclampMax 1
+}
+
+alCombineFloat
+{
+ name jade:alCombineFloat1
+ input1 jade:alFractal1.r
+ input2 0
+ input3 0.5
+ combineOp "add 1+2"
+}
+
+alFractal
+{
+ name jade:alFractal1
+ mode "scalar"
+ space "world"
+ frequency 1
+ scale 0.5 0.5 0.5
+ time 0
+ octaves 8
+ distortion 0
+ lacunarity 2.12100005
+ gain 0.5
+ turbulent off
+ ridged off
+ ridgeOffset 0
+ RMPinputMin 0
+ RMPinputMax 1
+ RMPcontrast 1
+ RMPcontrastPivot 0.5
+ RMPbias 0.5
+ RMPgain 0.5
+ RMPoutputMin 0
+ RMPoutputMax 1
+ RMPclampEnable off
+ RMPthreshold off
+ RMPclampMin 0
+ RMPclampMax 1
+ color1 0 0 0
+ color2 1 1 1
+ P 0 0 0
+}

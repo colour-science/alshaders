@@ -1,0 +1,569 @@
+include "test/test_geo.ass.gz"
+
+driver_exr
+{
+ name driver_exr_beauty
+ filename "lb.0027.exr"
+ compression "zip"
+ half_precision off
+ tiled on
+ preserve_layer_name off
+ autocrop off
+ append off
+}
+
+options
+{
+ name options
+ AA_samples 1
+ AA_seed 1
+ AA_sample_clamp_affects_aovs off
+ threads 0
+ abort_on_error on
+ abort_on_license_fail off
+ skip_license_check off
+ error_color_bad_texture 1 0 0
+ error_color_bad_pixel 0 0 1
+ outputs 1 1 STRING 
+  "RGBA RGBA defaultArnoldFilter@gaussian_filter driver_exr_beauty" 
+ xres 400
+ yres 400
+ region_min_x -1
+ region_min_y -1
+ region_max_x -1
+ region_max_y -1
+ aspect_ratio 1
+ bucket_size 64
+ bucket_scanning "spiral"
+ ignore_textures off
+ ignore_shaders off
+ ignore_atmosphere off
+ ignore_lights off
+ ignore_shadows off
+ ignore_mis off
+ ignore_subdivision off
+ ignore_displacement off
+ ignore_bump off
+ ignore_motion_blur off
+ ignore_dof off
+ ignore_smoothing off
+ ignore_sss off
+ auto_transparency_depth 10
+ auto_transparency_threshold 0.99000001
+ texture_max_open_files 100
+ texture_max_memory_MB 1024
+ texture_per_file_stats off
+ texture_searchpath ""
+ texture_automip on
+ texture_autotile 64
+ texture_accept_untiled on
+ texture_accept_unmipped on
+ texture_conservative_lookups on
+ texture_glossy_blur 0
+ texture_diffuse_blur 0.03125
+ texture_max_sharpen 1.5
+ camera "renderCameraShape"
+ low_light_threshold 0.00100000005
+ shadow_terminator_fix on
+ sss_sample_factor 4
+ sss_bssrdf_samples 5
+ volume_indirect_samples 0
+ sss_subpixel_cache on
+ show_samples "off"
+ physically_based on
+ reference_time 0
+ shader_nan_checks off
+ max_subdivisions 999
+ procedural_searchpath ""
+ shader_searchpath ""
+ preserve_scene_data off
+ texture_gamma 1
+ light_gamma 1
+ shader_gamma 1
+ GI_diffuse_depth 2
+ GI_glossy_depth 2
+ GI_reflection_depth 1
+ GI_refraction_depth 10
+ GI_total_depth 12
+ GI_diffuse_samples 1
+ GI_glossy_samples 1
+ GI_refraction_samples 1
+ enable_aov_composition off
+ binary_ass on
+ declare frame constant FLOAT
+ frame 1
+ declare fps constant FLOAT
+ fps 24
+}
+
+persp_camera
+{
+ name renderCameraShape
+ fov 26.9914665 
+ focus_distance 1 
+ aperture_size 0 
+ aperture_blades 0
+ aperture_rotation 0
+ aperture_blade_curvature 0
+ uv_remap 0 0 0 0
+ matrix 
+  0.927183867 0 -0.37460658 0
+  -0.232686058 0.783693433 -0.575918198 0
+  0.293576747 0.621147752 0.726627946 0
+  7.68558693 20.6170597 19.0333252 1 
+ near_clip 0.100000001
+ far_clip 10000
+ screen_window_min -1 -1
+ screen_window_max 1 1
+ exposure 0
+}
+
+quad_light
+{
+ name areaLightShape1
+ vertices 4 1 POINT 1 1 0 1 -1 0 -1 -1 0 -1 1 0 
+ decay_type "quadratic"
+ resolution 512
+ matrix 
+  5.87823978e-16 -2.64732385 0 0
+  5.55762669e-16 0 2.50293255 0
+  -2.64732385 -5.87823978e-16 5.87823978e-16 0
+  -21.1366177 13.0263796 3.65992546 1 
+ color 1 1 1
+ intensity 1981.65137
+ exposure 0
+ cast_shadows on
+ cast_volumetric_shadows on
+ shadow_density 1
+ shadow_color 0 0 0
+ samples 2
+ normalize on
+ affect_diffuse on
+ affect_specular on
+ affect_volumetrics on
+ diffuse 1
+ specular 1
+ sss 1
+ indirect 1
+ max_bounces 999
+ volume_samples 2
+ declare lightGroup constant INT
+ lightGroup 1
+}
+
+quad_light
+{
+ name areaLightShape2
+ vertices 4 1 POINT 1 1 0 1 -1 0 -1 -1 0 -1 1 0 
+ decay_type "quadratic"
+ resolution 512
+ matrix 
+  -5.6572156 -0.523614109 1.43781435 0
+  3.19640446 -0.259103209 12.4821949 0
+  -0.478237063 5.83588171 0.243605778 0
+  11.1022902 37.8945084 -10.2493019 1 
+ color 1 1 1
+ intensity 1035.26636
+ exposure 0
+ cast_shadows on
+ cast_volumetric_shadows on
+ shadow_density 1
+ shadow_color 0 0 0
+ samples 2
+ normalize on
+ affect_diffuse on
+ affect_specular on
+ affect_volumetrics on
+ diffuse 1
+ specular 1
+ sss 1
+ indirect 1
+ max_bounces 999
+ volume_samples 2
+ declare lightGroup constant INT
+ lightGroup 2
+}
+
+polymesh
+{
+ name roomShape
+ nsides 6 1 UINT 4 4 4 4 4 4 
+ vidxs 24 1 b85UINT 
+ B $?ZE*$vMi2%XA8:&9@i2&9e54$$6<0
+
+ nidxs 24 1 b85UINT 
+ B $v2N*&9nA:'RU4J(k<'Z*.woj+G^c%
+
+ uvidxs 24 1 b85UINT 
+ B $?ZE*$vMi2%XA8:&:4\B'7Bt=$$6W?
+
+ vlist 8 1 b85POINT 
+ !aDq99$$$$&!89+]c$$$$&aDq9989+]caDq99!89+]c$$$$)aDq9989+]caDq99!89+]c$$$$&!aDq99$$$$(89+]c!aDq99$$$$&
+
+ nlist 24 1 b85VECTOR 
+ !$$$$$$$$$&aRT=c!$$$$$$$$$&aRT=c!$$$$$$$$$&aRT=c!$$$$$$$$$&aRT=czaRT=c!$$$$$$$$$&aRT=c!$$$$$$$$$&aRT=c!$$$$$$$$$&aRT=c!$$$$$$$$$'8Fcb8!$$$$$$$$$&8Fcb8!$$$$$$$$$&8Fcb8!$$$$$$$$$&8Fcb8z8Fcb8!$$$$$$$$$&8Fcb8!$$$$$$$$$&8Fcb8!$$$$$$$$$&8Fcb8zaRT=c!$$$$$$$$$&aRT=c!$$$$$$$$$&aRT=c!$$$$$$$$$&aRT=c!$$$$$$$$$&8Fcb8!$$$$$$$$$&8Fcb8!$$$$$$$$$&8Fcb8!$$$$$$$$$&8Fcb8!$$$$$$$$$&
+
+ uvlist 14 1 b85POINT2 
+ 82:0xz8<Nt.z82:0x8+HY88<Nt.8+HY882:0x89+]c8<Nt.89+]c82:0x8?r5N8<Nt.8?r5N82:0xy8<Nt.y8C@Knz8C@Kn8+HY87reTbz7reTb8+HY8
+
+ smoothing on
+ visibility 65535
+ sidedness 65535
+ receive_shadows on
+ self_shadows on
+ matrix 
+  50 0 0 0
+  0 50 0 0
+  0 0 50 0
+  0 25 0 1 
+ shader "aiStandard1SG" 
+ opaque on
+ sss_sample_spacing 0.100000001
+ sss_sample_distribution "blue_noise"
+ declare mtoa_shading_groups constant ARRAY NODE
+ mtoa_shading_groups "aiStandard1SG" 
+}
+
+
+gaussian_filter
+{
+ name defaultArnoldFilter@gaussian_filter
+ width 2
+}
+
+
+
+MayaShadingEngine
+{
+ name aiStandard1SG
+ beauty ai_walls
+ enable_matte off
+ matte_color 0 0 0 0
+}
+
+standard
+{
+ name ai_walls
+ Kd 1
+ Kd_color CCOL_rendering_equation
+ diffuse_roughness 0
+ Ks 0
+ Ks_color 0.425000012 0.425000012 0.425000012
+ specular_brdf "cook_torrance"
+ specular_roughness 0.4669047
+ specular_anisotropy 0.5
+ specular_rotation 0
+ Phong_exponent 10
+ Kr 0
+ Kr_color 1 1 1
+ reflection_exit_color 0 0 0
+ reflection_exit_use_environment off
+ Kt 0
+ Kt_color 1 1 1
+ transmittance 1 1 1
+ refraction_roughness 0
+ refraction_exit_color 0 0 0
+ refraction_exit_use_environment off
+ IOR 1
+ Kb 0
+ Fresnel off
+ Krn 0
+ specular_Fresnel off
+ Ksn 0
+ Fresnel_use_IOR off
+ Fresnel_affect_diff on
+ emission 0
+ emission_color 1 1 1
+ direct_specular 1
+ indirect_specular 1
+ direct_diffuse 1
+ indirect_diffuse 1
+ enable_glossy_caustics off
+ enable_reflective_caustics off
+ enable_refractive_caustics off
+ enable_internal_reflections on
+ Ksss 0
+ Ksss_color 1 1 1
+ sss_radius 0.100000001 0.100000001 0.100000001
+ bounce_factor 1
+ opacity 1 1 1
+ aov_emission "emission"
+ aov_direct_diffuse "direct_diffuse"
+ aov_direct_specular "direct_specular"
+ aov_indirect_diffuse "indirect_diffuse"
+ aov_indirect_specular "indirect_specular"
+ aov_reflection "reflection"
+ aov_refraction "refraction"
+ aov_sss "sss"
+}
+
+alCombineColor
+{
+ name CCOL_rendering_equation
+ input1 0.00999999978 0.00999999978 0.00999999978
+ input2 0.800000012 0.800000012 0.800000012
+ input3 COL_rendering_equation.r
+ combineOp "lerp(1, 2, 3)"
+}
+
+MayaFile
+{
+ name COL_rendering_equation
+ coverage 1 1
+ translateFrame 0 0
+ rotateFrame 0
+ mirrorU off
+ mirrorV on
+ wrapU on
+ wrapV on
+ stagger off
+ repeatUV 4 4
+ offsetUV 0 0
+ rotateUV 0
+ filename "/Users/anders/Documents/maya/projects/default/sourceimages/rendering_equation.jpg"
+ noiseUV 0 0
+ mipBias 0
+ filter "smart_bicubic"
+ useDefaultColor on
+ defaultColor 0.5 0.5 0.5
+ colorGain 0.691050589 0.691050589 0.691050589
+ colorOffset 0.0199999996 0.0199999996 0.0199999996
+ alphaGain 1
+ alphaOffset 0
+ alphaIsLuminance off
+ invert off
+}
+
+MayaShadingEngine
+{
+ name aiStandard6SG
+ beauty ai_ball
+ enable_matte off
+ matte_color 0 0 0 0
+}
+
+standard
+{
+ name ai_ball
+ Kd 1
+ Kd_color REMP_A
+ diffuse_roughness 0
+ Ks 0
+ Ks_color 1 1 1
+ specular_brdf "cook_torrance"
+ specular_roughness 0.4669047
+ specular_anisotropy 0.5
+ specular_rotation 0
+ Phong_exponent 10
+ Kr 0
+ Kr_color 1 1 1
+ reflection_exit_color 0 0 0
+ reflection_exit_use_environment off
+ Kt 0
+ Kt_color 1 1 1
+ transmittance 1 1 1
+ refraction_roughness 0
+ refraction_exit_color 0 0 0
+ refraction_exit_use_environment off
+ IOR 1
+ Kb 0
+ Fresnel off
+ Krn 0
+ specular_Fresnel off
+ Ksn 0
+ Fresnel_use_IOR off
+ Fresnel_affect_diff on
+ emission 0
+ emission_color 1 1 1
+ direct_specular 1
+ indirect_specular 1
+ direct_diffuse 1
+ indirect_diffuse 1
+ enable_glossy_caustics off
+ enable_reflective_caustics off
+ enable_refractive_caustics off
+ enable_internal_reflections on
+ Ksss 0
+ Ksss_color 1 1 1
+ sss_radius 0.100000001 0.100000001 0.100000001
+ bounce_factor 1
+ opacity 1 1 1
+ aov_emission "emission"
+ aov_direct_diffuse "direct_diffuse"
+ aov_direct_specular "direct_specular"
+ aov_indirect_diffuse "indirect_diffuse"
+ aov_indirect_specular "indirect_specular"
+ aov_reflection "reflection"
+ aov_refraction "refraction"
+ aov_sss "sss"
+}
+
+alRemapColor
+{
+ name REMP_A
+ input COL_A
+ gamma 0.455000013
+ saturation 1
+ hueOffset 0
+ contrast 1
+ contrastPivot 0.180000007
+ gain 1
+ exposure 0
+ mask 1
+}
+
+MayaFile
+{
+ name COL_A
+ coverage 1 1
+ translateFrame 0 0
+ rotateFrame 0
+ mirrorU off
+ mirrorV off
+ wrapU on
+ wrapV on
+ stagger off
+ repeatUV 1 1
+ offsetUV 0 0
+ rotateUV 0
+ filename "/Users/anders/Documents/maya/projects/default//sourceimages/A.png"
+ noiseUV 0 0
+ mipBias 0
+ filter "smart_bicubic"
+ useDefaultColor on
+ defaultColor 0.5 0.5 0.5
+ colorGain 1 1 1
+ colorOffset 0 0 0
+ alphaGain 1
+ alphaOffset 0
+ alphaIsLuminance off
+ invert off
+}
+
+MayaShadingEngine
+{
+ name aiStandard2SG
+ beauty ai_stand
+ enable_matte off
+ matte_color 0 0 0 0
+}
+
+standard
+{
+ name ai_stand
+ Kd 0.180000007
+ Kd_color 1 1 1
+ diffuse_roughness 0
+ Ks 0
+ Ks_color 1 1 1
+ specular_brdf "cook_torrance"
+ specular_roughness 0.4669047
+ specular_anisotropy 0.5
+ specular_rotation 0
+ Phong_exponent 10
+ Kr 0
+ Kr_color 1 1 1
+ reflection_exit_color 0 0 0
+ reflection_exit_use_environment off
+ Kt 0
+ Kt_color 1 1 1
+ transmittance 1 1 1
+ refraction_roughness 0
+ refraction_exit_color 0 0 0
+ refraction_exit_use_environment off
+ IOR 1
+ Kb 0
+ Fresnel off
+ Krn 0
+ specular_Fresnel off
+ Ksn 0
+ Fresnel_use_IOR off
+ Fresnel_affect_diff on
+ emission 0
+ emission_color 1 1 1
+ direct_specular 1
+ indirect_specular 1
+ direct_diffuse 1
+ indirect_diffuse 1
+ enable_glossy_caustics off
+ enable_reflective_caustics off
+ enable_refractive_caustics off
+ enable_internal_reflections on
+ Ksss 0
+ Ksss_color 1 1 1
+ sss_radius 0.100000001 0.100000001 0.100000001
+ bounce_factor 1
+ opacity 1 1 1
+ aov_emission "emission"
+ aov_direct_diffuse "direct_diffuse"
+ aov_direct_specular "direct_specular"
+ aov_indirect_diffuse "indirect_diffuse"
+ aov_indirect_specular "indirect_specular"
+ aov_reflection "reflection"
+ aov_refraction "refraction"
+ aov_sss "sss"
+}
+
+MayaShadingEngine
+{
+ name aiStandard5SG
+ beauty ai_dots
+ enable_matte off
+ matte_color 0 0 0 0
+}
+
+standard
+{
+ name ai_dots
+ Kd 0.0900000036
+ Kd_color 1 1 1
+ diffuse_roughness 0
+ Ks 0
+ Ks_color 1 1 1
+ specular_brdf "cook_torrance"
+ specular_roughness 0.4669047
+ specular_anisotropy 0.5
+ specular_rotation 0
+ Phong_exponent 10
+ Kr 0
+ Kr_color 1 1 1
+ reflection_exit_color 0 0 0
+ reflection_exit_use_environment off
+ Kt 0
+ Kt_color 1 1 1
+ transmittance 1 1 1
+ refraction_roughness 0
+ refraction_exit_color 0 0 0
+ refraction_exit_use_environment off
+ IOR 1
+ Kb 0
+ Fresnel off
+ Krn 0
+ specular_Fresnel off
+ Ksn 0
+ Fresnel_use_IOR off
+ Fresnel_affect_diff on
+ emission 0
+ emission_color 1 1 1
+ direct_specular 1
+ indirect_specular 1
+ direct_diffuse 1
+ indirect_diffuse 1
+ enable_glossy_caustics off
+ enable_reflective_caustics off
+ enable_refractive_caustics off
+ enable_internal_reflections on
+ Ksss 0
+ Ksss_color 1 1 1
+ sss_radius 0.100000001 0.100000001 0.100000001
+ bounce_factor 1
+ opacity 1 1 1
+ aov_emission "emission"
+ aov_direct_diffuse "direct_diffuse"
+ aov_direct_specular "direct_specular"
+ aov_indirect_diffuse "indirect_diffuse"
+ aov_indirect_specular "indirect_specular"
+ aov_reflection "reflection"
+ aov_refraction "refraction"
+ aov_sss "sss"
+}

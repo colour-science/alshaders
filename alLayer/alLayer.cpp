@@ -57,13 +57,15 @@ node_finish
 
 }
 
-#define NUM_AOVs 31
+#define NUM_AOVs 33
 static const char* AOVs[NUM_AOVs] = {
 	"diffuse_color",
 	"direct_diffuse",
 	"direct_diffuse_raw",
 	"indirect_diffuse",
 	"indirect_diffuse_raw",
+	"direct_backlight",
+	"indirect_backlight",
 	"direct_specular",
 	"indirect_specular",
 	"direct_specular_2",
@@ -95,29 +97,10 @@ static const char* AOVs[NUM_AOVs] = {
 
 node_update
 {
-	AiAOVRegister("diffuse_color", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("direct_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("indirect_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("direct_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("indirect_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("indirect_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("direct_specular_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("indirect_specular_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("single_scatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("sss", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("refraction", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("emission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("uv", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("depth", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("light_group_1", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("light_group_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("light_group_3", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("light_group_4", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("light_group_5", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("light_group_6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("light_group_7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-	AiAOVRegister("light_group_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	for (int i=0; i < NUM_AOVs; ++i)
+	{
+		AiAOVRegister(AOVs[i], AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+	}
 }
 
 shader_evaluate

@@ -7,7 +7,6 @@
 
 #include "alUtil.h"
 #include "MIS.h"
-#include "BeckmannMicrofacet.h"
 #include "alSurface.h"
 
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
@@ -48,12 +47,23 @@ static const char* idAovNames[NUM_ID_AOVS] =
     "id_8"
 };
 
+inline void flipNormals(AtShaderGlobals* sg)
+{
+    sg->Nf = -sg->Nf;
+    sg->Ngf = -sg->Ngf;
+}
+
 enum alSurfaceParams
 {
     // diffuse
     p_diffuseStrength=0,
     p_diffuseColor,
     p_diffuseRoughness,
+
+    // backlight
+    p_backlightStrength,
+    p_backlightColor,
+
     p_emissionStrength,
     p_emissionColor,
 
@@ -113,6 +123,10 @@ enum alSurfaceParams
     p_id7,
     p_id8,
 
+    p_aiEnableMatte,
+    p_aiMatteColor,
+    p_aiMatteColorA,
+
     p_bump
 };
 
@@ -121,6 +135,10 @@ node_parameters
     AiParameterFLT("diffuseStrength", 1.0f );
     AiParameterRGB("diffuseColor", 0.18f, 0.18f, 0.18f );
     AiParameterFLT("diffuseRoughness", 0.0f );
+
+    AiParameterFLT("backlightStrength", 0.0f );
+    AiParameterRGB("backlightColor", 0.18f, 0.18f, 0.18f );
+
     AiParameterFLT("emissionStrength", 0.0f );
     AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
@@ -179,6 +197,10 @@ node_parameters
     AiParameterRGB("id7", 0.0f, 0.0f, 0.0f);
     AiParameterRGB("id8", 0.0f, 0.0f, 0.0f);
 
+    AiParameterBOOL("aiEnableMatte", false);
+    AiParameterRGB("aiMatteColor", 0.0f, 0.0f, 0.0f);
+    AiParameterFlt("aiMatteColorA", 0.0f);
+
 }
 
 
@@ -201,6 +223,7 @@ node_initialize
     data->glossy_sampler = NULL;
     data->glossy2_sampler = NULL;
     data->refraction_sampler = NULL;
+    data->backlight_sampler = NULL;
 };
 
 node_finish
@@ -213,6 +236,7 @@ node_finish
         AiSamplerDestroy(data->glossy_sampler);
         AiSamplerDestroy(data->glossy2_sampler);
         AiSamplerDestroy(data->refraction_sampler);
+        AiSamplerDestroy(data->backlight_sampler);
 
         AiNodeSetLocalData(node, NULL);
         delete data;
@@ -225,8 +249,10 @@ node_update
     // set up AOVs
     AiAOVRegister("diffuse_color", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("direct_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("direct_backlight", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("direct_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("indirect_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("indirect_backlight", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("indirect_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("indirect_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
@@ -271,23 +297,17 @@ node_update
     data->GI_refraction_samples = AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT;
     data->refraction_samples2 = SQR(data->GI_refraction_samples);
 
-    // set up sample offsets for deep groups
-    // order of execution is glossy->glossy2->diffuse->refraction
-    data->glossy_sample_offset = 0;
-    data->glossy2_sample_offset = data->glossy_sample_offset + data->glossy_samples2;
-    data->diffuse_sample_offset = data->glossy2_sample_offset + data->glossy2_samples2;
-    data->refraction_sample_offset = data->diffuse_sample_offset + data->diffuse_samples2;
-    data->total_samples = data->refraction_sample_offset + data->refraction_samples2;
-
     // setup samples
     AiSamplerDestroy(data->diffuse_sampler);
     AiSamplerDestroy(data->glossy_sampler);
     AiSamplerDestroy(data->glossy2_sampler);
     AiSamplerDestroy(data->refraction_sampler);
+    AiSamplerDestroy(data->backlight_sampler);
     data->diffuse_sampler = AiSampler(data->GI_diffuse_samples, 2);
     data->glossy_sampler = AiSampler(data->GI_glossy_samples, 2);
     data->glossy2_sampler = AiSampler(data->GI_glossy_samples, 2);
     data->refraction_sampler = AiSampler(data->GI_refraction_samples, 2);
+    data->backlight_sampler = AiSampler(data->GI_diffuse_samples, 2);
 
     // Get all the light nodes in the scene and try and find their light group parameter
     // we'll store this based on the light pointer for fast access during rendering
@@ -444,6 +464,7 @@ shader_evaluate
     // Initialize parameter temporaries
     // TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
     AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
+    AtRGB backlightColor = AiShaderEvalParamRGB(p_backlightColor) * AiShaderEvalParamFlt(p_backlightStrength);
     float diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
     bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
@@ -453,13 +474,13 @@ shader_evaluate
     float sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
     AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
     AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
-    AtVector specular1Normal = sg->N;
+    AtVector specular1Normal = sg->Nf;
     if (data->specular1NormalConnected)
     {
         specular1Normal = AiShaderEvalParamVec(p_specular1Normal);
     }
 
-    AtVector specular2Normal = sg->N;
+    AtVector specular2Normal = sg->Nf;
     if (data->specular2NormalConnected)
     {
         specular2Normal = AiShaderEvalParamVec(p_specular2Normal);
@@ -480,26 +501,40 @@ shader_evaluate
 
     bool transmissionEnableCaustics = AiShaderEvalParamBool(p_transmissionEnableCaustics);
 
+    // Grab the roughness from the previous surface and make sure we're slightly rougher than it to avoid glossy-glossy fireflies
+    float alsPreviousRoughness = 0.05f;
+    AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
+    if (sg->Rr > 0)
+    {
+        roughness = std::max(roughness, alsPreviousRoughness*specular1RoughnessDepthScale);
+        roughness2 = std::max(roughness2, alsPreviousRoughness*specular2RoughnessDepthScale);
+        //transmissionRoughness = std::max(transmissionRoughness, alsPreviousRoughness*transmissionRoughnessDepthScale);
+    }
+
     // clamp roughnesses
-    roughness = std::max(0.0001f, roughness);
-    roughness2 = std::max(0.0001f, roughness2);
-    transmissionRoughness = std::max(0.0001f, transmissionRoughness);
+    roughness = std::max(0.000001f, roughness);
+    roughness2 = std::max(0.000001f, roughness2);
+    transmissionRoughness = std::max(0.000001f, transmissionRoughness);
 
     // Initialize result temporaries
     AtRGB result_diffuseDirect = AI_RGB_BLACK;
     AtRGB result_diffuseDirectRaw = AI_RGB_BLACK;
+    AtRGB result_backlightDirect = AI_RGB_BLACK;
     AtRGB result_glossyDirect = AI_RGB_BLACK;
     AtRGB result_glossy2Direct = AI_RGB_BLACK;
     AtRGB result_diffuseIndirect = AI_RGB_BLACK;
     AtRGB result_diffuseIndirectRaw = AI_RGB_BLACK;
+    AtRGB result_backlightIndirect = AI_RGB_BLACK;
     AtRGB result_glossyIndirect = AI_RGB_BLACK;
     AtRGB result_glossy2Indirect = AI_RGB_BLACK;
     AtRGB result_sss = AI_RGB_BLACK;
     AtRGB result_ss = AI_RGB_BLACK;
     AtColor result_transmission = AI_RGB_BLACK;
     AtColor result_emission = AI_RGB_BLACK;
+
     // Set up flags to early out of calculations based on where we are in the ray tree
     bool do_diffuse = true;
+    bool do_backlight = true;
     bool do_glossy = true;
     bool do_glossy2 = true;
     bool do_ss = true;
@@ -516,42 +551,38 @@ shader_evaluate
         sssMix = 0.0f;
     }
 
-    if ( sg->Rr_diff > data->GI_diffuse_depth || maxh(diffuseColor) < IMPORTANCE_EPS || sssMix == 1.0f)
+    if (    maxh(diffuseColor) < IMPORTANCE_EPS // disable diffuse if contribution is small
+            || sssMix == 1.0f)                  // disable diffuse if sss mix is at 100%
     {
         do_diffuse = false;
     }
 
+    if (    maxh(backlightColor) < IMPORTANCE_EPS   // disable backlight if contribution is small
+        || sssMix == 1.0f)                          // disable backlight if sss mix is at 100%
+    {
+        do_backlight = false;
+    }
 
-    if (sg->Rr_gloss > data->GI_glossy_depth
-                || (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
-                || maxh(specular1Color) < IMPORTANCE_EPS                // skip evaluations that aren't important
-                || (sg->Rr_refr > 1 && !transmissionEnableCaustics))    // disable glossy->transmitted caustics
+    if (    (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
+            || maxh(specular1Color) < IMPORTANCE_EPS             // disable glossy if contribution is small
+            || (sg->Rr_refr > 1 && !transmissionEnableCaustics)) // disable glossy->transmitted caustics
     {
         do_glossy = false;
     }
 
-    if (sg->Rr_gloss > data->GI_glossy_depth
-            || (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
-            || maxh(specular2Color) < IMPORTANCE_EPS                // skip evaluations that aren't important
-            || (sg->Rr_refr > 1 && !transmissionEnableCaustics))    // disable glossy->transmitted caustics
+    if (    (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
+            || maxh(specular2Color) < IMPORTANCE_EPS             // disable glossy2 if contribution is small
+            || (sg->Rr_refr > 1 && !transmissionEnableCaustics)) // disable glossy->transmitted caustics
     {
         do_glossy2 = false;
-    }
-
-    // Grab the roughness from the previous surface and make sure we're slightly rougher than it to avoid glossy-glossy fireflies
-    float alsPreviousRoughness = 0.05f;
-    AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
-    if (sg->Rr > 0)
-    {
-        roughness = std::max(roughness, alsPreviousRoughness*specular1RoughnessDepthScale);
-        roughness2 = std::max(roughness2, alsPreviousRoughness*specular2RoughnessDepthScale);
-        transmissionRoughness = std::max(transmissionRoughness, alsPreviousRoughness*transmissionRoughnessDepthScale);
     }
 
     // make sure diffuse and transmission can't sum > 1
     transmissionColor *= 1.0f - maxh(diffuseColor);
 
-    if ((sg->Rr_diff > 0) || maxh(transmissionColor) < IMPORTANCE_EPS)
+
+    if (    (sg->Rr_diff > 0)                               // disable transmitted caustics
+            || maxh(transmissionColor) < IMPORTANCE_EPS)    // disable transmission if contribution is small
     {
         do_transmission = false;
     }
@@ -560,6 +591,7 @@ shader_evaluate
     AtVector U, V;
     AiBuildLocalFramePolar(&U, &V, &sg->N);
 
+    // View direction, omega_o
     AtVector wo = -sg->Rd;
 
     // prepare temporaries for light group calculation
@@ -571,25 +603,13 @@ shader_evaluate
     AtRGB result_directGroup[NUM_LIGHT_GROUPS];
     for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
     bool doDeepGroups = data->lightGroupsIndirect;
-    int idx = 0;
 
-#define DEEP_DEBUG_DEPTH 5
-#ifdef DEEP_DEBUG    
-    AtRGB* deepDebugPtr = NULL;
-#endif
-    if (doDeepGroups && sg->Rt & AI_RAY_CAMERA)
+    if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
     {
         // if this is a camera ray allocate the group storage
-        deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS*data->total_samples);
-        memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS*data->total_samples);
+        deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+        memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
         AiStateSetMsgPtr("als_deepGroupPtr", deepGroupPtr);
-
-#ifdef DEEP_DEBUG
-        // for debugging...
-        deepDebugPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*DEEP_DEBUG_DEPTH * 5);
-        memset(deepDebugPtr, 0, sizeof(AtRGB)*DEEP_DEBUG_DEPTH * 5);
-        AiStateSetMsgPtr("als_deepDebugPtr", deepDebugPtr);
-#endif
     }
     else if (doDeepGroups)
     {
@@ -597,12 +617,6 @@ shader_evaluate
         // if the pointer hasn't been set we're being called from a BSDF that doesn't have deep group support
         // so don't try and do it or we'll be in (crashy) trouble!
         if (!AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr)) doDeepGroups = false;
-        // Get the current sample index from the state
-        // This wil be overriden if we're in a child event
-        if (!AiStateGetMsgInt("als_sampleIndex", &idx)) doDeepGroups = false;
-#ifdef DEEP_DEBUG
-        AiStateGetMsgPtr("als_deepDebugPtr", (void**)&deepDebugPtr);
-#endif
     }
 
     // Accumulator for transmission integrated according to the specular1 brdf. Will be used to attenuate diffuse,
@@ -615,16 +629,20 @@ shader_evaluate
     AtRGB deepGroupsGlossy2[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsDiffuse[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsTransmission[NUM_LIGHT_GROUPS];
+    AtRGB deepGroupsBacklight[NUM_LIGHT_GROUPS];
     memset(deepGroupsGlossy, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsGlossy2, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsDiffuse, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsTransmission, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
+    memset(deepGroupsBacklight, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
     int count = 0;
 
     // Begin illumination calculation
 
     // Create the BRDF data structures for MIS
+    // {
     AtVector Nold = sg->N;
+    AtVector Nfold = sg->Nf;
     sg->N = sg->Nf = specular1Normal;
     void* mis;
     mis = GlossyMISCreateData(sg,&U,&V,roughness,roughness);
@@ -649,62 +667,83 @@ shader_evaluate
     brdfw2.kr = 0.0f;
 
     sg->N = Nold;
+    
+    void* dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
 
-    void* dmis;
-    dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
-    BrdfData_wrap brdfd;
-    brdfd.brdf_data = dmis;
-    brdfd.sg = sg;
-    brdfd.eta = eta;
-    brdfd.V = wo;
-    brdfd.N = sg->N;
-    brdfd.kr = 0.0f;
-
+    if (do_backlight) sg->fhemi = false;
+    flipNormals(sg);
+    void* bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
+    flipNormals(sg);
+    // }
+    
     // Light loop
     AiLightsPrepare(sg);
     if (doDeepGroups || (sg->Rt & AI_RAY_CAMERA)) 
     {
-        AtRGB LdiffuseDirect, LspecularDirect, Lspecular2Direct;
+        AtRGB LdiffuseDirect, LbacklightDirect, LspecularDirect, Lspecular2Direct;
         while(AiLightsGetSample(sg))
         {
+            // get the group assigned to this light from the hash table using the light's pointer
             int lightGroup = data->lightGroups[sg->Lp];
+            // per-light specular and diffuse strength multipliers
+            float specular_strength = AiLightGetSpecular(sg->Lp);
+            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
             if (do_glossy)
             {
-                sg->N = sg->Nf = specular1Normal;
+                // override the specular normal
+                sg->Nf = specular1Normal;
+                // evaluate this light sample
                 LspecularDirect =
-                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
+                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+                    * specular_strength;
+                // if the light is assigned a valid group number, add this sample's contribution to that light group
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += LspecularDirect * specular1Color;
                 }
+                // accumulate the result
                 result_glossyDirect += LspecularDirect;
-                sg->N = Nold;
+                // put back the original surface normal
+                sg->Nf = Nfold;
             }
             if (do_glossy2)
             {
-                sg->N = sg->Nf = specular2Normal;
+                sg->Nf = specular2Normal;
                 AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color));
                 Lspecular2Direct =
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                                        * r;
+                                        * r * specular_strength;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += Lspecular2Direct * specular2Color;
                 }
                 result_glossy2Direct += Lspecular2Direct;
-                sg->N = Nold;
+                sg->Nf = Nfold;
             }
+            AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
             if (do_diffuse)
             {
-                AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
                 LdiffuseDirect =
-                AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * r;
+                    AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+                                        * r * diffuse_strength;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += LdiffuseDirect * diffuseColor;
                 }
                 result_diffuseDirect += LdiffuseDirect;
+            }
+            if (do_backlight)
+            {
+                flipNormals(sg);
+                LbacklightDirect = 
+                    AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+                                        * r * diffuse_strength;
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
+                }
+                result_backlightDirect += LbacklightDirect;
+                flipNormals(sg);
             }
         }
     }
@@ -712,30 +751,48 @@ shader_evaluate
     {
         while(AiLightsGetSample(sg))
         {
+            float specular_strength = AiLightGetSpecular(sg->Lp);
+            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
             if (do_glossy)
             {
                 result_glossyDirect +=
-                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap);
+                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+                    * specular_strength;
             }
             if (do_glossy2)
             {
                 result_glossy2Direct +=
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                                        * (1.0f - brdfw.kr*maxh(specular1Color));
+                                        * (1.0f - brdfw.kr*maxh(specular1Color)) 
+                                        * specular_strength;
             }
             if (do_diffuse)
             {
                 result_diffuseDirect +=
                 AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
                                         * (1.0f - brdfw.kr*maxh(specular1Color))
-                                        * (1.0f - brdfw2.kr*maxh(specular2Color));
+                                        * (1.0f - brdfw2.kr*maxh(specular2Color))
+                                        * diffuse_strength;
+            }
+            if (do_backlight)
+            {
+                flipNormals(sg);
+                result_backlightDirect +=
+                AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+                    * (1.0f - brdfw.kr*maxh(specular1Color))
+                    * (1.0f - brdfw2.kr*maxh(specular2Color))
+                    * diffuse_strength;
+                flipNormals(sg);
             }
         }
     }
 
+    sg->fhemi = true;
+
     // Multiply by the colors
     result_diffuseDirectRaw = result_diffuseDirect;
     result_diffuseDirect *= diffuseColor;
+    result_backlightDirect *= backlightColor;
     result_glossyDirect *= specular1Color;
     result_glossy2Direct *= specular2Color;       
 
@@ -746,26 +803,21 @@ shader_evaluate
     AtScrSample scrs;
     AtVector H;
     float kr=1, kt=1;
-    AtRGB dgL[NUM_LIGHT_GROUPS];
 
-    if ((sg->Rr_gloss < data->GI_glossy_depth) && do_glossy)
+    // indirect_specular
+    // -----------------
+    if (do_glossy)
     {
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti = 0.0f;
         AiStateSetMsgFlt("alsPreviousRoughness", roughness);
+        sg->Nf = specular1Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
             wi = GlossyMISSample(mis, samples[0], samples[1]);
             if (AiV3Dot(wi,specular1Normal) > 0.0f)
             {
-                // if we're in a camera ray, pass the sample index down to the child SG
-                if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-                {
-                    idx = count;
-                    AiStateSetMsgInt("als_sampleIndex", idx);
-                }
-
                 // get half-angle vector for fresnel
                 wi_ray.dir = wi;
                 AiV3Normalize(H, wi+brdfw.V);
@@ -773,22 +825,25 @@ shader_evaluate
                 kti += kr;
                 if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
-                    AiTrace(&wi_ray, &scrs);
-                    AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
-                    result_glossyIndirect += scrs.color * f;
-
-                    // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
+                    // if we're in a camera ray, pass the sample index down to the child SG
+                    if (AiTrace(&wi_ray, &scrs))
                     {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
+                        result_glossyIndirect += scrs.color * f;
+
+                        // accumulate the lightgroup contributions calculated by the child shader
+                        if (doDeepGroups)
                         {
-                            deepGroupsGlossy[i] += deepGroupPtr[i*data->total_samples+idx] * f;
+                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                            {
+                                deepGroupsGlossy[i] += deepGroupPtr[i] * f;
+                            }
                         }
                     }
                 }
             }
-            count++;
         }
+        sg->Nf = Nfold;
         result_glossyIndirect *= AiSamplerGetSampleInvCount(sampit);
         kti *= AiSamplerGetSampleInvCount(sampit);
         kti = 1.0f - kti*maxh(specular1Color);
@@ -804,47 +859,47 @@ shader_evaluate
 
     } // if (do_glossy)
 
-    if ((sg->Rr_gloss < data->GI_glossy_depth) && do_glossy2)
+    // indirect_specular2
+    // ------------------
+    if (do_glossy2)
     {
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti2 = 0.0f;
         AiStateSetMsgFlt("alsPreviousRoughness", roughness2);
+        sg->Nf = specular2Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
             wi = GlossyMISSample(mis2, samples[0], samples[1]);
             if (AiV3Dot(wi,specular2Normal) > 0.0f)
             {
-                // if we're in a camera ray, pass the sample index down to the child SG
-                if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-                {
-                    idx = count;
-                    AiStateSetMsgInt("als_sampleIndex", idx);
-                }
-
                 wi_ray.dir = wi;
                 AiV3Normalize(H, wi+brdfw2.V);
                 // add the fresnel for this layer
                 kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
                 if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
-                    AiTrace(&wi_ray, &scrs);
-                    AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
-                    result_glossy2Indirect += scrs.color*f;
-                    kti2 += kr; 
-                    
-                    // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
+                    if (AiTrace(&wi_ray, &scrs))
                     {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
+                        result_glossy2Indirect += scrs.color*f;
+                        kti2 += kr; 
+                        
+                        // accumulate the lightgroup contributions calculated by the child shader
+                        if (doDeepGroups)
                         {
-                            deepGroupsGlossy2[i] += deepGroupPtr[i*data->total_samples+idx] * f;
+                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                            {
+                                deepGroupsGlossy2[i] += deepGroupPtr[i] * f;
+                            }
                         }
                     }
                 }
+
+                
             }
-            count++;
         }
+        sg->Nf = Nfold;
         result_glossy2Indirect*= AiSamplerGetSampleInvCount(sampit);
         kti2 *= AiSamplerGetSampleInvCount(sampit);
         kti2 = 1.0f - kti2*maxh(specular2Color);
@@ -859,27 +914,32 @@ shader_evaluate
         }
     } // if (do_glossy2)
 
-    if ((sg->Rr_diff < data->GI_diffuse_depth) && kti*kti2*maxh(diffuseColor) > IMPORTANCE_EPS)
+    // indirect_diffuse
+    // ----------------
+    if (do_diffuse && kti*kti2*maxh(diffuseColor) > IMPORTANCE_EPS)
     {
         float kr = kti*kti2;
         AtSamplerIterator* sampit = AiSamplerIterator(data->diffuse_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
         while (AiSamplerGetSample(sampit, samples))
         {
-            // if we're in a camera ray, pass the sample index down to the child SG
-            if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-            {
-                idx = count;
-                AiStateSetMsgInt("als_sampleIndex", idx);
-            }
+            // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
+            float stheta = sqrtf(samples[0]);
+            float phi = AI_PITIMES2 * samples[1];
+            wi.x = stheta * cosf(phi);
+            wi.y = stheta * sinf(phi);
+            wi.z = sqrtf(1.0f - samples[0]);
+            AiV3RotateToFrame(wi, U, V, sg->Nf);
 
-            // FIXME: Why do we sometimes generate samples that have pdf 0?
-            wi = AiOrenNayarMISSample(dmis, samples[0], samples[1]);
-            float p = AiOrenNayarMISPDF(dmis, &wi);
-            if (p > 0.0f)
+            float cos_theta = AiV3Dot(wi, sg->Nf);
+            if (cos_theta <= 0.0f) continue;
+
+            float p = cos_theta * AI_ONEOVERPI;
+            
+            // trace the ray
+            wi_ray.dir = wi;
+            if (AiTrace(&wi_ray, &scrs))
             {
-                wi_ray.dir = wi;
-                AiTrace(&wi_ray, &scrs);
                 AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
                 result_diffuseIndirectRaw += scrs.color * f;
 
@@ -888,12 +948,11 @@ shader_evaluate
                 {
                     for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                     {
-                        deepGroupsDiffuse[i] += deepGroupPtr[i*data->total_samples+idx] * f;
+                        deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
                     }
                 }
             }
-
-            count++;
+            
         }
         result_diffuseIndirectRaw *= AiSamplerGetSampleInvCount(sampit);
         result_diffuseIndirect = result_diffuseIndirectRaw * diffuseColor;
@@ -907,22 +966,8 @@ shader_evaluate
         }
     } // if (do_diffuse)
 
-
-    // Emission
-    result_emission = emissionColor;
-
-    // Diffusion multiple scattering
-    if (do_sss)
-    {
-        result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor * kti * kti2;
-    }
-
-    // blend sss and direct diffuse
-    result_diffuseDirect *= (1-sssMix);
-    result_diffuseIndirect *= (1-sssMix);
-    result_sss *= sssMix;
-
-    // Refraction
+    // refraction
+    // ----------
     if (do_transmission)
     {
         double samples[2];
@@ -943,13 +988,6 @@ shader_evaluate
 
         while (AiSamplerGetSample(sampit, samples))
         {
-            // if we're in a camera ray, pass the sample index down to the child SG
-            if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-            {
-                idx = count;
-                AiStateSetMsgInt("als_sampleIndex", idx);
-            }
-
             // generate a microfacet normal, m
             // eq. 35,36
             float alpha2 = transmissionRoughness*transmissionRoughness;
@@ -993,59 +1031,61 @@ shader_evaluate
                 float pdf = pm * (transmissionIor * transmissionIor) * fabsf(cosHI) / Ht2;
 
                 wi_ray.dir = wi;
-                AiTrace(&wi_ray, &sample);
-                AtRGB transmittance = AI_RGB_WHITE;
-                if (maxh(sigma_t) > 0.0f && !inside)
+                if (AiTrace(&wi_ray, &sample))
                 {
-                    transmittance.r = fast_exp(-sample.z * sigma_t.r);
-                    transmittance.g = fast_exp(-sample.z * sigma_t.g);
-                    transmittance.b = fast_exp(-sample.z * sigma_t.b);
-                }
-                AtRGB f = brdf/pdf * transmittance;
-                result_transmission += sample.color * f;
-                // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
-                {
-                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    AtRGB transmittance = AI_RGB_WHITE;
+                    if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        deepGroupsTransmission[i] += deepGroupPtr[i*data->total_samples+idx] * f;
+                        transmittance.r = fast_exp(-sample.z * sigma_t.r);
+                        transmittance.g = fast_exp(-sample.z * sigma_t.g);
+                        transmittance.b = fast_exp(-sample.z * sigma_t.b);
+                    }
+                    AtRGB f = brdf/pdf * transmittance;
+                    result_transmission += sample.color * f;
+                    // accumulate the lightgroup contributions calculated by the child shader
+                    if (doDeepGroups)
+                    {
+                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        {
+                            deepGroupsTransmission[i] += deepGroupPtr[i] * f;
+                        }
+                    }
+
+                    // single scattering
+                    if (ssStrength > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside && ssInScattering)
+                    {
+                        AtVector N = sg->N;
+                        sg->N = m;
+                        result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor) * ssStrength;
+                        sg->N = N;
                     }
                 }
-
-                // single scattering
-                if (ssStrength > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside && ssInScattering)
-                {
-                    AtVector N = sg->N;
-                    sg->N = m;
-                    result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor) * ssStrength;
-                    sg->N = N;
-                }
-
-
             }
             else if (AiV3IsZero(wi)) // total internal reflection
             {
                 wi_ray.dir = R;
-                AiTrace(&wi_ray, &sample);
-                AtRGB transmittance = AI_RGB_WHITE;
-                if (maxh(sigma_t) > 0.0f && !inside)
+                if (AiTrace(&wi_ray, &sample))
                 {
-                    transmittance.r = fast_exp(-sample.z * sigma_t.r);
-                    transmittance.g = fast_exp(-sample.z * sigma_t.g);
-                    transmittance.b = fast_exp(-sample.z * sigma_t.b);
-                }
-                result_transmission += sample.color * transmittance;
-                // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
-                {
-                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    AtRGB transmittance = AI_RGB_WHITE;
+                    if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        deepGroupsTransmission[i] += deepGroupPtr[i*data->total_samples+idx] * transmittance;
+                        transmittance.r = fast_exp(-sample.z * sigma_t.r);
+                        transmittance.g = fast_exp(-sample.z * sigma_t.g);
+                        transmittance.b = fast_exp(-sample.z * sigma_t.b);
+                    }
+                    result_transmission += sample.color * transmittance;
+                    // accumulate the lightgroup contributions calculated by the child shader
+                    if (doDeepGroups)
+                    {
+                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        {
+                            deepGroupsTransmission[i] += deepGroupPtr[i] * transmittance;
+                        }
                     }
                 }
             }
 
-            count++;
+            
         }
 
         result_transmission *= AiSamplerGetSampleInvCount(sampit) * transmissionColor * kti * kti2;
@@ -1058,16 +1098,77 @@ shader_evaluate
                 deepGroupsTransmission[i] *= AiSamplerGetSampleInvCount(sampit) * transmissionColor * kti * kti2;
             }
         }
+    } // if (do_transmission)
+
+    // backlight
+    // ---------
+    if (do_backlight && kti*kti2*maxh(diffuseColor) > IMPORTANCE_EPS)
+    {
+        flipNormals(sg);
+        float kr = kti*kti2;
+        AtSamplerIterator* sampit = AiSamplerIterator(data->backlight_sampler, sg);
+        AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
+        while (AiSamplerGetSample(sampit, samples))
+        {
+            // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
+            float stheta = sqrtf(samples[0]);
+            float phi = AI_PITIMES2 * samples[1];
+            wi.x = stheta * cosf(phi);
+            wi.y = stheta * sinf(phi);
+            wi.z = sqrtf(1.0f - samples[0]);
+            AiV3RotateToFrame(wi, U, V, sg->Nf);
+
+            float cos_theta = AiV3Dot(wi, sg->Nf);
+            if (cos_theta <= 0.0f) continue;
+
+            float p = cos_theta * AI_ONEOVERPI;
+            
+            // trace the ray
+            wi_ray.dir = wi;
+            if (AiTrace(&wi_ray, &scrs))
+            {
+                AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
+                result_backlightIndirect += scrs.color * f;
+
+                // accumulate the lightgroup contributions calculated by the child shader
+                if (doDeepGroups)
+                {
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    {
+                        deepGroupsBacklight[i] += deepGroupPtr[i] * f;
+                    }
+                }
+            }
+        }
+        result_backlightIndirect *= AiSamplerGetSampleInvCount(sampit) * backlightColor;
+
+        if (doDeepGroups)
+        {
+            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+            {
+                deepGroupsBacklight[i] *= AiSamplerGetSampleInvCount(sampit) * backlightColor;
+            }
+        }
+        flipNormals(sg);
+    } // if (do_backlight)
+
+    // Emission
+    result_emission = emissionColor;
+
+    // Diffusion multiple scattering
+    if (do_sss)
+    {
+        result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor * kti * kti2;
     }
 
+    // blend sss and diffuse
+    result_diffuseDirect *= (1-sssMix);
+    result_diffuseIndirect *= (1-sssMix);
+    result_backlightDirect *= (1-sssMix);
+    result_backlightIndirect *= (1-sssMix);
+    result_sss *= sssMix;
+
     // Now accumulate the deep group brdf results onto the relevant samples
-#ifdef DEEP_DEBUG
-    deepDebugPtr[sg->Rr * 5 + 0] = deepGroupsDiffuse[0]; 
-    deepDebugPtr[sg->Rr * 5 + 1] =  deepGroupsGlossy[0]; 
-    deepDebugPtr[sg->Rr * 5 + 2] = deepGroupsGlossy2[0]; 
-    deepDebugPtr[sg->Rr * 5 + 3] = deepGroupsTransmission[0]; 
-    deepDebugPtr[sg->Rr * 5 + 4] = lightGroupsDirect[0];
-#endif
     if (sg->Rt & AI_RAY_CAMERA)
     {
         if (doDeepGroups)
@@ -1076,7 +1177,12 @@ shader_evaluate
             memset(deepGroups, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
             for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroups[i] = deepGroupsDiffuse[i] + deepGroupsGlossy[i] + deepGroupsGlossy2[i] + deepGroupsTransmission[i] + lightGroupsDirect[i];
+                deepGroups[i] = deepGroupsDiffuse[i] 
+                                + deepGroupsGlossy[i] 
+                                + deepGroupsGlossy2[i] 
+                                + deepGroupsTransmission[i]
+                                + deepGroupsBacklight[i] 
+                                + lightGroupsDirect[i];
                 AiAOVSetRGB(sg, lightGroupNames[i], deepGroups[i]);
             }
         }
@@ -1090,14 +1196,15 @@ shader_evaluate
     }
     else if (doDeepGroups)
     {
-        int idx;
-        AiStateGetMsgInt("als_sampleIndex", &idx);
+        
         for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
         {
-            deepGroupPtr[i*data->total_samples+idx] = deepGroupsDiffuse[i] + deepGroupsGlossy[i] + deepGroupsGlossy2[i] + deepGroupsTransmission[i] 
-                                                        + lightGroupsDirect[i];
-
-            
+            deepGroupPtr[i] = deepGroupsDiffuse[i] 
+                            + deepGroupsGlossy[i] 
+                            + deepGroupsGlossy2[i] 
+                            + deepGroupsTransmission[i]
+                            + deepGroupsBacklight[i] 
+                            + lightGroupsDirect[i];
         }
     }
 
@@ -1107,11 +1214,13 @@ shader_evaluate
         AiAOVSetRGB(sg, "diffuse_color", diffuseColor);
         AiAOVSetRGB(sg, "direct_diffuse", result_diffuseDirect);
         AiAOVSetRGB(sg, "direct_diffuse_raw", result_diffuseDirectRaw);
+        AiAOVSetRGB(sg, "direct_backlight", result_backlightDirect);
         AiAOVSetRGB(sg, "sss", result_sss);
         AiAOVSetRGB(sg, "direct_specular", result_glossyDirect);
         AiAOVSetRGB(sg, "direct_specular_2", result_glossy2Direct);
         AiAOVSetRGB(sg, "indirect_diffuse", result_diffuseIndirect);
         AiAOVSetRGB(sg, "indirect_diffuse_raw", result_diffuseIndirectRaw);
+        AiAOVSetRGB(sg, "indirect_backlight", result_backlightIndirect);
         AiAOVSetRGB(sg, "indirect_specular", result_glossyIndirect);
         AiAOVSetRGB(sg, "indirect_specular_2", result_glossy2Indirect);
         AiAOVSetRGB(sg, "single_scatter", result_ss);
@@ -1130,23 +1239,6 @@ shader_evaluate
             }
         }
 
-#ifdef DEEP_DEBUG
-        char deepDebugName[32];
-        for (int i=0; i < DEEP_DEBUG_DEPTH; ++i)
-        {
-            sprintf(deepDebugName, "deep_diffuse_%d", i);
-            AiAOVSetRGB(sg, deepDebugName, deepDebugPtr[i*5+0]);
-            sprintf(deepDebugName, "deep_glossy_%d", i);
-            AiAOVSetRGB(sg, deepDebugName, deepDebugPtr[i*5+1]);
-            sprintf(deepDebugName, "deep_glossy2_%d", i);
-            AiAOVSetRGB(sg, deepDebugName, deepDebugPtr[i*5+2]);
-            sprintf(deepDebugName, "deep_transmission_%d", i);
-            AiAOVSetRGB(sg, deepDebugName, deepDebugPtr[i*5+3]);
-            sprintf(deepDebugName, "deep_direct_%d", i);
-            AiAOVSetRGB(sg, deepDebugName, deepDebugPtr[i*5+4]);
-        }
-#endif
-
         // write data AOVs
         AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
         AiAOVSetRGB(sg, "uv", uv);
@@ -1158,10 +1250,12 @@ shader_evaluate
     // Sum final result from temporaries
     //
     sg->out.RGB =    result_diffuseDirect
+                    +result_backlightDirect
                     +result_sss
                     +result_glossyDirect
                     +result_glossy2Direct
                     +result_diffuseIndirect
+                    +result_backlightIndirect
                     +result_glossyIndirect
                     +result_glossy2Indirect
                     +result_ss

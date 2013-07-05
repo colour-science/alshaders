@@ -2,6 +2,22 @@ cmake_minimum_required(VERSION 2.8)
 
 project(alShaders)
 
+set(ALS_MAJOR_VERSION 0)
+set(ALS_MINOR_VERSION 3)
+set(ALS_PATCH_VERSION 0)
+set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
+
+configure_file(
+    "${PROJECT_SOURCE_DIR}/package.in.py"
+    "${PROJECT_SOURCE_DIR}/package.py"
+)
+
+configure_file(
+    "${PROJECT_SOURCE_DIR}/test.in.py"
+    "${PROJECT_SOURCE_DIR}/test.py"
+)
+
+
 set(CMAKE_BUILD_TYPE RELEASE)
 set(CMAKE_VERBOSE_MAKEFILE FALSE)
 set(CMAKE_SKIP_RPATH TRUE)
@@ -30,6 +46,15 @@ endif()
 
 include_directories(${ARNOLD_ROOT}/include)
 link_directories(${ARNOLD_ROOT}/bin)
+# fix for windows paths
+# FIXME: ugly double-if because OR wants to spit a warning
+if (WIN32)
+link_directories(${ARNOLD_ROOT}/lib)
+endif()
+if (WIN64)
+link_directories(${ARNOLD_ROOT}/lib)
+endif()
+
 
 set(MTOA_SHADERS ${MTOA_ROOT}/shaders)
 set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
@@ -52,6 +77,7 @@ set(SUBDIRECTORIES
         alPhotometric
         alInputVector
         alHair
+        alColorSpace
         common
 )
 

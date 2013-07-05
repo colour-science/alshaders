@@ -11,6 +11,40 @@
 
 #define IMPORTANCE_EPS 0.01f
 
+
+inline AtRGB rgb(float f)
+{
+    AtRGB c;
+    c.r = c.g = c.b = f;
+    return c;
+}
+
+inline AtRGB rgb(float r, float g, float b)
+{
+    AtRGB c;
+    c.r = r; c.g = g; c.b = b;
+    return c;
+}
+
+inline AtRGB rgb(const AtVector& v)
+{
+    AtRGB c;
+    c.r = v.x; c.g = v.y; c.b = v.z;
+    return c;
+}
+
+inline AtVector aivec(float x, float y, float z)
+{
+    AtVector v; AiV3Create(v, x, y, z);
+    return v;
+}
+
+inline AtVector aivec(float x)
+{
+    AtVector v; AiV3Create(v, x, x, x);
+    return v;
+}
+
 inline AtRGB max(const AtRGB& c1, const AtRGB& c2)
 {
     AtRGB c;
@@ -29,6 +63,24 @@ inline AtRGB min(const AtRGB& c1, const AtRGB& c2)
     return c;
 }
 
+inline AtVector max(const AtVector& c1, const AtVector& c2)
+{
+    AtVector c;
+    c.x = std::max(c1.x, c2.x);
+    c.y = std::max(c1.y, c2.y);
+    c.z = std::max(c1.z, c2.z);
+    return c;
+}
+
+inline AtVector min(const AtVector& c1, const AtVector& c2)
+{
+    AtVector c;
+    c.x = std::min(c1.x, c2.x);
+    c.y = std::min(c1.y, c2.y);
+    c.z = std::min(c1.z, c2.z);
+    return c;
+}
+
 
 inline int clamp(int a, int mn, int mx)
 {
@@ -43,6 +95,22 @@ inline float clamp(float a, float mn, float mx)
 inline AtRGB clamp(const AtRGB& a, const AtRGB& mn, const AtRGB& mx)
 {
     return min(max(a, mn), mx);
+}
+
+inline AtVector clamp(const AtVector& a, const AtVector& mn, const AtVector& mx)
+{
+    return min(max(a, mn), mx);
+}
+
+inline AtVector fabs(const AtVector& v)
+{
+    AtVector r; AiV3Create(r, fabsf(v.x), fabsf(v.y), fabsf(v.z));
+    return r;
+}
+
+inline AtRGB fabs(const AtRGB& c)
+{
+    return rgb(fabsf(c.r), fabsf(c.g), fabsf(c.b));
 }
 
 inline bool finite(const AtRGB& c)
@@ -303,20 +371,6 @@ inline AtRGB pow(AtRGB c, float e)
     c.r = powf(c.r, e);
     c.g = powf(c.g, e);
     c.b = powf(c.b, e);
-    return c;
-}
-
-inline AtRGB rgb(float f)
-{
-    AtRGB c;
-    c.r = c.g = c.b = f;
-    return c;
-}
-
-inline AtRGB rgb(float r, float g, float b)
-{
-    AtRGB c;
-    c.r = r; c.g = g; c.b = b;
     return c;
 }
 

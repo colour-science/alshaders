@@ -6,12 +6,23 @@ class AEalSurfaceTemplate(alShadersTemplate):
         self.addSwatch()
         self.beginScrollLayout()
 
+        self.beginLayout("Matte", collapse=True)
+        self.addControl("aiEnableMatte", label="Enable Matte")
+        self.addControl("aiMatteColor", label="Matte Color")
+        self.addControl("aiMatteColorA", label="Matte Opacity")
+        self.endLayout()
+        
         self.beginLayout('Diffuse', collapse=False)
 
         self.addControl('diffuseStrength', label='Strength')
         self.addControl('diffuseColor', label='Color')
         self.addControl('diffuseRoughness', label='Roughness')
 
+        self.beginLayout('Backlight', collapse=True)
+        self.addControl('backlightStrength', label='Strength')
+        self.addControl('backlightColor', label='Color')
+        self.endLayout() # end Backlight
+    
         self.beginLayout('Subsurface scattering')
         self.addControl('sssMix', label='Mix')
         self.addControl('sssRadius', label='Distance')
@@ -87,7 +98,7 @@ class AEalSurfaceTemplate(alShadersTemplate):
         self.endLayout() # end Emission
 
         self.beginLayout('IDs', collapse=True)
-        for i in range(0,8):
+        for i in range(1,9):
             self.addControl('id'+str(i))
         self.endLayout() # end IDs
 
