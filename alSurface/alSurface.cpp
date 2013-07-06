@@ -186,7 +186,7 @@ node_parameters
     AiParameterBOOL("transmissionEnableCaustics", true);
     AiParameterINT("transmissionExtraSamples", 0);
 
-    AiParameterBOOL("lightGroupsIndirect", false);
+    AiParameterBOOL("lightGroupsIndirect", true);
 
     AiParameterRGB("id1", 0.0f, 0.0f, 0.0f);
     AiParameterRGB("id2", 0.0f, 0.0f, 0.0f);
