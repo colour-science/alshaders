@@ -8,3 +8,5 @@ alshaders.sublime-workspace
 test/output
 test.py
 package.py
+test/*.nk.autosave
+test/*.nk~
