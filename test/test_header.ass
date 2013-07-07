@@ -320,7 +320,7 @@ MayaFile
  repeatUV 4 4
  offsetUV 0 0
  rotateUV 0
- filename "/Users/anders/Documents/maya/projects/default/sourceimages/rendering_equation.jpg"
+ filename "test/rendering_equation.jpg"
  noiseUV 0 0
  mipBias 0
  filter "smart_bicubic"
@@ -426,7 +426,7 @@ MayaFile
  repeatUV 1 1
  offsetUV 0 0
  rotateUV 0
- filename "/Users/anders/Documents/maya/projects/default//sourceimages/A.png"
+ filename "test/A.png"
  noiseUV 0 0
  mipBias 0
  filter "smart_bicubic"
