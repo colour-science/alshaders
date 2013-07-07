@@ -2,7 +2,7 @@
 version 6.3 v4
 define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
 <layout version="1.0">
-    <window x="0" y="22" w="1440" h="874" screen="0">
+    <window x="-1" y="22" w="1440" h="874" screen="0">
         <splitter orientation="1">
             <split size="910"/>
             <splitter orientation="1">
@@ -41,11 +41,21 @@ Root {
 }
 Read {
  inputs 0
+ file /Users/anders/Documents/maya/projects/default/images/tmp/beauty/lb.0027.exr
+ format "300 300 0 0 300 300 1 "
+ origset true
+ version 3
+ name Read1
+ xpos -87
+ ypos 79
+}
+Read {
+ inputs 0
  file /Users/anders/Documents/maya/projects/default/images/tmp/refraction/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name refraction
- selected true
  xpos 683
  ypos -80
 }
@@ -54,6 +64,7 @@ Read {
  file /Users/anders/Documents/maya/projects/default/images/tmp/indirect_specular_2/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name indirect_specular_2
  xpos 578
  ypos -84
@@ -63,6 +74,7 @@ Read {
  file /Users/anders/Documents/maya/projects/default/images/tmp/indirect_specular/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name indirect_specular
  xpos 476
  ypos -86
@@ -72,15 +84,18 @@ Read {
  file /Users/anders/Documents/maya/projects/default/images/tmp/indirect_diffuse/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name indirect_diffuse
  xpos 378
  ypos -83
 }
+set N16b1c080 [stack 0]
 Read {
  inputs 0
  file /Users/anders/Documents/maya/projects/default/images/tmp/direct_specular_2/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name direct_specular_2
  xpos -40
  ypos -78
@@ -90,6 +105,7 @@ Read {
  file /Users/anders/Documents/maya/projects/default/images/tmp/direct_backlight/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name direct_backlight
  xpos 73
  ypos -74
@@ -99,6 +115,7 @@ Read {
  file /Users/anders/Documents/maya/projects/default/images/tmp/direct_diffuse/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name direct_diffuse
  xpos -263
  ypos -83
@@ -108,6 +125,7 @@ Read {
  file /Users/anders/Documents/maya/projects/default/images/tmp/sss/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name sss
  xpos 180
  ypos -75
@@ -118,6 +136,7 @@ Read {
  file /Users/anders/Documents/maya/projects/default/images/tmp/direct_specular/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name direct_specular
  xpos -152
  ypos -79
@@ -127,6 +146,7 @@ Read {
  file /Users/anders/Documents/maya/projects/default/images/tmp/single_scatter/lb.0027.exr
  format "300 300 0 0 300 300 1 "
  origset true
+ version 3
  name single_scatter
  xpos 278
  ypos -81
@@ -141,20 +161,13 @@ Merge2 {
 set N16d7d9d0 [stack 0]
 push $N16d7d9d0
 push $N16d7d9d0
-Read {
- inputs 0
- file /Users/anders/Documents/maya/projects/default/images/tmp/beauty/lb.0027.exr
- format "300 300 0 0 300 300 1 "
- origset true
- name Read1
- xpos -87
- ypos 79
-}
+push $N16b1c080
 Viewer {
  inputs 4
  frame 1
  input_process false
  name Viewer1
+ selected true
  xpos -287
  ypos 208
 }
