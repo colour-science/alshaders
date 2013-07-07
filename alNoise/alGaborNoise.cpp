@@ -74,7 +74,7 @@ struct GaborParams
         periodic(false)
     {
         float two_to_bw = powf(2.0f, bandwidth);
-        static const float SQRT_PI_OVER_LN2 = sqrtf(M_PI / M_LN2);
+        static const float SQRT_PI_OVER_LN2 = sqrtf(AI_PI / 0.693147180559945309417);
         a = GABOR_FREQUENCY * ((two_to_bw - 1.0f) / (two_to_bw + 1.0f)) * SQRT_PI_OVER_LN2;
 
         // calculate maximum extent
