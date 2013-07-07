@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
-#include <OpenEXR/ImathVec.h>
+#include <iostream>
 
 #include <ai.h>
 
@@ -488,7 +488,7 @@ inline AtRGB alpha1_3(const AtRGB& c)
     return rgb(alpha1_3(c.r), alpha1_3(c.g), alpha1_3(c.b));
 }
 
-inline std::ostream& operator<<( std::ostream& os, AtVector v )
+inline std::ostream& operator<<(std::ostream& os, const AtVector& v)
 {
    os << "(" << v.x << "," << v.y << "," << v.z << ")";
    return os;
