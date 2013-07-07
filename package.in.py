@@ -33,13 +33,12 @@ subdirs = [
     'alPhotometric',
     'alRemap',
     'alSurface',
-    'test',
     'common'
 ] 
 
 # pattern for files to include in the source distribution
 name_src = 'alShaders-src-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
-ptrn_src_src = ['*.cpp', '*.h', '*.mtd', '*.txt', '*.py', '*.ass', '*.ass.gz', '*.nk']
+ptrn_src_src = ['*.cpp', '*.h', '*.mtd', '*.txt', '*.py']
 ptrn_src_bin = []
 files_src = ['BUILD_INSTRUCTIONS.txt', 'CMakeLists.txt', 'package.in.py', 'test.in.py', 'README', 'TODO.txt']
 
