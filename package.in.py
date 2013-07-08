@@ -6,6 +6,7 @@ import errno
 import shutil
 import glob
 import tarfile
+import zipfile
 import platform
 
 def mkdir_p(path):
@@ -79,10 +80,16 @@ def copyFilesToDistDir(files, distDir):
     for fn in files:
         shutil.copy(fn, distDir)
         
-def createArchive(distDir, name):
-    f = tarfile.open(os.path.join('..', '%s.tar.gz' % name), 'w:gz')
-    f.add(distDir, arcname = name)
-    f.close()
+def createArchive(distDir, name, isSrc=False):
+    if not isSrc and platform.system() == "Windows":
+        f = zipfile.ZipFile(os.path.join('..', '%s.zip' % name), 'w')
+        for fn in glob.iglob(os.path.join(distDir, '*')):
+            f.write(fn, arcname=os.path.join(name, os.path.basename(fn)))
+        f.close()
+    else:
+        f = tarfile.open(os.path.join('..', '%s.tar.gz' % name), 'w:gz')
+        f.add(distDir, arcname = name)
+        f.close()
     
 def createDistribution(name, ptrn_src, ptrn_bin, files, isSrc=False):
     distdir = 'build/%s' % name
@@ -93,7 +100,7 @@ def createDistribution(name, ptrn_src, ptrn_bin, files, isSrc=False):
     if len(ptrn_bin):
         copyPatternsToDistDir(subdirs, 'build', ptrn_bin, distdir, isSrc)
     copyFilesToDistDir(files, distdir)  
-    createArchive(distdir, name)
+    createArchive(distdir, name, isSrc)
 
 # source distribution
 createDistribution(name_src, ptrn_src_src, ptrn_src_bin, files_src, True)
