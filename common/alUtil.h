@@ -179,7 +179,7 @@ inline void concentricSampleDisk(float u1, float u2, float& dx, float& dy)
             theta = 6.0f + sx/r;
         }
     }
-    theta *= M_PI / 4.f;
+    theta *= AI_PI / 4.f;
     dx = r * cosf(theta);
     dy = r * sinf(theta);
 }
@@ -196,7 +196,7 @@ inline AtVector uniformSampleSphere(float u1, float u2)
 {
      float z = 1.f - 2.f * u1;
      float r = sqrtf(std::max(0.f, 1.f - z*z));
-     float phi = 2.f * M_PI * u2;
+     float phi = 2.f * AI_PI * u2;
      float x = r * cosf(phi);
      float y = r * sinf(phi);
      AtVector v;
