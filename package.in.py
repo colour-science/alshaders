@@ -60,13 +60,19 @@ ptrn_linux_src = ['*.mtd', '*.py']
 ptrn_linux_bin  = ['*.so']
 files_linux = ['BUILD_INSTRUCTIONS.txt', 'README']
 
-def copyPatternsToDistDir(subDirs, subDirPrefix, filePatterns, distDir):
+def copyPatternsToDistDir(subDirs, subDirPrefix, filePatterns, distDir, isSrc=False):
     for dir in subDirs:
-        destdir = os.path.join(distDir, dir)
+        if isSrc:
+            destdir = os.path.join(distDir, dir)
+        else:
+            destdir = distDir
         mkdir_p(destdir)
         subdir = os.path.join(subDirPrefix, dir)
         for ptrn in filePatterns:
-            for fn in glob.iglob(os.path.join(subdir, ptrn)):
+            sdir = subdir
+            if ptrn == '*.dll' and platform.system() == "Windows":
+                sdir = os.path.join(sdir, 'Release')
+            for fn in glob.iglob(os.path.join(sdir, ptrn)):
                 shutil.copy(fn, destdir)
                         
 def copyFilesToDistDir(files, distDir):
@@ -78,19 +84,19 @@ def createArchive(distDir, name):
     f.add(distDir, arcname = name)
     f.close()
     
-def createDistribution(name, ptrn_src, ptrn_bin, files):
+def createDistribution(name, ptrn_src, ptrn_bin, files, isSrc=False):
     distdir = 'build/%s' % name
     shutil.rmtree(distdir, ignore_errors=True)
     os.mkdir(distdir)
     if len(ptrn_src):
-        copyPatternsToDistDir(subdirs, '.', ptrn_src, distdir)
+        copyPatternsToDistDir(subdirs, '.', ptrn_src, distdir, isSrc)
     if len(ptrn_bin):
-        copyPatternsToDistDir(subdirs, 'build', ptrn_bin, distdir)
+        copyPatternsToDistDir(subdirs, 'build', ptrn_bin, distdir, isSrc)
     copyFilesToDistDir(files, distdir)  
     createArchive(distdir, name)
 
 # source distribution
-createDistribution(name_src, ptrn_src_src, ptrn_src_bin, files_src)
+createDistribution(name_src, ptrn_src_src, ptrn_src_bin, files_src, True)
 if platform.system() == "Darwin":
     # OS X distribution
     createDistribution(name_osx, ptrn_osx_src, ptrn_osx_bin, files_osx)
