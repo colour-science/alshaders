@@ -3,6 +3,7 @@
 #include <string>
 #include <cmath>
 #include <iostream>
+#include <ai.h>
 
 class PhotometricData
 {
@@ -71,19 +72,19 @@ private:
 			// TODO: this is probably the worst way of handling symmetry ever... but it works.
 			if (_symmetry==k90)
 			{
-				if (phi > M_PI) phi -= M_PI;
-				if (phi > M_PI/2.0f && phi < M_PI)
+				if (phi > float(AI_PI)) phi -= float(AI_PI);
+				if (phi > float(AI_PI)/2.0f && phi < float(AI_PI))
 				{
-					phi -= M_PI/2.0f;
-					phi = (M_PI/2.0f) - phi;
+					phi -= float(AI_PI)/2.0f;
+					phi = (float(AI_PI)/2.0f) - phi;
 				}
 			}
 			else if (_symmetry == k180)
 			{
-				if (phi > M_PI)
+				if (phi > float(AI_PI))
 				{
-					phi -= M_PI;
-					phi = M_PI - phi;
+					phi -= float(AI_PI);
+					phi = float(AI_PI) - float(AI_PI);
 				}
 			}
 

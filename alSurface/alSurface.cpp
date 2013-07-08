@@ -928,7 +928,7 @@ shader_evaluate
             float phi = float(AI_PITIMES2 * samples[1]);
             wi.x = stheta * cosf(phi);
             wi.y = stheta * sinf(phi);
-            wi.z = sqrtf(1.0f - samples[0]);
+            wi.z = sqrtf(1.0f - float(samples[0]));
             AiV3RotateToFrame(wi, U, V, sg->Nf);
 
             float cos_theta = AiV3Dot(wi, sg->Nf);
@@ -1110,7 +1110,7 @@ shader_evaluate
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
-            float stheta = float(sqrtf(samples[0]));
+            float stheta = sqrtf(float(samples[0]));
             float phi = float(AI_PITIMES2 * samples[1]);
             wi.x = stheta * cosf(phi);
             wi.y = stheta * sinf(phi);

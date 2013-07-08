@@ -58,7 +58,7 @@ void PhotometricData::readIES(std::ifstream& in)
 	}
 	catch (std::exception& e)
 	{
-		std::cerr << "[IES] Error reading file header " << std::endl;
+		std::cerr << "[IES] Error reading file header " << e.what() << std::endl;
 		delete[] array;
 		return;
 	}
@@ -140,7 +140,7 @@ void PhotometricData::readIES(std::ifstream& in)
 			{
 				_anglesV[i] -= 90.0f;
 			}
-			_anglesV[i] *= AI_PI / 180.0f;
+			_anglesV[i] *= float(AI_PI) / 180.0f;
 		}
 
 		// now read the set of horizontal angles
@@ -170,7 +170,7 @@ void PhotometricData::readIES(std::ifstream& in)
 		// convert to radians
 		for (int i=0; i < _numH; ++i)
 		{
-			_anglesH[i] *= AI_PI / 180.0f;
+			_anglesH[i] *= float(AI_PI) / 180.0f;
 		}
 
 		// now read the candela values
@@ -192,13 +192,13 @@ void PhotometricData::readIES(std::ifstream& in)
 		// rather than dicking around trying to find nearest angles at rendertime we'll precalculate a lookup table
 		// figure out what the actual dimension of our array will be
 		_hemisphere == kBoth ? _yend = _yres : _yend = _yres/2;
-		_hemisphere == kBottom ? _thetaMax = AI_PIOVER2 : _thetaMax = AI_PI;
+		_hemisphere == kBottom ? _thetaMax = float(AI_PIOVER2) : _thetaMax = float(AI_PI);
 		switch (_symmetry)
 		{
 		case k0: _xend = 1; _phiMax = 0.0f; break;
-		case k90: _xend = _xres/4; _phiMax = AI_PIOVER2; break;
-		case k180: _xend = _xres/2; _phiMax = AI_PI; break;
-		default: _xend = _xres; _phiMax = 2.0f * AI_PI; break;
+		case k90: _xend = _xres/4; _phiMax = float(AI_PIOVER2); break;
+		case k180: _xend = _xres/2; _phiMax = float(AI_PI); break;
+		default: _xend = _xres; _phiMax = 2.0f * float(AI_PI); break;
 		}
 
 		// allocate an array big enough to hold all our samples. We'll need to take account of symmetry when we index
@@ -213,8 +213,6 @@ void PhotometricData::readIES(std::ifstream& in)
 		// file into the data array we'll use to lookup aat render time.
 		int lasth = 0, lastv = 0;
 		int h, v;
-		float av0, av1;
-		float ah0, ah1;
 		float i00, i01, i10, i11, i0, i1;
 		int hm1, vm1;
 		float tv, th;
