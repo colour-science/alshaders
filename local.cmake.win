@@ -1,0 +1,3 @@
+set(ARNOLD_ROOT C:/Users/anders/vfx/arnold/4.0.14.0)
+set(MTOA_ROOT C:/Users/anders/vfx/mtoa/0.24.0)
+set(BOOST_INCLUDE_PATH C:/Boost/include/boost-1_43)
