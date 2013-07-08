@@ -466,7 +466,7 @@ shader_evaluate
     AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
     AtRGB backlightColor = AiShaderEvalParamRGB(p_backlightColor) * AiShaderEvalParamFlt(p_backlightStrength);
     float diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
-    bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
+    bool diffuseEnableCaustics = AiShaderEvalParamBool(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
     float sssMix = AiShaderEvalParamFlt( p_sssMix );
     AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
