@@ -203,7 +203,9 @@ node_parameters
 
 }
 
-
+#ifdef MSVC
+#define _CRT_SECURE_NO_WARNINGS 1
+#endif
 node_loader
 {
     if (i>0) return 0;
@@ -457,8 +459,6 @@ shader_evaluate
     }
 
     // Evaluate bump;
-    AtVector N_orig;
-    AtVector Nf_orig;
     AtRGB bump = AiShaderEvalParamRGB(p_bump);
 
     // Initialize parameter temporaries
@@ -815,7 +815,7 @@ shader_evaluate
         sg->Nf = specular1Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
-            wi = GlossyMISSample(mis, samples[0], samples[1]);
+            wi = GlossyMISSample(mis, float(samples[0]), float(samples[1]));
             if (AiV3Dot(wi,specular1Normal) > 0.0f)
             {
                 // get half-angle vector for fresnel
@@ -870,7 +870,7 @@ shader_evaluate
         sg->Nf = specular2Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
-            wi = GlossyMISSample(mis2, samples[0], samples[1]);
+            wi = GlossyMISSample(mis2, float(samples[0]), float(samples[1]));
             if (AiV3Dot(wi,specular2Normal) > 0.0f)
             {
                 wi_ray.dir = wi;
@@ -924,8 +924,8 @@ shader_evaluate
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
-            float stheta = sqrtf(samples[0]);
-            float phi = AI_PITIMES2 * samples[1];
+            float stheta = sqrtf(float(samples[0]));
+            float phi = float(AI_PITIMES2 * samples[1]);
             wi.x = stheta * cosf(phi);
             wi.y = stheta * sinf(phi);
             wi.z = sqrtf(1.0f - samples[0]);
@@ -934,7 +934,7 @@ shader_evaluate
             float cos_theta = AiV3Dot(wi, sg->Nf);
             if (cos_theta <= 0.0f) continue;
 
-            float p = cos_theta * AI_ONEOVERPI;
+            float p = cos_theta * float(AI_ONEOVERPI);
             
             // trace the ray
             wi_ray.dir = wi;
@@ -971,7 +971,6 @@ shader_evaluate
     if (do_transmission)
     {
         double samples[2];
-        float n1, n2;
         float kt;
         AtRay wi_ray;
         AtScrSample sample;
@@ -1036,9 +1035,9 @@ shader_evaluate
                     AtRGB transmittance = AI_RGB_WHITE;
                     if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        transmittance.r = fast_exp(-sample.z * sigma_t.r);
-                        transmittance.g = fast_exp(-sample.z * sigma_t.g);
-                        transmittance.b = fast_exp(-sample.z * sigma_t.b);
+                        transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
+                        transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
+                        transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
                     AtRGB f = brdf/pdf * transmittance;
                     result_transmission += sample.color * f;
@@ -1069,9 +1068,9 @@ shader_evaluate
                     AtRGB transmittance = AI_RGB_WHITE;
                     if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        transmittance.r = fast_exp(-sample.z * sigma_t.r);
-                        transmittance.g = fast_exp(-sample.z * sigma_t.g);
-                        transmittance.b = fast_exp(-sample.z * sigma_t.b);
+                        transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
+                        transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
+                        transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
                     result_transmission += sample.color * transmittance;
                     // accumulate the lightgroup contributions calculated by the child shader
@@ -1111,17 +1110,17 @@ shader_evaluate
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
-            float stheta = sqrtf(samples[0]);
-            float phi = AI_PITIMES2 * samples[1];
+            float stheta = float(sqrtf(samples[0]));
+            float phi = float(AI_PITIMES2 * samples[1]);
             wi.x = stheta * cosf(phi);
             wi.y = stheta * sinf(phi);
-            wi.z = sqrtf(1.0f - samples[0]);
+            wi.z = sqrtf(1.0f - float(samples[0]));
             AiV3RotateToFrame(wi, U, V, sg->Nf);
 
             float cos_theta = AiV3Dot(wi, sg->Nf);
             if (cos_theta <= 0.0f) continue;
 
-            float p = cos_theta * AI_ONEOVERPI;
+            float p = cos_theta * float(AI_ONEOVERPI);
             
             // trace the ray
             wi_ray.dir = wi;
@@ -1242,7 +1241,7 @@ shader_evaluate
         // write data AOVs
         AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
         AiAOVSetRGB(sg, "uv", uv);
-        AtRGB depth = AiColorCreate(sg->Rl, AiV3Dot(sg->Nf, wo), 0.0f);
+        AtRGB depth = AiColorCreate(float(sg->Rl), AiV3Dot(sg->Nf, wo), 0.0f);
         AiAOVSetRGB(sg, "depth", depth);
 
     }

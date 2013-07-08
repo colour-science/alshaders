@@ -7,9 +7,9 @@ void alphaInversion( const AtRGB& scatterColour, float scatterDist, AtRGB& sigma
 
        col = col / maxh(col);
 
-       AtRGB alpha_prime = rgb(alpha1_3(clamp(col.r*.439, 0, 1)),
-                                   alpha1_3(clamp(col.g*.439, 0, 1)),
-                                   alpha1_3(clamp(col.b*.439, 0, 1 )) );
+       AtRGB alpha_prime = rgb(alpha1_3(clamp(col.r*.439f, 0.f, 1.f)),
+                                   alpha1_3(clamp(col.g*.439f, 0.f, 1.f)),
+                                   alpha1_3(clamp(col.b*.439f, 0.f, 1.f )) );
 
        AtRGB sigma_tr = rgb(1.0f,1.0f,1.0f) / (scatterColour * col);
 
