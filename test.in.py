@@ -18,16 +18,16 @@ class Timer:
 
 # names of the tests and whether the surfaces should be opaque or not
 tests = {
-			'als_bplastic_shiny':1,
-			'als_bplastic_rough':1,
-			'als_goldleaf':1,
-			'als_glass':0,
-			'als_lyr_glass_goldleaf':0,
-			'als_merlot':0,
-			'als_ccover_bump':1,
-			'als_metallicpaint':1,
-			'als_skin':1,
-			'als_jade':0
+			'als_bplastic_shiny':{'opaque':1, 'eir':0},
+			'als_bplastic_rough':{'opaque':1, 'eir':0},
+			'als_goldleaf':{'opaque':1, 'eir':0},
+			'als_glass':{'opaque':0, 'eir':1},
+			'als_lyr_glass_goldleaf':{'opaque':0, 'eir':1},
+			'als_merlot':{'opaque':0, 'eir':0},
+			'als_ccover_bump':{'opaque':1, 'eir':0},
+			'als_metallicpaint':{'opaque':1, 'eir':0},
+			'als_skin':{'opaque':1, 'eir':0},
+			'als_jade':{'opaque':0, 'eir':0}
 		}
 
 # first make the output directory where the results will be stored
@@ -37,7 +37,7 @@ if not os.path.exists(output_dir):
 
 # loop over the tests, combine the asses and render them
 test_results = {}
-for test_name,opaque in tests.items():
+for test_name,overrides in tests.items():
 	header = open("test/test_header.ass", "r").read()
 	output = 'include "test/test_%s.ass"\n' % test_name
 	output += header
@@ -45,9 +45,12 @@ for test_name,opaque in tests.items():
 	test_tmp.write(output)
 	test_tmp.close()
 
+	opaque = overrides['opaque']
+	eir = overrides['eir']
+
 	log = open('%s/log_%s.txt' % (output_dir, test_name), 'w')
 
-	cmd = 'kick -v 6 -t 2 -dp -dw -set ringShape.opaque %d -set shellShape.opaque %d -set driver_exr_beauty.filename "test/output/%s/%s.exr" test/test_tmp.ass' % (opaque, opaque, VERSION, test_name)
+	cmd = 'kick -v 6 -t 2 -dp -dw -set ringShape.opaque %d -set shellShape.opaque %d -set TARGET_SURFACE.transmissionEnableCaustics %d -set driver_exr_beauty.filename "test/output/%s/%s.exr" test/test_tmp.ass' % (opaque, opaque, eir, VERSION, test_name)
 
 	sys.stdout.write('%s...' % test_name)
 	sys.stdout.flush()
