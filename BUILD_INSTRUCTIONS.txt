@@ -35,3 +35,11 @@ Once those variables are set, cd to the top-level alShaders directory (assuming 
 On Windows use CMakeGUI. Set the source directory to where you unpacked the source files, and set the build directory to be the same
 but with "\build" on the end. Click "Configure" and select "Yes" when it asks if you want to create the build directory. Then click
 "Generate". This will create a Visual Studio project file in the build directory which you can use to build the library
+
+
+TEST SUITE
+----------
+In order to run the test suite you must first have built and installed the shader library. 
+Then download the test suite files from here: https://bitbucket.org/anderslanglands/alshaders/downloads/test.tar.gz
+Next unpack it to the your top-level alShaders directory and run "python test.py"
+The whole thing takes about 40 minutes to run on my ageing MacBook Pro. If you want it to go faster you can edit test_header.ass and reduce the AA_samples to 1.
