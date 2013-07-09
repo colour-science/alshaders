@@ -1,25 +1,14 @@
 ===== Features =====
+- Library: Add dual-scattering hair shader
 - Library: Add imagefile shader
-- Library: Add fresnel shader
-- Library: Add blackbody shader
-- Library: Add multifractal shader
 - Library: Add sky shader
 - Library: Add cloth shader based on Irwan "Specular Reflection from Woven Cloth"
-- alSurface: Add transparency support
-- alLayer: Add transparency support
 - alSurface: Investigate Weidlich multi-layered model - weidlich_2007_almfs-paper.pdf
-- alSurface: Add data AOVs
 - alSurface: Add support for environment escape to specular and transmission
-- alLayer: Add AOV blending support
-
+- alSurface: Implement photon beam diffusion
 
 ===== Bugs =====
-- alSurface: transmission absorption does not currently affect shadows
-- alRemapColor: RGB/HSV/RGB transform is proper borked
-- Library: Work out why remap controls MEL UI is screwed
-
 
 ===== Optimizations =====
-- alSurface: Investigate optimizations of microfacet transmission
-- alSurface: Add faster control path for perfect specular reflection/refraction
 - alSurface: Investigate adding max-distance controls 
+- alSurface: Investigate russian roulette
