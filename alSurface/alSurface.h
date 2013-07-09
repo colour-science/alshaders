@@ -2,6 +2,7 @@
 
 #include <ai.h>
 #include <map>
+#include <string>
 
 struct ShaderData
 {
@@ -33,5 +34,27 @@ struct ShaderData
    bool specular1NormalConnected;
    bool specular2NormalConnected;
    bool lightGroupsIndirect;
+   bool standardAovs;
    int numLights;
+
+   // AOV names
+   std::string aov_diffuse_color;
+   std::string aov_direct_diffuse;
+   std::string aov_direct_diffuse_raw;
+   std::string aov_indirect_diffuse;
+   std::string aov_indirect_diffuse_raw;
+   std::string aov_direct_backlight;
+   std::string aov_indirect_backlight;
+   std::string aov_direct_specular;
+   std::string aov_indirect_specular;
+   std::string aov_direct_specular_2;
+   std::string aov_indirect_specular_2;
+   std::string aov_single_scatter;
+   std::string aov_sss;
+   std::string aov_refraction;
+   std::string aov_emission;
+   std::string aov_uv;
+   std::string aov_depth;
+   std::string aov_light_group[8];
+   std::string aov_id[8];
 };
