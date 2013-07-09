@@ -21,7 +21,9 @@ the root of your Arnold installation (in order to find the include files and lib
 the root of your MtoA installation if you want to install the shaders and AEtemplates there. If you want to install the
 shaders and AEtemplates somewhere else, set MTOA_SHADERS and MTOA_SCRIPTS appropriately. 
 You'll also need to set BOOST_INCLUDE to point to where your have your Boost headers installed in order to build alPhotometric.
-If you don't have Boost you can skip alPhotometric by removing it from the list of subdirectories in the main CMakeLists.txt file
+If you don't have Boost you can skip alPhotometric by removing it from the list of subdirectories in the main CMakeLists.txt file.
+The project contains an example local.cmake file (called local.cmake.win to stop it affecting the build) that has my build setup
+for Windows in it.
 
 Once those variables are set, cd to the top-level alShaders directory (assuming that's where you cloned it to), then:
 > mkdir build
