@@ -2,20 +2,26 @@ BINARY DISTRIBUTION
 -------------------
 Simply copy the files from the subdirectories to the relevant subdirectories of your MtoA installation (or somewhere in
 the appropriate paths):
+
+For MtoA
 - libraries (*.dylib, *.so, *.dll) and *.mtd files go in 'shaders'
-- *.mel scripts go in 'scripts'
+- *.py interface templates go in 'scripts/mtoa/ui/ae'
+
+For SitoA
+- I have no idea :)
+
 
 SOURCE DISTRIBUTION
 -------------------
-This project uses CMake >= 2.8 to build. It has been tested on Mac OS X 10.7 only. It *should* work without modification
-on Linux. You're on your own with Windows.
+This project uses CMake >= 2.8 to build. It has been tested on Mac OS X >=10.7 and Windows 7 with MSVC++2010. It *should* work 
+without modification on Linux but I haven't tested this thoroughly yet. 
 
-In order to set it up to build in your environment, edit the top-level CMakeLists.txt (or create a local.cmake file) and set ARNOLD_ROOT to point to 
+In order to set it up to build in your environment, create a local.cmake file and set ARNOLD_ROOT to point to 
 the root of your Arnold installation (in order to find the include files and libai.so), then set MTOA_ROOT to point to
 the root of your MtoA installation if you want to install the shaders and AEtemplates there. If you want to install the
-shaders and AEtemplates somewhere else, set MTOA_SHADERS and MTOA_SCRIPTS appropriately.
-
-In order to build alPhotometric you also need to define BOOST_INCLUDE_PATH to point to the directory where you have the boost headers installed (it requires the headers only, not the libraries themselves).
+shaders and AEtemplates somewhere else, set MTOA_SHADERS and MTOA_SCRIPTS appropriately. 
+You'll also need to set BOOST_INCLUDE to point to where your have your Boost headers installed in order to build alPhotometric.
+If you don't have Boost you can skip alPhotometric by removing it from the list of subdirectories in the main CMakeLists.txt file
 
 Once those variables are set, cd to the top-level alShaders directory (assuming that's where you cloned it to), then:
 > mkdir build
@@ -23,3 +29,7 @@ Once those variables are set, cd to the top-level alShaders directory (assuming 
 > cmake ..
 > make
 > make install
+
+On Windows use CMakeGUI. Set the source directory to where you unpacked the source files, and set the build directory to be the same
+but with "\build" on the end. Click "Configure" and select "Yes" when it asks if you want to create the build directory. Then click
+"Generate". This will create a Visual Studio project file in the build directory which you can use to build the library
