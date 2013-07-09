@@ -1,0 +1,84 @@
+SPDL
+Version = "1.0.0.0";
+Reference = "{d9f0e8a4-3d02-4cd1-a1b5-12d337d66fe0}";
+
+PropertySet "AlPhotometric_Pset"
+{
+   Parameter "out" output
+   {
+      guid = "{bd0269d7-19bb-4dc3-97d7-73ad35fc83e1}";
+      type = model;
+   }
+   Parameter "filename" input
+   {
+      guid = "{cf2afddf-15fc-4fb0-af0b-a3528675babf}";
+      type = string;
+      flags  = 1;
+      texturable = off;
+   }
+}
+
+
+MetaShader
+{
+   Name = "AlS_Photometric";
+   Type = light;
+   Renderer "Arnold Render"
+   {
+      Name = "AlPhotometric";
+   }
+}
+
+
+# BEGIN "{24810490-56FF-11d2-BF23-00A0C982CE5D}"
+
+Defaults
+{
+   filename
+   {
+      Name = "IES File Name";
+      UIType = "string";
+   }
+}
+
+
+Layout "Default"
+{
+   Row
+      {
+         filename;
+         Button BrowseForIESFile,alignright = "...";
+      }
+}
+
+
+Layout "RenderTree"
+{
+   filename;
+}
+
+
+
+Logic
+{
+   Sub BrowseForIESFile_OnClicked
+      Browse
+   End Sub
+
+   Sub Browse()
+      dim oFileBrowser
+      set oFileBrowser = XSIUIToolkit.FileBrowser
+      oFileBrowser.DialogTitle = "Select an IES Profile File" 
+      oFileBrowser.InitialDirectory = Application.ActiveProject.path
+
+      oFileBrowser.Filter = "IES Profile (*.ies)|*.ies|All Files (*.*)|*.*||"
+      oFileBrowser.ShowOpen()
+
+      If oFileBrowser.FilePathName <> "" Then
+         filename.value = sName
+      End If
+   End Sub
+}
+
+
+END
