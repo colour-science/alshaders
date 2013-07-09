@@ -51,7 +51,7 @@ files_osx = ['BUILD_INSTRUCTIONS.txt', 'README']
 
 # patterns for files to include in the windows binary distribution
 name_win = 'alShaders-win-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
-ptrn_win_src = ['*.mtd', '*.py']
+ptrn_win_src = ['*.mtd', '*.py', '*.spdl']
 ptrn_win_bin  = ['*.dll']
 files_win = ['BUILD_INSTRUCTIONS.txt', 'README']
 
