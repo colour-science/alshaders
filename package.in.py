@@ -41,7 +41,7 @@ subdirs = [
 name_src = 'alShaders-src-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
 ptrn_src_src = ['*.cpp', '*.h', '*.mtd', '*.txt', '*.py', '*.spdl']
 ptrn_src_bin = []
-files_src = ['BUILD_INSTRUCTIONS.txt', 'CMakeLists.txt', 'package.in.py', 'test.in.py', 'README', 'TODO.txt']
+files_src = ['BUILD_INSTRUCTIONS.txt', 'CMakeLists.txt', 'package.in.py', 'test.in.py', 'README', 'TODO.txt', 'local.cmake.win']
 
 # patterns for files to include in the osx binary distribution
 name_osx = 'alShaders-osx-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
