@@ -22,30 +22,8 @@ AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 #define GlossyMISCreateData AiCookTorranceMISCreateData
 
 #define NUM_LIGHT_GROUPS 8
-static const char* lightGroupNames[NUM_LIGHT_GROUPS] =
-{
-    "light_group_1",
-    "light_group_2",
-    "light_group_3",
-    "light_group_4",
-    "light_group_5",
-    "light_group_6",
-    "light_group_7",
-    "light_group_8"
-};
 
 #define NUM_ID_AOVS 8
-static const char* idAovNames[NUM_ID_AOVS] = 
-{
-    "id_1",
-    "id_2",
-    "id_3",
-    "id_4",
-    "id_5",
-    "id_6",
-    "id_7",
-    "id_8"
-};
 
 inline void flipNormals(AtShaderGlobals* sg)
 {
@@ -1352,7 +1330,7 @@ shader_evaluate
             {
                 AtRGB tmp;
                 // check if output is enabled first in case we have an expensive network upstream
-                if (AiAOVEnabled(idAovNames[i], AI_TYPE_RGB))
+                if (AiAOVEnabled(data->aov_id[i].c_str(), AI_TYPE_RGB))
                 {
                     tmp = AiShaderEvalParamRGB(p_id1 + i);
                     if (tmp != AI_RGB_BLACK)
