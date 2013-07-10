@@ -57,7 +57,7 @@ files_win = ['BUILD_INSTRUCTIONS.txt', 'README']
 
 # patterns for files to include in the linux binary distribution
 name_linux = 'alShaders-linux-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
-ptrn_linux_src = ['*.mtd', '*.py']
+ptrn_linux_src = ['*.mtd', '*.py', '*.spdl']
 ptrn_linux_bin  = ['*.so']
 files_linux = ['BUILD_INSTRUCTIONS.txt', 'README']
 
