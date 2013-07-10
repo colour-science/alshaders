@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
-#include <OpenEXR/ImathVec.h>
+#include <iostream>
 
 #include <ai.h>
 
@@ -190,7 +190,7 @@ inline void concentricSampleDisk(float u1, float u2, float& dx, float& dy)
             theta = 6.0f + sx/r;
         }
     }
-    theta *= M_PI / 4.f;
+    theta *= float(AI_PI) / 4.f;
     dx = r * cosf(theta);
     dy = r * sinf(theta);
 }
@@ -207,7 +207,7 @@ inline AtVector uniformSampleSphere(float u1, float u2)
 {
      float z = 1.f - 2.f * u1;
      float r = sqrtf(std::max(0.f, 1.f - z*z));
-     float phi = 2.f * M_PI * u2;
+     float phi = 2.f * float(AI_PI) * u2;
      float x = r * cosf(phi);
      float y = r * sinf(phi);
      AtVector v;
@@ -224,7 +224,7 @@ inline float sphericalTheta(const AtVector &v)
 inline float sphericalPhi(const AtVector &v)
 {
     float p = atan2f(v.y, v.x);
-    return (p < 0.f) ? p + 2.f*AI_PI : p;
+    return (p < 0.f) ? p + 2.f*float(AI_PI) : p;
 }
 
 inline float sphericalTheta(const AtVector& w, const AtVector& U)
@@ -376,7 +376,7 @@ inline AtRGB pow(AtRGB c, float e)
 
 inline float luminance(const AtRGB& c)
 {
-    return c.r*0.212671 + c.g*0.715160 + c.b*0.072169;
+    return c.r*0.212671f + c.g*0.715160f + c.b*0.072169f;
 }
 
 inline float luminance(float f)
@@ -482,7 +482,7 @@ inline AtRGB hsv2rgb (const AtRGB& hsv)
 // For the sake of simplicity we limit eta to 1.3 so cache A here
 inline float A(float eta)
 {
-    float Fdr = -1.440/(eta*eta) + 0.710/eta + 0.668 + 0.0636*eta;
+    float Fdr = -1.440f/(eta*eta) + 0.710f/eta + 0.668f + 0.0636f*eta;
     return (1 + Fdr)/(1 - Fdr);
 }
 
@@ -499,7 +499,7 @@ inline AtRGB alpha1_3(const AtRGB& c)
     return rgb(alpha1_3(c.r), alpha1_3(c.g), alpha1_3(c.b));
 }
 
-inline std::ostream& operator<<( std::ostream& os, AtVector v )
+inline std::ostream& operator<<(std::ostream& os, const AtVector& v)
 {
    os << "(" << v.x << "," << v.y << "," << v.z << ")";
    return os;
@@ -639,9 +639,9 @@ public:
         // Seed based on cell P is in
         AtUInt32 pi[4] = 
         {
-            floorf(P.x),
-            floorf(P.y),
-            floorf(P.z),
+            AtUInt32(floorf(P.x)),
+            AtUInt32(floorf(P.y)),
+            AtUInt32(floorf(P.z)),
             seed
         };
         _seed = inthash<4>(pi);
@@ -666,7 +666,7 @@ public:
             ++em;
             t *= (*this)();
         }
-        return em;
+        return float(em);
     }
 
 private:
@@ -736,7 +736,7 @@ inline float cubicRoot(float v)
 
 inline float solveQuadratic(float a, float b, float c, float roots[3])
 {
-    float epsilon = 1e-16;
+    float epsilon = 1e-16f;
 
     if (fabsf(a) < epsilon)
     {
@@ -763,7 +763,7 @@ inline float solveQuadratic(float a, float b, float c, float roots[3])
 // \todo: make sure it returns the same number of roots as in OpenEXR/ImathRoot.h
 inline float solveNormalizedCubic(float A, float B, float C, float roots[3])
 {
-    float epsilon = 1e-16;
+    float epsilon = 1e-16f;
     if (fabsf(C) < epsilon)
     {
         // 1 or 2 roots
@@ -787,8 +787,8 @@ inline float solveNormalizedCubic(float A, float B, float C, float roots[3])
         float th = acosf( R/sqrtf(-(Q*Q*Q)) );
         float sqrtQ = sqrtf(-Q);
         roots[0] = (2*sqrtQ*cosf(th/3) - A/3);
-        roots[1] = (2*sqrtQ*cosf((th + 2*AI_PI)/3) - A/3);
-        roots[2] = (2*sqrtQ*cosf((th + 4*AI_PI)/3) - A/3);
+        roots[1] = (2*sqrtQ*cosf((th + 2*float(AI_PI))/3) - A/3);
+        roots[2] = (2*sqrtQ*cosf((th + 4*float(AI_PI))/3) - A/3);
         rootCount = 3;
     }
     return rootCount;
@@ -796,7 +796,7 @@ inline float solveNormalizedCubic(float A, float B, float C, float roots[3])
 
 inline float solveCubic(float a, float b, float c, float d, float roots[3])
 {
-    float epsilon = 1e-16;
+    float epsilon = 1e-16f;
     if (fabsf(a) < epsilon)
     {
         return solveQuadratic (b, c, d, roots);

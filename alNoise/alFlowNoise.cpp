@@ -522,7 +522,7 @@ enum alFlowNoiseParams
 
 node_parameters
 {
-    AiParameterEnum("space", 0, noiseSpaceNames);
+    AiParameterEnum("space", NS_UV, noiseSpaceNames);
     AiParameterFlt("frequency", 1.0f);
     AiParameterInt("octaves", 4);
     AiParameterFlt("lacunarity", 2.172f);

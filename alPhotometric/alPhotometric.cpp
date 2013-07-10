@@ -19,6 +19,9 @@ node_parameters
 	AiParameterSTR("filename", "");
 }
 
+#ifdef MSVC
+#define _CRT_SECURE_NO_WARNINGS 1
+#endif
 node_loader
 {
    if (i>0) return 0;

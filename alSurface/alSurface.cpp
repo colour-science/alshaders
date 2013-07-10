@@ -22,30 +22,8 @@ AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 #define GlossyMISCreateData AiCookTorranceMISCreateData
 
 #define NUM_LIGHT_GROUPS 8
-static const char* lightGroupNames[NUM_LIGHT_GROUPS] =
-{
-    "light_group_1",
-    "light_group_2",
-    "light_group_3",
-    "light_group_4",
-    "light_group_5",
-    "light_group_6",
-    "light_group_7",
-    "light_group_8"
-};
 
 #define NUM_ID_AOVS 8
-static const char* idAovNames[NUM_ID_AOVS] = 
-{
-    "id_1",
-    "id_2",
-    "id_3",
-    "id_4",
-    "id_5",
-    "id_6",
-    "id_7",
-    "id_8"
-};
 
 inline void flipNormals(AtShaderGlobals* sg)
 {
@@ -127,6 +105,42 @@ enum alSurfaceParams
     p_aiMatteColor,
     p_aiMatteColorA,
 
+    p_aov_diffuse_color,
+    p_aov_direct_diffuse,
+    p_aov_direct_diffuse_raw,
+    p_aov_indirect_diffuse,
+    p_aov_indirect_diffuse_raw,
+    p_aov_direct_backlight,
+    p_aov_indirect_backlight,
+    p_aov_direct_specular,
+    p_aov_indirect_specular,
+    p_aov_direct_specular_2,
+    p_aov_indirect_specular_2,
+    p_aov_single_scatter,
+    p_aov_sss,
+    p_aov_refraction,
+    p_aov_emission,
+    p_aov_uv,
+    p_aov_depth,
+    p_aov_light_group_1,
+    p_aov_light_group_2,
+    p_aov_light_group_3,
+    p_aov_light_group_4,
+    p_aov_light_group_5,
+    p_aov_light_group_6,
+    p_aov_light_group_7,
+    p_aov_light_group_8,
+    p_aov_id_1,
+    p_aov_id_2,
+    p_aov_id_3,
+    p_aov_id_4,
+    p_aov_id_5,
+    p_aov_id_6,
+    p_aov_id_7,
+    p_aov_id_8,
+
+    p_standardAovs,
+
     p_bump
 };
 
@@ -186,7 +200,7 @@ node_parameters
     AiParameterBOOL("transmissionEnableCaustics", true);
     AiParameterINT("transmissionExtraSamples", 0);
 
-    AiParameterBOOL("lightGroupsIndirect", false);
+    AiParameterBOOL("lightGroupsIndirect", true);
 
     AiParameterRGB("id1", 0.0f, 0.0f, 0.0f);
     AiParameterRGB("id2", 0.0f, 0.0f, 0.0f);
@@ -201,9 +215,46 @@ node_parameters
     AiParameterRGB("aiMatteColor", 0.0f, 0.0f, 0.0f);
     AiParameterFlt("aiMatteColorA", 0.0f);
 
+    AiParameterStr("aov_diffuse_color", "diffuse_color");
+    AiParameterStr("aov_direct_diffuse", "direct_diffuse");
+    AiParameterStr("aov_direct_diffuse_raw", "direct_diffuse_raw");
+    AiParameterStr("aov_indirect_diffuse", "indirect_diffuse");
+    AiParameterStr("aov_indirect_diffuse_raw", "indirect_diffuse_raw");
+    AiParameterStr("aov_direct_backlight", "direct_backlight");
+    AiParameterStr("aov_indirect_backlight", "indirect_backlight");
+    AiParameterStr("aov_direct_specular", "direct_specular");
+    AiParameterStr("aov_indirect_specular", "indirect_specular");
+    AiParameterStr("aov_direct_specular_2", "direct_specular_2");
+    AiParameterStr("aov_indirect_specular_2", "indirect_specular_2");
+    AiParameterStr("aov_single_scatter", "single_scatter");
+    AiParameterStr("aov_sss", "sss");
+    AiParameterStr("aov_refraction", "refraction");
+    AiParameterStr("aov_emission", "emission");
+    AiParameterStr("aov_uv", "uv");
+    AiParameterStr("aov_depth", "depth");
+    AiParameterStr("aov_light_group_1", "light_group_1");
+    AiParameterStr("aov_light_group_2", "light_group_2");
+    AiParameterStr("aov_light_group_3", "light_group_3");
+    AiParameterStr("aov_light_group_4", "light_group_4");
+    AiParameterStr("aov_light_group_5", "light_group_5");
+    AiParameterStr("aov_light_group_6", "light_group_6");
+    AiParameterStr("aov_light_group_7", "light_group_7");
+    AiParameterStr("aov_light_group_8", "light_group_8");
+    AiParameterStr("aov_id_1", "id_1");
+    AiParameterStr("aov_id_2", "id_2");
+    AiParameterStr("aov_id_3", "id_3");
+    AiParameterStr("aov_id_4", "id_4");
+    AiParameterStr("aov_id_5", "id_5");
+    AiParameterStr("aov_id_6", "id_6");
+    AiParameterStr("aov_id_7", "id_7");
+    AiParameterStr("aov_id_8", "id_8");
+
+    AiParameterBool("standardCompatibleAOVs", false);
 }
 
-
+#ifdef MSVC
+#define _CRT_SECURE_NO_WARNINGS 1
+#endif
 node_loader
 {
     if (i>0) return 0;
@@ -217,7 +268,7 @@ node_loader
 
 node_initialize
 {
-    ShaderData *data = new ShaderData;
+    ShaderData* data = new ShaderData;
     AiNodeSetLocalData(node,data);
     data->diffuse_sampler = NULL;
     data->glossy_sampler = NULL;
@@ -246,43 +297,68 @@ node_finish
 
 node_update
 {
+    ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
+
     // set up AOVs
-    AiAOVRegister("diffuse_color", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("direct_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("direct_backlight", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("direct_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("indirect_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("indirect_backlight", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("indirect_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("indirect_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("direct_specular_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("indirect_specular_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("single_scatter", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("sss", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("refraction", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("emission", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("uv", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("depth", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("light_group_1", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("light_group_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("light_group_3", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("light_group_4", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("light_group_5", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("light_group_6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("light_group_7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("light_group_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("id_1", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("id_2", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("id_3", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("id_4", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("id_5", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("id_6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("id_7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("id_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    data->aov_diffuse_color = params[p_aov_diffuse_color].STR;
+    data->aov_direct_diffuse = params[p_aov_direct_diffuse].STR;
+    data->aov_direct_diffuse_raw = params[p_aov_direct_diffuse_raw].STR;
+    data->aov_indirect_diffuse = params[p_aov_indirect_diffuse].STR;
+    data->aov_indirect_diffuse_raw = params[p_aov_indirect_diffuse_raw].STR;
+    data->aov_direct_specular = params[p_aov_direct_specular].STR;
+    data->aov_indirect_specular = params[p_aov_indirect_specular].STR;
+    data->aov_direct_specular_2 = params[p_aov_direct_specular_2].STR;
+    data->aov_indirect_specular_2 = params[p_aov_indirect_specular_2].STR;
+    data->aov_direct_backlight = params[p_aov_direct_backlight].STR;
+    data->aov_indirect_backlight = params[p_aov_indirect_backlight].STR;
+    data->aov_single_scatter = params[p_aov_single_scatter].STR;
+    data->aov_sss = params[p_aov_sss].STR;
+    data->aov_refraction = params[p_aov_refraction].STR;
+    data->aov_emission = params[p_aov_emission].STR;
+    data->aov_uv = params[p_aov_uv].STR;
+    data->aov_depth = params[p_aov_depth].STR;
+    data->aov_light_group[0] = params[p_aov_light_group_1].STR;
+    data->aov_light_group[1] = params[p_aov_light_group_2].STR;
+    data->aov_light_group[2] = params[p_aov_light_group_3].STR;
+    data->aov_light_group[3] = params[p_aov_light_group_4].STR;
+    data->aov_light_group[4] = params[p_aov_light_group_5].STR;
+    data->aov_light_group[5] = params[p_aov_light_group_6].STR;
+    data->aov_light_group[6] = params[p_aov_light_group_7].STR;
+    data->aov_light_group[7] = params[p_aov_light_group_8].STR;
+    data->aov_id[0] = params[p_aov_id_1].STR;
+    data->aov_id[1] = params[p_aov_id_2].STR;
+    data->aov_id[2] = params[p_aov_id_3].STR;
+    data->aov_id[3] = params[p_aov_id_4].STR;
+    data->aov_id[4] = params[p_aov_id_5].STR;
+    data->aov_id[5] = params[p_aov_id_6].STR;
+    data->aov_id[6] = params[p_aov_id_7].STR;
+    data->aov_id[7] = params[p_aov_id_8].STR;
+    
+    AiAOVRegister(data->aov_diffuse_color.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_direct_diffuse.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_direct_backlight.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_direct_diffuse_raw.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_indirect_diffuse.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_indirect_backlight.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_indirect_diffuse_raw.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_direct_specular.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_indirect_specular.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_direct_specular_2.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_indirect_specular_2.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_single_scatter.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_sss.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_refraction.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_emission.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_uv.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(data->aov_depth.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+        AiAOVRegister(data->aov_light_group[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    for (int i=0; i < NUM_ID_AOVS; ++i)
+        AiAOVRegister(data->aov_id[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+
+    data->standardAovs = params[p_standardAovs].BOOL;
 
     // store some options we'll reuse later
-    ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
     AtNode *options   = AiUniverseGetOptions();
     data->GI_diffuse_depth = AiNodeGetInt(options, "GI_diffuse_depth");
     data->GI_reflection_depth = AiNodeGetInt(options, "GI_reflection_depth");
@@ -457,8 +533,6 @@ shader_evaluate
     }
 
     // Evaluate bump;
-    AtVector N_orig;
-    AtVector Nf_orig;
     AtRGB bump = AiShaderEvalParamRGB(p_bump);
 
     // Initialize parameter temporaries
@@ -466,7 +540,7 @@ shader_evaluate
     AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
     AtRGB backlightColor = AiShaderEvalParamRGB(p_backlightColor) * AiShaderEvalParamFlt(p_backlightStrength);
     float diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
-    bool diffuseEnableCaustics = AiShaderEvalParamFlt(p_diffuseEnableCaustics);
+    bool diffuseEnableCaustics = AiShaderEvalParamBool(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
     float sssMix = AiShaderEvalParamFlt( p_sssMix );
     AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
@@ -602,7 +676,7 @@ shader_evaluate
     AtRGB* deepGroupPtr = NULL;
     AtRGB result_directGroup[NUM_LIGHT_GROUPS];
     for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
-    bool doDeepGroups = data->lightGroupsIndirect;
+    bool doDeepGroups = data->lightGroupsIndirect && (!data->standardAovs);
 
     if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
     {
@@ -815,7 +889,7 @@ shader_evaluate
         sg->Nf = specular1Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
-            wi = GlossyMISSample(mis, samples[0], samples[1]);
+            wi = GlossyMISSample(mis, float(samples[0]), float(samples[1]));
             if (AiV3Dot(wi,specular1Normal) > 0.0f)
             {
                 // get half-angle vector for fresnel
@@ -870,7 +944,7 @@ shader_evaluate
         sg->Nf = specular2Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
-            wi = GlossyMISSample(mis2, samples[0], samples[1]);
+            wi = GlossyMISSample(mis2, float(samples[0]), float(samples[1]));
             if (AiV3Dot(wi,specular2Normal) > 0.0f)
             {
                 wi_ray.dir = wi;
@@ -924,17 +998,17 @@ shader_evaluate
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
-            float stheta = sqrtf(samples[0]);
-            float phi = AI_PITIMES2 * samples[1];
+            float stheta = sqrtf(float(samples[0]));
+            float phi = float(AI_PITIMES2 * samples[1]);
             wi.x = stheta * cosf(phi);
             wi.y = stheta * sinf(phi);
-            wi.z = sqrtf(1.0f - samples[0]);
+            wi.z = sqrtf(1.0f - float(samples[0]));
             AiV3RotateToFrame(wi, U, V, sg->Nf);
 
             float cos_theta = AiV3Dot(wi, sg->Nf);
             if (cos_theta <= 0.0f) continue;
 
-            float p = cos_theta * AI_ONEOVERPI;
+            float p = cos_theta * float(AI_ONEOVERPI);
             
             // trace the ray
             wi_ray.dir = wi;
@@ -971,7 +1045,6 @@ shader_evaluate
     if (do_transmission)
     {
         double samples[2];
-        float n1, n2;
         float kt;
         AtRay wi_ray;
         AtScrSample sample;
@@ -1036,9 +1109,9 @@ shader_evaluate
                     AtRGB transmittance = AI_RGB_WHITE;
                     if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        transmittance.r = fast_exp(-sample.z * sigma_t.r);
-                        transmittance.g = fast_exp(-sample.z * sigma_t.g);
-                        transmittance.b = fast_exp(-sample.z * sigma_t.b);
+                        transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
+                        transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
+                        transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
                     AtRGB f = brdf/pdf * transmittance;
                     result_transmission += sample.color * f;
@@ -1069,9 +1142,9 @@ shader_evaluate
                     AtRGB transmittance = AI_RGB_WHITE;
                     if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        transmittance.r = fast_exp(-sample.z * sigma_t.r);
-                        transmittance.g = fast_exp(-sample.z * sigma_t.g);
-                        transmittance.b = fast_exp(-sample.z * sigma_t.b);
+                        transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
+                        transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
+                        transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
                     result_transmission += sample.color * transmittance;
                     // accumulate the lightgroup contributions calculated by the child shader
@@ -1111,17 +1184,17 @@ shader_evaluate
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
-            float stheta = sqrtf(samples[0]);
-            float phi = AI_PITIMES2 * samples[1];
+            float stheta = sqrtf(float(samples[0]));
+            float phi = float(AI_PITIMES2 * samples[1]);
             wi.x = stheta * cosf(phi);
             wi.y = stheta * sinf(phi);
-            wi.z = sqrtf(1.0f - samples[0]);
+            wi.z = sqrtf(1.0f - float(samples[0]));
             AiV3RotateToFrame(wi, U, V, sg->Nf);
 
             float cos_theta = AiV3Dot(wi, sg->Nf);
             if (cos_theta <= 0.0f) continue;
 
-            float p = cos_theta * AI_ONEOVERPI;
+            float p = cos_theta * float(AI_ONEOVERPI);
             
             // trace the ray
             wi_ray.dir = wi;
@@ -1168,6 +1241,7 @@ shader_evaluate
     result_backlightIndirect *= (1-sssMix);
     result_sss *= sssMix;
 
+
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)
     {
@@ -1183,14 +1257,17 @@ shader_evaluate
                                 + deepGroupsTransmission[i]
                                 + deepGroupsBacklight[i] 
                                 + lightGroupsDirect[i];
-                AiAOVSetRGB(sg, lightGroupNames[i], deepGroups[i]);
+
+                if (deepGroups[i] != AI_RGB_BLACK)
+                    AiAOVSetRGB(sg, data->aov_light_group[i].c_str(), deepGroups[i]);
             }
         }
-        else
+        else if (!data->standardAovs)
         {
             for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                AiAOVSetRGB(sg, lightGroupNames[i], lightGroupsDirect[i]);
+                if (lightGroupsDirect[i] != AI_RGB_BLACK)
+                    AiAOVSetRGB(sg, data->aov_light_group[i].c_str(), lightGroupsDirect[i]);
             }
         }
     }
@@ -1211,40 +1288,62 @@ shader_evaluate
     if (sg->Rt & AI_RAY_CAMERA)
     {
         // write AOVs
-        AiAOVSetRGB(sg, "diffuse_color", diffuseColor);
-        AiAOVSetRGB(sg, "direct_diffuse", result_diffuseDirect);
-        AiAOVSetRGB(sg, "direct_diffuse_raw", result_diffuseDirectRaw);
-        AiAOVSetRGB(sg, "direct_backlight", result_backlightDirect);
-        AiAOVSetRGB(sg, "sss", result_sss);
-        AiAOVSetRGB(sg, "direct_specular", result_glossyDirect);
-        AiAOVSetRGB(sg, "direct_specular_2", result_glossy2Direct);
-        AiAOVSetRGB(sg, "indirect_diffuse", result_diffuseIndirect);
-        AiAOVSetRGB(sg, "indirect_diffuse_raw", result_diffuseIndirectRaw);
-        AiAOVSetRGB(sg, "indirect_backlight", result_backlightIndirect);
-        AiAOVSetRGB(sg, "indirect_specular", result_glossyIndirect);
-        AiAOVSetRGB(sg, "indirect_specular_2", result_glossy2Indirect);
-        AiAOVSetRGB(sg, "single_scatter", result_ss);
-        AiAOVSetRGB(sg, "refraction", result_transmission);
-        AiAOVSetRGB(sg, "emission", result_emission);
 
-        // write IDs
-        for (int i=0; i < NUM_ID_AOVS; ++i)
+        // if "standard aovs" is enabled, we'll try and fold our results into the aovs supported by the standard shader
+        if (data->standardAovs)
         {
             AtRGB tmp;
-            // check if output is enabled first in case we have an expensive network upstream
-            if (AiAOVEnabled(idAovNames[i], AI_TYPE_RGB))
-            {
-                tmp = AiShaderEvalParamRGB(p_id1 + i);
-                AiAOVSetRGB(sg, idAovNames[i], tmp);
-            }
+            tmp = result_diffuseDirect + result_backlightDirect;
+            if (tmp != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_direct_diffuse.c_str(), tmp);
+            tmp = result_diffuseIndirect + result_backlightIndirect;
+            if (tmp != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_indirect_diffuse.c_str(), tmp);
+            tmp = result_glossyDirect + result_glossy2Direct;
+            if (tmp != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_direct_specular.c_str(), tmp);
+            tmp = result_glossyIndirect + result_glossy2Indirect;
+            if (tmp != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_indirect_specular.c_str(), tmp);
+            tmp = result_transmission + result_ss;
+            if (tmp != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_refraction.c_str(), tmp);
+
+            if (result_sss != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_sss.c_str(), result_sss);
+            if (result_emission != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_emission.c_str(), result_emission);
         }
+        else
+        {
+            if (diffuseColor != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_diffuse_color.c_str(), diffuseColor);
+            if (result_diffuseDirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_direct_diffuse.c_str(), result_diffuseDirect);
+            if (result_diffuseDirectRaw != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_direct_diffuse_raw.c_str(), result_diffuseDirectRaw);
+            if (result_backlightDirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_direct_backlight.c_str(), result_backlightDirect);
+            if (result_sss != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_sss.c_str(), result_sss);
+            if (result_glossyDirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_direct_specular.c_str(), result_glossyDirect);
+            if (result_glossy2Direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_direct_specular_2.c_str(), result_glossy2Direct);
+            if (result_diffuseIndirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_indirect_diffuse.c_str(), result_diffuseIndirect);
+            if (result_diffuseIndirectRaw != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_indirect_diffuse_raw.c_str(), result_diffuseIndirectRaw);
+            if (result_backlightIndirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_indirect_backlight.c_str(), result_backlightIndirect);
+            if (result_glossyIndirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_indirect_specular.c_str(), result_glossyIndirect);
+            if (result_glossy2Indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_indirect_specular_2.c_str(), result_glossy2Indirect);
+            if (result_ss != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_single_scatter.c_str(), result_ss);
+            if (result_transmission != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_refraction.c_str(), result_transmission);
+            if (result_emission != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aov_emission.c_str(), result_emission);
 
-        // write data AOVs
-        AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
-        AiAOVSetRGB(sg, "uv", uv);
-        AtRGB depth = AiColorCreate(sg->Rl, AiV3Dot(sg->Nf, wo), 0.0f);
-        AiAOVSetRGB(sg, "depth", depth);
+            // write IDs
+            for (int i=0; i < NUM_ID_AOVS; ++i)
+            {
+                AtRGB tmp;
+                // check if output is enabled first in case we have an expensive network upstream
+                if (AiAOVEnabled(data->aov_id[i].c_str(), AI_TYPE_RGB))
+                {
+                    tmp = AiShaderEvalParamRGB(p_id1 + i);
+                    if (tmp != AI_RGB_BLACK)
+                        AiAOVSetRGB(sg, data->aov_id[i].c_str(), tmp);
+                }
+            }
 
+            // write data AOVs
+            AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
+            AiAOVSetRGB(sg, data->aov_uv.c_str(), uv);
+            AtRGB depth = AiColorCreate(float(sg->Rl), AiV3Dot(sg->Nf, wo), 0.0f);
+            AiAOVSetRGB(sg, data->aov_depth.c_str(), depth);
+        }
     }
 
     // Sum final result from temporaries
