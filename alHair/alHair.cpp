@@ -123,7 +123,6 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, flo
         float n_star_2 = 2.0f * (ior - 1.0f) / aa - ior + 2.0f;
         n_star = 0.5f * ((n_star_1+n_star_2) + cosf(2.0f*phi_h)*(n_star_1-n_star_2));
     }
-    
 
     // Get miller-bravais indices n' and n''
     float sin_theta_d = sinf(theta_d);
