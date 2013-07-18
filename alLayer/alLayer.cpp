@@ -154,6 +154,7 @@ node_update
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
     // set up AOVs
+    data->aovs.clear();
     data->aovs.push_back(params[p_aov_diffuse_color].STR);
     data->aovs.push_back(params[p_aov_direct_diffuse].STR);
     data->aovs.push_back(params[p_aov_direct_diffuse_raw].STR);
