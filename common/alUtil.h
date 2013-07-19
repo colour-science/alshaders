@@ -833,3 +833,7 @@ inline AtVector floor(const AtVector& v)
     AiV3Create(r, floorf(v.x), floorf(v.y), floorf(v.z));
     return r;
 }
+
+#define ALS_RAY_UNDEFINED 0
+#define ALS_RAY_SSS 1
+#define ALS_RAY_DUAL 2

@@ -6,6 +6,7 @@
 
 #include <ai.h>
 #include "alUtil.h"
+#include "stats.h"
 #include <vector>
 #include <algorithm>
 
@@ -108,7 +109,6 @@ float fresnel(float incidenceAngle, float etaPerp, float etaParal, float invert)
         }
         return 0.5 * (rPerp + rParal);
 }
-
 
 
 void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, AtRGB absorption, AtRGB kfr[4])
@@ -424,9 +424,6 @@ struct HairBsdf
             memset(N_G_TRT, 0, sizeof(AtRGB)*DS_NUMSTEPS*DS_NUMSTEPS);
             float theta_d_step = AI_PITIMES2 / DS_NUMSTEPS;
 #ifdef DEBUG_FRESNEL
-            AtRGB* kf_R = new AtRGB[DS_NUMSTEPS*DS_NUMSTEPS];
-            AtRGB* kf_TT = new AtRGB[DS_NUMSTEPS*DS_NUMSTEPS]; 
-            AtRGB* kf_TRT = new AtRGB[DS_NUMSTEPS*DS_NUMSTEPS]; 
             memset(kf_R, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             memset(kf_TT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
             memset(kf_TRT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
@@ -517,6 +514,9 @@ struct HairBsdf
         AtRGB N_G_R[DS_NUMSTEPS*DS_NUMSTEPS];
         AtRGB N_G_TT[DS_NUMSTEPS*DS_NUMSTEPS];
         AtRGB N_G_TRT[DS_NUMSTEPS*DS_NUMSTEPS];
+        AtRGB kf_R[DS_NUMSTEPS*DS_NUMSTEPS];
+        AtRGB kf_TT[DS_NUMSTEPS*DS_NUMSTEPS];
+        AtRGB kf_TRT[DS_NUMSTEPS*DS_NUMSTEPS];
 
         float beta_R;       //< R width
         float beta_R2;
@@ -1069,100 +1069,92 @@ struct HairBsdf
     /// Integrate the direct illumination with dual scattering for all diffuse and glossy lobes
     inline void integrateDirectDual(AtShaderGlobals* sg)
     {
-        /// TODO: come up with a plausible solution for diffuse rays
-        if (sg->Rt & AI_RAY_DIFFUSE)
+        bool do_glossy = true;
+        if (sg->Rt & AI_RAY_DIFFUSE) do_glossy = false;
+
+        int als_hairNumIntersections = 0;
+        AtRGB als_T_f = AI_RGB_BLACK;
+        AtRGB als_sigma_bar_f = AI_RGB_BLACK;
+        sg->fhemi = false;
+        sg->skip_shadow = true;
+        AiLightsPrepare(sg);
+        AtRay ray;
+        AtScrSample scrs;
+        AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), NULL, AI_BIG, sg);
+        AtRGB kfr[4];
+        AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
+        while (AiLightsGetSample(sg))
         {
-            /*
-            // if we're in a diffuse ray then don't do the full brdf, just do a kajiya kay diffuse approximation
-            // or the result will be noisy as hell (hair caustics!)
-            sg->fhemi = false;
-            AiLightsPrepare(sg);
-            while (AiLightsGetSample(sg))
+            prepareDirectSample(sg->Ld);
+
+
+            AiStateSetMsgInt("als_hairNumIntersections", 0);
+            AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
+            AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
+            ray.dir = sg->Ld;
+            AiTrace(&ray, &scrs);
+            AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections);
+            AiStateGetMsgRGB("als_T_f", &als_T_f);
+            AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
+
+            int idx = int((theta_i / AI_PI + 0.5f)*(DS_NUMSTEPS-1));
+            AtRGB theta_hr = rgb(theta_h);
+            AtRGB f_direct_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
+            float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
+            AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
+
+            if (directFraction > 0.0f)
             {
-                result_diffuse_direct += AiEvaluateLightSample(sg, this, HairBsdf::HairDiffuseSample, HairBsdf::HairDiffuseBsdf, HairBsdf::HairDiffusePdf);
-            }
-            result_diffuse_direct *= specular2Color;
-            sg->fhemi = true;
-            */
-        }
-        else
-        {
-            int als_hairNumIntersections = 0;
-            AtRGB als_T_f = AI_RGB_BLACK;
-            AtRGB als_sigma_bar_f = AI_RGB_BLACK;
-            sg->fhemi = false;
-            sg->skip_shadow = true;
-            AiLightsPrepare(sg);
-            AtRay ray;
-            AtScrSample scrs;
-            AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), NULL, AI_BIG, sg);
-            AtRGB kfr[4];
-            while (AiLightsGetSample(sg))
-            {
-                prepareDirectSample(sg->Ld);
-
-                AiStateSetMsgInt("als_hairNumIntersections", 0);
-                AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
-                AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
-                ray.dir = sg->Ld;
-                AiTrace(&ray, &scrs);
-                AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections);
-                AiStateGetMsgRGB("als_T_f", &als_T_f);
-                AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
-
-                int idx = int((theta_i / AI_PI + 0.5f)*(DS_NUMSTEPS-1));
-                AtRGB theta_hr = rgb(theta_h);
-                AtRGB f_direct_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
-                float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
-                AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
-
-                if (directFraction > 0.0f)
+                
+                result_Pl_direct += sg->Li * sg->we * occlusion * density_back * f_direct_back * cos_theta_i * directFraction;
+                
+                if (do_glossy)
                 {
                     AtRGB kfr[3];
                     hairAttenuation(ior, cos_theta_i, theta_d, phi_d, phi_h, aa, absorption, kfr);
-                    result_Pl_direct += sg->Li * sg->we * occlusion * density_back * f_direct_back * cos_theta_i * directFraction;
                     AtRGB L = sg->Li * sg->we * invariant * occlusion * directFraction;
                     
                     result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
                     result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1];
                     result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
                     result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi_c, phi_g) * kfr[3];
-
                 }
-                if (directFraction < 1.0f)
+
+            }
+            if (directFraction < 1.0f)
+            {
+                AtRGB T_f = als_T_f;
+                AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
+
+                AtRGB f_s_scatter = AI_RGB_BLACK;
+                int ng_x = int((phi*AI_ONEOVERPI)*2.0f - 1.0f) * (DS_NUMSTEPS-1);
+                int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
+                int ng_idx = ng_y*DS_NUMSTEPS+ng_x;
+                if (phi >= AI_PIOVER2 ) // forward scattering directions only
                 {
-                    AtRGB T_f = als_T_f;
-                    AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
-
-                    AtRGB f_s_scatter = AI_RGB_BLACK;
-                    int ng_x = int((phi*AI_ONEOVERPI)*2.0f - 1.0f) * (DS_NUMSTEPS-1);
-                    int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
-                    int ng_idx = ng_y*DS_NUMSTEPS+ng_x;
-                    if (phi >= AI_PIOVER2 ) // forward scattering directions only
-                    {
-                        f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[ng_idx]
-                                        + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[ng_idx]
-                                        + g(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[ng_idx];
-                        f_s_scatter *= S_f;
-                    }
-                    
-                    AtRGB f_scatter_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
-
-                    AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
-
-                    result_Pg_direct += sg->Li * sg->we * occlusion * F_scatter * cos_theta_i * (1.0f-directFraction);
-
+                    f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[ng_idx]
+                                    + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[ng_idx]
+                                    + g(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[ng_idx];
+                    f_s_scatter *= S_f;
                 }
-            } // END light loop
+                
+                AtRGB f_scatter_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
 
-            result_R_direct *= specular1Color;
-            result_TT_direct *= transmissionColor;
-            result_TRT_direct *= specular2Color;
-            result_TRTg_direct *= specular2Color * glintStrength;
+                AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
 
-            sg->fhemi = true;
-            sg->skip_shadow = false;
-        }
+                result_Pg_direct += sg->Li * sg->we * occlusion * F_scatter * cos_theta_i * (1.0f-directFraction);
+
+            }
+        } // END light loop
+        AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
+
+        result_R_direct *= specular1Color;
+        result_TT_direct *= transmissionColor;
+        result_TRT_direct *= specular2Color;
+        result_TRTg_direct *= specular2Color * glintStrength;
+
+        sg->fhemi = true;
+        sg->skip_shadow = false;
     }
 
     /// Integrate the indirect illumination for dual scattering
@@ -1509,8 +1501,11 @@ shader_evaluate
     AtRGB als_sigma_bar_f = AI_RGB_BLACK;
     bool do_dual = false;
     if (sg->Rr >= data->dual_depth) do_dual = true;
+
+    int als_raytype = ALS_RAY_UNDEFINED;
+    AiStateGetMsgInt("als_raytype", &als_raytype);
     
-    if (do_dual && ((sg->Rt & AI_RAY_SHADOW) || (sg->Rt & AI_RAY_GLOSSY)))
+    if (do_dual && als_raytype == ALS_RAY_DUAL)
     {
         if (AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections) 
             && AiStateGetMsgRGB("als_T_f", &als_T_f)
@@ -1544,7 +1539,7 @@ shader_evaluate
     if (do_dual)
     {
         hb.integrateDirectDual(sg);
-        hb.integrateIndirectDual(sg);
+        //hb.integrateIndirectDual(sg);
     } 
     else
     {
