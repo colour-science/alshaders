@@ -111,7 +111,7 @@ float fresnel(float incidenceAngle, float etaPerp, float etaParal, float invert)
 }
 
 
-void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, AtRGB absorption, AtRGB kfr[4])
+void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, AtRGB absorption, AtRGB kfr[3])
 {
 #define ONEOVERPI3 0.032251534433199495
 
@@ -161,7 +161,7 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, flo
                 float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
                 float cos_theta_t = cosf(theta_t);
                 float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
-                kfr[1] = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
+                kfr[1] = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * fast_exp(-absorption*l);
             }
         }
         else 
@@ -174,24 +174,13 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, flo
                 float cos_theta_t = cosf(theta_t);
                 float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
 
-                /*
-                float iFr = fresnel(gamma_t, n_p, n_pp, true);
-                kfr[2] += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l);
-                */
-
                 float iFr = fresnel(gamma_t, n_p_star, n_pp_star, true);
-                kfr[2] += (1.0f - fresnel(gamma_i, n_p_star, n_pp_star, false)) * (1.0f - iFr) * iFr * exp(-absorption*2*l);
+                kfr[2] += (1.0f - fresnel(gamma_i, n_p_star, n_pp_star, false)) * (1.0f - iFr) * iFr * fast_exp(-absorption*2*l);
 
-                iFr = fresnel(gamma_t, n_p_star, n_pp_star, true);
-                kfr[3] += (1.0f - fresnel(gamma_i, n_p_star, n_pp_star, false)) * (1.0f - iFr) * iFr * exp(-absorption*2*l);
             }
         }
-        //kfr[p] = Fr;
     }
 }
-
-
-
 
 #define PIOVER4 0.7853981633974483f
 #define ONEOVER4PI 0.07957747154594767
@@ -1117,7 +1106,7 @@ struct HairBsdf
                     result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
                     result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1];
                     result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
-                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi_c, phi_g) * kfr[3];
+                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi_c, phi_g) * kfr[2];
                 }
 
             }
@@ -1189,14 +1178,14 @@ struct HairBsdf
             float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
             if (directFraction > 0.0f)
             {
-                AtRGB kfr[4];
+                AtRGB kfr[3];
                 hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, aa, absorption, kfr);
                 result_Pl_indirect += scrs.color * density_back * f_direct_back * cos_theta_i * directFraction;
                 AtRGB L = scrs.color * invariant * p * directFraction;
                 result_R_indirect += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
                 result_TT_indirect += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
                 result_TRT_indirect += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
-                result_TRTg_indirect += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[3];
+                result_TRTg_indirect += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[2];
 
             }
             if (directFraction < 1.0f)
