@@ -366,6 +366,14 @@ inline AtRGB exp(AtRGB c)
     return c;
 }
 
+inline AtRGB fast_exp(AtRGB c)
+{
+    c.r = fast_exp(c.r);
+    c.g = fast_exp(c.g);
+    c.b = fast_exp(c.b);
+    return c;
+}
+
 inline AtRGB pow(AtRGB c, float e)
 {
     c.r = powf(c.r, e);
