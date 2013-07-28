@@ -4,6 +4,7 @@ import subprocess
 import time
 import os
 import sys
+import argparse
 
 VERSION = "@ALS_VERSION@"
 
@@ -16,8 +17,15 @@ class Timer:
         self.end = time.time()
         self.interval = self.end - self.start
 
+parser = argparse.ArgumentParser(description='Run the alShaders test suite')
+parser.add_argument('-t', '--tests', nargs='+', help='tests to run. default=all')
+parser.add_argument('-s', '--set', nargs='+')
+args = parser.parse_args()
+
 # names of the tests and whether the surfaces should be opaque or not
 tests = {
+			'ai_bplastic_shiny':{'opaque':1, 'eir':0},
+			'ai_bplastic_rough':{'opaque':1, 'eir':0},
 			'als_bplastic_shiny':{'opaque':1, 'eir':0},
 			'als_bplastic_rough':{'opaque':1, 'eir':0},
 			'als_goldleaf':{'opaque':1, 'eir':0},
@@ -38,6 +46,8 @@ if not os.path.exists(output_dir):
 # loop over the tests, combine the asses and render them
 test_results = {}
 for test_name,overrides in tests.items():
+	if args.tests and test_name not in args.tests:
+		continue
 	header = open("test/test_header.ass", "r").read()
 	output = 'include "test/test_%s.ass"\n' % test_name
 	output += header
@@ -50,7 +60,13 @@ for test_name,overrides in tests.items():
 
 	log = open('%s/log_%s.txt' % (output_dir, test_name), 'w')
 
-	cmd = 'kick -v 6 -t 2 -dp -dw -set ringShape.opaque %d -set shellShape.opaque %d -set TARGET_SURFACE.transmissionEnableCaustics %d -set driver_exr_beauty.filename "test/output/%s/%s.exr" test/test_tmp.ass' % (opaque, opaque, eir, VERSION, test_name)
+	set_string = '-set ringShape.opaque %d -set shellShape.opaque %d -set TARGET_SURFACE.transmissionEnableCaustics %d -set driver_exr_beauty.filename "test/output/%s/%s.exr"' % (opaque, opaque, eir, VERSION, test_name)
+
+	if args.set:
+		for s in args.set:
+			set_string = '%s -set %s' % (set_string, s)
+
+	cmd = 'kick -v 6 -t 2 -dp -dw %s test/test_tmp.ass' % set_string
 
 	sys.stdout.write('%s...' % test_name)
 	sys.stdout.flush()
