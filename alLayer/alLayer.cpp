@@ -4,14 +4,15 @@
 #include <string>
 #include <cassert>
 
+#include "aovs.h"
+
 AI_SHADER_NODE_EXPORT_METHODS(alLayer)
 
 struct ShaderData
 {
-	// AOV names
-   std::vector<std::string> aovs;
-
-   bool standardAovs;
+    // AOV names
+    std::vector<std::string> aovs;
+    bool standardAovs;
 };
 
 enum alLayerParams
@@ -147,52 +148,12 @@ node_finish
     }
 }
 
-#define NUM_AOVs 33
-
 node_update
 {
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
     // set up AOVs
-    data->aovs.clear();
-    data->aovs.push_back(params[p_aov_diffuse_color].STR);
-    data->aovs.push_back(params[p_aov_direct_diffuse].STR);
-    data->aovs.push_back(params[p_aov_direct_diffuse_raw].STR);
-    data->aovs.push_back(params[p_aov_indirect_diffuse].STR);
-    data->aovs.push_back(params[p_aov_indirect_diffuse_raw].STR);
-    data->aovs.push_back(params[p_aov_direct_specular].STR);
-    data->aovs.push_back(params[p_aov_indirect_specular].STR);
-    data->aovs.push_back(params[p_aov_direct_specular_2].STR);
-    data->aovs.push_back(params[p_aov_indirect_specular_2].STR);
-    data->aovs.push_back(params[p_aov_direct_backlight].STR);
-    data->aovs.push_back(params[p_aov_indirect_backlight].STR);
-    data->aovs.push_back(params[p_aov_single_scatter].STR);
-    data->aovs.push_back(params[p_aov_sss].STR);
-    data->aovs.push_back(params[p_aov_refraction].STR);
-    data->aovs.push_back(params[p_aov_emission].STR);
-    data->aovs.push_back(params[p_aov_uv].STR);
-    data->aovs.push_back(params[p_aov_depth].STR);
-    data->aovs.push_back(params[p_aov_light_group_1].STR);
-    data->aovs.push_back(params[p_aov_light_group_2].STR);
-    data->aovs.push_back(params[p_aov_light_group_3].STR);
-    data->aovs.push_back(params[p_aov_light_group_4].STR);
-    data->aovs.push_back(params[p_aov_light_group_5].STR);
-    data->aovs.push_back(params[p_aov_light_group_6].STR);
-    data->aovs.push_back(params[p_aov_light_group_7].STR);
-    data->aovs.push_back(params[p_aov_light_group_8].STR);
-    data->aovs.push_back(params[p_aov_id_1].STR);
-    data->aovs.push_back(params[p_aov_id_2].STR);
-    data->aovs.push_back(params[p_aov_id_3].STR);
-    data->aovs.push_back(params[p_aov_id_4].STR);
-    data->aovs.push_back(params[p_aov_id_5].STR);
-    data->aovs.push_back(params[p_aov_id_6].STR);
-    data->aovs.push_back(params[p_aov_id_7].STR);
-    data->aovs.push_back(params[p_aov_id_8].STR);
-
-    assert(NUM_AOVs == data->aovs.size() && "[alLayer] NUM_AOVs does not match size of aovs array!");
-
-    for (size_t i=0; i < data->aovs.size(); ++i)
-    	AiAOVRegister(data->aovs[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    REGISTER_AOVS
 
     data->standardAovs = params[p_standardAovs].BOOL;
 }
