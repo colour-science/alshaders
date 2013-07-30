@@ -26,6 +26,17 @@ AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 #define NUM_LIGHT_GROUPS 8
 
 #define NUM_ID_AOVS 8
+static const char* id_names[NUM_ID_AOVS] =
+{
+    "id_1",
+    "id_2",
+    "id_3",
+    "id_4",
+    "id_5",
+    "id_6",
+    "id_7",
+    "id_8",
+};
 
 inline void flipNormals(AtShaderGlobals* sg)
 {
@@ -651,8 +662,8 @@ shader_evaluate
     AtRGB* transmittedAovPtr = NULL;
     if (transmitAovs && (sg->Rt & AI_RAY_CAMERA))
     {
-        transmittedAovPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*33);
-        memset(transmittedAovPtr, 0, sizeof(AtRGB)*33);
+        transmittedAovPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_AOVs);
+        memset(transmittedAovPtr, 0, sizeof(AtRGB)*NUM_AOVs);
         AiStateSetMsgPtr("als_transmittedAovPtr", transmittedAovPtr);
     }
     else if (transmitAovs)
@@ -1346,6 +1357,13 @@ shader_evaluate
                 if (AiAOVEnabled(data->aovs[k_id_1+i].c_str(), AI_TYPE_RGB))
                 {
                     tmp = AiShaderEvalParamRGB(p_id1 + i);
+
+                    // check if we're overriding it with a per-object id
+                    if (AiNodeLookUpUserParameter(sg->Op, id_names[i]))
+                    {
+                        tmp = AiNodeGetRGB(sg->Op, id_names[i]);
+                    }
+
                     if (tmp != AI_RGB_BLACK)
                         AiAOVSetRGB(sg, data->aovs[k_id_1+i].c_str(), tmp);
                 }
@@ -1407,6 +1425,13 @@ shader_evaluate
                 for (int i=0; i < NUM_ID_AOVS; ++i)
                 {
                     AtRGB tmp = AiShaderEvalParamRGB(p_id1 + i);
+                    
+                    // check if we're overriding it with a per-object id
+                    if (AiNodeLookUpUserParameter(sg->Op, id_names[i]))
+                    {
+                        tmp = AiNodeGetRGB(sg->Op, id_names[i]);
+                    }
+
                     if (tmp != AI_RGB_BLACK)
                         transmittedAovPtr[k_id_1+i] = tmp;
                 }
