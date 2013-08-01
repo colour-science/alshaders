@@ -75,7 +75,7 @@ float fresnel(float n2, float n1, float theta_i)
     return f;
 }
 
-void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtRGB absorption, AtRGB kfr[3])
+void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRGB kfr[3])
 {
 #define ONEOVERPI3 0.032251534433199495
     // Get miller-bravais indices n' and n''
@@ -109,8 +109,7 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
             else
             {
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
-                float cos_theta_t = std::min(1.0f, (n_p/ior)*cos_theta_i);
-                float l = 2.0f * cosf(gamma_t) / std::max(0.000001f, cos_theta_t);
+                float l = 2.0f * cosf(gamma_t);
                 Fr = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t)) * exp(-absorption*l);
             }
         }
@@ -120,20 +119,19 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, AtR
             {
                 float gamma_i = roots[i];
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
-                float cos_theta_t = std::min(1.0f, (n_p/ior)*cos_theta_i);
-                float l = 2.0f * cosf(gamma_t) / std::max(0.000001f, cos_theta_t);
+                float l = 2.0f * cosf(gamma_t);
 
                 float Fr_TT = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t));
                 Fr += Fr_TT * fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t) * exp(-absorption*2*l);
             }
         }
-        kfr[p] = clamp(Fr, AI_RGB_BLACK, AI_RGB_WHITE);
+        kfr[p] =  clamp(Fr, AI_RGB_BLACK, AI_RGB_WHITE);
     }
 }
 
 void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, AtRGB absorption, AtRGB kfr[3])
 {
-    hairAttenuation(ior, cos_theta_i, theta_d, phi, absorption, kfr);
+    hairAttenuation(ior, theta_d, phi, absorption, kfr);
 }
 
 #define PIOVER4 0.7853981633974483f
