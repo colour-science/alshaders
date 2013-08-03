@@ -90,11 +90,13 @@ void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRG
     {
         // adjust phi to correct range for this component
         float phi_p = phi;
+        /*
         if (p != 1)
         {
             if (phi_p > AI_PI) phi_p -= AI_PITIMES2;
             phi_p += p*AI_PI;
         }
+        */
         // get roots of polynomial
         float roots[3] = {0,0,0};
         int numRoots = solveCubic(-8.0f*p*c*ONEOVERPI3, 0.0f, 6.0f*p*c*AI_ONEOVERPI - 2.0f, p*AI_PI - phi_p, roots);
@@ -260,182 +262,6 @@ struct HairBsdf
 
             dual_depth = params[p_dualDepth].INT;
 
-            /*
-            // precalculate scattering LUTs
-            float theta_i_step = AI_PI / DS_NUMSTEPS;
-            float theta_r_step = AI_PI/ DS_NUMSTEPS;
-            float phi_step = AI_PIOVER2 / DS_NUMSTEPS;
-            int idx = 0;
-            memset(a_bar_f, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(a_bar_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(alpha_f, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(alpha_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(beta_f, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(beta_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            AtRGB kfr[4];
-            for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i+=theta_i_step)
-            {
-                float cos_theta_i = cosf(theta_i);
-                for (float theta_r = -AI_PIOVER2; theta_r < AI_PIOVER2; theta_r += theta_r_step)
-                {
-                    float theta_h = (theta_i + theta_r) * 0.5f;
-                    float theta_d = (theta_i - theta_r) * 0.5f;
-                    float cos_theta_d = cosf(theta_d);
-                    float inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-                    // integrate over half the domain each time and double after as it's symmetrical
-                    // forward scattering
-                    for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
-                    {
-                        hairAttenuation(ior, cos_theta_i, theta_d, phi, phi, 1.0f, absorption, kfr);
-                        float cosphi2 = cosf(phi*0.5f);
-                        
-                        // [2] eq (6)
-                        // Compute average forward-scattering attenuation, i.e. total forward-scattered radiance
-                        // TODO: Should be multiplying by cos_theta_i here too?
-                        // {
-                        AtRGB f_R = bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0] * cos_theta_i;
-                        AtRGB f_TT = bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1] * cos_theta_i;
-                        AtRGB f_TRT = (bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2)
-                                    + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * glintStrength)
-                                    * kfr[2] * cos_theta_i;
-                        a_bar_f[idx] += f_R + f_TT + f_TRT;
-                        // }
-                        alpha_f[idx] += f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT;
-                        beta_f[idx] += f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2;
-                    }
-
-                    // backward scattering
-                    for (float phi = 0.0f; phi < AI_PIOVER2; phi += phi_step)
-                    {
-                        hairAttenuation(ior, cosf(theta_i), theta_d, phi, phi, 1.0f, absorption, kfr);
-                        float cosphi2 = cosf(phi*0.5f);
-                        // [2] eq (11)
-                        // Compute average back-scattering attenuation, i.e. total back-scattered radiance
-                        // TODO: should be multiplying by cos_theta_i here too..?
-                        // {
-                        AtRGB f_R = bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0] * cos_theta_i;
-                        AtRGB f_TT = bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1] * cos_theta_i;
-                        AtRGB f_TRT = (bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2)
-                                    + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * glintStrength) 
-                                    * kfr[2] * cos_theta_i;
-                        a_bar_b[idx] += f_R + f_TT + f_TRT;
-                        // }
-                        alpha_b[idx] += f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT;
-                        beta_b[idx] += f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2;
-                    }
-                }
-
-                alpha_f[idx] /= a_bar_f[idx];
-                alpha_b[idx] /= a_bar_b[idx];
-
-                beta_f[idx] /= a_bar_f[idx];
-                beta_b[idx] /= a_bar_b[idx];
-
-                a_bar_f[idx] *= 2.0f / AI_PI * theta_r_step * phi_step;
-                a_bar_b[idx] *= 2.0f / AI_PI * theta_r_step * phi_step;
-
-                idx++;
-            }
-
-            memset(A_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(delta_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(sigma_b, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            for (int i=0; i < DS_NUMSTEPS; ++i)
-            {
-                AtRGB af2 = a_bar_f[i]*a_bar_f[i];
-                AtRGB ab2 = a_bar_b[i]*a_bar_b[i];
-                AtRGB omaf2 = AI_RGB_WHITE - af2;
-
-                // [2] eq (14)
-                // Average back-scattered attenuation for up to 3 scattering events
-                A_b[i] = (a_bar_b[i]*af2)/omaf2 + (ab2*a_bar_b[i]*af2)/(omaf2*omaf2);
-
-                // [2] eq. (16)
-                // Average back-scattering longitudinal shift for up to 3 scattering events
-                delta_b[i] = alpha_b[i] * (1.0f - (2.0f*a_bar_b[i]*a_bar_b[i])/(omaf2*omaf2)) 
-                            + alpha_f[i] * ((2.0f*omaf2*omaf2) + 4.0f * af2 * ab2) / (omaf2*omaf2*omaf2);
-
-                // [2] eq. (17)
-                // Average longitudinal variance for up to 3 scattering events
-                AtRGB rtbfbb = sqrt(2.0f*beta_f[i] + beta_b[i]);
-                sigma_b[i] = (1.0f + 0.7f*af2) * (a_bar_b[i]*rtbfbb + ab2*a_bar_b[i]*rtbfbb) / (a_bar_b[i] + ab2*a_bar_b[i] * (2.0f*beta_f[i] + 3.0f*beta_b[i]));
-            }
-
-            idx = 0;
-            memset(N_G_R, 0, sizeof(AtRGB)*DS_NUMSTEPS*DS_NUMSTEPS);
-            memset(N_G_TT, 0, sizeof(AtRGB)*DS_NUMSTEPS*DS_NUMSTEPS);
-            memset(N_G_TRT, 0, sizeof(AtRGB)*DS_NUMSTEPS*DS_NUMSTEPS);
-            float theta_d_step = AI_PITIMES2 / DS_NUMSTEPS;
-#ifdef DEBUG_FRESNEL
-            memset(kf_R, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(kf_TT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-            memset(kf_TRT, 0, sizeof(AtRGB)*DS_NUMSTEPS);
-#endif            
-            theta_d_step = AI_PI / DS_NUMSTEPS;
-            
-            // phi [pi/2, PI]
-            for (int p = 0; p < DS_NUMSTEPS; ++p)        
-            {
-                float phi = p * phi_step + AI_PIOVER2;
-                // theta_d [-pi/2, pi/2]
-                for (int t=0; t < DS_NUMSTEPS; ++t)
-                {
-                    float theta_d = t * theta_d_step - AI_PIOVER2;
-                    int ng_idx = t*DS_NUMSTEPS+p;
-                    for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i += theta_r_step)
-                    {
-                        // [2] eq. (25)
-                        // BCSDF due to forward scattering
-                        // {
-                        hairAttenuation(ior, cosf(theta_i), theta_d, phi, phi, 1.0f, absorption, kfr);
-
-                        N_G_R[ng_idx] += rgb(cosf(phi*0.5f)) * kfr[0];
-                        N_G_TT[ng_idx] += rgb(g(gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
-                        N_G_TRT[ng_idx] += rgb(cosf(phi*0.5f) + g(gamma_g, 0.0f, phi - phi_g)) * kfr[2];
-#ifdef DEBUG_FRESNEL
-                        kf_R[ng_idx] += kfr[0];
-                        kf_TT[ng_idx] += kfr[1];
-                        kf_TRT[ng_idx] += kfr[2];
-#endif
-                        // }
-                    }
-                    //N_G_R[ng_idx] = rgb(theta_d, phi, 0.0f);
-                    
-                    N_G_R[ng_idx] *= AI_ONEOVERPI * theta_r_step;
-                    N_G_TT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
-                    N_G_TRT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
-                    
-#ifdef DEBUG_FRESNEL
-                    
-                    kf_R[ng_idx] *= AI_ONEOVERPI * theta_r_step;
-                    kf_TT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
-                    kf_TRT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
-                    
-#endif
-                }
-            }
-
-            AtUInt32 t1 = AiMsgUtilGetElapsedTime();
-            float t = float(t1 - t0)/1000.0f;
-            AiMsgInfo("[alHair] DS precalc took %.1f seconds", t);
-#ifdef DEBUG_LUTS
-            writeThickRGBEXR("/tmp/a_bar_f.exr", (float*)a_bar_f, DS_NUMSTEPS, 1);
-            writeThickRGBEXR("/tmp/a_bar_b.exr", (float*)a_bar_b, DS_NUMSTEPS, 1);
-            writeThickRGBEXR("/tmp/alpha_f.exr", (float*)alpha_f, DS_NUMSTEPS, 1);
-            writeThickRGBEXR("/tmp/alpha_b.exr", (float*)alpha_b, DS_NUMSTEPS, 1);
-            writeThickRGBEXR("/tmp/delta_b.exr", (float*)delta_b, DS_NUMSTEPS, 1);
-            writeThickRGBEXR("/tmp/sigma_b.exr", (float*)sigma_b, DS_NUMSTEPS, 1);
-            writeThickRGBEXR("/tmp/A_b.exr", (float*)A_b, DS_NUMSTEPS, 1);
-            writeRGBEXR("/tmp/N_G_R.exr", (float*)N_G_R, DS_NUMSTEPS, DS_NUMSTEPS);
-            writeRGBEXR("/tmp/N_G_TT.exr", (float*)N_G_TT, DS_NUMSTEPS, DS_NUMSTEPS);
-            writeRGBEXR("/tmp/N_G_TRT.exr", (float*)N_G_TRT, DS_NUMSTEPS, DS_NUMSTEPS);
-#ifdef DEBUG_FRESNEL
-            writeRGBEXR("/tmp/kf_R.exr", (float*)kf_R, DS_NUMSTEPS, DS_NUMSTEPS);
-            writeRGBEXR("/tmp/kf_TT.exr", (float*)kf_TT, DS_NUMSTEPS, DS_NUMSTEPS);
-            writeRGBEXR("/tmp/kf_TRT.exr", (float*)kf_TRT, DS_NUMSTEPS, DS_NUMSTEPS);
-#endif
-#endif
-            */
         }
 
         AtSampler* sampler_diffuse;
@@ -535,8 +361,6 @@ struct HairBsdf
             cn = 0.5f;
         }
 
-        aa = SQR(0.9f);
-
         ior = data->ior;
 
         beta_R = data->beta_R;
@@ -589,133 +413,87 @@ struct HairBsdf
         return clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, (2.0f*theta_h - theta_r));
     }
 
-    /// Sample according to the diffuse bsdf (just uniform spherical sampling for now)
-    inline void sampleDiffuse(float u1, float u2, AtVector& wi)
-    {
-        wi = uniformSampleSphere(u1, u2);
-    }
-
-    /// Sample according to the R lobe
-    inline void sampleR(float u1, float u2)
-    {
-        theta_i = sampleLong(u1, theta_r, alpha_R, beta_R, A_R, B_R);
-        phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f)) + AI_PI;
-    }
-
     inline AtVector sample_R(float u1, float u2)
     {
-        theta_i = sampleLong(u1, theta_r, alpha_R, beta_R, A_R, B_R);
-        phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f)) + AI_PI;
+        float theta_i = sampleLong(u1, theta_r, alpha_R, beta_R, A_R, B_R);
+        float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f)) + AI_PI;
         AtVector wi;
         sphericalDirection(theta_i, phi, V, W, U, wi);
         return wi;
     }
 
-    inline AtRGB bsdf_R(const AtVector& wi)
+    struct SctGeo
     {
-        float theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(wi, V, W);
-        float phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float cosphi2 = cosf(phi*0.5f);
-        float theta_d = (theta_r - theta_i)*0.5f;
-        float cos_theta_d = cosf(theta_d);
-        float inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        return rgb(bsdfR(beta_R2, alpha_R, theta_h, cosphi2)) * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;;
+        SctGeo(const AtVector& w, float theta_r, float phi_r, const AtVector& U, const AtVector& V, const AtVector& W)
+        {
+            wi = w;
+            theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
+            cos_theta_i = cosf(theta_i);
+            theta_h = (theta_r+theta_i)*0.5f;
+            phi_i = sphericalPhi(wi, V, W);
+            phi_d = phi_r - phi_i;
+            if (phi_d < 0) phi_d += AI_PITIMES2;
+            phi = phi_d - AI_PI;
+            phi = AI_PI - fabsf(phi);
+            phi_h = (phi_r+phi_i)*0.5f;
+            cosphi2 = cosf(phi*0.5f);
+            theta_d = (theta_r - theta_i)*0.5f;
+            cos_theta_d = cosf(theta_d);
+            inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
+        }
+
+        AtVector wi;
+        float theta_i;
+        float cos_theta_i;
+        float theta_h;
+        float phi_i;
+        float phi_d;
+        float phi_h;
+        float phi;
+        float cosphi2;
+        float theta_d;
+        float cos_theta_d;
+        float inv_cos_theta_d2;
+    };
+
+    inline AtRGB bsdf_R(const SctGeo& geo)
+    {
+        return rgb(bsdfR(beta_R2, alpha_R, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;
     }
 
-    inline float pdf_R(const AtVector& wi)
+    inline float pdf_R(const SctGeo& geo)
     {
-        float theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(wi, V, W);
-        float phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float cosphi2 = cosf(phi*0.5f);
-        float t = theta_h-alpha_R;
-        float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_R-B_R))) * (beta_R / (t*t + beta_R2));
-        float pdf_phi = cosphi2*0.25f;
-        return pdf_theta * pdf_phi;
-    }
-
-    /// PDF of the R lobe
-    inline float pdfR()
-    {
-        float t = theta_h-alpha_R;
-        float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_R-B_R))) * (beta_R / (t*t + beta_R2));
-        float pdf_phi = cosphi2*0.25f;
-        return pdf_theta * pdf_phi;
-    }
-
-    ///  Sample according to the TRT lobe
-    inline void sampleTRT(float u1, float u2)
-    {
-        theta_i = sampleLong(u1, theta_r, alpha_TRT, beta_TRT, A_TRT, B_TRT);
-        phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f)) + AI_PI;
-    }
-
-    /// PDF of the TRT lobe
-    inline float pdfTRT()
-    {
-        float t = theta_h-alpha_TRT;
-        float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_TRT-B_TRT))) * (beta_TRT / (t*t + beta_TRT2));
-        float pdf_phi = cosphi2*0.25f;
+        float t = geo.theta_h-alpha_R;
+        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_R-B_R))) * (beta_R / (t*t + beta_R2));
+        float pdf_phi = geo.cosphi2*0.25f;
         return pdf_theta * pdf_phi;
     }
 
     inline AtVector sample_TRT(float u1, float u2)
     {
-        theta_i = sampleLong(u1, theta_r, alpha_TRT, beta_TRT, A_R, B_R);
-        phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f)) + AI_PI;
+        float theta_i = sampleLong(u1, theta_r, alpha_TRT, beta_TRT, A_R, B_R);
+        float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f)) + AI_PI;
         AtVector wi;
         sphericalDirection(theta_i, phi, V, W, U, wi);
         return wi;
     }
 
-    inline AtRGB bsdf_TRT(const AtVector& wi)
+    inline AtRGB bsdf_TRT(const SctGeo& geo)
     {
-        float theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(wi, V, W);
-        float phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float cosphi2 = cosf(phi*0.5f);
-        float theta_d = (theta_r - theta_i)*0.5f;
-        float cos_theta_d = cosf(theta_d);
-        float inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        return rgb(bsdfR(beta_TRT2, alpha_TRT, theta_h, cosphi2)) * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;;
+        return rgb(bsdfR(beta_TRT2, alpha_TRT, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;;
     }
 
-    inline float pdf_TRT(const AtVector& wi)
+    inline float pdf_TRT(const SctGeo& geo)
     {
-        float theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(wi, V, W);
-        float phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float cosphi2 = cosf(phi*0.5f);
-        float t = theta_h-alpha_TRT;
-        float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_R-B_R))) * (beta_TRT / (t*t + beta_TRT2));
-        float pdf_phi = cosphi2*0.25f;
+        float t = geo.theta_h-alpha_TRT;
+        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_R-B_R))) * (beta_TRT / (t*t + beta_TRT2));
+        float pdf_phi = geo.cosphi2*0.25f;
         return pdf_theta * pdf_phi;
     }
 
     inline AtVector sample_TRTg(float u1, float u2)
     {
-        theta_i = sampleLong(u1, theta_r, alpha_TRT, beta_TRT, A_TRT, B_TRT);
+        float theta_i = sampleLong(u1, theta_r, alpha_TRT, beta_TRT, A_TRT, B_TRT);
         float sign;
         if (u2 < 0.5f)
         {
@@ -729,7 +507,7 @@ struct HairBsdf
         }
         Cg = atanf((AI_PIOVER2 - phi_g)/gamma_g);
         Dg = atanf(-phi_g/gamma_g);
-        phi = gamma_g * tanf(u2*(Cg-Dg)+Dg) + phi_g;
+        float phi = gamma_g * tanf(u2*(Cg-Dg)+Dg) + phi_g;
         phi *= sign;
 
         AtVector wi;
@@ -737,281 +515,51 @@ struct HairBsdf
         return wi;
     }
 
-    inline AtRGB bsdf_TRTg(const AtVector& wi)
+    inline AtRGB bsdf_TRTg(const SctGeo& geo)
     {
-        float theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(wi, V, W);
-        float phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float cosphi2 = cosf(phi*0.5f);
-        float theta_d = (theta_r - theta_i)*0.5f;
-        float cos_theta_d = cosf(theta_d);
-        float inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        
-        return rgb(bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g)) * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;;
+        return rgb(bsdfg(beta_TRT2, alpha_TRT, geo.theta_h, gamma_g, geo.phi, phi_g)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;;
     }
 
-    inline float pdf_TRTg(const AtVector& wi)
-    {
-        float theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(wi, V, W);
-        float phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float cosphi2 = cosf(phi*0.5f);
-        
-        float t = theta_h-alpha_TRT;
-        float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_TRT-B_TRT))) * (beta_TRT / (t*t + beta_TRT2));
-        float p = fabs(phi) - phi_g;
+    inline float pdf_TRTg(const SctGeo& geo)
+    {   
+        float t = geo.theta_h-alpha_TRT;
+        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_TRT-B_TRT))) * (beta_TRT / (t*t + beta_TRT2));
+        float p = fabs(geo.phi) - phi_g;
         float Cg = atanf((AI_PIOVER2 - phi_g)/gamma_g);
         float Dg = atanf(-phi_g/gamma_g);
         float pdf_phi = (1.0f / (2.0f * (Cg-Dg))) * (gamma_g / (p*p + gamma_g*gamma_g));
         return pdf_theta * pdf_phi;
     }
 
-    /// Sample according to the TT lobe
-    inline void sampleTT(float u1, float u2)
-    {
-        theta_i = sampleLong(u1, theta_r, alpha_TT, beta_TT, A_TT, B_TT);
-        C_TT = 2.0f * atanf(AI_PI/gamma_TT);
-        phi = gamma_TT * tanf(C_TT * (u2-0.5f)) + AI_PI;
-    }
-
     inline AtVector sample_TT(float u1, float u2)
     {
-        theta_i = sampleLong(u1, theta_r, alpha_TT, beta_TT, A_TT, B_TT);
+        float theta_i = sampleLong(u1, theta_r, alpha_TT, beta_TT, A_TT, B_TT);
         C_TT = 2.0f * atanf(AI_PI/gamma_TT);
-        phi = gamma_TT * tanf(C_TT * (u2-0.5f)) + AI_PI;
+        float phi = gamma_TT * tanf(C_TT * (u2-0.5f)) + AI_PI;
         AtVector wi;
         sphericalDirection(theta_i, phi, V, W, U, wi);
         return wi;
     }
 
-    inline AtRGB bsdf_TT(const AtVector& wi)
+    inline AtRGB bsdf_TT(const SctGeo& geo)
     {
-        float theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(wi, V, W);
-        float phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        //phi = AI_PI - fabsf(phi);
-
-/*
-        static Range rng_phi("phi");
-        rng_phi.addSample(phi);
-        static Range rng_phi_d("phi_d");
-        rng_phi_d.addSample(phi_d);
-*/
-
-        float cosphi2 = cosf(phi*0.5f);
-        float theta_d = (theta_r - theta_i)*0.5f;
-        float cos_theta_d = cosf(theta_d);
-        float inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        return rgb(bsdfTT(beta_R2, alpha_R, theta_h, gamma_TT, phi_d)) * cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
-        //return rgb(phi);
+        return rgb(bsdfTT(beta_R2, alpha_R, geo.theta_h, gamma_TT, geo.phi_d)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;
     }
 
-    inline float pdf_TT(const AtVector& wi)
+    inline float pdf_TT(const SctGeo& geo)
     {
-        float theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(wi, V, W);
-        float phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float cosphi2 = cosf(phi*0.5f);
-
-        float t = theta_h-alpha_TT;
-        float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_TT-B_TT))) * (beta_TT / (t*t + beta_TT2));
-        float p = phi-AI_PI;
+        float t = geo.theta_h-alpha_TT;
+        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_TT-B_TT))) * (beta_TT / (t*t + beta_TT2));
+        float p = geo.phi-AI_PI;
         float C_TT = 2.0f * atanf(AI_PI/gamma_TT);
         float pdf_phi = (1.0f / C_TT) * (gamma_TT / (p*p + gamma_TT*gamma_TT));
         
         return pdf_theta * pdf_phi;
     }
 
-    /// PDF of the TT lobe
-    inline float pdfTT()
-    {
-        float t = theta_h-alpha_TT;
-        float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_TT-B_TT))) * (beta_TT / (t*t + beta_TT2));
-        float p = phi-AI_PI;
-        float pdf_phi = (1.0f / C_TT) * (gamma_TT / (p*p + gamma_TT*gamma_TT));
-        return pdf_theta * pdf_phi;
-    }
-
-    /// Sample according to the glints lobes
-    inline void sampleg(float u1, float u2)
-    {
-        theta_i = sampleLong(u1, theta_r, alpha_TRT, beta_TRT, A_TRT, B_TRT);
-        float sign;
-        if (u2 < 0.5f)
-        {
-            sign = 1.0f;
-            u2 = 2.0f * u2;
-        }
-        else
-        {
-            sign = -1.0f;
-            u2 = 2.0f * (1.0f-u2);
-        }
-        Cg = atanf((AI_PIOVER2 - phi_g)/gamma_g);
-        Dg = atanf(-phi_g/gamma_g);
-        phi = gamma_g * tanf(u2*(Cg-Dg)+Dg) + phi_g;
-        phi *= sign;
-    }
-
-    /// PDF of the glints lobes
-    inline float pdfg()
-    {
-        float t = theta_h-alpha_TRT;
-        float pdf_theta = (1.0f / (2.0f*cos_theta_i*(A_TRT-B_TRT))) * (beta_TRT / (t*t + beta_TRT2));
-        float p = fabs(phi) - phi_g;
-        float pdf_phi = (1.0f / (2.0f * (Cg-Dg))) * (gamma_g / (p*p + gamma_g*gamma_g));
-        return pdf_theta * pdf_phi;
-    }
-
-    /*
-    inline void sampleUniform(double u1, double u2)
-    {
-        // Choose a lobe to sample based on which quadrant we are in
-        if (1) // (depth < 1)
-        {
-            if (u1 < 0.5 && u2 < 0.5)
-            {
-                u1 = 2.0 * u1;
-                u2 = 2.0 * u2;
-                sampleR(u1, u2);
-            }
-            else if (u1 >= 0.5 && u2 < 0.5)
-            {
-                u1 = 2.0 * (1.0 - u1);
-                u2 = 2.0 * u2;
-                sampleTT(u1, u2);
-            }
-            else if (u1 < 0.5 && u2 >= 0.5)
-            {
-                u1 = 2.0 * u1;
-                u2 = 2.0 * (1.0 - u2);
-                sampleTRT(u1, u2);
-            }
-            else
-            {
-                u1 = 2.0 * (1.0 - u1);
-                u2 = 2.0 * (1.0 - u2);
-                sampleg(u1, u2);
-            }
-        }
-        else
-        {
-            if (u1 < 0.5)
-            {
-                u1 = 2.0 * u1;
-                sampleR(u1, u2);
-            }
-            else if (u1 >= 0.5)
-            {
-                u1 = 2.0 * (1.0 - u1);
-                sampleTT(u1, u2);
-            }
-        }
-    }
-    */
-
-    inline int sampleUniform(double u1, double u2)
-    {
-        // Choose a lobe to sample based on which quadrant we are in
-        if (u1 < 0.5 && u2 < 0.5)
-        {
-            u1 = 2.0 * u1;
-            u2 = 2.0 * u2;
-            sampleR(u1, u2);
-            return 0;
-        }
-        else if (u1 >= 0.5 && u2 < 0.5)
-        {
-            u1 = 2.0 * (1.0 - u1);
-            u2 = 2.0 * u2;
-            sampleTT(u1, u2);
-            return 1;
-        }
-        else if (u1 < 0.5 && u2 >= 0.5)
-        {
-            u1 = 2.0 * u1;
-            u2 = 2.0 * (1.0 - u2);
-            sampleTRT(u1, u2);
-            return 2;
-        }
-        else
-        {
-            u1 = 2.0 * (1.0 - u1);
-            u2 = 2.0 * (1.0 - u2);
-            sampleg(u1, u2);
-            return 3;
-        }
-    }
-
-    
-
-    /// PDF for uniformly sampling all glossy lobes
-    inline float pdfUniform()
-    {
-        float pdf;
-        if (1) pdf = (pdfR() + pdfTT() + pdfTRT() + pdfg())* 0.25f;
-        else pdf = (pdfR() + pdfTT()) * 0.5f;
-
-        return pdf;
-    }
-
-    inline float pdfUniform(int lobe)
-    {
-        float pdf;
-        switch (lobe)
-        {
-            case 0: pdf = pdfR(); break;
-            case 1: pdf = pdfTT(); break;
-            case 2: pdf = pdfTRT(); break;
-            case 3: pdf = pdfg(); break;
-        }
-        return pdf * 0.25f;
-    }
-
-    /// MIS diffuse sampling
-    static AtVector HairDiffuseSample(const void* brdf_data, float u1, float u2)
-    {
-        return uniformSampleSphere(u1, u2);
-    }
-
-    /// MIS diffuse BSDF
-    static AtRGB HairDiffuseBsdf(const void* brdf_data, const AtVector* wi)
-    {
-        const HairBsdf* hb = reinterpret_cast<const HairBsdf*>(brdf_data);
-        float tl = AiV3Dot(*wi, hb->U);
-        return rgb(sqrtf(1.0f - tl*tl)* ONEOVER4PI);
-    }
-
-    /// MIS diffuse PDF
-    static float HairDiffusePdf(const void* brdf_data, const AtVector* wi)
-    {
-        return ONEOVER4PI;
-    }
-
-#define NEW_MULTI
     static AtVector HairGlossySample(const void* brdf_data, float u1, float u2)
     {
         HairBsdf* hb = (HairBsdf*)brdf_data;
-#ifdef NEW_MULTI        
         if (u1 < 0.5f && u2 < 0.5f) 
         {
             u1 *= 2.0f;
@@ -1036,9 +584,6 @@ struct HairBsdf
             u2 = 2.0f * (1.0f-u2);
             return hb->sample_TRTg(u1, u2);
         }
-#else 
-        return hb->sample_TT(u1, u2);
-#endif
     }
 
     static AtRGB HairGlossyBsdf(const void* brdf_data, const AtVector* wi)
@@ -1046,208 +591,27 @@ struct HairBsdf
         HairBsdf* hb = (HairBsdf*)brdf_data;
         AtRGB result = AI_RGB_BLACK;
 
-        /*
-        float theta_i = (AI_PIOVER2 - sphericalTheta(*wi, hb->U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (hb->theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(*wi, hb->V, hb->W);
-        float phi_d = hb->phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float phi_h = (hb->phi_r+phi_i)*0.5f;
-        float cosphi2 = cosf(phi*0.5f);
-        float theta_d = (hb->theta_r - theta_i)*0.5f;
-        float cos_theta_d = cosf(theta_d);
-        float inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
 
-        int als_hairNumIntersections = 0;
-        AtRGB als_T_f = AI_RGB_BLACK;
-        AtRGB als_sigma_bar_f = AI_RGB_BLACK;
-
-        AtShaderGlobals* sg = hb->_sg;
-
-        AtRay ray;
-        AtScrSample scrs;
-        AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), NULL, AI_BIG, sg);
-
-        AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
-        AiStateSetMsgInt("als_hairNumIntersections", 0);
-        AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
-        AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
-        ray.dir = *wi;
-        AiTrace(&ray, &scrs);
-        AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections);
-        AiStateGetMsgRGB("als_T_f", &als_T_f);
-        AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
-        AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
-
-        int idx = int((theta_i / AI_PI + 0.5f)*(DS_NUMSTEPS-1));
-        AtRGB theta_hr = rgb(theta_h);
-        AtRGB f_direct_back = 2.0f * hb->data->A_b[idx] * g(hb->data->sigma_b[idx] + als_sigma_bar_f, hb->data->delta_b[idx], theta_hr) * AI_ONEOVERPI 
-                                * inv_cos_theta_d2;
-        float directFraction = 1.0f - std::min(als_hairNumIntersections, hb->numBlendHairs)/float(hb->numBlendHairs);
-        
-        if (directFraction > 0.0f)
-        {
-            AtRGB kfr[3];
-            hairAttenuation(hb->ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, hb->aa, hb->absorption, kfr);
-            result += hb->density_back * f_direct_back * cos_theta_i * directFraction;
-            result += hb->bsdf_R(*wi) * kfr[0];
-            result += hb->bsdf_TT(*wi) * kfr[1];
-            result += hb->bsdf_TRT(*wi) * kfr[2];
-            result += hb->bsdf_TRTg(*wi) * kfr[2];
-
-        }
-        if (directFraction < 1.0f)
-        {
-            AtRGB T_f = als_T_f;
-            AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
-
-            AtRGB f_s_scatter = AI_RGB_BLACK;
-
-            if (phi >= AI_PIOVER2) // forward scattering directions only
-            {
-                int ng_x = int((phi*AI_ONEOVERPI)*2.0f - 1.0f) * (DS_NUMSTEPS-1);
-                int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
-                int ng_idx = ng_y*DS_NUMSTEPS+ng_x;
-                f_s_scatter = g(hb->beta_R2+als_sigma_bar_f, rgb(hb->alpha_R), theta_hr) * hb->data->N_G_R[ng_idx]
-                                + g(hb->beta_TT2+als_sigma_bar_f, rgb(hb->alpha_TT), theta_hr) * hb->data->N_G_TT[ng_idx]
-                                + g(hb->beta_TRT2+als_sigma_bar_f, rgb(hb->alpha_TRT), theta_hr) * hb->data->N_G_TRT[ng_idx];
-                f_s_scatter *= S_f;
-            }
-            
-            AtRGB f_scatter_back = 2.0f * hb->data->A_b[idx] * g(hb->data->sigma_b[idx], hb->data->delta_b[idx], theta_hr) * AI_ONEOVERPI 
-                                    * inv_cos_theta_d2;
-
-            float directFraction = 0.0f;
-            AtRGB F_scatter = T_f * hb->density_front * (f_s_scatter + AI_PI*hb->density_back*f_scatter_back);
-
-            result += F_scatter * cos_theta_i * (1.0f-directFraction); 
-        }*/
-
-        float theta_i = (AI_PIOVER2 - sphericalTheta(*wi, hb->U));
-        float cos_theta_i = cosf(theta_i);
-        float theta_h = (hb->theta_r+theta_i)*0.5f;
-        float phi_i = sphericalPhi(*wi, hb->V, hb->W);
-        float phi_d = hb->phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        float phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-        float phi_h = (hb->phi_r+phi_i)*0.5f;
-        float cosphi2 = cosf(phi*0.5f);
-        float theta_d = (hb->theta_r - theta_i)*0.5f;
-        float cos_theta_d = cosf(theta_d);
-        float inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-
-        AtRGB kfr[3];
-        hairAttenuation(hb->ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, hb->aa, hb->absorption, kfr);
-        result += hb->bsdf_R(*wi) * kfr[0];
-        result += hb->bsdf_TT(*wi) * kfr[1];
-        result += hb->bsdf_TRT(*wi) * kfr[2];
-        result += hb->bsdf_TRTg(*wi) * kfr[2];
+        AtRGB kfr[3] = {rgb(0.1), rgb(0.9), rgb(0.1)};
+        //hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
+        result += hb->bsdf_R(geo) * kfr[0] * hb->specular1Color;// * rgb(1,0,0);
+        result += hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor;// * rgb(0,1,0);
+        result += hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
+        result += hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
 
         return result;
-
-/*
-#ifdef NEW_MULTI
-        AtRGB kfr[3];
-        hairAttenuation(hb->ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, hb->aa, hb->absorption, kfr);
-        return hb->bsdf_R(*wi)*kfr[0] + hb->bsdf_TT(*wi)*kfr[1] + hb->bsdf_TRT(*wi)*kfr[2] + hb->bsdf_TRTg(*wi)*kfr[2]*hb->glintStrength;
-#else
-        return hb->bsdf_TRTg(*wi);
-#endif
-*/
     }
 
     static float HairGlossyPdf(const void* brdf_data, const AtVector* wi)
     {
         HairBsdf* hb = (HairBsdf*)brdf_data;
-#ifdef NEW_MULTI
-        return (hb->pdf_R(*wi) + hb->pdf_TT(*wi) + hb->pdf_TRT(*wi) + hb->pdf_TRTg(*wi))*0.25f;
-        /*
-        float r = hb->pdf_R(*wi);
-        float tt = hb->pdf_TT(*wi);
-        float trt = hb->pdf_TRT(*wi);
-        float trtg = hb->pdf_TRTg(*wi);
 
-        float p = (r+tt+trt+trtg)*0.25f;
-        if (!AiIsFinite(p))
-        {
-            std::cerr << "r: " << r << std::endl;
-            std::cerr << "tt: " << tt << std::endl;
-            std::cerr << "trt: " << trt << std::endl;
-            std::cerr << "trtg: " << trtg << std::endl;
-        }*/
-#else
-        return hb->pdf_TT(*wi);
-#endif
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        return (hb->pdf_R(geo) + hb->pdf_TT(geo) + hb->pdf_TRT(geo) + hb->pdf_TRTg(geo))*0.25f;
     }
 
-    /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the direct lighting loop
-    /// @param wi The incident direction 
-    inline void prepareDirectSample(AtVector wi)
-    {
-        // Get angle measures. See Section 3 in Ou et. al.
-        theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        cos_theta_i = fabsf(cosf(theta_i));
-        phi_i = sphericalPhi(wi, V, W);
-        phi_d = phi_r - phi_i;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-
-        phi_h = (phi_r + phi_i)*0.5f;
-        if (phi_h < 0) phi_h += AI_PITIMES2;
-        phi_h += cn * AI_PITIMES2;
-        if (phi_h > AI_PITIMES2) phi_h -= AI_PITIMES2;
-
-        phi_c = phi_d + cn * AI_PITIMES2;
-        if (phi_c > AI_PITIMES2) phi_c -= AI_PITIMES2;
-        phi_c = phi_c = AI_PI;
-        phi_c = AI_PI - fabsf(phi_c);
-
-        cosphi2 = fabsf(cosf(phi*0.5f));
-        theta_h = (theta_r + theta_i)*0.5f;
-        theta_htt = theta_h;
-        theta_d = (theta_r - theta_i)*0.5f;
-        cos_theta_d = cosf(theta_d);
-        inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
-    }
-
-    /// Precalculate invariants that will be used across all lobes. This function must be called before any of the bsdf functions during the 
-    /// indirect sampling loop
-    /// @param wi The incident direction 
-    inline void prepareIndirectSample(AtVector& wi)
-    {
-        cos_theta_i = std::max(cosf(theta_i), 0.0001f);
-        theta_h = (theta_r+theta_i)*0.5f;
-        theta_htt = theta_h;
-        theta_d = (theta_r - theta_i)*0.5f;
-        cos_theta_d = cosf(theta_d);
-        inv_cos_theta_d2 = std::max(0.001f, 1.0f/(cos_theta_d*cos_theta_d));
-        phi_d = phi;
-        if (phi_d < 0) phi_d += AI_PITIMES2;
-        phi_i = phi_r - phi;
-        phi = phi_d - AI_PI;
-        phi = AI_PI - fabsf(phi);
-
-        phi_h = (phi_r + phi_i)*0.5f;
-        if (phi_h < 0) phi_h += AI_PITIMES2;
-        phi_h += cn * AI_PITIMES2;
-        if (phi_h > AI_PITIMES2) phi_h -= AI_PITIMES2;
-
-        phi_c = phi_d + cn * AI_PITIMES2;
-        if (phi_c > AI_PITIMES2) phi_c -= AI_PITIMES2;
-        phi_c = phi_c = AI_PI;
-        phi_c = AI_PI - fabsf(phi_c);
-
-        cosphi2 = cosf(phi*0.5f);
-        sphericalDirection(theta_i, phi_i, V, W, U, wi);
-        invariant = cos_theta_i * inv_cos_theta_d2 * AI_ONEOVER2PI;
-    }
-
+   
     /// Integrate the direct illumination for all diffuse and glossy lobes
     inline void integrateDirect(AtShaderGlobals* sg)
     {
@@ -1260,143 +624,16 @@ struct HairBsdf
         while (AiLightsGetSample(sg))
         {
             result_R_direct += AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
-            
-            /*
-            prepareDirectSample(sg->Ld);
-            AtRGB L = sg->Li * sg->we * invariant;
-            if (maxh(L) > IMPORTANCE_EPS)
-            {
-                hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, aa, absorption, kfr);
-
-                result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
-                result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
-                result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
-                result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[3];
-            }
-            */
         }
         //sg->skip_shadow = false;
-        result_R_direct *= specular1Color;// * ONEOVER4PI;
-        result_TT_direct *= transmissionColor;
-        result_TRT_direct *= specular2Color;
-        result_TRTg_direct *= specular2Color * glintStrength;
+        //result_R_direct *= specular1Color;// * ONEOVER4PI;
         sg->fhemi = true;        
     }
 
-    /// Uniformly sample all the glossy lobes and accumulate the result
-    inline void integrateSingleUniform(double u1, double u2)
-    {
-        int lobe = sampleUniform(u1, u2);
-
-        // precalculate some stuff
-        prepareIndirectSample(wi_ray.dir);
-        AtFloat p = invariant / pdfUniform(lobe);
-        AtScrSample scrs;
-
-        // trace our ray
-        AiTrace(&wi_ray, &scrs);
-
-        AtRGB kfr[4];
-        hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, aa, absorption, kfr);
-
-        // calculate result
-        switch (lobe)
-        {
-            case 0: result_R_indirect += scrs.color * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * p * kfr[0]; break;
-            case 1: result_TT_indirect += scrs.color * bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * p * kfr[1]; break;
-            case 2: result_TRT_indirect += scrs.color * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * p * kfr[2]; break;
-            case 3: result_TRTg_indirect += scrs.color * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * p * kfr[3]; break;
-            default: break;
-        }
-        
-    }
-
-#define UNIFORM_LOBE_SELECTION
 
     /// Integrate the indirect illumination for all diffuse and glossy lobes
     inline void integrateIndirect(AtShaderGlobals* sg)
     {
-        /*
-        if (!do_glossy) return;
-
-        AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
-        
-#ifdef UNIFORM_LOBE_SELECTION
-        sampit = AiSamplerIterator(data->sampler_R, sg);
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            integrateSingleUniform(samples[0], samples[1]);
-        }
-        float weight = AiSamplerGetSampleInvCount(sampit);
-        result_R_indirect *= specular1Color * weight;
-        result_TT_indirect *= transmissionColor * weight;
-        result_TRT_indirect *= specular2Color * weight;
-        result_TRTg_indirect *= specular2Color * glintStrength * weight;
-        result_id2 *= weight;
-
-#else
-
-        sampit = AiSamplerIterator(data->sampler_R, sg);
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            sampleR(samples[0], samples[1]);
-            prepareIndirectSample(wi_ray.dir);
-            AtFloat p = invariant / pdfR();
-            AtScrSample scrs;
-
-            // trace our ray
-            AiTrace(&wi_ray, &scrs);
-
-            AtRGB kfr[4];
-            hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, aa, absorption, kfr);
-
-            // calculate result
-            result_R_indirect += scrs.color * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * p * kfr[0];
-        }
-        float weight = AiSamplerGetSampleInvCount(sampit);
-        result_R_indirect *= weight * specular1Color;
-
-        sampit = AiSamplerIterator(data->sampler_TT, sg);
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            sampleTT(samples[0], samples[1]);
-            prepareIndirectSample(wi_ray.dir);
-            AtFloat p = invariant / pdfTT();
-            AtScrSample scrs;
-
-            // trace our ray
-            AiTrace(&wi_ray, &scrs);
-
-            AtRGB kfr[3];
-            hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, aa, absorption, kfr);
-
-            // calculate result
-            result_TT_indirect += scrs.color * bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * p * kfr[1];
-        }
-        weight = AiSamplerGetSampleInvCount(sampit);
-        result_TT_indirect *= weight * transmissionColor;
-
-        sampit = AiSamplerIterator(data->sampler_TRT, sg);
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            sampleTRT(samples[0], samples[1]);
-            prepareIndirectSample(wi_ray.dir);
-            AtFloat p = invariant / pdfTRT();
-            AtScrSample scrs;
-
-            // trace our ray
-            AiTrace(&wi_ray, &scrs);
-
-            AtRGB kfr[4];
-            hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, aa, absorption, kfr);
-
-            // calculate result
-            result_TRT_indirect += scrs.color * bsdfTRT(beta_R2, alpha_R, theta_h, cosphi2) * p * kfr[2];
-        }
-        weight = AiSamplerGetSampleInvCount(sampit);
-        result_TRT_indirect *= weight * specular2Color;
-#endif
-*/
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         sampit = AiSamplerIterator(data->sampler_R, sg);
         while(AiSamplerGetSample(sampit, samples))
@@ -1408,194 +645,16 @@ struct HairBsdf
             // trace our ray
             if (AiTrace(&wi_ray, &scrs))
             {
-
-                /*
-                AtRGB kfr[3];
-                hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, aa, absorption, kfr);
-                */
-
                 // calculate result
-                //result_R_indirect += scrs.color * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * p * kfr[0];
                 float p = HairGlossyPdf(this, &wi_ray.dir);
-                //if (p > 0.0f)
                 result_R_indirect += scrs.color * HairGlossyBsdf(this, &wi_ray.dir) / p;
             }
-            //result_R_indirect += HairGlossyBsdf(this, &wi_ray.dir);
         }
         float weight = AiSamplerGetSampleInvCount(sampit);
         result_R_indirect *= weight * specular1Color;
     }
 
 
-    /// Integrate the direct illumination with dual scattering for all diffuse and glossy lobes
-    inline void integrateDirectDual(AtShaderGlobals* sg)
-    {
-        bool do_glossy = true;
-        if (sg->Rt & AI_RAY_DIFFUSE) do_glossy = false;
-
-        int als_hairNumIntersections = 0;
-        AtRGB als_T_f = AI_RGB_BLACK;
-        AtRGB als_sigma_bar_f = AI_RGB_BLACK;
-        sg->fhemi = false;
-        sg->skip_shadow = true;
-        AiLightsPrepare(sg);
-        AtRay ray;
-        AtScrSample scrs;
-        AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), NULL, AI_BIG, sg);
-        AtRGB kfr[4];
-        AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
-        while (AiLightsGetSample(sg))
-        {
-            prepareDirectSample(sg->Ld);
-
-
-            AiStateSetMsgInt("als_hairNumIntersections", 0);
-            AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
-            AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
-            ray.dir = sg->Ld;
-            AiTrace(&ray, &scrs);
-            AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections);
-            AiStateGetMsgRGB("als_T_f", &als_T_f);
-            AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
-
-            int idx = int((theta_i / AI_PI + 0.5f)*(DS_NUMSTEPS-1));
-            AtRGB theta_hr = rgb(theta_h);
-            AtRGB f_direct_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
-            float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
-            AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
-
-            if (directFraction > 0.0f)
-            {
-                
-                result_Pl_direct += sg->Li * sg->we * occlusion * density_back * f_direct_back * cos_theta_i * directFraction;
-                
-                if (do_glossy)
-                {
-                    AtRGB kfr[3];
-                    hairAttenuation(ior, cos_theta_i, theta_d, phi_d, phi_h, aa, absorption, kfr);
-                    AtRGB L = sg->Li * sg->we * invariant * occlusion * directFraction;
-                    
-                    result_R_direct += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
-                    result_TT_direct += L * bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1];
-                    result_TRT_direct += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
-                    result_TRTg_direct += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi_c, phi_g) * kfr[2];
-                }
-
-            }
-            if (directFraction < 1.0f)
-            {
-                AtRGB T_f = als_T_f;
-                AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
-
-                AtRGB f_s_scatter = AI_RGB_BLACK;
-                int ng_x = int((phi*AI_ONEOVERPI)*2.0f - 1.0f) * (DS_NUMSTEPS-1);
-                int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
-                int ng_idx = ng_y*DS_NUMSTEPS+ng_x;
-                if (phi >= AI_PIOVER2 ) // forward scattering directions only
-                {
-                    f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[ng_idx]
-                                    + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[ng_idx]
-                                    + g(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[ng_idx];
-                    f_s_scatter *= S_f;
-                }
-                
-                AtRGB f_scatter_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI * inv_cos_theta_d2;
-
-                AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
-
-                result_Pg_direct += sg->Li * sg->we * occlusion * F_scatter * cos_theta_i * (1.0f-directFraction);
-
-            }
-        } // END light loop
-        AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
-
-        result_R_direct *= specular1Color;
-        result_TT_direct *= transmissionColor;
-        result_TRT_direct *= specular2Color;
-        result_TRTg_direct *= specular2Color * glintStrength;
-
-        sg->fhemi = true;
-        sg->skip_shadow = false;
-    }
-
-    /// Integrate the indirect illumination for dual scattering
-    inline void integrateIndirectDual(AtShaderGlobals* sg)
-    {
-        if (sg->Rt & AI_RAY_DIFFUSE) return;
-
-        AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
-        AtScrSample scrs;
-        sampit = AiSamplerIterator(data->sampler_R, sg);
-        int als_hairNumIntersections = 0;
-        AtRGB als_T_f = AI_RGB_BLACK;
-        AtRGB als_sigma_bar_f = AI_RGB_BLACK;
-        while(AiSamplerGetSample(sampit, samples))
-        {
-            sampleUniform(samples[0], samples[1]);
-            prepareIndirectSample(wi_ray.dir);
-            AtFloat p = 1.0f / pdfUniform();
-
-            AiStateSetMsgInt("als_hairNumIntersections", 0);
-            AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
-            AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
-            AiTrace(&wi_ray, &scrs);
-            AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections);
-            AiStateGetMsgRGB("als_T_f", &als_T_f);
-            AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
-
-            int idx = int((theta_i / AI_PI + 0.5f)*(DS_NUMSTEPS-1));
-            AtRGB theta_hr = rgb(theta_h);
-            AtRGB f_direct_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx] + als_sigma_bar_f, data->delta_b[idx], theta_hr) * AI_ONEOVERPI 
-                                    * inv_cos_theta_d2;
-            float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
-            if (directFraction > 0.0f)
-            {
-                AtRGB kfr[3];
-                hairAttenuation(ior, cos_theta_i, fabsf(theta_d), phi_d, phi_h, aa, absorption, kfr);
-                result_Pl_indirect += scrs.color * density_back * f_direct_back * cos_theta_i * directFraction;
-                AtRGB L = scrs.color * invariant * p * directFraction;
-                result_R_indirect += L * bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0];
-                result_TT_indirect += L * bsdfTT(beta_TT2, alpha_TT, theta_htt, gamma_TT, phi) * kfr[1];
-                result_TRT_indirect += L * bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2) * kfr[2];
-                result_TRTg_indirect += L * bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g) * kfr[2];
-
-            }
-            if (directFraction < 1.0f)
-            {
-                AtRGB T_f = als_T_f;
-                AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(theta_h)) / (AI_PI * cos_theta_d);
-
-                AtRGB f_s_scatter = AI_RGB_BLACK;
-
-                if (phi >= AI_PIOVER2) // forward scattering directions only
-                {
-                    int ng_x = int((phi*AI_ONEOVERPI)*2.0f - 1.0f) * (DS_NUMSTEPS-1);
-                    int ng_y = (theta_d * AI_ONEOVERPI + 0.5f) * (DS_NUMSTEPS-1);
-                    int ng_idx = ng_y*DS_NUMSTEPS+ng_x;
-                    f_s_scatter = g(beta_R2+als_sigma_bar_f, rgb(alpha_R), theta_hr) * data->N_G_R[ng_idx]
-                                    + g(beta_TT2+als_sigma_bar_f, rgb(alpha_TT), theta_hr) * data->N_G_TT[ng_idx]
-                                    + g(beta_TRT2+als_sigma_bar_f, rgb(alpha_TRT), theta_hr) * data->N_G_TRT[ng_idx];
-                    f_s_scatter *= S_f;
-                }
-                
-                AtRGB f_scatter_back = 2.0f * data->A_b[idx] * g(data->sigma_b[idx], data->delta_b[idx], theta_hr) * AI_ONEOVERPI 
-                                        * inv_cos_theta_d2;
-
-                float directFraction = 0.0f;
-                AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
-
-                result_Pg_indirect += scrs.color * F_scatter * cos_theta_i * p * (1.0f-directFraction); 
-            }
-
-        }
-        float weight = AiSamplerGetSampleInvCount(sampit);
-        result_Pg_indirect *= weight;
-        result_Pl_indirect *= weight;
-        result_R_indirect *= specular1Color * weight;
-        result_TT_indirect *= transmissionColor * weight;
-        result_TRT_indirect *= specular2Color * weight;
-        result_TRTg_indirect *= specular2Color * glintStrength * weight;
-    }  
 
     inline void writeResult(AtShaderGlobals* sg)
     {
@@ -1686,17 +745,6 @@ struct HairBsdf
     AtRGB transmissionColor;
     float glintStrength;
 
-    float theta_i;
-    float cos_theta_i;
-    float phi_i;
-    float phi;
-    float cosphi2;
-    float theta_h;
-    float theta_d;
-    float cos_theta_d;
-    float inv_cos_theta_d2;
-    float invariant;
-
     float A_R;
     float B_R;
     float A_TT;
@@ -1751,12 +799,7 @@ struct HairBsdf
 
     AtVector wo;
 
-    AtFloat theta_htt;
     AtRGB absorption;
-    float phi_d;
-    float phi_c;
-    float phi_h;
-    float aa;
 
     AtShaderGlobals* _sg;
 };
@@ -1858,69 +901,14 @@ shader_evaluate
         opacity *= geo_opacity;
     }
 
-#ifdef DUAL
-    int als_hairNumIntersections = 0;
-    AtRGB als_T_f = AI_RGB_BLACK;
-    AtRGB als_sigma_bar_f = AI_RGB_BLACK;
-    bool do_dual = false;
-    if (sg->Rr >= data->dual_depth) do_dual = true;
-
-    int als_raytype = ALS_RAY_UNDEFINED;
-    AiStateGetMsgInt("als_raytype", &als_raytype);
-    
-    if (do_dual && als_raytype == ALS_RAY_DUAL)
-    {
-        if (AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections) 
-            && AiStateGetMsgRGB("als_T_f", &als_T_f)
-            && AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f))
-        {
-            float theta_i = AI_PIOVER2 - sphericalTheta(sg->Rd, hb.U);
-            int idx = int((theta_i / AI_PI + 0.5f)*(DS_NUMSTEPS-1));
-
-            als_T_f *= hb.data->a_bar_f[idx];
-            AiStateSetMsgRGB("als_T_f", als_T_f);
-
-            als_sigma_bar_f += hb.beta_R2 + hb.beta_TRT2 + hb.beta_TT2;
-            AiStateSetMsgRGB("als_sigma_bar_f", als_sigma_bar_f);
-
-            als_hairNumIntersections++;
-            AiStateSetMsgInt("als_hairNumIntersections", als_hairNumIntersections);
-            sg->out_opacity = AI_RGB_BLACK;
-
-            return; // early out
-        }
-        else
-        {
-            sg->out_opacity = AI_RGB_WHITE;
-        }
-    }
-#endif
     // early-out regardless if we're in a shadow ray, or if opacity is zero
     if (sg->Rt & AI_RAY_SHADOW || AiShaderGlobalsApplyOpacity(sg, opacity)) return; 
 
-/*
-#ifdef DUAL
-    if (0)//(do_dual)
-    {
-        hb.integrateDirectDual(sg);
-        //hb.integrateIndirectDual(sg);
-    } 
-    else
-    {
-        hb.integrateDirect(sg);
-       // hb.integrateIndirect(sg);
-    }
-#else
     hb.integrateDirect(sg);
     hb.integrateIndirect(sg);
-#endif
-*/
-    hb.integrateDirect(sg);
-    hb.integrateIndirect(sg);
+
     // Write shader result
     hb.writeResult(sg);
-
-
 }
 
 
