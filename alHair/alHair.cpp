@@ -593,8 +593,8 @@ struct HairBsdf
 
         SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
 
-        AtRGB kfr[3] = {rgb(0.1), rgb(0.9), rgb(0.1)};
-        //hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
+        AtRGB kfr[3];// = {rgb(0.1), rgb(0.9), rgb(0.1)};
+        hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
         result += hb->bsdf_R(geo) * kfr[0] * hb->specular1Color;// * rgb(1,0,0);
         result += hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor;// * rgb(0,1,0);
         result += hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
