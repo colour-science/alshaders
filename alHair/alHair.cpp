@@ -47,33 +47,70 @@ enum alHairParams
 #define IOR 1.6f
 #define FRESNEL_SAMPLES 1024
 
-float fresnel(float n2, float n1, float theta_i)
+float fresnel(float incidenceAngle, float etaPerp, float etaParal, float invert)
 {
-    theta_i = fabsf(theta_i);
-    if (theta_i > AI_PIOVER2) theta_i = AI_PI - theta_i;
-    float cos_theta_i = cosf(theta_i);
-    float sin_theta_i = sinf(theta_i);
-    float r = (n1/n2)*sin_theta_i;
-    r *= r;
-    float Rs = 1.0f;
-    float Rp = 1.0f;
+        float n1, n2;
+        float rPerp = 1;
+        float rParal = 1;
 
-    if (r <= 1.0f)
-    {
-        r = sqrtf(1.0f-r);
-        float n1_cos_theta_i = n1*cos_theta_i;
-        float n2_cos_theta_i = n2*cos_theta_i;
+        etaPerp = std::max(1.0f, etaPerp);
+        etaParal = std::max(1.0f, etaParal);
 
-        Rs = (n1_cos_theta_i - n2*r) / (n1_cos_theta_i + n2*r);
-        Rs *= Rs;
+        float angle = fabsf(incidenceAngle);
+        if (angle > AI_PIOVER2)
+        {
+            angle = AI_PI - angle;
+        }
 
-        Rp = (n1*r - n2_cos_theta_i) / (n1*r + n2_cos_theta_i);
-        Rp *= Rp;
-    }
+        if ( invert )
+        {
+            n1 = etaPerp;
+            n2 = 1;
+        }
+        else
+        {
+            n1 = 1;
+            n2 = etaPerp;
+        }
 
-    float f = std::min(1.0f, (Rs+Rp)*0.5f);
-    return f;
+        // Perpendicular light reflectance
+        float a = (n1/n2)*sin(angle);
+        a *= a;
+        if ( a <= 1 )
+        {
+
+            float b = n2*sqrtf(1.0f-a);
+            float c = n1*cosf(angle);
+            rPerp =  ( c - b ) / ( c + b );
+            rPerp *= rPerp;
+            rPerp = std::min(1.0f, rPerp );
+        }
+        if ( invert )
+        {
+            n1 = etaParal;
+            n2 = 1;
+        }
+        else
+        {
+            n1 = 1;
+            n2 = etaParal;
+        }
+        // Parallel light reflectance
+        float d = (n1/n2)*sinf(angle);
+        d *= d;
+        if ( d <= 1 )
+        {
+
+            float e = n1*sqrtf(1-d);
+            float f = n2*cosf(angle);
+            rParal = ( e - f ) / ( e + f );
+            rParal *= rParal;
+            rParal = std::min( 1.0f, rParal );
+        }
+        return 0.5 * (rPerp + rParal);
 }
+
+
 
 void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRGB kfr[3])
 {
@@ -83,36 +120,34 @@ void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRG
     float A = sqrtf(ior*ior - sin_theta_d*sin_theta_d);
     float n_p = A / cosf(theta_d);
     float n_pp = ior*ior / n_p;
-
     
     float c = asinf(1.0f/n_p);
     for (int p=0; p < 3; ++p)
     {
         // adjust phi to correct range for this component
         float phi_p = phi;
-        /*
         if (p != 1)
         {
             if (phi_p > AI_PI) phi_p -= AI_PITIMES2;
             phi_p += p*AI_PI;
         }
-        */
         // get roots of polynomial
         float roots[3] = {0,0,0};
         int numRoots = solveCubic(-8.0f*p*c*ONEOVERPI3, 0.0f, 6.0f*p*c*AI_ONEOVERPI - 2.0f, p*AI_PI - phi_p, roots);
         AtRGB Fr = AI_RGB_BLACK;
+        kfr[2] = kfr[3] = AI_RGB_BLACK;
         if (p < 2)
         {
             float gamma_i = roots[0];
             if (p==0)
             {
-                Fr = rgb(fresnel(n_p, n_pp, gamma_i));
+                kfr[0] = rgb(fresnel(gamma_i, n_p, n_pp, false));
             }
             else
             {
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
                 float l = 2.0f * cosf(gamma_t);
-                Fr = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t)) * exp(-absorption*l);
+                kfr[1] = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
             }
         }
         else 
@@ -123,11 +158,16 @@ void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRG
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
                 float l = 2.0f * cosf(gamma_t);
 
-                float Fr_TT = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t));
-                Fr += Fr_TT * fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t) * exp(-absorption*2*l);
+                /*
+                float iFr = fresnel(gamma_t, n_p, n_pp, true);
+                kfr[2] += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l);
+                */
+
+                float iFr = fresnel(gamma_t, n_p, n_pp, true);
+                kfr[2] += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*2*l);
             }
         }
-        kfr[p] =  clamp(Fr, AI_RGB_BLACK, AI_RGB_WHITE);
+        //kfr[p] = Fr;
     }
 }
 
