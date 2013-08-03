@@ -111,27 +111,15 @@ float fresnel(float incidenceAngle, float etaPerp, float etaParal, float invert)
 }
 
 
-void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, AtRGB absorption, AtRGB kfr[3])
+
+void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRGB kfr[3])
 {
 #define ONEOVERPI3 0.032251534433199495
-
-    // Get n_star for modified fresnel
-    float n_star = ior;
-    if (aa != 1.0f)
-    {
-        float n_star_1 = 2.0f * (ior - 1.0f) * aa - ior + 2.0f;
-        float n_star_2 = 2.0f * (ior - 1.0f) / aa - ior + 2.0f;
-        n_star = 0.5f * ((n_star_1+n_star_2) + cosf(2.0f*phi_h)*(n_star_1-n_star_2));
-    }
-
     // Get miller-bravais indices n' and n''
     float sin_theta_d = sinf(theta_d);
     float A = sqrtf(ior*ior - sin_theta_d*sin_theta_d);
-    float A_star = sqrtf(n_star*n_star - sin_theta_d*sin_theta_d);
     float n_p = A / cosf(theta_d);
-    float n_p_star = A_star / cosf(theta_d);
     float n_pp = ior*ior / n_p;
-    float n_pp_star = n_star*n_star / n_p_star;
     
     float c = asinf(1.0f/n_p);
     for (int p=0; p < 3; ++p)
@@ -158,10 +146,8 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, flo
             else
             {
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
-                float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
-                float cos_theta_t = cosf(theta_t);
-                float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
-                kfr[1] = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * fast_exp(-absorption*l);
+                float l = 2.0f * cosf(gamma_t);
+                kfr[1] = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
             }
         }
         else 
@@ -170,23 +156,31 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, flo
             {
                 float gamma_i = roots[i];
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
-                float theta_t = acosf(std::min(1.0f, (n_p/ior)*cos_theta_i));
-                float cos_theta_t = cosf(theta_t);
-                float l = 2.0f * cosf(gamma_t) / std::max(0.0001f, cos_theta_t);
+                float l = 2.0f * cosf(gamma_t);
 
-                float iFr = fresnel(gamma_t, n_p_star, n_pp_star, true);
-                kfr[2] += (1.0f - fresnel(gamma_i, n_p_star, n_pp_star, false)) * (1.0f - iFr) * iFr * fast_exp(-absorption*2*l);
+                /*
+                float iFr = fresnel(gamma_t, n_p, n_pp, true);
+                kfr[2] += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*l);
+                */
 
+                float iFr = fresnel(gamma_t, n_p, n_pp, true);
+                kfr[2] += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*2*l);
             }
         }
+        //kfr[p] = Fr;
     }
+}
+
+void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, AtRGB absorption, AtRGB kfr[3])
+{
+    hairAttenuation(ior, theta_d, phi, absorption, kfr);
 }
 
 #define PIOVER4 0.7853981633974483f
 #define ONEOVER4PI 0.07957747154594767
 #define FOURPI 12.566370614359172
 
-#define DS_NUMSTEPS 128
+#define DS_NUMSTEPS 32
 
 #define NORMALIZED_GAUSSIAN
 #ifdef NORMALIZED_GAUSSIAN
@@ -428,28 +422,29 @@ struct HairBsdf
                 {
                     float theta_d = t * theta_d_step - AI_PIOVER2;
                     int ng_idx = t*DS_NUMSTEPS+p;
-                    for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i += theta_r_step)
-                    {
+                    //for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i += theta_r_step)
+                    //{
                         // [2] eq. (25)
                         // BCSDF due to forward scattering
                         // {
-                        hairAttenuation(ior, cosf(theta_i), theta_d, phi, phi, 1.0f, absorption, kfr);
+                        hairAttenuation(ior, theta_d, phi, absorption, kfr);
 
-                        N_G_R[ng_idx] += rgb(cosf(phi*0.5f)) * kfr[0];
-                        N_G_TT[ng_idx] += rgb(g(gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
-                        N_G_TRT[ng_idx] += rgb(cosf(phi*0.5f) + g(gamma_g, 0.0f, phi - phi_g)) * kfr[2];
+                        N_G_R[ng_idx] = rgb(cosf(phi*0.5f)) * kfr[0];
+                        N_G_TT[ng_idx] = rgb(g(gamma_TT, 0.0f, AI_PI-phi)) * kfr[1];
+                        N_G_TRT[ng_idx] = rgb(cosf(phi*0.5f) + g(gamma_g, 0.0f, phi - phi_g)) * kfr[2];
 #ifdef DEBUG_FRESNEL
-                        kf_R[ng_idx] += kfr[0];
-                        kf_TT[ng_idx] += kfr[1];
-                        kf_TRT[ng_idx] += kfr[2];
+                        kf_R[ng_idx] = kfr[0];
+                        kf_TT[ng_idx] = kfr[1];
+                        kf_TRT[ng_idx] = kfr[2];
 #endif
                         // }
-                    }
+                    //}
                     //N_G_R[ng_idx] = rgb(theta_d, phi, 0.0f);
-                    
+                    /*
                     N_G_R[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     N_G_TT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
                     N_G_TRT[ng_idx] *= AI_ONEOVERPI * theta_r_step;
+                    */
                     
 #ifdef DEBUG_FRESNEL
                     
@@ -463,7 +458,7 @@ struct HairBsdf
 
             AtUInt32 t1 = AiMsgUtilGetElapsedTime();
             float t = float(t1 - t0)/1000.0f;
-            AiMsgInfo("[alHair] DS precalc took %.1f seconds", t);
+            AiMsgInfo("[alHair] DS precalc took %.3f seconds", t);
 #ifdef DEBUG_LUTS
             writeThickRGBEXR("/tmp/a_bar_f.exr", (float*)a_bar_f, DS_NUMSTEPS, 1);
             writeThickRGBEXR("/tmp/a_bar_b.exr", (float*)a_bar_b, DS_NUMSTEPS, 1);
