@@ -446,22 +446,6 @@ struct HairBsdf
         B = atanf((-PIOVER4 + theta_r*0.5f - alpha) / beta);
     }
 
-    inline float sampleLong(double u, float theta_r, float alpha, float beta, float A, float B)
-    {
-        float t = beta * tanf(u*(A-B) + B);
-        float theta_h = t + alpha;
-        return clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, (2.0f*theta_h - theta_r));
-    }
-
-    inline AtVector sample_R(float u1, float u2)
-    {
-        float theta_i = sampleLong(u1, theta_r, alpha_R, beta_R, A_R, B_R);
-        float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f)) + AI_PI;
-        AtVector wi;
-        sphericalDirection(theta_i, phi, V, W, U, wi);
-        return wi;
-    }
-
     struct SctGeo
     {
         SctGeo(const AtVector& w, float theta_r, float phi_r, const AtVector& U, const AtVector& V, const AtVector& W)
@@ -496,6 +480,23 @@ struct HairBsdf
         float inv_cos_theta_d2;
     };
 
+    inline float sampleLong(double u, float theta_r, float alpha, float beta, float A, float B)
+    {
+        float t = beta * tanf(u*(A-B) + B);
+        float theta_h = t + alpha;
+        return clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, (2.0f*theta_h - theta_r));
+    }
+
+    inline AtVector sample_R(float u1, float u2)
+    {
+        float theta_i = sampleLong(u1, theta_r, alpha_R, beta_R, A_R, B_R);
+        float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f));// + AI_PI;
+        float phi_i = phi_r - phi;
+        AtVector wi;
+        sphericalDirection(theta_i, phi_i, V, W, U, wi);
+        return wi;
+    }
+
     inline AtRGB bsdf_R(const SctGeo& geo)
     {
         return rgb(bsdfR(beta_R2, alpha_R, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;
@@ -512,9 +513,10 @@ struct HairBsdf
     inline AtVector sample_TRT(float u1, float u2)
     {
         float theta_i = sampleLong(u1, theta_r, alpha_TRT, beta_TRT, A_R, B_R);
-        float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f)) + AI_PI;
+        float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f));// + AI_PI;
+        float phi_i = phi_r - phi;
         AtVector wi;
-        sphericalDirection(theta_i, phi, V, W, U, wi);
+        sphericalDirection(theta_i, phi_i, V, W, U, wi);
         return wi;
     }
 
@@ -549,9 +551,10 @@ struct HairBsdf
         Dg = atanf(-phi_g/gamma_g);
         float phi = gamma_g * tanf(u2*(Cg-Dg)+Dg) + phi_g;
         phi *= sign;
+        float phi_i = phi_r - phi;
 
         AtVector wi;
-        sphericalDirection(theta_i, phi, V, W, U, wi);
+        sphericalDirection(theta_i, phi_i, V, W, U, wi);
         return wi;
     }
 
@@ -576,8 +579,9 @@ struct HairBsdf
         float theta_i = sampleLong(u1, theta_r, alpha_TT, beta_TT, A_TT, B_TT);
         C_TT = 2.0f * atanf(AI_PI/gamma_TT);
         float phi = gamma_TT * tanf(C_TT * (u2-0.5f)) + AI_PI;
+        float phi_i = phi_r - phi;
         AtVector wi;
-        sphericalDirection(theta_i, phi, V, W, U, wi);
+        sphericalDirection(theta_i, phi_i, V, W, U, wi);
         return wi;
     }
 
@@ -635,10 +639,22 @@ struct HairBsdf
 
         AtRGB kfr[3];// = {rgb(0.1), rgb(0.9), rgb(0.1)};
         hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
+        if (0)//(hb->_sg->Rt & AI_RAY_CAMERA)
+        {
+            result += hb->bsdf_R(geo) * kfr[0] * hb->specular1Color * rgb(1,0,0);
+            result += hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor * rgb(0,1,0);
+            result += hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color * rgb(0,0,1);
+            result += hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
+        }
+        else
+        {
         result += hb->bsdf_R(geo) * kfr[0] * hb->specular1Color;// * rgb(1,0,0);
         result += hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor;// * rgb(0,1,0);
         result += hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
         result += hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
+        }
+
+
 
         return result;
     }
@@ -665,8 +681,6 @@ struct HairBsdf
         {
             result_R_direct += AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
         }
-        //sg->skip_shadow = false;
-        //result_R_direct *= specular1Color;// * ONEOVER4PI;
         sg->fhemi = true;        
     }
 
@@ -691,7 +705,7 @@ struct HairBsdf
             }
         }
         float weight = AiSamplerGetSampleInvCount(sampit);
-        result_R_indirect *= weight * specular1Color;
+        result_R_indirect *= weight;
     }
 
 
