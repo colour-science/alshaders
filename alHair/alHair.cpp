@@ -637,24 +637,13 @@ struct HairBsdf
 
         SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
 
-        AtRGB kfr[3];// = {rgb(0.1), rgb(0.9), rgb(0.1)};
+        AtRGB kfr[3];
         hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
-        if (0)//(hb->_sg->Rt & AI_RAY_CAMERA)
-        {
-            result += hb->bsdf_R(geo) * kfr[0] * hb->specular1Color * rgb(1,0,0);
-            result += hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor * rgb(0,1,0);
-            result += hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color * rgb(0,0,1);
-            result += hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
-        }
-        else
-        {
-        result += hb->bsdf_R(geo) * kfr[0] * hb->specular1Color;// * rgb(1,0,0);
-        result += hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor;// * rgb(0,1,0);
-        result += hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
-        result += hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color;// * rgb(0,0,1);
-        }
-
-
+ 
+        result += hb->bsdf_R(geo) * kfr[0] * hb->specular1Color;
+        result += hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor;
+        result += hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color;
+        result += hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color;
 
         return result;
     }
@@ -705,7 +694,7 @@ struct HairBsdf
             }
         }
         float weight = AiSamplerGetSampleInvCount(sampit);
-        result_R_indirect *= weight;
+        result_R_indirect *= weight * AI_PI; //< TODO: factor of pi?
     }
 
 
