@@ -1,0 +1,9 @@
+/// file alsUtil.mel
+
+global proc als_addColorAttr(string $node, string $attrName)
+{
+    addAttr -ln $attrName -at float3 -usedAsColor -k 1 $node;
+    addAttr -ln  ($attrName+"_r") -at "float" -k 1 -p $attrName $node;
+    addAttr -ln  ($attrName+"_g") -at "float" -k 1 -p $attrName $node;
+    addAttr -ln  ($attrName+"_b") -at "float" -k 1 -p $attrName $node;
+}
