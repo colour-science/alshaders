@@ -371,8 +371,8 @@ struct HairBsdf
                 beta_f[idx] /= a_bar_f[idx];
                 beta_b[idx] /= a_bar_b[idx];
 
-                a_bar_f[idx] *= 2.0f / AI_PI * theta_r_step * phi_step;
-                a_bar_b[idx] *= 2.0f / AI_PI * theta_r_step * phi_step;
+                a_bar_f[idx] *= 2.0f * AI_ONEOVERPI * theta_r_step * phi_step;
+                a_bar_b[idx] *= 2.0f * AI_ONEOVERPI * theta_r_step * phi_step;
 
                 idx++;
             }
@@ -384,21 +384,22 @@ struct HairBsdf
             {
                 AtRGB af2 = a_bar_f[i]*a_bar_f[i];
                 AtRGB ab2 = a_bar_b[i]*a_bar_b[i];
+                AtRGB ab3 = ab2 * a_bar_b[i];
                 AtRGB omaf2 = AI_RGB_WHITE - af2;
 
                 // [2] eq (14)
                 // Average back-scattered attenuation for up to 3 scattering events
-                A_b[i] = (a_bar_b[i]*af2)/omaf2 + (ab2*a_bar_b[i]*af2)/(omaf2*omaf2);
+                A_b[i] = (a_bar_b[i]*af2)/omaf2 + (ab3*af2)/(omaf2*omaf2*omaf2);
 
                 // [2] eq. (16)
                 // Average back-scattering longitudinal shift for up to 3 scattering events
-                delta_b[i] = alpha_b[i] * (1.0f - (2.0f*a_bar_b[i]*a_bar_b[i])/(omaf2*omaf2)) 
+                delta_b[i] = alpha_b[i] * (1.0f - (2.0f*ab2)/(omaf2*omaf2)) 
                             + alpha_f[i] * ((2.0f*omaf2*omaf2) + 4.0f * af2 * ab2) / (omaf2*omaf2*omaf2);
 
                 // [2] eq. (17)
                 // Average longitudinal variance for up to 3 scattering events
-                AtRGB rtbfbb = sqrt(2.0f*beta_f[i] + beta_b[i]);
-                sigma_b[i] = (1.0f + 0.7f*af2) * (a_bar_b[i]*rtbfbb + ab2*a_bar_b[i]*rtbfbb) / (a_bar_b[i] + ab2*a_bar_b[i] * (2.0f*beta_f[i] + 3.0f*beta_b[i]));
+                //AtRGB rtbfbb = sqrt(2.0f*beta_f[i] + beta_b[i]);
+                sigma_b[i] = (1.0f + 0.7f*af2) * (a_bar_b[i]*sqrt(2.0f*beta_f[i] + beta_b[i]) + ab3*sqrt(2.0f*beta_f[i] + 3.0f*beta_b[i])) / (a_bar_b[i] + ab3 * (2.0f*beta_f[i] + 3.0f*beta_b[i]));
             }
 
             idx = 0;
