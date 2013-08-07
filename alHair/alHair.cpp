@@ -417,7 +417,7 @@ struct HairBsdf
             // phi [pi/2, PI]
             for (int p = 0; p < DS_NUMSTEPS; ++p)        
             {
-                float phi = p * phi_step + AI_PIOVER2;
+                float phi = p * phi_step;
                 // theta_d [-pi/2, pi/2]
                 for (int t=0; t < DS_NUMSTEPS; ++t)
                 {
