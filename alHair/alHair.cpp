@@ -302,6 +302,8 @@ struct HairBsdf
 
             dual_depth = params[p_dualDepth].INT;
 
+            sampleLobesIndividually = true;
+
         }
 
         AtSampler* sampler_diffuse;
@@ -346,6 +348,8 @@ struct HairBsdf
         AtRGB absorption;
 
         float ior;
+
+        bool sampleLobesIndividually;
     };
 
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
@@ -630,6 +634,30 @@ struct HairBsdf
         }
     }
 
+    static AtVector Hair_Sample_R(const void* brdf_data, float u1, float u2)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        return hb->sample_R(u1, u2);
+    }
+
+    static AtVector Hair_Sample_TT(const void* brdf_data, float u1, float u2)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        return hb->sample_TT(u1, u2);
+    }
+
+    static AtVector Hair_Sample_TRT(const void* brdf_data, float u1, float u2)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        return hb->sample_TRT(u1, u2);
+    }
+
+    static AtVector Hair_Sample_TRTg(const void* brdf_data, float u1, float u2)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        return hb->sample_TRTg(u1, u2);
+    }
+
     static AtRGB HairGlossyBsdf(const void* brdf_data, const AtVector* wi)
     {
         HairBsdf* hb = (HairBsdf*)brdf_data;
@@ -648,12 +676,73 @@ struct HairBsdf
         return result;
     }
 
+    static AtRGB Hair_Bsdf_R(const void* brdf_data, const AtVector* wi)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        AtRGB kfr[3];
+        hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
+        return hb->bsdf_R(geo) * kfr[0] * hb->specular1Color;
+    }
+    static AtRGB Hair_Bsdf_TT(const void* brdf_data, const AtVector* wi)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        AtRGB kfr[3];
+        hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
+        return hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor;
+    }
+    static AtRGB Hair_Bsdf_TRT(const void* brdf_data, const AtVector* wi)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        AtRGB kfr[3];
+        hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
+        return hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color;
+    }
+    static AtRGB Hair_Bsdf_TRTg(const void* brdf_data, const AtVector* wi)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        AtRGB kfr[3];
+        hairAttenuation(hb->ior, geo.theta_d, geo.phi_d, hb->absorption, kfr);
+        return hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color;
+    }
+
     static float HairGlossyPdf(const void* brdf_data, const AtVector* wi)
     {
         HairBsdf* hb = (HairBsdf*)brdf_data;
 
         SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
         return (hb->pdf_R(geo) + hb->pdf_TT(geo) + hb->pdf_TRT(geo) + hb->pdf_TRTg(geo))*0.25f;
+    }
+
+    static float Hair_Pdf_R(const void* brdf_data, const AtVector* wi)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        return hb->pdf_R(geo);
+    }
+
+    static float Hair_Pdf_TT(const void* brdf_data, const AtVector* wi)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        return hb->pdf_TT(geo);
+    }
+
+    static float Hair_Pdf_TRT(const void* brdf_data, const AtVector* wi)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        return hb->pdf_TRT(geo);
+    }
+
+    static float Hair_Pdf_TRTg(const void* brdf_data, const AtVector* wi)
+    {
+        HairBsdf* hb = (HairBsdf*)brdf_data;
+        SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
+        return hb->pdf_TRTg(geo);
     }
 
    
@@ -665,10 +754,23 @@ struct HairBsdf
         sg->fhemi = false;
         //sg->skip_shadow = true;
         AiLightsPrepare(sg);
-        AtRGB kfr[4];
-        while (AiLightsGetSample(sg))
+
+        if ((sg->Rt & AI_RAY_CAMERA) && data->sampleLobesIndividually)
         {
-            result_R_direct += AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
+            while (AiLightsGetSample(sg))
+            {
+                result_R_direct += AiEvaluateLightSample(sg, this, Hair_Sample_R, Hair_Bsdf_R, Hair_Pdf_R);
+                result_TT_direct += AiEvaluateLightSample(sg, this, Hair_Sample_TT, Hair_Bsdf_TT, Hair_Pdf_TT);
+                result_TRT_direct += AiEvaluateLightSample(sg, this, Hair_Sample_TRT, Hair_Bsdf_TRT, Hair_Pdf_TRT);
+                result_TRTg_direct += AiEvaluateLightSample(sg, this, Hair_Sample_TRTg, Hair_Bsdf_TRTg, Hair_Pdf_TRTg);
+            }
+        }
+        else
+        {
+            while (AiLightsGetSample(sg))
+            {
+                result_R_direct += AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
+            }
         }
         sg->fhemi = true;        
     }
@@ -678,23 +780,102 @@ struct HairBsdf
     inline void integrateIndirect(AtShaderGlobals* sg)
     {
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
-        sampit = AiSamplerIterator(data->sampler_R, sg);
-        while(AiSamplerGetSample(sampit, samples))
+
+        if ((sg->Rt & AI_RAY_CAMERA) && data->sampleLobesIndividually)
         {
-            wi_ray.dir = HairGlossySample(this, samples[0], samples[1]);
-
-            AtScrSample scrs;
-
-            // trace our ray
-            if (AiTrace(&wi_ray, &scrs))
+            sampit = AiSamplerIterator(data->sampler_R, sg);
+            while(AiSamplerGetSample(sampit, samples))
             {
-                // calculate result
-                float p = HairGlossyPdf(this, &wi_ray.dir);
-                result_R_indirect += scrs.color * HairGlossyBsdf(this, &wi_ray.dir) / p;
+                wi_ray.dir = Hair_Sample_R(this, samples[0], samples[1]);
+
+                AtScrSample scrs;
+
+                // trace our ray
+                if (AiTrace(&wi_ray, &scrs))
+                {
+                    // calculate result
+                    float p = Hair_Pdf_R(this, &wi_ray.dir);
+                    result_R_indirect += scrs.color * Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                }
             }
+            float weight = AiSamplerGetSampleInvCount(sampit);
+            result_R_indirect *= weight * AI_PI; //< TODO: factor of pi?
+
+            sampit = AiSamplerIterator(data->sampler_TT, sg);
+            while(AiSamplerGetSample(sampit, samples))
+            {
+                wi_ray.dir = Hair_Sample_TT(this, samples[0], samples[1]);
+
+                AtScrSample scrs;
+
+                // trace our ray
+                if (AiTrace(&wi_ray, &scrs))
+                {
+                    // calculate result
+                    float p = Hair_Pdf_TT(this, &wi_ray.dir);
+                    result_TT_indirect += scrs.color * Hair_Bsdf_TT(this, &wi_ray.dir) / p;
+                }
+            }
+            weight = AiSamplerGetSampleInvCount(sampit);
+            result_TT_indirect *= weight * AI_PI; //< TODO: factor of pi?
+
+            sampit = AiSamplerIterator(data->sampler_TRT, sg);
+            while(AiSamplerGetSample(sampit, samples))
+            {
+                wi_ray.dir = Hair_Sample_TRT(this, samples[0], samples[1]);
+
+                AtScrSample scrs;
+
+                // trace our ray
+                if (AiTrace(&wi_ray, &scrs))
+                {
+                    // calculate result
+                    float p = Hair_Pdf_TRT(this, &wi_ray.dir);
+                    result_TRT_indirect += scrs.color * Hair_Bsdf_TRT(this, &wi_ray.dir) / p;
+                }
+            }
+            weight = AiSamplerGetSampleInvCount(sampit);
+            result_TRT_indirect *= weight * AI_PI; //< TODO: factor of pi?
+
+            sampit = AiSamplerIterator(data->sampler_g, sg);
+            while(AiSamplerGetSample(sampit, samples))
+            {
+                wi_ray.dir = Hair_Sample_TRTg(this, samples[0], samples[1]);
+
+                AtScrSample scrs;
+
+                // trace our ray
+                if (AiTrace(&wi_ray, &scrs))
+                {
+                    // calculate result
+                    float p = Hair_Pdf_TRTg(this, &wi_ray.dir);
+                    result_TRTg_indirect += scrs.color * Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
+                }
+            }
+            weight = AiSamplerGetSampleInvCount(sampit);
+            result_TRTg_indirect *= weight * AI_PI; //< TODO: factor of pi?
         }
-        float weight = AiSamplerGetSampleInvCount(sampit);
-        result_R_indirect *= weight * AI_PI; //< TODO: factor of pi?
+        else
+        {
+            sampit = AiSamplerIterator(data->sampler_R, sg);
+            while(AiSamplerGetSample(sampit, samples))
+            {
+                wi_ray.dir = HairGlossySample(this, samples[0], samples[1]);
+
+                AtScrSample scrs;
+
+                // trace our ray
+                if (AiTrace(&wi_ray, &scrs))
+                {
+                    // calculate result
+                    float p = HairGlossyPdf(this, &wi_ray.dir);
+                    result_R_indirect += scrs.color * HairGlossyBsdf(this, &wi_ray.dir) / p;
+                }
+            }
+            float weight = AiSamplerGetSampleInvCount(sampit);
+            result_R_indirect *= weight * AI_PI; //< TODO: factor of pi?
+        }
+        
     }
 
 
