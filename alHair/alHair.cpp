@@ -302,7 +302,7 @@ struct HairBsdf
 
             dual_depth = params[p_dualDepth].INT;
 
-            sampleLobesIndividually = true;
+            sampleLobesIndividually = false;
 
         }
 
