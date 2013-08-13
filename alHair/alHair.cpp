@@ -648,7 +648,7 @@ struct HairBsdf
         while (AiLightsGetSample(sg))
         {
             SctGeo geo(sg->Ld, theta_r, phi_r, U, V, W);
-
+            
             AiStateSetMsgInt("als_hairNumIntersections", 0);
             AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
             AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
