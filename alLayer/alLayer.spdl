@@ -305,6 +305,15 @@ MetaShader "alLayer_meta"
 {
 	Name = "ALS_Layer";
 	Type = material;
+	Renderer "mental ray"
+	{
+		Name = "ALS_Layer";
+		FileName = "alLayer";
+		Options
+		{
+			"version" = 1;
+		}
+	}
 }
 
 Defaults
