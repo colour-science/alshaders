@@ -1242,7 +1242,8 @@ shader_evaluate
     // Diffusion multiple scattering
     if (do_sss)
     {
-        result_sss = AiSSSPointCloudLookupCubic(sg, sssRadius*sssRadiusColor*sssDensityScale) * diffuseColor * kti * kti2;
+        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor*sssDensityScale);
+        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
     }
 
     // blend sss and diffuse

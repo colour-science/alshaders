@@ -28,7 +28,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 set(ARNOLD_VERSION 4.0.14.0)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 
-set(MTOA_VERSION 0.23.0)
+set(MTOA_VERSION 0.25.2)
 set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
 
 #set boost root path
