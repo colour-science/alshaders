@@ -667,6 +667,14 @@ struct HairBsdf
             {
                 
                 result_Pl_direct += sg->Li * sg->we * occlusion * density_back * f_direct_back * geo.cos_theta_i * directFraction;
+
+                if (!AiIsFinite(result_Pl_direct))
+                {
+                    std::cerr << VAR(result_Pl_direct) << std::endl;
+                    std::cerr << VAR(f_direct_back) << std::endl;
+                    std::cerr << VAR(als_T_f) << std::endl;
+                    std::cerr << VAR(als_sigma_bar_f) << std::endl;
+                }
                 
                 if (do_glossy)
                 {
@@ -699,6 +707,15 @@ struct HairBsdf
                 AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
 
                 result_Pg_direct += sg->Li * sg->we * occlusion * F_scatter * geo.cos_theta_i * (1.0f-directFraction);
+
+                if (!AiIsFinite(result_Pg_direct))
+                {
+                    std::cerr << VAR(result_Pg_direct) << std::endl;
+                    std::cerr << VAR(F_scatter) << std::endl;
+                    std::cerr << VAR(f_scatter_back) << std::endl;
+                    std::cerr << VAR(T_f) << std::endl;
+                    std::cerr << VAR(S_f) << std::endl;
+                }
 
             }
         } // END light loop

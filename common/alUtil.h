@@ -869,6 +869,13 @@ inline AtVector floor(const AtVector& v)
     return r;
 }
 
+inline bool AiIsFinite(const AtRGB& c)
+{
+    return AiIsFinite(c.r) && AiIsFinite(c.g) && AiIsFinite(c.b);
+}
+
 #define ALS_RAY_UNDEFINED 0
 #define ALS_RAY_SSS 1
 #define ALS_RAY_DUAL 2
+
+#define VAR(x) #x << ": " << x

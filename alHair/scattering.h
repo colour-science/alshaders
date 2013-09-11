@@ -1,15 +1,25 @@
 // scattering.h
 #pragma once
 
+#include <sstream>
 #include "exr.h"
+
 
 #define PIOVER4 0.7853981633974483f
 #define ONEOVER4PI 0.07957747154594767
 #define FOURPI 12.566370614359172
 
+#define LUT_NAN_CHECK
+#define LUT_DEBUG
+
 #define DS_NUMSTEPS 128
 #define NG_NUMSTEPS 32
 #define BS_NUMSTEPS 256
+
+#define USE_BSDF_LUTS
+
+//#define CORTEX_FRESNEL
+#ifdef CORTEX_FRESNEL
 
 float fresnel(float incidenceAngle, float etaPerp, float etaParal, float invert)
 {
@@ -193,6 +203,163 @@ void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, flo
     hairAttenuation(ior, theta_d, phi, absorption, kfr);
 }
 
+#else
+
+float fresnel(float n2, float n1, float theta_i)
+{
+    theta_i = fabsf(theta_i);
+    if (theta_i > AI_PIOVER2) theta_i = AI_PI - theta_i;
+    float cos_theta_i = cosf(theta_i);
+    float sin_theta_i = sinf(theta_i);
+    float r = (n1/n2)*sin_theta_i;
+    r *= r;
+    float Rs = 1.0f;
+    float Rp = 1.0f;
+
+    if (r <= 1.0f)
+    {
+        r = sqrtf(1.0f-r);
+        float n1_cos_theta_i = n1*cos_theta_i;
+        float n2_cos_theta_i = n2*cos_theta_i;
+
+        Rs = (n1_cos_theta_i - n2*r) / (n1_cos_theta_i + n2*r);
+        Rs *= Rs;
+
+        Rp = (n1*r - n2_cos_theta_i) / (n1*r + n2_cos_theta_i);
+        Rp *= Rp;
+    }
+
+    float f = std::min(1.0f, (Rs+Rp)*0.5f);
+    return f;
+}
+
+void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRGB kfr[3])
+{
+#define ONEOVERPI3 0.032251534433199495
+    // Get miller-bravais indices n' and n''
+    float sin_theta_d = sinf(theta_d);
+    float A = sqrtf(ior*ior - sin_theta_d*sin_theta_d);
+    float n_p = A / cosf(theta_d);
+    float n_pp = ior*ior / n_p;
+
+    
+    float c = asinf(1.0f/n_p);
+    for (int p=0; p < 3; ++p)
+    {
+        // adjust phi to correct range for this component
+        float phi_p = phi;
+        if (p != 1)
+        {
+            if (phi_p > AI_PI) phi_p -= AI_PITIMES2;
+            phi_p += p*AI_PI;
+        }
+        // get roots of polynomial
+        float roots[3] = {0,0,0};
+        int numRoots = solveCubic(-8.0f*p*c*ONEOVERPI3, 0.0f, 6.0f*p*c*AI_ONEOVERPI - 2.0f, p*AI_PI - phi_p, roots);
+        AtRGB Fr = AI_RGB_BLACK;
+        if (p < 2)
+        {
+            float gamma_i = roots[0];
+            if (p==0)
+            {
+                Fr = rgb(fresnel(n_p, n_pp, gamma_i));
+            }
+            else
+            {
+                float gamma_t = asinf(sinf(gamma_i)/n_p);
+                float l = 2.0f * cosf(gamma_t);
+                Fr = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t)) * exp(-absorption*l);
+            }
+        }
+        else 
+        {
+            for (int i=0; i < numRoots; ++i)
+            {
+                float gamma_i = roots[i];
+                float gamma_t = asinf(sinf(gamma_i)/n_p);
+                float l = 2.0f * cosf(gamma_t);
+
+                float Fr_TT = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t));
+                Fr += Fr_TT * fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t) * exp(-absorption*2*l);
+            }
+        }
+        kfr[p] = Fr;
+    }
+}
+
+void hairAttenuation(float ior, float theta_d, float phi, float absorption, float kfr[3])
+{
+#define ONEOVERPI3 0.032251534433199495
+    // Get miller-bravais indices n' and n''
+    float sin_theta_d = sinf(theta_d);
+    float A = sqrtf(ior*ior - sin_theta_d*sin_theta_d);
+    float n_p = A / cosf(theta_d);
+    float n_pp = ior*ior / n_p;
+
+    
+    float c = asinf(1.0f/n_p);
+    for (int p=0; p < 3; ++p)
+    {
+        // adjust phi to correct range for this component
+        float phi_p = phi;
+        if (p != 1)
+        {
+            if (phi_p > AI_PI) phi_p -= AI_PITIMES2;
+            phi_p += p*AI_PI;
+        }
+        // get roots of polynomial
+        float roots[3] = {0,0,0};
+        int numRoots = solveCubic(-8.0f*p*c*ONEOVERPI3, 0.0f, 6.0f*p*c*AI_ONEOVERPI - 2.0f, p*AI_PI - phi_p, roots);
+        float Fr = 0.0f;
+        if (p < 2)
+        {
+            float gamma_i = roots[0];
+            if (p==0)
+            {
+                Fr = fresnel(n_p, n_pp, gamma_i);
+                //Fr = 0.5f;
+            }
+            else
+            {
+                float gamma_t = asinf(sinf(gamma_i)/n_p);
+                float l = 2.0f * cosf(gamma_t);
+                //Fr = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t)) * exp(-absorption*l);
+                Fr = 0.8f * exp(-absorption*l*0.5f);
+                //Fr = 0.8f * exp(-absorption*2);
+            }
+        }
+        else 
+        {
+            for (int i=0; i < numRoots; ++i)
+            {
+                float gamma_i = roots[i];
+                float gamma_t = asinf(sinf(gamma_i)/n_p);
+                float l = 2.0f * cosf(gamma_t);
+
+                float Fr_TT = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t));
+                //Fr += Fr_TT * fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t) * exp(-absorption*2*l);
+                Fr += 0.2f * exp(-absorption*2*l*0.5f);
+                //Fr += 0.2f * exp(-absorption*4);
+            }
+        }
+        kfr[p] = Fr;
+    }
+}
+
+void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, AtRGB absorption, AtRGB kfr[3])
+{
+    hairAttenuation(ior, theta_d, phi, absorption, kfr);
+}
+
+void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, float absorption, float kfr[3])
+{
+    hairAttenuation(ior, theta_d, phi, absorption, kfr);
+}
+
+#endif
+
+
+
 /// Normalized gaussian with offset
 inline float g(float beta, float alpha, float theta_h)
 {
@@ -309,15 +476,19 @@ struct ScatteringLut
         for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i+=theta_i_step)
         {
             float cos_theta_i = cosf(theta_i);
+            //float _sin_theta_i = fabsf(sinf(theta_i));
+            float sin_theta_i = 1.0f;
             for (float theta_r = -AI_PIOVER2; theta_r < AI_PIOVER2; theta_r += theta_r_step)
             {
                 float theta_h = (theta_i + theta_r) * 0.5f;
                 float theta_d = (theta_i - theta_r) * 0.5f;
+                //float _sin_theta_r = fabsf(sinf(theta_r));
+                //float sin_theta_i = _sin_theta_r * _sin_theta_i;
+                //float sin_theta_i = 1.0f;
                 // integrate over half the domain each time and double after as it's symmetrical
                 // forward scattering
                 for (float phi = AI_PIOVER2; phi < AI_PI; phi += phi_step)
                 {
-                    //hairAttenuation(ior, cos_theta_i, theta_d, phi, phi, 1.0f, absorption, kfr);
                     float cosphi2 = cosf(phi*0.5f);
                     
                     // [2] eq (6)
@@ -329,11 +500,24 @@ struct ScatteringLut
                     int i_bs = i_p*BS_NUMSTEPS+i_th;
                     int i_td = (int)((theta_d*AI_ONEOVERPI + 0.5f)*BS_NUMSTEPS);
                     int i_k = i_p*BS_NUMSTEPS+i_td;
-                    float f_R = b_R[i_bs] * k_R[i_k] * cos_theta_i;
-                    float f_TT = b_TT[i_bs] * k_TT[i_k] * cos_theta_i;
-                    float f_TRT = b_TRT[i_bs] * k_TRT[i_k] * cos_theta_i;
+#ifdef USE_BSDF_LUTS
+                    /*
+                    float f_R = b_R[i_bs] * k_R[i_k] * cos_theta_i * sin_theta_i;
+                    float f_TT = b_TT[i_bs] * k_TT[i_k] * cos_theta_i * sin_theta_i;
+                    float f_TRT = b_TRT[i_bs] * k_TRT[i_k] * cos_theta_i * sin_theta_i;
+                    */
+                    float f_R = b_R[i_bs] * 0.45f * cos_theta_i * sin_theta_i;
+                    float f_TT = b_TT[i_bs] * 0.9f * fast_exp(-absorption*2.0f) * cos_theta_i * sin_theta_i;
+                    float f_TRT = b_TRT[i_bs] * 0.2f * fast_exp(-absorption*4.0f) * cos_theta_i * sin_theta_i;
+#else
+                    hairAttenuation(ior, theta_d, phi, absorption, kfr);
+                    float f_R = bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0] * cos_theta_i * sin_theta_i;;
+                    float f_TT = bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1] * cos_theta_i * sin_theta_i;;
+                    float f_TRT = (bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2)
+                                + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g)) * kfr[2] * cos_theta_i * sin_theta_i;;
+#endif
                     float f = f_R + f_TT + f_TRT;
-                    a_bar_f[idx] += f;
+                    a_bar_f[idx] += std::min(.99f, f);
                     // }
                     alpha_f[idx] += f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT;
                     beta_f[idx] += f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2;
@@ -359,7 +543,7 @@ struct ScatteringLut
                 // backward scattering
                 for (float phi = 0.0f; phi < AI_PIOVER2; phi += phi_step)
                 {
-                    //hairAttenuation(ior, cosf(theta_i), theta_d, phi, phi, 1.0f, absorption, kfr);
+                    
                     float cosphi2 = cosf(phi*0.5f);
                     // [2] eq (11)
                     // Compute average back-scattering attenuation, i.e. total back-scattered radiance
@@ -370,9 +554,22 @@ struct ScatteringLut
                     int i_bs = i_p*BS_NUMSTEPS+i_th;
                     int i_td = (int)((theta_d*AI_ONEOVERPI + 0.5f)*BS_NUMSTEPS);
                     int i_k = i_p*BS_NUMSTEPS+i_td;
-                    float f_R = b_R[i_bs] * k_R[i_k] * cos_theta_i;
-                    float f_TT = b_TT[i_bs] * k_TT[i_k] * cos_theta_i;
-                    float f_TRT = b_TRT[i_bs] * k_TRT[i_k] * cos_theta_i;
+#ifdef USE_BSDF_LUTS
+                    /*
+                    float f_R = b_R[i_bs] * k_R[i_k] * cos_theta_i * sin_theta_i;
+                    float f_TT = b_TT[i_bs] * k_TT[i_k] * cos_theta_i * sin_theta_i;
+                    float f_TRT = b_TRT[i_bs] * k_TRT[i_k] * cos_theta_i * sin_theta_i;
+                    */
+                    float f_R = b_R[i_bs] * 0.45f * cos_theta_i * sin_theta_i;
+                    float f_TT = b_TT[i_bs] * 0.9f * fast_exp(-absorption*2.0f) * cos_theta_i * sin_theta_i;
+                    float f_TRT = b_TRT[i_bs] * 0.2f * fast_exp(-absorption*4.0f) * cos_theta_i * sin_theta_i;
+#else
+                    hairAttenuation(ior, theta_d, phi, absorption, kfr);
+                    float f_R = bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0] * cos_theta_i * sin_theta_i;;
+                    float f_TT = bsdfTT(beta_TT2, alpha_TT, theta_h, gamma_TT, phi) * kfr[1] * cos_theta_i * sin_theta_i;;
+                    float f_TRT = (bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2)
+                                + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, phi_g)) * kfr[2] * cos_theta_i * sin_theta_i;;
+#endif
                     float b = f_R + f_TT + f_TRT;
                     a_bar_b[idx] += b;
                     // }
@@ -433,6 +630,18 @@ struct ScatteringLut
             // Average longitudinal variance for up to 3 scattering events
             //AtRGB rtbfbb = sqrt(2.0f*beta_f[i] + beta_b[i]);
             sigma_b[i] = (1.0f + 0.7f*af2) * (a_bar_b[i]*sqrtf(2.0f*beta_f[i] + beta_b[i]) + ab3*sqrtf(2.0f*beta_f[i] + 3.0f*beta_b[i])) / (a_bar_b[i] + ab3 * (2.0f*beta_f[i] + 3.0f*beta_b[i]));
+#ifdef LUT_NAN_CHECK
+            if (!AiIsFinite(A_b[i]) || !AiIsFinite(delta_b[i]) || !AiIsFinite(sigma_b[i]))
+            {
+                std::cerr << VAR(A_b) << std::endl;;
+                std::cerr << VAR(delta_b) << std::endl;;
+                std::cerr << VAR(sigma_b) << std::endl;;
+                std::cerr << VAR(af2) << std::endl;
+                std::cerr << VAR(ab2) << std::endl;;
+                std::cerr << VAR(ab3) << std::endl;;
+                std::cerr << VAR(omaf2) << std::endl;;
+            }
+#endif
         }
 
         idx = 0;
@@ -458,7 +667,7 @@ struct ScatteringLut
                     // [2] eq. (25)
                     // BCSDF due to forward scattering
                     // {
-                    //hairAttenuation(ior, theta_d, phi, absorption, kfr);
+                    
                     float phi_d = phi - phi_i;
                     if (phi_d > AI_PI) phi_d = AI_PI - (phi_d-AI_PI);
                     int i_p = (int)(phi_d/AI_PI*BS_NUMSTEPS);
@@ -466,9 +675,21 @@ struct ScatteringLut
                     int i_k = i_p*BS_NUMSTEPS+i_td;
 
                     float cosphi2 = cosf(phi_d*0.5f);
+#ifdef USE_BSDF_LUTS
+                    /*
                     N_G_R[ng_idx] += cosphi2 * k_R[i_k];
                     N_G_TT[ng_idx] += g(gamma_TT, 0.0f, AI_PI-phi_d)* k_TT[i_k];
                     N_G_TRT[ng_idx] += cosphi2 + g(gamma_g, 0.0f, phi_d - phi_g) * k_TRT[i_k];
+                    */
+                    N_G_R[ng_idx] += cosphi2 * 0.45f;
+                    N_G_TT[ng_idx] += g(gamma_TT, 0.0f, AI_PI-phi_d) * 0.9f * fast_exp(-absorption*2.0f);
+                    N_G_TRT[ng_idx] += cosphi2 + g(gamma_g, 0.0f, phi_d - phi_g) * 0.2f * fast_exp(-absorption*4.0f);
+#else
+                    hairAttenuation(ior, theta_d, phi, absorption, kfr);
+                    N_G_R[ng_idx] += cosphi2 * kfr[0];
+                    N_G_TT[ng_idx] += g(gamma_TT, 0.0f, AI_PI-phi_d)* kfr[1];
+                    N_G_TRT[ng_idx] += cosphi2 + g(gamma_g, 0.0f, phi_d - phi_g) * kfr[2];
+#endif                    
                 }
 
                 N_G_R[ng_idx] *= AI_ONEOVERPI * phi_i_step;
@@ -476,6 +697,83 @@ struct ScatteringLut
                 N_G_TRT[ng_idx] *= AI_ONEOVERPI * phi_i_step;
             }
         }
+
+#ifdef LUT_DEBUG
+    std::stringstream ss;
+
+    ss << "/tmp/a_bar_f_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), a_bar_f, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/a_bar_b_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), a_bar_b, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/A_b_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), A_b, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/alpha_f_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), alpha_f, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/alpha_b_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), alpha_b, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/beta_f_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), beta_f, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/beta_b_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), beta_b, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/sigma_b_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), sigma_b, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/delta_b_" << absorption << ".exr";
+    writeThickFloatEXR(ss.str().c_str(), delta_b, DS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/N_G_R_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), N_G_R, NG_NUMSTEPS, NG_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/N_G_TT_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), N_G_TT, NG_NUMSTEPS, NG_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/N_G_TRT_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), N_G_TRT, NG_NUMSTEPS, NG_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/b_R_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), b_R, BS_NUMSTEPS, BS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/b_TT_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), b_TT, BS_NUMSTEPS, BS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/b_TRT_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), b_TRT, BS_NUMSTEPS, BS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/k_R_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), k_R, BS_NUMSTEPS, BS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/k_TT_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), k_TT, BS_NUMSTEPS, BS_NUMSTEPS);
+    ss.str(std::string());
+
+    ss << "/tmp/k_TRT_" << absorption << ".exr";
+    writeFloatEXR(ss.str().c_str(), k_TRT, BS_NUMSTEPS, BS_NUMSTEPS);
+    ss.str(std::string());
+
+#endif        
     }
 
     float a_bar_f[DS_NUMSTEPS];
