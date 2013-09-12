@@ -9,12 +9,12 @@
 #define ONEOVER4PI 0.07957747154594767
 #define FOURPI 12.566370614359172
 
-#define LUT_NAN_CHECK
+//#define LUT_NAN_CHECK
 #define LUT_DEBUG
 
-#define DS_NUMSTEPS 128
+#define DS_NUMSTEPS 64
 #define NG_NUMSTEPS 32
-#define BS_NUMSTEPS 256
+#define BS_NUMSTEPS 128
 
 #define USE_BSDF_LUTS
 
@@ -175,7 +175,8 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
             {
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
                 float l = 2.0f * cosf(gamma_t);
-                kfr[1] = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
+                //kfr[1] = (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - fresnel(gamma_t, n_p, n_pp, true)) * exp(-absorption*l);
+                kfr[1] = l;
             }
         }
         else 
@@ -186,7 +187,8 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
                 float l = 2.0f * cosf(gamma_t);
                 float iFr = fresnel(gamma_t, n_p, n_pp, true);
-                kfr[2] += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*2*l);
+                //kfr[2] += (1.0f - fresnel(gamma_i, n_p, n_pp, false)) * (1.0f - iFr) * iFr * exp(-absorption*2*l);
+                kfr[2] += l;
             }
         }
         //kfr[p] = Fr;
@@ -233,6 +235,7 @@ float fresnel(float n2, float n1, float theta_i)
     return f;
 }
 
+/*
 void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRGB kfr[3])
 {
 #define ONEOVERPI3 0.032251534433199495
@@ -286,7 +289,9 @@ void hairAttenuation(float ior, float theta_d, float phi, AtRGB absorption, AtRG
         kfr[p] = Fr;
     }
 }
+*/
 
+/*
 void hairAttenuation(float ior, float theta_d, float phi, float absorption, float kfr[3])
 {
 #define ONEOVERPI3 0.032251534433199495
@@ -324,8 +329,9 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
                 float gamma_t = asinf(sinf(gamma_i)/n_p);
                 float l = 2.0f * cosf(gamma_t);
                 //Fr = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t)) * exp(-absorption*l);
-                Fr = 0.8f * exp(-absorption*l*0.5f);
+                //Fr = 0.8f * exp(-absorption*l*0.5f);
                 //Fr = 0.8f * exp(-absorption*2);
+                Fr = l;
             }
         }
         else 
@@ -338,12 +344,41 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
 
                 float Fr_TT = (1.0f - fresnel(n_p, n_pp, gamma_i)) * (1.0f - fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t));
                 //Fr += Fr_TT * fresnel(1.0f/n_p, 1.0f/n_pp, gamma_t) * exp(-absorption*2*l);
-                Fr += 0.2f * exp(-absorption*2*l*0.5f);
+                //Fr += 0.2f * exp(-absorption*2*l*0.5f);
                 //Fr += 0.2f * exp(-absorption*4);
+                Fr += l;
             }
         }
         kfr[p] = Fr;
     }
+}
+*/
+void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorption, AtRGB kfr[3])
+{
+    float x = clamp(1.0f - cosf(theta_d), 0.f, 1.f);
+    float x3 = powf(x, 3.0f);
+    float x5 = powf(x, 5.0f);
+    float y = clamp(phi / AI_PI, 0.f, 1.f);
+    float y5 = powf(y, 5.0f);
+    float cf_front = lerp(0.04f, 0.5f, x3);
+    float cf_back = lerp(0.05f, 0.5f, x5);
+    kfr[0] = rgb(lerp(cf_front, cf_back, y5));
+    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
+    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
+}
+
+void hairAttenuation(float ior, float theta_d, float phi, float absorption, float kfr[3])
+{
+    float x = 1.0f - cosf(theta_d);
+    float x3 = powf(x, 3.0f);
+    float x5 = powf(x, 5.0f);
+    float y = phi / AI_PI;
+    float y5 = powf(y, 5.0f);
+    float cf_front = lerp(0.04f, 0.5f, x3);
+    float cf_back = lerp(0.05f, 0.5f, x5);
+    kfr[0] = lerp(cf_front, cf_back, y5);
+    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
+    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
 }
 
 void hairAttenuation(float ior, float cos_theta_i, float theta_d, float phi, float phi_h, float aa, AtRGB absorption, AtRGB kfr[3])
@@ -472,7 +507,9 @@ struct ScatteringLut
         memset(beta_f, 0, sizeof(float)*DS_NUMSTEPS);
         memset(beta_b, 0, sizeof(float)*DS_NUMSTEPS);
         
-
+        kfr[0] = 0.45f;
+        kfr[1] = 0.9f * fast_exp(-absorption*2.0f);
+        kfr[2] = 0.2f * fast_exp(-absorption*4.0f);
         for (float theta_i = -AI_PIOVER2; theta_i < AI_PIOVER2; theta_i+=theta_i_step)
         {
             float cos_theta_i = cosf(theta_i);
@@ -482,6 +519,8 @@ struct ScatteringLut
             {
                 float theta_h = (theta_i + theta_r) * 0.5f;
                 float theta_d = (theta_i - theta_r) * 0.5f;
+                float cos_theta_d = cosf(theta_d);
+                float x5 = powf(1.0f-cos_theta_d, 5);
                 //float _sin_theta_r = fabsf(sinf(theta_r));
                 //float sin_theta_i = _sin_theta_r * _sin_theta_i;
                 //float sin_theta_i = 1.0f;
@@ -506,9 +545,9 @@ struct ScatteringLut
                     float f_TT = b_TT[i_bs] * k_TT[i_k] * cos_theta_i * sin_theta_i;
                     float f_TRT = b_TRT[i_bs] * k_TRT[i_k] * cos_theta_i * sin_theta_i;
                     */
-                    float f_R = b_R[i_bs] * 0.45f * cos_theta_i * sin_theta_i;
-                    float f_TT = b_TT[i_bs] * 0.9f * fast_exp(-absorption*2.0f) * cos_theta_i * sin_theta_i;
-                    float f_TRT = b_TRT[i_bs] * 0.2f * fast_exp(-absorption*4.0f) * cos_theta_i * sin_theta_i;
+                    float f_R = b_R[i_bs] * kfr[0] * cos_theta_i * sin_theta_i;
+                    float f_TT = b_TT[i_bs] * kfr[1] * cos_theta_i * sin_theta_i;
+                    float f_TRT = b_TRT[i_bs] * 0.2f * fast_exp(-absorption*2.0f * lerp(1.5f, 2.0f, x5)) * cos_theta_i * sin_theta_i;
 #else
                     hairAttenuation(ior, theta_d, phi, absorption, kfr);
                     float f_R = bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0] * cos_theta_i * sin_theta_i;;
@@ -560,9 +599,9 @@ struct ScatteringLut
                     float f_TT = b_TT[i_bs] * k_TT[i_k] * cos_theta_i * sin_theta_i;
                     float f_TRT = b_TRT[i_bs] * k_TRT[i_k] * cos_theta_i * sin_theta_i;
                     */
-                    float f_R = b_R[i_bs] * 0.45f * cos_theta_i * sin_theta_i;
-                    float f_TT = b_TT[i_bs] * 0.9f * fast_exp(-absorption*2.0f) * cos_theta_i * sin_theta_i;
-                    float f_TRT = b_TRT[i_bs] * 0.2f * fast_exp(-absorption*4.0f) * cos_theta_i * sin_theta_i;
+                    float f_R = b_R[i_bs] * kfr[0] * cos_theta_i * sin_theta_i;
+                    float f_TT = b_TT[i_bs] * kfr[1] * cos_theta_i * sin_theta_i;
+                    float f_TRT = b_TRT[i_bs] * 0.2f * fast_exp(-absorption*2.0f * lerp(1.5f, 2.0f, x5)) * cos_theta_i * sin_theta_i;
 #else
                     hairAttenuation(ior, theta_d, phi, absorption, kfr);
                     float f_R = bsdfR(beta_R2, alpha_R, theta_h, cosphi2) * kfr[0] * cos_theta_i * sin_theta_i;;
@@ -661,6 +700,7 @@ struct ScatteringLut
             for (int t=0; t < NG_NUMSTEPS; ++t)
             {
                 float theta_d = t * theta_d_step - AI_PIOVER2;
+                float x5 = powf(1.0f-cosf(theta_d), 5);
                 int ng_idx = t*NG_NUMSTEPS+p;
                 for (float phi_i = -AI_PIOVER2; phi_i < AI_PIOVER2; phi_i += phi_i_step)
                 {
@@ -681,9 +721,9 @@ struct ScatteringLut
                     N_G_TT[ng_idx] += g(gamma_TT, 0.0f, AI_PI-phi_d)* k_TT[i_k];
                     N_G_TRT[ng_idx] += cosphi2 + g(gamma_g, 0.0f, phi_d - phi_g) * k_TRT[i_k];
                     */
-                    N_G_R[ng_idx] += cosphi2 * 0.45f;
-                    N_G_TT[ng_idx] += g(gamma_TT, 0.0f, AI_PI-phi_d) * 0.9f * fast_exp(-absorption*2.0f);
-                    N_G_TRT[ng_idx] += cosphi2 + g(gamma_g, 0.0f, phi_d - phi_g) * 0.2f * fast_exp(-absorption*4.0f);
+                    N_G_R[ng_idx] += cosphi2 * kfr[0];
+                    N_G_TT[ng_idx] += g(gamma_TT, 0.0f, AI_PI-phi_d) * kfr[1];
+                    N_G_TRT[ng_idx] += cosphi2 + g(gamma_g, 0.0f, phi_d - phi_g) * 0.2f * fast_exp(-absorption*2.0f * lerp(1.5f, 2.0f, x5));
 #else
                     hairAttenuation(ior, theta_d, phi, absorption, kfr);
                     N_G_R[ng_idx] += cosphi2 * kfr[0];

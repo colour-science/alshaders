@@ -60,6 +60,7 @@ struct HairBsdf
             AiSamplerDestroy(sampler_TT);
             AiSamplerDestroy(sampler_TRT);
             AiSamplerDestroy(sampler_g);
+            delete ds;
         }
 
         void update(AtParamValue* params)
@@ -107,7 +108,6 @@ struct HairBsdf
 
             delete ds;
             ds = new DualScattering;
-
         }
 
         AtSampler* sampler_diffuse;
@@ -680,6 +680,7 @@ struct HairBsdf
                 {
                     AtRGB kfr[3];
                     hairAttenuation(sp.ior, geo.theta_d, geo.phi_d, sp.absorption, kfr);
+                    kfr[2] *= lerp(0.1f, 3.0f, SQR(cn)); //< glints
                     AtRGB L = sg->Li * sg->we * occlusion * directFraction;
                     
                     result_R_direct += L * bsdf_R(geo) * kfr[0];
