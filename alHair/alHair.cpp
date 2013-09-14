@@ -100,8 +100,6 @@ struct HairBsdf
 
             glintStrength = params[p_glintStrength].FLT;
 
-            absorption = (AI_RGB_WHITE - min(rgb(0.9999f, 0.9999f, 0.9999f), params[p_hairColor].RGB)) * params[p_hairDensity].FLT;
-
             dual_depth = params[p_dualDepth].INT;
 
             sampleLobesIndividually = false;
@@ -156,6 +154,7 @@ struct HairBsdf
         bool sampleLobesIndividually;
 
         DualScattering* ds;
+        float colorNorm;
     };
 
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
@@ -236,13 +235,11 @@ struct HairBsdf
         AB(theta_r, sp.alpha_R, sp.beta_R*B_WIDTH_SCALE, A_b, B_b);
         AB(theta_r, sp.alpha_TT, sp.beta_TT*F_WIDTH_SCALE, A_f, B_f);
 
+        AtRGB hairColor = min(rgb(0.99f, 0.99f, 0.99f), pow(AiShaderEvalParamRGB(p_hairColor), 0.15f));
+        colorNorm = maxh(hairColor);
 
-        sp.absorption = AiShaderEvalParamRGB(p_hairColor);
-        // Magic number to make the linear hair color look the same when it comes out the other end of the scattering process
-        //sp.absorption = pow(sp.absorption, 0.2f); 
+        sp.absorption = (AI_RGB_WHITE - hairColor);
 
-
-        sp.absorption = (AI_RGB_WHITE - min(rgb(0.9999f, 0.9999f, 0.9999f), sp.absorption));
         specular1Color = AiShaderEvalParamRGB(p_specular1Color) * AiShaderEvalParamFlt(p_specular1Strength);
         specular2Color = AiShaderEvalParamRGB(p_specular2Color) * AiShaderEvalParamFlt(p_specular2Strength);
         transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
@@ -637,7 +634,9 @@ struct HairBsdf
         int als_hairNumIntersections = 0;
         AtRGB als_T_f = AI_RGB_BLACK;
         AtRGB als_sigma_bar_f = AI_RGB_BLACK;
+        bool old_hemi = sg->fhemi;
         sg->fhemi = false;
+        bool old_skipshadow = sg->skip_shadow;
         sg->skip_shadow = true;
         AiLightsPrepare(sg);
         AtRay ray;
@@ -727,8 +726,8 @@ struct HairBsdf
         result_TRT_direct *= specular2Color;
         result_TRTg_direct *= specular2Color * glintStrength;
 
-        sg->fhemi = true;
-        sg->skip_shadow = false;
+        sg->fhemi = old_hemi;
+        sg->skip_shadow = old_skipshadow;
     }
 
 
@@ -737,7 +736,6 @@ struct HairBsdf
     {
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
 
-        
         sampit = AiSamplerIterator(data->sampler_R, sg);
         while(AiSamplerGetSample(sampit, samples))
         {
@@ -771,7 +769,6 @@ struct HairBsdf
 
         bool do_glossy = true;
         if (sg->Rt & AI_RAY_DIFFUSE || sg->Rr > 0) do_glossy = false;
-
 
         if (do_glossy)
         {
@@ -1043,6 +1040,7 @@ struct HairBsdf
     int numBlendHairs;
     float density_front;
     float density_back;
+    float colorNorm;
 
     AtRGB result_R_direct;
     AtRGB result_R_indirect;
