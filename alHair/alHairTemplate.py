@@ -8,7 +8,6 @@ class AEalHairTemplate(alShadersTemplate):
 
         self.beginLayout('Fibre properties', collapse=False)
         self.addControl('hairColor', label='Color')
-        self.addControl('hairColorDensity', label='Color density')
         self.addControl('specularWidth', label='Highlight width')
         self.addControl('specularShift', label='Highlight shift')
         self.endLayout() # end Fibre properties
@@ -22,7 +21,7 @@ class AEalHairTemplate(alShadersTemplate):
         self.addControl('specular2Strength', label='Strength')
         self.addControl('specular2Color', label='Tint')
         self.addControl('glintStrength', label='Glint strength')
-        self.addControl('glintRolloff', label='Glint rolloff')
+        self.addControl('twist', label='Twist')
         self.endLayout() # end Specular 2
 
         self.beginLayout('Transmission', collapse=False)
@@ -39,6 +38,7 @@ class AEalHairTemplate(alShadersTemplate):
 
         self.beginLayout('Advanced', collapse=True)
         self.addControl('extraSamples', label='Extra samples')
+        self.addControl('glintRolloff', label='Glint rolloff')
         self.endLayout() # end Advacned
 
         pm.mel.AEdependNodeTemplate(self.nodeName)
