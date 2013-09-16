@@ -13,7 +13,7 @@
 //#define LUT_DEBUG
 
 #define DS_NUMSTEPS 64
-#define NG_NUMSTEPS 128
+#define NG_NUMSTEPS 32
 #define BS_NUMSTEPS 128
 
 //#define USE_BSDF_LUTS
