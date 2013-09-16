@@ -35,3 +35,39 @@ void writeThickRGBEXR(const char* filename, const float* pixels, int w, int h)
     writeRGBEXR(filename, tmp, w, THICKNESS);
     delete[] tmp;
 }
+
+void writeThickFloatEXR(const char* filename, const float* pixels, int w)
+{
+    float* px = new float[3 * w];
+    for (int i=0; i < w; ++i)
+    {
+        px[3*i+0] = pixels[i];
+        px[3*i+1] = pixels[i];
+        px[3*i+2] = pixels[i];
+    }
+
+    float* tmp = new float[3 * w * THICKNESS];
+    float* tmp2 = tmp;
+    for (int i=0; i < THICKNESS; ++i)
+    {   
+        memcpy(tmp2, px, sizeof(float)*3*w);
+        tmp2 += w*3;
+    }
+    writeRGBEXR(filename, tmp, w, THICKNESS);
+    delete[] tmp;
+    delete[] px;
+}
+
+void writeFloatEXR(const char* filename, const float* pixels, int w, int h)
+{
+    float* px = new float[3 * w * h];
+    for (int i=0; i < w*h; ++i)
+    {
+        px[3*i+0] = pixels[i];
+        px[3*i+1] = pixels[i];
+        px[3*i+2] = pixels[i];
+    }
+
+    writeRGBEXR(filename, px, w, h);
+    delete[] px;
+}

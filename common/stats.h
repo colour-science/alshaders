@@ -95,5 +95,4 @@ struct Histogram
 	double more;
 	bool normalize;
 	bool reportOnDestruction;
-
 };
