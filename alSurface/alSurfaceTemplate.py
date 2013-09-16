@@ -105,6 +105,7 @@ class AEalSurfaceTemplate(alShadersTemplate):
         self.beginLayout('AOVs', collapse=True)
         self.addControl('lightGroupsIndirect', label='Indirect light groups')
         self.addControl('standardCompatibleAOVs', label='Write standard AOVs only')
+        self.addControl('transmitAovs', label='Transmit AOVs')
         self.addControl('aov_diffuse_color', label='Diffuse color')
         self.addControl('aov_direct_diffuse', label='Direct diffuse')
         self.addControl('aov_direct_diffuse_raw', label='Direct diffuse (raw)')
