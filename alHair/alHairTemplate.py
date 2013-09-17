@@ -10,7 +10,15 @@ class AEalHairTemplate(alShadersTemplate):
         self.addControl('hairColor', label='Color')
         self.addControl('specularWidth', label='Highlight width')
         self.addControl('specularShift', label='Highlight shift')
+        self.addControl('opacity')
         self.endLayout() # end Fibre properties
+
+        self.beginLayout('Diffuse', collapse=False)
+        self.addControl('diffuseStrength', label='Strength')
+        self.addControl('diffuseColor', label='Tint')
+        self.addControl('Forward scattering')
+        self.addControl('Back scattering')
+        self.endLayout() # end Dual scattering
 
         self.beginLayout('Specular 1', collapse=False)
         self.addControl('specular1Strength', label='Strength')
@@ -27,18 +35,15 @@ class AEalHairTemplate(alShadersTemplate):
         self.beginLayout('Transmission', collapse=False)
         self.addControl('transmissionStrength', label='Strength')
         self.addControl('transmissionColor', label='Tint')
-        self.addControl('transmissionRolloff', label='Rolloff')
         self.endLayout() # end Transmission
-
-        self.beginLayout('Dual scattering', collapse=False)
-  #      self.addControl('dualDepth', 'Depth')
-        self.addControl('densityFront')
-        self.addControl('densityBack')
-        self.endLayout() # end Dual scattering
 
         self.beginLayout('Advanced', collapse=True)
         self.addControl('extraSamples', label='Extra samples')
+        self.addControl('transmissionRolloff', label='Transmission rolloff')
         self.addControl('glintRolloff', label='Glint rolloff')
+        self.addControl('singleSaturation')
+        self.addControl('multipleSaturation')
+        self.addControl('dualDepth')
         self.endLayout() # end Advacned
 
         pm.mel.AEdependNodeTemplate(self.nodeName)
