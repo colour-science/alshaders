@@ -762,6 +762,7 @@ struct HairBsdf
                 AtScrSample scrs;
 
                 // trace our ray
+                AiStateSetMsgFlt("alsPreviousRoughness", 1.0f);
                 if (AiTrace(&wi_ray, &scrs))
                 {
                     // calculate result
@@ -804,6 +805,7 @@ struct HairBsdf
             AiStateSetMsgFlt("als_hairNumIntersections", 0);
             AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
             AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
+            AiStateSetMsgFlt("alsPreviousRoughness", 1.0f);
             AiTrace(&wi_ray, &scrs);
             AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
             AiStateGetMsgRGB("als_T_f", &als_T_f);
@@ -890,29 +892,6 @@ struct HairBsdf
                         result_Pl_indirect;
         sg->out_opacity = AI_RGB_WHITE;
     }
-
-    /// Calculate opacity of this shading point.
-    /// @return true if we should early-out, false otherwise
-    /// @param sg Shader globals
-    /*
-    inline bool opacity(AtShaderGlobals* sg)
-    {
-        AtRGB opacity = AiShaderEvalParamRGB(p_opacity);
-        float geo_opacity = 1.0f;
-        if (AiUDataGetFlt("geo_opacity", &geo_opacity))
-        {
-            opacity *= geo_opacity;
-        }
-
-        if (sg->transp_index > 5)
-        {
-            opacity = 1.0f;
-        }
-
-        // early out if in shadow ray or fully transparent
-        return ((sg->Rt & AI_RAY_SHADOW) || AiShaderGlobalsApplyOpacity(sg, opacity));
-    }
-    */
 
     AtVector U, V, W;   //< local coordinate frame
     float theta_r;      //< exitant spherical theta
