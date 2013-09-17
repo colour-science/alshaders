@@ -547,7 +547,6 @@ shader_evaluate
     {
         roughness = std::max(roughness, alsPreviousRoughness*specular1RoughnessDepthScale);
         roughness2 = std::max(roughness2, alsPreviousRoughness*specular2RoughnessDepthScale);
-        //transmissionRoughness = std::max(transmissionRoughness, alsPreviousRoughness*transmissionRoughnessDepthScale);
     }
 
     // clamp roughnesses
@@ -604,14 +603,16 @@ shader_evaluate
 
     if (    (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
             || maxh(specular1Color) < IMPORTANCE_EPS             // disable glossy if contribution is small
-            || (sg->Rr_refr > 0 && !transmissionEnableCaustics)) // disable glossy->transmitted caustics
+            || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
+            || roughness > 1.0f  )                               // kill glossy if roughness has been scaled up too far
     {
         do_glossy = false;
     }
 
     if (    (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
             || maxh(specular2Color) < IMPORTANCE_EPS             // disable glossy2 if contribution is small
-            || (sg->Rr_refr > 0 && !transmissionEnableCaustics)) // disable glossy->transmitted caustics
+            || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
+            || roughness2 > 1.0f )                              // kill glossy if roughness has been scaled up too far
     {
         do_glossy2 = false;
     }
