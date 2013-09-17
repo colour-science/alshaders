@@ -611,7 +611,7 @@ struct HairBsdf
         bool do_glossy = true;
         if (sg->Rt & AI_RAY_DIFFUSE) do_glossy = false;
 
-        int als_hairNumIntersections = 0;
+        float als_hairNumIntersections = 0;
         AtRGB als_T_f = AI_RGB_BLACK;
         AtRGB als_sigma_bar_f = AI_RGB_BLACK;
         bool old_hemi = sg->fhemi;
@@ -628,18 +628,18 @@ struct HairBsdf
         {
             SctGeo geo(sg->Ld, theta_r, phi_r, U, V, W);
             
-            AiStateSetMsgInt("als_hairNumIntersections", 0);
+            AiStateSetMsgFlt("als_hairNumIntersections", 0);
             AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
             AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
             ray.dir = sg->Ld;
             AiTrace(&ray, &scrs);
-            AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections);
+            AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
             AiStateGetMsgRGB("als_T_f", &als_T_f);
             AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
 
             AtRGB f_direct_back = data->ds->direct_back_scatter(sp, geo.theta_i, geo.theta_h, als_sigma_bar_f) * geo.inv_cos_theta_d2;
             
-            float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
+            float directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
             AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
 
             if (directFraction > 0.0f)
@@ -779,7 +779,7 @@ struct HairBsdf
             result_TRTg_indirect *= weight * AI_PI; //< TODO: factor of pi?
         }
 
-        int als_hairNumIntersections = 0;
+        float als_hairNumIntersections = 0;
         AtRGB als_T_f = AI_RGB_BLACK;
         AtRGB als_sigma_bar_f = AI_RGB_BLACK;
         sampit = AiSamplerIterator(data->sampler_TT, sg);
@@ -801,17 +801,17 @@ struct HairBsdf
 
             float p = 1.0f / ((pdf_Sf(geo) + pdf_Sb(geo)) * 0.5f);
 
-            AiStateSetMsgInt("als_hairNumIntersections", 0);
+            AiStateSetMsgFlt("als_hairNumIntersections", 0);
             AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
             AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
             AiTrace(&wi_ray, &scrs);
-            AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections);
+            AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
             AiStateGetMsgRGB("als_T_f", &als_T_f);
             AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
 
             AtRGB f_direct_back = data->ds->direct_back_scatter(sp, geo.theta_i, geo.theta_h, als_sigma_bar_f) * geo.inv_cos_theta_d2;
             
-            float directFraction = 1.0f - std::min(als_hairNumIntersections, numBlendHairs)/float(numBlendHairs);
+            float directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
             AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
 
             if (directFraction > 0.0f)
@@ -1088,7 +1088,7 @@ shader_evaluate
         opacity *= geo_opacity;
     }
 
-    int als_hairNumIntersections = 0;
+    float als_hairNumIntersections = 0;
     AtRGB als_T_f = AI_RGB_BLACK;
     AtRGB als_sigma_bar_f = AI_RGB_BLACK;
     bool do_dual = false;
@@ -1099,7 +1099,7 @@ shader_evaluate
     
     if (do_dual && als_raytype == ALS_RAY_DUAL)
     {
-        if (AiStateGetMsgInt("als_hairNumIntersections", &als_hairNumIntersections) 
+        if (AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections) 
             && AiStateGetMsgRGB("als_T_f", &als_T_f)
             && AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f))
         {
@@ -1114,8 +1114,8 @@ shader_evaluate
             als_sigma_bar_f += hb.sp.beta_R2 + hb.sp.beta_TRT2 + hb.sp.beta_TT2;
             AiStateSetMsgRGB("als_sigma_bar_f", als_sigma_bar_f);
 
-            als_hairNumIntersections++;
-            AiStateSetMsgInt("als_hairNumIntersections", als_hairNumIntersections);
+            als_hairNumIntersections+=minh(opacity);
+            AiStateSetMsgFlt("als_hairNumIntersections", als_hairNumIntersections);
 
             if (maxh(als_T_f) > IMPORTANCE_EPS)
                 sg->out_opacity = AI_RGB_BLACK;
