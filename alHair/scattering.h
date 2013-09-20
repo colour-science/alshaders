@@ -8,11 +8,11 @@
 #define FOURPI 12.566370614359172
 
 //#define LUT_NAN_CHECK
-//#define LUT_DEBUG
+#define LUT_DEBUG
 
 #define DS_NUMSTEPS 64
 #define NG_NUMSTEPS 32
-#define BS_NUMSTEPS 128
+#define BS_NUMSTEPS 256
 
 void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorption, AtRGB kfr[3])
 {
@@ -25,7 +25,7 @@ void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorptio
     float cf_back = lerp(0.04f, 0.9f, x5);
     kfr[0] = rgb(lerp(cf_front, cf_back, y5));
     kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
-    kfr[2] = lerp(0.2f, 0.4f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
+    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
 }
 
 void hairAttenuation(float ior, float theta_d, float phi, float absorption, float kfr[3])
@@ -35,11 +35,11 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
     float x5 = powf(x, 7.0f);
     float y = phi / AI_PI;
     float y5 = powf(y, 5.0f);
-    float cf_front = lerp(0.02f, 0.5f, x3);
-    float cf_back = lerp(0.04f, 0.9f, x5);
+    float cf_front = lerp(0.02f, 0.5f, x5);
+    float cf_back = lerp(0.04f, 0.9f, x5*x5);
     kfr[0] = lerp(cf_front, cf_back, y5);
-    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
-    kfr[2] = lerp(0.2f, 0.4f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
+    kfr[1] = lerp(0.0f, 0.8f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
+    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
 }
 
 /// Normalized gaussian with offset
@@ -107,12 +107,13 @@ struct ScatteringParams
     float phi_g;        //< g separation
     AtRGB absorption;
     AtRGB dabsorption;
+    float shape;
 };
 
 struct ScatteringLut
 {
     ScatteringLut(float ior, float alpha_R, float alpha_TT, float alpha_TRT, float beta_R2, float beta_TT2, float beta_TRT2, 
-                    float gamma_TT, float gamma_g, float phi_g, float absorption)
+                    float gamma_TT, float gamma_g, float phi_g, float absorption, float shape)
     {
         // precalculate scattering LUTs
         float phi_step = AI_PI / (BS_NUMSTEPS-1);
@@ -135,6 +136,8 @@ struct ScatteringLut
                                 + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, 35.0f);
 
                 hairAttenuation(ior, theta_h, phi, absorption, kfr);
+                //float k_norm = 1.0f / (kfr[0] + kfr[1] + kfr[2]);
+                //float k_norm = 1.0f;
                 k_R[idx] = kfr[0];
                 k_TT[idx] = kfr[1];
                 k_TRT[idx] = kfr[2];
@@ -144,8 +147,8 @@ struct ScatteringLut
         }
 
         float theta_i_step = AI_PI / (DS_NUMSTEPS-1);
-        float theta_r_step = AI_PI / (DS_NUMSTEPS/2-1);    //< reduce the inner loop size for speed
-        phi_step = AI_PIOVER2 / (DS_NUMSTEPS/2-1);        //< reduce the inner loop size for speed
+        float theta_r_step = AI_PI / (DS_NUMSTEPS-1);    //< reduce the inner loop size for speed
+        phi_step = AI_PIOVER2 / (DS_NUMSTEPS-1);        //< reduce the inner loop size for speed
         int idx = 0;
         memset(a_bar_f, 0, sizeof(float)*DS_NUMSTEPS);
         memset(a_bar_b, 0, sizeof(float)*DS_NUMSTEPS);
@@ -157,13 +160,15 @@ struct ScatteringLut
         for (float ti = 0; ti < DS_NUMSTEPS; ++ti)
         {
             float theta_i = ti * theta_i_step - AI_PIOVER2;
-            float cos_theta_i = std::max(0.0001f, cosf(theta_i));
-            for (float tr = 0; tr < DS_NUMSTEPS/2; ++tr)
+            float cos_theta_i = cosf(theta_i);
+            for (float tr = 0; tr < DS_NUMSTEPS; ++tr)
             {
                 float theta_r = tr * theta_r_step - AI_PIOVER2;
                 float theta_h = (theta_i + theta_r) * 0.5f;
                 float theta_d = (theta_i - theta_r) * 0.5f;
-                float sin_theta_i = 1.0f;
+                float sin_theta_i = lerp(1.0f, fabsf(sinf(theta_r)), shape);
+                int i_th = (int)((theta_h*AI_ONEOVERPI + 0.5f)*(BS_NUMSTEPS-1));
+                int i_td = (int)((theta_d*AI_ONEOVERPI + 0.5f)*(BS_NUMSTEPS-1));
 
                 // integrate over half the domain each time and double after as it's symmetrical
                 // forward scattering
@@ -175,21 +180,19 @@ struct ScatteringLut
                     // Compute average forward-scattering attenuation, i.e. total forward-scattered radiance
                     // TODO: Should be multiplying by cos_theta_i here too?
                     // {
-                    int i_p = (int)(phi/AI_PI*BS_NUMSTEPS);
-                    int i_th = (int)((theta_h*AI_ONEOVERPI + 0.5f)*BS_NUMSTEPS);
+                    int i_p = (int)(phi/AI_PI*(BS_NUMSTEPS-1));
                     int i_bs = i_p*BS_NUMSTEPS+i_th;
-                    int i_td = (int)((theta_d*AI_ONEOVERPI + 0.5f)*BS_NUMSTEPS);
                     int i_k = i_p*BS_NUMSTEPS+i_td;
                     
-                    float f_R = b_R[i_bs] * k_R[i_k];
-                    float f_TT = b_TT[i_bs] * k_TT[i_k];
-                    float f_TRT = b_TRT[i_bs] * k_TRT[i_k];
+                    float f_R = b_R[i_bs] * k_R[i_k] * sin_theta_i * cos_theta_i;
+                    float f_TT = b_TT[i_bs] * k_TT[i_k] * sin_theta_i * cos_theta_i;
+                    float f_TRT = b_TRT[i_bs] * k_TRT[i_k] * sin_theta_i * cos_theta_i;
  
                     float f = f_R + f_TT + f_TRT;
-                    a_bar_f[idx] += f * sin_theta_i * cos_theta_i;
+                    a_bar_f[idx] += f;
                     // }
-                    alpha_f[idx] += (f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT) * sin_theta_i;
-                    beta_f[idx] += (f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2) * sin_theta_i;
+                    alpha_f[idx] += (f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT);
+                    beta_f[idx] += (f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2);
 
 #ifdef LUT_NAN_CHECK
                     if (!AiIsFinite(f))
@@ -217,21 +220,19 @@ struct ScatteringLut
                     // Compute average back-scattering attenuation, i.e. total back-scattered radiance
                     // TODO: should be multiplying by cos_theta_i here too..?
                     // {
-                    int i_p = (int)(phi/AI_PI*BS_NUMSTEPS);
-                    int i_th = (int)((theta_h*AI_ONEOVERPI + 0.5f)*BS_NUMSTEPS);
+                    int i_p = (int)(phi/AI_PI*(BS_NUMSTEPS-1));
                     int i_bs = i_p*BS_NUMSTEPS+i_th;
-                    int i_td = (int)((theta_d*AI_ONEOVERPI + 0.5f)*BS_NUMSTEPS);
                     int i_k = i_p*BS_NUMSTEPS+i_td;
                     
-                    float f_R = b_R[i_bs] * k_R[i_k];
-                    float f_TT = b_TT[i_bs] * k_TT[i_k];
-                    float f_TRT = b_TRT[i_bs] * k_TRT[i_k];
+                    float f_R = b_R[i_bs] * k_R[i_k] * sin_theta_i * cos_theta_i;;
+                    float f_TT = b_TT[i_bs] * k_TT[i_k] * sin_theta_i * cos_theta_i;;
+                    float f_TRT = b_TRT[i_bs] * k_TRT[i_k] * sin_theta_i * cos_theta_i;;
                     
                     float b = f_R + f_TT + f_TRT;
-                    a_bar_b[idx] += b * sin_theta_i * cos_theta_i;
+                    a_bar_b[idx] += b;
                     // }
-                    alpha_b[idx] += (f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT) * sin_theta_i;
-                    beta_b[idx] += (f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2) * sin_theta_i;
+                    alpha_b[idx] += (f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT);
+                    beta_b[idx] += (f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2);
 
 #ifdef LUT_NAN_CHECK
                     if (!AiIsFinite(b))
@@ -258,8 +259,8 @@ struct ScatteringLut
             beta_f[idx] /= a_bar_f[idx];
             beta_b[idx] /= a_bar_b[idx];
 
-            a_bar_f[idx] *= 2.0f * AI_ONEOVERPI * theta_r_step * phi_step;
-            a_bar_b[idx] *= 2.0f * AI_ONEOVERPI * theta_r_step * phi_step;
+            a_bar_f[idx] *= 2.0f * AI_ONEOVERPI * theta_r_step * phi_step * lerp(1.0f, 2.0f, shape);
+            a_bar_b[idx] *= 2.0f * AI_ONEOVERPI * theta_r_step * phi_step * lerp(1.0f, 2.0f, shape);
 
             idx++;
         }
@@ -269,8 +270,8 @@ struct ScatteringLut
         memset(sigma_b, 0, sizeof(float)*DS_NUMSTEPS);
         for (int i=0; i < DS_NUMSTEPS; ++i)
         {
-            a_bar_f[i] = std::min(a_bar_f[i], 0.99f);
-            a_bar_b[i] = std::min(a_bar_b[i], 0.99f);
+            //a_bar_f[i] = a_bar_f[i], 0.99f);
+            //a_bar_b[i] = std::min(a_bar_b[i], 0.99f);
             float af2 = a_bar_f[i]*a_bar_f[i];
             float ab2 = a_bar_b[i]*a_bar_b[i];
             float ab3 = a_bar_b[i] * ab2;
@@ -330,9 +331,9 @@ struct ScatteringLut
                     
                     float phi_d = phi - phi_i;
                     if (phi_d > AI_PI) phi_d = AI_PI - (phi_d-AI_PI);
-                    int i_p = (int)(phi_d/AI_PI*BS_NUMSTEPS);
-                    int i_td = (int)(fabsf(theta_d)/AI_PIOVER2*BS_NUMSTEPS);
-                    int i_k = i_p*BS_NUMSTEPS+i_td;
+                    int i_p = (int)(phi_d/AI_PI*(BS_NUMSTEPS-1));
+                    int i_td = (int)(theta_d*AI_ONEOVERPI+0.5f*(BS_NUMSTEPS-1));
+                    int i_k = i_p*(BS_NUMSTEPS)+i_td;
 
                     float cosphi2 = cosf(phi_d*0.5f);
                     
@@ -347,12 +348,6 @@ struct ScatteringLut
                 N_G_R[ng_idx] *= phi_i_step;
                 N_G_TT[ng_idx] *= phi_i_step;
                 N_G_TRT[ng_idx] *= phi_i_step;
-
-                /*
-                N_G_R[ng_idx] *= AI_ONEOVERPI * phi_i_step;
-                N_G_TT[ng_idx] *= AI_ONEOVERPI * phi_i_step;
-                N_G_TRT[ng_idx] *= AI_ONEOVERPI * phi_i_step;
-                */
             }
         }
 
@@ -499,7 +494,7 @@ struct DualScattering
                 {
                     float t0 = AiMsgUtilGetElapsedTime();
                     _luts[idx] = new ScatteringLut(sp.ior, sp.alpha_R, sp.alpha_TT, sp.alpha_TRT, sp.beta_R2, sp.beta_TT2,
-                                                        sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, float(idx)/float(DS_MASTER_LUT_SZ) * A_MAX); 
+                                                        sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, float(idx)/float(DS_MASTER_LUT_SZ) * A_MAX, sp.shape); 
                     std::cerr << "generated lut at " << idx << " with absorption " << float(idx)/float(DS_MASTER_LUT_SZ) * A_MAX << std::endl;
                     _lutgen_time += AiMsgUtilGetElapsedTime() - t0;
                 }

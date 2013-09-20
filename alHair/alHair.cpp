@@ -41,7 +41,8 @@ enum alHairParams
     p_densityFront,
     p_densityBack,
     p_singleSaturation,
-    p_multipleSaturation
+    p_multipleSaturation,
+    p_shape
 };
 
 #define B_WIDTH_SCALE 2.0f
@@ -219,6 +220,8 @@ struct HairBsdf
         sp.absorption = AI_RGB_WHITE - clamp(pow(hairColor, singleSaturation), rgb(0.01f), rgb(0.99f));
         sp.dabsorption = AI_RGB_WHITE - clamp(pow(hairColor, multipleSaturation), rgb(0.01f), rgb(0.99f));
 
+        sp.shape = AiShaderEvalParamFlt(p_shape);
+
         diffuseColor = AiShaderEvalParamRGB(p_diffuseColor) * AiShaderEvalParamFlt(p_diffuseStrength);
         specular1Color = AiShaderEvalParamRGB(p_specular1Color) * AiShaderEvalParamFlt(p_specular1Strength);
         specular2Color = AiShaderEvalParamRGB(p_specular2Color) * AiShaderEvalParamFlt(p_specular2Strength);
@@ -294,7 +297,7 @@ struct HairBsdf
 
     inline AtRGB bsdf_R(const SctGeo& geo)
     {
-        return rgb(bsdfR(sp.beta_R2, sp.alpha_R, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;
+        return rgb(bsdfR(sp.beta_R2, sp.alpha_R, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
     }
 
     inline float pdf_R(const SctGeo& geo)
@@ -317,7 +320,7 @@ struct HairBsdf
 
     inline AtRGB bsdf_TRT(const SctGeo& geo)
     {
-        return rgb(bsdfR(sp.beta_TRT2, sp.alpha_TRT, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;;
+        return rgb(bsdfR(sp.beta_TRT2, sp.alpha_TRT, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;;
     }
 
     inline float pdf_TRT(const SctGeo& geo)
@@ -355,7 +358,7 @@ struct HairBsdf
 
     inline AtRGB bsdf_TRTg(const SctGeo& geo)
     {
-        return rgb(bsdfg(sp.beta_TRT2, sp.alpha_TRT, geo.theta_h, sp.gamma_g, geo.phi, sp.phi_g)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;;
+        return rgb(bsdfg(sp.beta_TRT2, sp.alpha_TRT, geo.theta_h, sp.gamma_g, geo.phi, sp.phi_g)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;;
     }
 
     inline float pdf_TRTg(const SctGeo& geo)
@@ -382,7 +385,7 @@ struct HairBsdf
 
     inline AtRGB bsdf_TT(const SctGeo& geo)
     {
-        return rgb(bsdfTT(sp.beta_R2, sp.alpha_R, geo.theta_h, sp.gamma_TT, geo.phi_d)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVER2PI;
+        return rgb(bsdfTT(sp.beta_R2, sp.alpha_R, geo.theta_h, sp.gamma_TT, geo.phi_d)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
     }
 
     inline float pdf_TT(const SctGeo& geo)
@@ -737,10 +740,10 @@ struct HairBsdf
             }
         }
         float weight = AiSamplerGetSampleInvCount(sampit);
-        result_R_indirect *= weight * AI_PI; //< TODO: factor of pi?
-        result_TT_indirect *= weight * AI_PI; //< TODO: factor of pi?
-        result_TRT_indirect *= weight * AI_PI; //< TODO: factor of pi?
-        result_TRTg_indirect *= weight * AI_PI; //< TODO: factor of pi?
+        result_R_indirect *= weight; //< TODO: factor of pi?
+        result_TT_indirect *= weight; //< TODO: factor of pi?
+        result_TRT_indirect *= weight; //< TODO: factor of pi?
+        result_TRTg_indirect *= weight; //< TODO: factor of pi?
         
     }
 
@@ -774,10 +777,10 @@ struct HairBsdf
                 }
             }
             weight = AiSamplerGetSampleInvCount(sampit);
-            result_R_indirect *= weight * AI_PI; //< TODO: factor of pi?
-            result_TT_indirect *= weight * AI_PI; //< TODO: factor of pi?
-            result_TRT_indirect *= weight * AI_PI; //< TODO: factor of pi?
-            result_TRTg_indirect *= weight * AI_PI; //< TODO: factor of pi?
+            result_R_indirect *= weight; //< TODO: factor of pi?
+            result_TT_indirect *= weight; //< TODO: factor of pi?
+            result_TRT_indirect *= weight; //< TODO: factor of pi?
+            result_TRTg_indirect *= weight; //< TODO: factor of pi?
         }
 
         float als_hairNumIntersections = 0;
@@ -991,10 +994,11 @@ node_parameters
     AiParameterFlt("transmissionRolloff", 10.0f);
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
     AiParameterInt("dualDepth", 0);
-    AiParameterFlt("densityFront", 0.7f);
-    AiParameterFlt("densityBack", 0.7f);
+    AiParameterFlt("diffuseForward", 0.7f);
+    AiParameterFlt("diffuseBack", 0.7f);
     AiParameterFlt("singleSaturation", 0.2f);
     AiParameterFlt("multipleSaturation", 0.2f);
+    AiParameterFlt("shape", 1.0f);
 }
 
 node_loader

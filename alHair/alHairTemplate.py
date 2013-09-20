@@ -16,8 +16,9 @@ class AEalHairTemplate(alShadersTemplate):
         self.beginLayout('Diffuse', collapse=False)
         self.addControl('diffuseStrength', label='Strength')
         self.addControl('diffuseColor', label='Tint')
-        self.addControl('Forward scattering')
-        self.addControl('Back scattering')
+        self.addControl('diffuseForward', label='Forward scattering')
+        self.addControl('diffuseBack', label="Back scattering")
+        self.addControl('shape')
         self.endLayout() # end Dual scattering
 
         self.beginLayout('Specular 1', collapse=False)
