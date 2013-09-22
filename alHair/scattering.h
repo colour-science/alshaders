@@ -35,10 +35,10 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
     float x5 = powf(x, 7.0f);
     float y = phi / AI_PI;
     float y5 = powf(y, 5.0f);
-    float cf_front = lerp(0.02f, 0.5f, x5);
-    float cf_back = lerp(0.04f, 0.9f, x5*x5);
+    float cf_front = lerp(0.02f, 0.5f, x3);
+    float cf_back = lerp(0.04f, 0.9f, x5);
     kfr[0] = lerp(cf_front, cf_back, y5);
-    kfr[1] = lerp(0.0f, 0.8f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
+    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
     kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
 }
 

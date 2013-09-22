@@ -207,6 +207,8 @@ struct HairBsdf
         float twist = AiShaderEvalParamFlt(p_twist);
         sp.phi_g = lerp(5.0f*AI_DTOR, 85.0f*AI_DTOR, fabsf(sinf(AI_PI*(cn + (cn+sg->v)*(twist*cn)))));
 
+        sp.ior = 1.55;
+
         AB(theta_r, sp.alpha_R, sp.beta_R, A_R, B_R);
         AB(theta_r, sp.alpha_TT, sp.beta_TT, A_TT, B_TT);
         AB(theta_r, sp.alpha_TRT, sp.beta_TRT, A_TRT, B_TRT);
@@ -217,8 +219,8 @@ struct HairBsdf
         float multipleSaturation = AiShaderEvalParamFlt(p_multipleSaturation);
         AtRGB hairColor = AiShaderEvalParamRGB(p_hairColor);
 
-        sp.absorption = AI_RGB_WHITE - clamp(pow(hairColor, singleSaturation), rgb(0.01f), rgb(0.99f));
-        sp.dabsorption = AI_RGB_WHITE - clamp(pow(hairColor, multipleSaturation), rgb(0.01f), rgb(0.99f));
+        sp.absorption = clamp(AI_RGB_WHITE - pow(hairColor, singleSaturation), rgb(0.01f), rgb(0.99f));
+        sp.dabsorption = clamp(AI_RGB_WHITE - pow(hairColor, multipleSaturation), rgb(0.01f), rgb(0.99f));
 
         sp.shape = AiShaderEvalParamFlt(p_shape);
 
@@ -281,7 +283,7 @@ struct HairBsdf
     inline float sampleLong(double u, float theta_r, float alpha, float beta, float A, float B)
     {
         float t = beta * tanf(u*(A-B) + B);
-        float theta_h = t + alpha;
+        float theta_h = t - alpha;
         return clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, (2.0f*theta_h - theta_r));
     }
 
@@ -320,7 +322,7 @@ struct HairBsdf
 
     inline AtRGB bsdf_TRT(const SctGeo& geo)
     {
-        return rgb(bsdfR(sp.beta_TRT2, sp.alpha_TRT, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;;
+        return rgb(bsdfR(sp.beta_TRT2, sp.alpha_TRT, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
     }
 
     inline float pdf_TRT(const SctGeo& geo)
@@ -1087,7 +1089,6 @@ shader_evaluate
             && AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f))
         {
             float theta_i = AI_PIOVER2 - sphericalTheta(sg->Rd, hb.U);
-            int idx = int((theta_i / AI_PI + 0.5f)*(DS_NUMSTEPS-1));
 
             AtRGB T_f = hb.data->ds->forward_attenuation(hb.sp, theta_i);
             //T_f = AI_RGB_WHITE - ((AI_RGB_WHITE - T_f)*opacity); //< modify transmission to account for opacity
