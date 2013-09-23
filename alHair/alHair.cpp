@@ -86,10 +86,10 @@ struct HairBsdf
             
             beta_TT = beta_R * 0.5f;
             
-            alpha_TT = alpha_R * 0.5f;
+            alpha_TT = -alpha_R * 0.5f;
 
             beta_TRT = beta_R * 2.0f;
-            alpha_TRT = alpha_R * 1.5f;
+            alpha_TRT = -alpha_R * 1.5f;
 
             beta_R2 = beta_R*beta_R;
             beta_TT2 = beta_TT*beta_TT;
@@ -282,9 +282,8 @@ struct HairBsdf
 
     inline float sampleLong(double u, float theta_r, float alpha, float beta, float A, float B)
     {
-        float t = beta * tanf(u*(A-B) + B);
-        float theta_h = t - alpha;
-        return clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, (2.0f*theta_h - theta_r));
+        float t = 2.0f*beta * tanf(u*(A-B) + B) + 2.0f*alpha + theta_r;
+        return clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, t);
     }
 
     inline AtVector sample_R(float u1, float u2)
@@ -642,14 +641,15 @@ struct HairBsdf
             AiStateGetMsgRGB("als_T_f", &als_T_f);
             AiStateGetMsgRGB("als_sigma_bar_f", &als_sigma_bar_f);
 
-            AtRGB f_direct_back = data->ds->direct_back_scatter(sp, geo.theta_i, geo.theta_h, als_sigma_bar_f) * geo.inv_cos_theta_d2;
+            
             
             float directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
             AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
 
+            /*
             if (directFraction > 0.0f)
             {
-                
+                AtRGB f_direct_back = data->ds->direct_back_scatter(sp, geo.theta_d, geo.theta_h, als_sigma_bar_f) * geo.inv_cos_theta_d2;
                 result_Pl_direct += sg->Li * sg->we * occlusion * density_back * f_direct_back * geo.cos_theta_i * directFraction;
 
                 if (!AiIsFinite(result_Pl_direct))
@@ -676,7 +676,7 @@ struct HairBsdf
             if (directFraction < 1.0f)
             {
                 AtRGB T_f = als_T_f;
-                AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(geo.theta_h)) / (AI_PI * geo.cos_theta_d);
+                AtRGB S_f = g(als_sigma_bar_f, AI_RGB_BLACK, rgb(geo.theta_d + geo.theta_i)) / (AI_PI * geo.cos_theta_d);
 
                 AtRGB f_s_scatter = AI_RGB_BLACK;
         
@@ -686,7 +686,7 @@ struct HairBsdf
                     f_s_scatter *= S_f;
                 }
                 
-                AtRGB f_scatter_back = data->ds->back_scatter(sp, geo.theta_i, geo.theta_h) * geo.inv_cos_theta_d2;
+                AtRGB f_scatter_back = data->ds->back_scatter(sp, geo.theta_d, geo.theta_h) * geo.inv_cos_theta_d2;
 
                 AtRGB F_scatter = T_f * density_front * (f_s_scatter + AI_PI*density_back*f_scatter_back);
 
@@ -700,8 +700,9 @@ struct HairBsdf
                     std::cerr << VAR(T_f) << std::endl;
                     std::cerr << VAR(S_f) << std::endl;
                 }
-
             }
+            */
+
         } // END light loop
         AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
 

@@ -180,7 +180,7 @@ struct ScatteringLut
                     // Compute average forward-scattering attenuation, i.e. total forward-scattered radiance
                     // TODO: Should be multiplying by cos_theta_i here too?
                     // {
-                    int i_p = (int)(phi/AI_PI*(BS_NUMSTEPS-1));
+                    int i_p = (int)(phi*AI_ONEOVERPI*(BS_NUMSTEPS-1));
                     int i_bs = i_p*BS_NUMSTEPS+i_th;
                     int i_k = i_p*BS_NUMSTEPS+i_td;
                     
@@ -527,9 +527,9 @@ struct DualScattering
 
         int idx = int((theta/AI_PI + 0.5f)*(DS_NUMSTEPS-1));
 
-        result.r = 2.0f * lr->A_b[idx] * g(lr->sigma_b[idx] + als_sigma_bar_f.r, lr->delta_b[idx], theta_h) * AI_ONEOVERPI;
-        result.g = 2.0f * lg->A_b[idx] * g(lg->sigma_b[idx] + als_sigma_bar_f.g, lg->delta_b[idx], theta_h) * AI_ONEOVERPI;
-        result.b = 2.0f * lb->A_b[idx] * g(lb->sigma_b[idx] + als_sigma_bar_f.b, lb->delta_b[idx], theta_h) * AI_ONEOVERPI;
+        result.r = 2.0f * lr->A_b[idx] * g(SQR(lr->sigma_b[idx]) + als_sigma_bar_f.r, lr->delta_b[idx], theta_h) * AI_ONEOVERPI;
+        result.g = 2.0f * lg->A_b[idx] * g(SQR(lg->sigma_b[idx]) + als_sigma_bar_f.g, lg->delta_b[idx], theta_h) * AI_ONEOVERPI;
+        result.b = 2.0f * lb->A_b[idx] * g(SQR(lb->sigma_b[idx]) + als_sigma_bar_f.b, lb->delta_b[idx], theta_h) * AI_ONEOVERPI;
 
         return result;
     }
@@ -543,9 +543,9 @@ struct DualScattering
 
         int idx = int((theta/AI_PI + 0.5f)*(DS_NUMSTEPS-1));
 
-        result.r = 2.0f * lr->A_b[idx] * g(lr->sigma_b[idx], lr->delta_b[idx], theta_h) * AI_ONEOVERPI;
-        result.g = 2.0f * lg->A_b[idx] * g(lg->sigma_b[idx], lg->delta_b[idx], theta_h) * AI_ONEOVERPI;
-        result.b = 2.0f * lb->A_b[idx] * g(lb->sigma_b[idx], lb->delta_b[idx], theta_h) * AI_ONEOVERPI;
+        result.r = 2.0f * lr->A_b[idx] * g(SQR(lr->sigma_b[idx]), lr->delta_b[idx], theta_h) * AI_ONEOVERPI;
+        result.g = 2.0f * lg->A_b[idx] * g(SQR(lg->sigma_b[idx]), lg->delta_b[idx], theta_h) * AI_ONEOVERPI;
+        result.b = 2.0f * lb->A_b[idx] * g(SQR(lb->sigma_b[idx]), lb->delta_b[idx], theta_h) * AI_ONEOVERPI;
 
         return result;
     }
