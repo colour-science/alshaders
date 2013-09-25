@@ -240,6 +240,11 @@ struct HairBsdf
         density_front = AiShaderEvalParamFlt(p_densityFront);
         density_back = AiShaderEvalParamFlt(p_densityBack);
 
+        if (density_back*maxh(diffuseColor) > IMPORTANCE_EPS && density_front*maxh(diffuseColor) > IMPORTANCE_EPS)
+            dualImportant = true;
+        else
+            dualImportant = false;
+
         do_diffuse = do_glossy = true;
         if (sg->Rr_diff > 0)
         {
@@ -563,7 +568,7 @@ struct HairBsdf
         //sg->skip_shadow = true;
         AiLightsPrepare(sg);
 
-        if (0)//(sg->Rt & AI_RAY_CAMERA) && data->sampleLobesIndividually)
+        if ((sg->Rt & AI_RAY_CAMERA) && data->sampleLobesIndividually)
         {
             while (AiLightsGetSample(sg))
             {
@@ -924,6 +929,8 @@ struct HairBsdf
     float specular1WidthScale;
     float specular2WidthScale;
     float transmissionWidthScale;
+
+    bool dualImportant;
 };
 
 
@@ -1075,11 +1082,10 @@ shader_evaluate
     
     // calculate scattering explicitly up to the dual depth cutoff.
     // in other words, do a brute force path trace for x=dual-depth bounces, then fall back to dual scattering for the rest.
-    if (do_dual)
+    if (do_dual && hb.dualImportant)
     {
         hb.integrateDirectDual(sg);
         hb.integrateIndirectDual(sg);
-        //hb.integrateDirect(sg);
     }
     else
     {
