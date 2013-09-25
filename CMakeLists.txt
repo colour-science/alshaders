@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8)
 project(alShaders)
 
 set(ALS_MAJOR_VERSION 0)
-set(ALS_MINOR_VERSION 3)
-set(ALS_PATCH_VERSION 2)
+set(ALS_MINOR_VERSION 4)
+set(ALS_PATCH_VERSION 0)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
 
 configure_file(
