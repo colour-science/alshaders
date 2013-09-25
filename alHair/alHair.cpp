@@ -41,7 +41,11 @@ enum alHairParams
     p_densityFront,
     p_densityBack,
     p_singleSaturation,
-    p_multipleSaturation
+    p_multipleSaturation,
+    p_specular1WidthScale,
+    p_specular2WidthScale,
+    p_transmissionWidthScale,
+    p_glintTexture
 };
 
 #define B_WIDTH_SCALE 2.0f
@@ -204,7 +208,8 @@ struct HairBsdf
         sp.gamma_TT = data->gamma_TT;
         sp.gamma_g = data->gamma_g;
         float twist = AiShaderEvalParamFlt(p_twist);
-        sp.phi_g = lerp(5.0f*AI_DTOR, 85.0f*AI_DTOR, fabsf(sinf(AI_PI*(cn + (cn+sg->v)*(twist*cn)))));
+        float glintTexture = AiShaderEvalParamFlt(p_glintTexture);
+        sp.phi_g = lerp((35.0f-30*(1.0f-glintTexture))*AI_DTOR, (35.0f+50.0f*glintTexture)*AI_DTOR, fabsf(sinf(AI_PI*(cn + (cn+sg->v)*(twist*cn)))));
 
         sp.ior = 1.55;
 
@@ -225,7 +230,12 @@ struct HairBsdf
         specular1Color = AiShaderEvalParamRGB(p_specular1Color) * AiShaderEvalParamFlt(p_specular1Strength);
         specular2Color = AiShaderEvalParamRGB(p_specular2Color) * AiShaderEvalParamFlt(p_specular2Strength);
         transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
-        glintStrength = data->glintStrength;
+        glintStrength = AiShaderEvalParamFlt(p_glintStrength);
+        
+
+        specular1WidthScale = AiShaderEvalParamFlt(p_specular1WidthScale);
+        specular2WidthScale = AiShaderEvalParamFlt(p_specular2WidthScale);
+        transmissionWidthScale = AiShaderEvalParamFlt(p_transmissionWidthScale);
 
         density_front = AiShaderEvalParamFlt(p_densityFront);
         density_back = AiShaderEvalParamFlt(p_densityBack);
@@ -246,7 +256,7 @@ struct HairBsdf
     inline float sampleLong(double u, float theta_r, float alpha, float beta, float A, float B)
     {
         float t = 2.0f*beta * tanf(u*(A-B) + B) + 2.0f*alpha - theta_r;
-        return t;//clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, t);
+        return t;//clamp( -0.4999f * AI_PI, 0.4999f * AI_PI, t); //< TODO: not handling the t == +/- AI_PIOVER2 case doesn't seem to hurt?
     }
 
     inline AtVector sample_R(float u1, float u2)
@@ -366,7 +376,7 @@ struct HairBsdf
     inline AtVector sample_Sb(float u1, float u2)
     {
         float theta_i = sampleLong(u1, theta_r, sp.alpha_R, sp.beta_R*B_WIDTH_SCALE, A_b, B_b);
-        float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f));// + AI_PI;
+        float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f));
         float phi_i = phi_r - phi;
         AtVector wi;
         sphericalDirection(theta_i, phi_i, V, W, U, wi);
@@ -910,6 +920,10 @@ struct HairBsdf
     AtVector wo;
 
     AtShaderGlobals* _sg;
+
+    float specular1WidthScale;
+    float specular2WidthScale;
+    float transmissionWidthScale;
 };
 
 
@@ -937,6 +951,10 @@ node_parameters
     AiParameterFlt("diffuseBack", 0.7f);
     AiParameterFlt("singleSaturation", 0.2f);
     AiParameterFlt("multipleSaturation", 0.2f);
+    AiParameterFlt("specular1WidthScale", 1.0f);
+    AiParameterFlt("specular2WidthScale", 1.0f);
+    AiParameterFlt("transmissionWidthScale", 1.0f);
+    AiParameterFlt("glintTexture", 1.0f);
 }
 
 node_loader

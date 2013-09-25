@@ -475,6 +475,42 @@ struct ScatteringLut
 #endif        
     }
 
+    inline float get_a_bar_f(float theta)
+    {
+        float t = (theta/AI_PI + 0.5f)*(DS_NUMSTEPS-1);
+        int idx = int(t);
+        int idx1 = std::min(idx+1, DS_NUMSTEPS-1);
+        t -= idx;
+        return a_bar_f[idx]*(1.0f-t) + a_bar_f[idx1]*t;
+    }
+
+    inline float get_A_b(float theta)
+    {
+        float t = (theta/AI_PI + 0.5f)*(DS_NUMSTEPS-1);
+        int idx = int(t);
+        int idx1 = std::min(idx+1, DS_NUMSTEPS-1);
+        t -= idx;
+        return A_b[idx]*(1.0f-t) + A_b[idx1]*t;
+    }
+
+    inline float get_delta_b(float theta)
+    {
+        float t = (theta/AI_PI + 0.5f)*(DS_NUMSTEPS-1);
+        int idx = int(t);
+        int idx1 = std::min(idx+1, DS_NUMSTEPS-1);
+        t -= idx;
+        return delta_b[idx]*(1.0f-t) + delta_b[idx1]*t;
+    }
+
+    inline float get_sigma_b(float theta)
+    {
+        float t = (theta/AI_PI + 0.5f)*(DS_NUMSTEPS-1);
+        int idx = int(t);
+        int idx1 = std::min(idx+1, DS_NUMSTEPS-1);
+        t -= idx;
+        return sigma_b[idx]*(1.0f-t) + sigma_b[idx1]*t;
+    }
+
     float a_bar_f[DS_NUMSTEPS];
     float a_bar_b[DS_NUMSTEPS];
     float A_b[DS_NUMSTEPS];
@@ -549,55 +585,51 @@ struct DualScattering
         return _luts[idx];
     }
 
-    AtRGB forward_attenuation(const ScatteringParams& sp, float theta)
+    inline AtRGB forward_attenuation(const ScatteringParams& sp, float theta)
     {        
         AtRGB result;
-        int idx = int((theta/AI_PI + 0.5f)*(DS_NUMSTEPS-1));
+        
         ScatteringLut* lr = getLut(sp.dabsorption.r, sp);
         ScatteringLut* lg = getLut(sp.dabsorption.g, sp);
         ScatteringLut* lb = getLut(sp.dabsorption.b, sp);
-        result.r = lr->a_bar_f[idx];
-        result.g = lg->a_bar_f[idx];
-        result.b = lb->a_bar_f[idx];
+        result.r = lr->get_a_bar_f(theta);
+        result.g = lg->get_a_bar_f(theta);
+        result.b = lb->get_a_bar_f(theta);
 
         return result;
     }
 
-    AtRGB f_back_direct(const ScatteringParams& sp, const SctGeo& geo)
+    inline AtRGB f_back_direct(const ScatteringParams& sp, const SctGeo& geo)
     {
-        int idx = int((geo.theta_d*AI_ONEOVERPI + 0.5f)*(DS_NUMSTEPS-1));
-
         ScatteringLut* lr = getLut(sp.dabsorption.r, sp);
         ScatteringLut* lg = getLut(sp.dabsorption.g, sp);
         ScatteringLut* lb = getLut(sp.dabsorption.b, sp);
 
         AtRGB result;
         float c = 2.0f * AI_ONEOVERPI * geo.inv_cos_theta_d2;
-        result.r = lr->A_b[idx] * g(geo.theta_h - lr->delta_b[idx], SQR(lr->sigma_b[idx])) * c;
-        result.g = lg->A_b[idx] * g(geo.theta_h - lg->delta_b[idx], SQR(lg->sigma_b[idx])) * c;
-        result.b = lb->A_b[idx] * g(geo.theta_h - lb->delta_b[idx], SQR(lb->sigma_b[idx])) * c;
+        result.r = lr->get_A_b(geo.theta_d) * g(geo.theta_h - lr->get_delta_b(geo.theta_d), SQR(lr->get_sigma_b(geo.theta_d))) * c;
+        result.g = lg->get_A_b(geo.theta_d) * g(geo.theta_h - lg->get_delta_b(geo.theta_d), SQR(lg->get_sigma_b(geo.theta_d))) * c;
+        result.b = lb->get_A_b(geo.theta_d) * g(geo.theta_h - lb->get_delta_b(geo.theta_d), SQR(lb->get_sigma_b(geo.theta_d))) * c;
 
         return result;
     }
 
-    AtRGB f_back_scatter(const ScatteringParams& sp, const SctGeo& geo, const AtRGB& sigma_f2)
+    inline AtRGB f_back_scatter(const ScatteringParams& sp, const SctGeo& geo, const AtRGB& sigma_f2)
     {
-        int idx = int((geo.theta_d*AI_ONEOVERPI + 0.5f)*(DS_NUMSTEPS-1));
-
         ScatteringLut* lr = getLut(sp.dabsorption.r, sp);
         ScatteringLut* lg = getLut(sp.dabsorption.g, sp);
         ScatteringLut* lb = getLut(sp.dabsorption.b, sp);
 
         AtRGB result;
         float c = 2.0f * AI_ONEOVERPI * geo.inv_cos_theta_d2;
-        result.r = lr->A_b[idx] * g(geo.theta_h - lr->delta_b[idx], SQR(lr->sigma_b[idx]) + sigma_f2.r) * c;
-        result.g = lg->A_b[idx] * g(geo.theta_h - lg->delta_b[idx], SQR(lg->sigma_b[idx]) + sigma_f2.g) * c;
-        result.b = lb->A_b[idx] * g(geo.theta_h - lb->delta_b[idx], SQR(lb->sigma_b[idx]) + sigma_f2.b) * c;
+        result.r = lr->get_A_b(geo.theta_d) * g(geo.theta_h - lr->get_delta_b(geo.theta_d), SQR(lr->get_sigma_b(geo.theta_d)) + sigma_f2.r) * c;
+        result.g = lg->get_A_b(geo.theta_d) * g(geo.theta_h - lg->get_delta_b(geo.theta_d), SQR(lg->get_sigma_b(geo.theta_d)) + sigma_f2.g) * c;
+        result.b = lb->get_A_b(geo.theta_d) * g(geo.theta_h - lb->get_delta_b(geo.theta_d), SQR(lb->get_sigma_b(geo.theta_d)) + sigma_f2.b) * c;
 
         return result;
     }
 
-    AtRGB f_s_scatter(const ScatteringParams& sp, const SctGeo& geo, const AtRGB& sigma_f2)
+    inline AtRGB f_s_scatter(const ScatteringParams& sp, const SctGeo& geo, const AtRGB& sigma_f2)
     {
         int ng_x = int((geo.phi-AI_PIOVER2)/AI_PIOVER2) * (NG_NUMSTEPS-1);
         int ng_y = (geo.theta_d * AI_ONEOVERPI + 0.5f) * (NG_NUMSTEPS-1);
@@ -630,8 +662,11 @@ struct DualScattering
         {
             delete _luts[i];
         }
-        AiMsgInfo("[alHair] total lutgen time: %.2fs", _lutgen_time/1000.0f);
-        AiMsgInfo("[alHair] cache hit rate: %.2f", (1.0-_cachemisses/_cachelookups)*100.0);
+        if (_cachelookups > 0.0)
+        {
+            AiMsgInfo("[alHair] total lutgen time: %.2fs", _lutgen_time/1000.0f);
+            AiMsgInfo("[alHair] cache hit rate: %.2f", (1.0-_cachemisses/_cachelookups)*100.0);
+        }
     }
 
     ScatteringLut* _luts[DS_MASTER_LUT_SZ];
