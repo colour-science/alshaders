@@ -17,9 +17,9 @@ def mkdir_p(path):
             pass
         else: raise
 
-MAJOR_VERSION = @ALS_MAJOR_VERSION@
-MINOR_VERSION = @ALS_MINOR_VERSION@
-PATCH_VERSION = @ALS_PATCH_VERSION@
+MAJOR_VERSION = '@ALS_MAJOR_VERSION@'
+MINOR_VERSION = '@ALS_MINOR_VERSION@'
+PATCH_VERSION = '@ALS_PATCH_VERSION@'
 
 subdirs = [
     'alBlackbody',
@@ -38,25 +38,25 @@ subdirs = [
 ] 
 
 # pattern for files to include in the source distribution
-name_src = 'alShaders-src-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
+name_src = 'alShaders-src-%s.%s.%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
 ptrn_src_src = ['*.cpp', '*.h', '*.mtd', '*.txt', '*.py', '*.spdl']
 ptrn_src_bin = []
 files_src = ['BUILD_INSTRUCTIONS.txt', 'CMakeLists.txt', 'package.in.py', 'test.in.py', 'README', 'TODO.txt', 'local.cmake.win']
 
 # patterns for files to include in the osx binary distribution
-name_osx = 'alShaders-osx-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
+name_osx = 'alShaders-osx-%s.%s.%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
 ptrn_osx_src = ['*.mtd', '*.py']
 ptrn_osx_bin  = ['*.dylib']
 files_osx = ['BUILD_INSTRUCTIONS.txt', 'README']
 
 # patterns for files to include in the windows binary distribution
-name_win = 'alShaders-win-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
+name_win = 'alShaders-win-%s.%s.%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
 ptrn_win_src = ['*.mtd', '*.py', '*.spdl']
 ptrn_win_bin  = ['*.dll']
 files_win = ['BUILD_INSTRUCTIONS.txt', 'README']
 
 # patterns for files to include in the linux binary distribution
-name_linux = 'alShaders-linux-%d.%d.%d' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
+name_linux = 'alShaders-linux-%s.%s.%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
 ptrn_linux_src = ['*.mtd', '*.py', '*.spdl']
 ptrn_linux_bin  = ['*.so']
 files_linux = ['BUILD_INSTRUCTIONS.txt', 'README']
