@@ -557,7 +557,6 @@ struct HairBsdf
         SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
         return hb->pdf_TRTg(geo);
     }
-
    
     /// Integrate the direct illumination for all diffuse and glossy lobes
     inline void integrateDirectMis(AtShaderGlobals* sg)
@@ -571,7 +570,7 @@ struct HairBsdf
         if ((sg->Rt & AI_RAY_CAMERA) && data->sampleLobesIndividually)
         {
             while (AiLightsGetSample(sg))
-            {
+            {  
                 result_R_direct += AiEvaluateLightSample(sg, this, Hair_Sample_R, Hair_Bsdf_R, Hair_Pdf_R);
                 result_TT_direct += AiEvaluateLightSample(sg, this, Hair_Sample_TT, Hair_Bsdf_TT, Hair_Pdf_TT);
                 result_TRT_direct += AiEvaluateLightSample(sg, this, Hair_Sample_TRT, Hair_Bsdf_TRT, Hair_Pdf_TRT);
@@ -1089,7 +1088,7 @@ shader_evaluate
     }
     else
     {
-        hb.integrateDirect(sg);
+        hb.integrateDirectMis(sg);
         hb.integrateIndirect(sg);
     }
 

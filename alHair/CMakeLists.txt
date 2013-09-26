@@ -7,13 +7,13 @@ link_directories(/Users/anders/vfx/openexr/1.7.1/lib)
 link_directories(/Users/anders/vfx/ilmbase/1.0.3/lib)
 
 foreach(SHADER ${SHADERS})
-	set(SRC ${SHADER}.cpp ../common/alUtil.cpp ../common/exr.cpp)
+	set(SRC ${SHADER}.cpp ../common/alUtil.cpp)
 	set(MTD ${SHADER}.mtd)
 	set(UI ${SHADER}Template.py)
 
 	add_library(${SHADER} SHARED ${SRC})
 
-	target_link_libraries(${SHADER} ai IlmImf Half Iex z)
+	target_link_libraries(${SHADER} ai)
 	set_target_properties(${SHADER} PROPERTIES PREFIX "")
 
 	install(TARGETS ${SHADER} DESTINATION ${MTOA_SHADERS})

@@ -8,7 +8,7 @@
 #define FOURPI 12.566370614359172
 
 //#define LUT_NAN_CHECK
-#define LUT_DEBUG
+//#define LUT_DEBUG
 
 #define DS_NUMSTEPS 64
 #define NG_NUMSTEPS 32
@@ -607,9 +607,10 @@ struct DualScattering
 
         AtRGB result;
         float c = 2.0f * AI_ONEOVERPI * geo.inv_cos_theta_d2;
-        result.r = lr->get_A_b(geo.theta_d) * g(geo.theta_h - lr->get_delta_b(geo.theta_d), SQR(lr->get_sigma_b(geo.theta_d))) * c;
-        result.g = lg->get_A_b(geo.theta_d) * g(geo.theta_h - lg->get_delta_b(geo.theta_d), SQR(lg->get_sigma_b(geo.theta_d))) * c;
-        result.b = lb->get_A_b(geo.theta_d) * g(geo.theta_h - lb->get_delta_b(geo.theta_d), SQR(lb->get_sigma_b(geo.theta_d))) * c;
+        // TODO: do we square sigma_b here or not?
+        result.r = lr->get_A_b(geo.theta_d) * g(geo.theta_h - lr->get_delta_b(geo.theta_d), lr->get_sigma_b(geo.theta_d)) * c;
+        result.g = lg->get_A_b(geo.theta_d) * g(geo.theta_h - lg->get_delta_b(geo.theta_d), lg->get_sigma_b(geo.theta_d)) * c;
+        result.b = lb->get_A_b(geo.theta_d) * g(geo.theta_h - lb->get_delta_b(geo.theta_d), lb->get_sigma_b(geo.theta_d)) * c;
 
         return result;
     }
@@ -622,9 +623,10 @@ struct DualScattering
 
         AtRGB result;
         float c = 2.0f * AI_ONEOVERPI * geo.inv_cos_theta_d2;
-        result.r = lr->get_A_b(geo.theta_d) * g(geo.theta_h - lr->get_delta_b(geo.theta_d), SQR(lr->get_sigma_b(geo.theta_d)) + sigma_f2.r) * c;
-        result.g = lg->get_A_b(geo.theta_d) * g(geo.theta_h - lg->get_delta_b(geo.theta_d), SQR(lg->get_sigma_b(geo.theta_d)) + sigma_f2.g) * c;
-        result.b = lb->get_A_b(geo.theta_d) * g(geo.theta_h - lb->get_delta_b(geo.theta_d), SQR(lb->get_sigma_b(geo.theta_d)) + sigma_f2.b) * c;
+        // TODO: do we square sigma_b here or not?
+        result.r = lr->get_A_b(geo.theta_d) * g(geo.theta_h - lr->get_delta_b(geo.theta_d), lr->get_sigma_b(geo.theta_d) + sigma_f2.r) * c;
+        result.g = lg->get_A_b(geo.theta_d) * g(geo.theta_h - lg->get_delta_b(geo.theta_d), lg->get_sigma_b(geo.theta_d) + sigma_f2.g) * c;
+        result.b = lb->get_A_b(geo.theta_d) * g(geo.theta_h - lb->get_delta_b(geo.theta_d), lb->get_sigma_b(geo.theta_d) + sigma_f2.b) * c;
 
         return result;
     }
