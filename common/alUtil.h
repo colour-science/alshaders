@@ -145,7 +145,7 @@ inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
 
 inline std::ostream& operator<<(std::ostream& os, const AtRGB& c)
 {
-    os << "(" << c.r << ", " << c.g << ", " << c.b << ")" << std::endl;
+    os << "(" << c.r << ", " << c.g << ", " << c.b << ")";
     return os;
 }
 
