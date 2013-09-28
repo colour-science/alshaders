@@ -309,6 +309,11 @@ inline float fresnel(float cosi, float etai)
     return (pl*pl+pp*pp)*0.5f;
 }
 
+inline float powerHeuristic(float fp, float gp)
+{
+    return SQR(fp) / (SQR(fp)+SQR(gp));
+}
+
 // Stolen wholesale from OSL:
 // http://code.google.com/p/openshadinglanguage
 /*
