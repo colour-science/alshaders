@@ -193,8 +193,8 @@ struct ScatteringLut
         }
 
         float theta_i_step = AI_PI / (DS_NUMSTEPS-1);
-        float theta_r_step = AI_PI / (DS_NUMSTEPS-1);    //< reduce the inner loop size for speed
-        phi_step = AI_PIOVER2 / (DS_NUMSTEPS-1);        //< reduce the inner loop size for speed
+        float theta_r_step = AI_PI / (DS_NUMSTEPS-1); 
+        phi_step = AI_PIOVER2 / (DS_NUMSTEPS-1);
         int idx = 0;
         memset(a_bar_f, 0, sizeof(float)*DS_NUMSTEPS);
         memset(a_bar_b, 0, sizeof(float)*DS_NUMSTEPS);
@@ -238,23 +238,6 @@ struct ScatteringLut
                     // }
                     alpha_f[idx] += (f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT);
                     beta_f[idx] += (f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2);
-
-#ifdef LUT_NAN_CHECK
-                    if (!AiIsFinite(f))
-                    {
-                        std::cerr << VAR(f) << std::endl;
-                        std::cerr << VAR(f_R) << std::endl;;
-                        std::cerr << VAR(f_TT) << std::endl;;
-                        std::cerr << VAR(f_TRT) << std::endl;;
-                        std::cerr << VAR(theta_i) << std::endl;;
-                        std::cerr << VAR(theta_r) << std::endl;;
-                        std::cerr << VAR(theta_h) << std::endl;;
-                        std::cerr << VAR(theta_d) << std::endl;;
-                        std::cerr << VAR(phi) << std::endl;
-                        std::cerr << VAR(i_bs) << std::endl;
-                        std::cerr << VAR(i_k) << std::endl;
-                    }
-#endif
                 }
 
                 // backward scattering
@@ -278,23 +261,6 @@ struct ScatteringLut
                     // }
                     alpha_b[idx] += (f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT);
                     beta_b[idx] += (f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2);
-
-#ifdef LUT_NAN_CHECK
-                    if (!AiIsFinite(b))
-                    {
-                        std::cerr << VAR(b) << std::endl;
-                        std::cerr << VAR(f_R) << std::endl;;
-                        std::cerr << VAR(f_TT) << std::endl;;
-                        std::cerr << VAR(f_TRT) << std::endl;;
-                        std::cerr << VAR(theta_i) << std::endl;;
-                        std::cerr << VAR(theta_r) << std::endl;;
-                        std::cerr << VAR(theta_h) << std::endl;;
-                        std::cerr << VAR(theta_d) << std::endl;;
-                        std::cerr << VAR(phi) << std::endl;;
-                        std::cerr << VAR(i_bs) << std::endl;
-                        std::cerr << VAR(i_k) << std::endl;
-                    }
-#endif
                 }
             }
 
@@ -335,18 +301,6 @@ struct ScatteringLut
             // Average longitudinal variance for up to 3 scattering events
             sigma_b[i] = (1.0f + 0.7f*af2) * (a_bar_b[i]*sqrtf(2.0f*beta_f[i] + beta_b[i]) + ab3*sqrtf(2.0f*beta_f[i] + 3.0f*beta_b[i])) / (a_bar_b[i] + ab3 * (2.0f*beta_f[i] + 3.0f*beta_b[i]));
             sigma_b[i] = std::min(sigma_b[i], 1.0f);
-#ifdef LUT_NAN_CHECK
-            if (!AiIsFinite(A_b[i]) || !AiIsFinite(delta_b[i]) || !AiIsFinite(sigma_b[i]))
-            {
-                std::cerr << VAR(A_b) << std::endl;;
-                std::cerr << VAR(delta_b) << std::endl;;
-                std::cerr << VAR(sigma_b) << std::endl;;
-                std::cerr << VAR(af2) << std::endl;
-                std::cerr << VAR(ab2) << std::endl;;
-                std::cerr << VAR(ab3) << std::endl;;
-                std::cerr << VAR(omaf2) << std::endl;;
-            }
-#endif
         }
 
         idx = 0;
@@ -395,86 +349,10 @@ struct ScatteringLut
                 N_G_TRT[ng_idx] *= phi_i_step;
             }
         }
-
-#ifdef LUT_DEBUG
-    #include "exr.h"
-    std::stringstream ss;
-
-    ss << "/tmp/a_bar_f_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), a_bar_f, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/a_bar_b_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), a_bar_b, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/A_b_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), A_b, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/alpha_f_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), alpha_f, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/alpha_b_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), alpha_b, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/beta_f_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), beta_f, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/beta_b_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), beta_b, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/sigma_b_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), sigma_b, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/delta_b_" << absorption << ".exr";
-    writeThickFloatEXR(ss.str().c_str(), delta_b, DS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/N_G_R_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), N_G_R, NG_NUMSTEPS, NG_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/N_G_TT_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), N_G_TT, NG_NUMSTEPS, NG_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/N_G_TRT_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), N_G_TRT, NG_NUMSTEPS, NG_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/b_R_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), b_R, BS_NUMSTEPS, BS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/b_TT_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), b_TT, BS_NUMSTEPS, BS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/b_TRT_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), b_TRT, BS_NUMSTEPS, BS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/k_R_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), k_R, BS_NUMSTEPS, BS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/k_TT_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), k_TT, BS_NUMSTEPS, BS_NUMSTEPS);
-    ss.str(std::string());
-
-    ss << "/tmp/k_TRT_" << absorption << ".exr";
-    writeFloatEXR(ss.str().c_str(), k_TRT, BS_NUMSTEPS, BS_NUMSTEPS);
-    ss.str(std::string());
-
-#endif        
     }
 
+    // linearly interpolating accessors for the DS tables
+    // {
     inline float get_a_bar_f(float theta)
     {
         float t = (theta/AI_PI + 0.5f)*(DS_NUMSTEPS-1);
@@ -510,6 +388,8 @@ struct ScatteringLut
         t -= idx;
         return sigma_b[idx]*(1.0f-t) + sigma_b[idx1]*t;
     }
+
+    // }
 
     float a_bar_f[DS_NUMSTEPS];
     float a_bar_b[DS_NUMSTEPS];
@@ -576,7 +456,6 @@ struct DualScattering
                     float t0 = AiMsgUtilGetElapsedTime();
                     _luts[idx] = new ScatteringLut(sp.ior, sp.alpha_R, sp.alpha_TT, sp.alpha_TRT, sp.beta_R2, sp.beta_TT2,
                                                         sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, float(idx)/float(DS_MASTER_LUT_SZ) * A_MAX, sp.shape); 
-                    std::cerr << "generated lut at " << idx << " with absorption " << float(idx)/float(DS_MASTER_LUT_SZ) * A_MAX << std::endl;
                     _lutgen_time += AiMsgUtilGetElapsedTime() - t0;
                 }
             

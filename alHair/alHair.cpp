@@ -232,15 +232,13 @@ struct HairBsdf
     struct ShaderData
     {
         ShaderData()
-        : sampler_R(NULL), sampler_TT(NULL), sampler_TRT(NULL), sampler_g(NULL), ds(NULL)
+        : sampler_glossy(NULL), sampler_diffuse(NULL), ds(NULL)
         {}
 
         ~ShaderData()
         {
-            AiSamplerDestroy(sampler_R);
-            AiSamplerDestroy(sampler_TT);
-            AiSamplerDestroy(sampler_TRT);
-            AiSamplerDestroy(sampler_g);
+            AiSamplerDestroy(sampler_glossy);
+            AiSamplerDestroy(sampler_diffuse);
             delete ds;
         }
 
@@ -251,14 +249,10 @@ struct HairBsdf
             AtNode *options   = AiUniverseGetOptions();
             int glossy_samples = std::max(0, AiNodeGetInt(options, "GI_glossy_samples") + params[p_extraSamples].INT);
 
-            AiSamplerDestroy(sampler_R);
-            sampler_R = AiSampler(glossy_samples, 2);
-            AiSamplerDestroy(sampler_TT);
-            sampler_TT = AiSampler(glossy_samples, 2);
-            AiSamplerDestroy(sampler_TRT);
-            sampler_TRT = AiSampler(glossy_samples, 2);
-            AiSamplerDestroy(sampler_g);
-            sampler_g = AiSampler(glossy_samples, 2);
+            AiSamplerDestroy(sampler_glossy);
+            sampler_glossy = AiSampler(glossy_samples, 2);
+            AiSamplerDestroy(sampler_diffuse);
+            sampler_diffuse = AiSampler(glossy_samples, 2);
 
             alpha_R = -params[p_specularShift].FLT * AI_DTOR;
             beta_R = params[p_specularWidth].FLT * AI_DTOR;
@@ -325,11 +319,8 @@ struct HairBsdf
             ds = new DualScattering;
         }
 
+        AtSampler* sampler_glossy;
         AtSampler* sampler_diffuse;
-        AtSampler* sampler_R;
-        AtSampler* sampler_TT;
-        AtSampler* sampler_TRT;
-        AtSampler* sampler_g;
 
         int dual_depth;
 
@@ -1417,7 +1408,7 @@ struct HairBsdf
     {
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
 
-        sampit = AiSamplerIterator(data->sampler_R, sg);
+        sampit = AiSamplerIterator(data->sampler_glossy, sg);
         while(AiSamplerGetSample(sampit, samples))
         {
             wi_ray.dir = HairGlossySample(this, samples[0], samples[1]);
@@ -1452,7 +1443,7 @@ struct HairBsdf
 
         if (do_glossy)
         {
-            sampit = AiSamplerIterator(data->sampler_R, sg);
+            sampit = AiSamplerIterator(data->sampler_glossy, sg);
             while(AiSamplerGetSample(sampit, samples))
             {
                 wi_ray.dir = HairGlossySample(this, samples[0], samples[1]);
@@ -1481,7 +1472,7 @@ struct HairBsdf
         float als_hairNumIntersections = 0;
         AtRGB T_f = AI_RGB_BLACK;
         AtRGB sigma_f = AI_RGB_BLACK;
-        sampit = AiSamplerIterator(data->sampler_TT, sg);
+        sampit = AiSamplerIterator(data->sampler_diffuse, sg);
         AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
         while (AiSamplerGetSample(sampit, samples))
         {
