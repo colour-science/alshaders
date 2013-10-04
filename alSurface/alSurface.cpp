@@ -864,6 +864,7 @@ shader_evaluate
     if (do_glossy)
     {
         // if we have perfect specular reflection, fall back to a single sample along the reflection direction
+        AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
         if (roughness == 0.0f)
         {
             // test the ray first to see if we are going to get TIR. If so, skip specular
@@ -882,6 +883,8 @@ shader_evaluate
                 AiReflectRay(&wi_ray, &sg->Nf, sg);
                 kr = fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta);
                 kti = kr;
+                // call AiSamplerGetSample to force Arnold to drop back to a single shadow sample for successive bounces
+                AiSamplerGetSample(sampit, samples);
                 if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                 {
                     result_glossyIndirect = scrs.color * kr * specular1Color;
@@ -899,7 +902,6 @@ shader_evaluate
         }
         else
         {
-            AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
             AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
             kti = 0.0f;
             AiStateSetMsgFlt("alsPreviousRoughness", roughness);
@@ -1077,7 +1079,7 @@ shader_evaluate
         AtRGB mfp = AI_RGB_WHITE / sigma_t_prime;
 
         float inv_ns = 1.0f;
-
+        AtSamplerIterator* sampit = AiSamplerIterator(data->refraction_sampler, sg);
         if (transmissionRoughness == 0.0f)
         {
             kt = 1.0f - fresnel(transmissionIor, sg->N, wo, R, wi, inside);
@@ -1095,6 +1097,7 @@ shader_evaluate
             bool refraction = AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg);
             if (refraction)
             {
+                AiSamplerGetSample(sampit, samples);
                 if ((kti*kti2) > IMPORTANCE_EPS && AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
@@ -1137,6 +1140,7 @@ shader_evaluate
             }
             else //total internal reflection
             {
+                AiSamplerGetSample(sampit, samples);
                 if (AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
@@ -1168,7 +1172,7 @@ shader_evaluate
         }
         else
         {
-            AtSamplerIterator* sampit = AiSamplerIterator(data->refraction_sampler, sg);
+            
             while (AiSamplerGetSample(sampit, samples))
             {
                 // generate a microfacet normal, m
