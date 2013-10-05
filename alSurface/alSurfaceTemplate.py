@@ -88,6 +88,8 @@ class AEalSurfaceTemplate(alShadersTemplate):
         self.addControl('transmissionRoughnessDepthScale', label='Roughness depth scale')
         self.addControl('transmissionExtraSamples', label='Extra samples')
         self.addControl('transmissionEnableCaustics', label='Enable internal reflections')
+        self.addControl('rrTransmission', label = "RR")
+        self.addControl('rrTransmissionDepth', label = "RR depth")
         self.endLayout() # end Advanced
 
         self.endLayout() # end Transmission

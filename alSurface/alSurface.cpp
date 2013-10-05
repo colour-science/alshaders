@@ -154,6 +154,8 @@ enum alSurfaceParams
 
     p_standardAovs,
     p_transmitAovs,
+    p_rrTransmission,
+    p_rrTransmissionDepth,
 
     p_bump
 };
@@ -265,6 +267,9 @@ node_parameters
 
     AiParameterBool("standardCompatibleAOVs", false);
     AiParameterBool("transmitAovs", false);
+
+    AiParameterBool("rrTransmission", false);
+    AiParameterInt("rrTransmissionDepth", 1);
 }
 
 #ifdef MSVC
@@ -364,6 +369,9 @@ node_update
     // check whether the normal parameters are connected or not
     data->specular1NormalConnected = AiNodeIsLinked(node, "specular1Normal");
     data->specular2NormalConnected = AiNodeIsLinked(node, "specular2Normal");
+
+    data->rrTransmission = params[p_rrTransmission].BOOL;
+    data->rrTransmissionDepth = params[p_rrTransmissionDepth].INT;
 };
 
 
@@ -859,30 +867,60 @@ shader_evaluate
     AtVector H;
     float kr=1, kt=1;
 
+    // figure out whether to choose glossy or transmission for russian roulette
+    // TODO: unify all the IOR calculations
+    bool inside = false;
+    if (AiV3Dot(sg->N, sg->Rd) > 0.0f) inside = true;
+
+    float n1 = 1.0f;
+    float n2 = 1.5f;
+
+    if (inside)
+    {
+        n1 = 1.5f;
+        n2 = 1.0f;
+    }
+    AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
+    bool tir = (!AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg)) && inside;
+    bool rr_transmission = (data->rrTransmission && sg->Rr >= data->rrTransmissionDepth && !tir);
+    if (rr_transmission)
+    {
+        kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
+        if (drand48() < kr)
+        {
+            do_glossy = true;
+            do_transmission = false;
+        }
+        else
+        {
+            do_glossy = false;
+            do_transmission = true;
+        }
+    }
+
     // indirect_specular
     // -----------------
     if (do_glossy)
     {
-        // if we have perfect specular reflection, fall back to a single sample along the reflection direction
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
+        // if we have perfect specular reflection, fall back to a single sample along the reflection direction
         if (roughness == 0.0f)
         {
-            // test the ray first to see if we are going to get TIR. If so, skip specular
-            AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
-            float n1 = 1.0f, n2 = ior;
-            if (AiV3Dot(sg->Nf, sg->Rd) > 0.0f)
-            {
-                n1 = ior;
-                n2 = 1.0f;
-            }
-            if (AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg))
+            if (!tir)
             {
                 AiStateSetMsgFlt("alsPreviousRoughness", roughness);
                 sg->Nf = specular1Normal;
                 AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
                 AiReflectRay(&wi_ray, &sg->Nf, sg);
-                kr = fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta);
-                kti = kr;
+                if (!rr_transmission)
+                {
+                    kr = fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta);
+                    kti = kr;
+                }
+                else
+                {
+                    kr = 1.0f;
+                }
                 // call AiSamplerGetSample to force Arnold to drop back to a single shadow sample for successive bounces
                 AiSamplerGetSample(sampit, samples);
                 if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
@@ -1072,7 +1110,6 @@ shader_evaluate
         AtVector wi, R;
         AtScrSample sample;
        
-        bool inside;
         AtRGB sigma_t = sigma_s + sigma_a;
         AtRGB sigma_s_prime = sigma_s*(1.0f-ssDirection);
         AtRGB sigma_t_prime = (sigma_s_prime + sigma_a);
@@ -1082,7 +1119,14 @@ shader_evaluate
         AtSamplerIterator* sampit = AiSamplerIterator(data->refraction_sampler, sg);
         if (transmissionRoughness == 0.0f)
         {
-            kt = 1.0f - fresnel(transmissionIor, sg->N, wo, R, wi, inside);
+            if (rr_transmission)
+            {
+                kt = 1.0f - fresnel(transmissionIor, sg->N, wo, R, wi, inside);
+            }
+            else
+            {
+                kt = 1.0f;
+            }
             float n1, n2;
             if (inside)
             {
@@ -1098,7 +1142,7 @@ shader_evaluate
             if (refraction)
             {
                 AiSamplerGetSample(sampit, samples);
-                if ((kti*kti2) > IMPORTANCE_EPS && AiTrace(&wi_ray, &sample))
+                if (kt > IMPORTANCE_EPS && AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
                     if (maxh(sigma_t) > 0.0f && !inside)
