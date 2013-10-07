@@ -74,7 +74,6 @@ set(SUBDIRECTORIES
         alPattern
         alCurvature
         alBlackbody
-        alPhotometric
         alInputVector
         alHair
         alColorSpace
