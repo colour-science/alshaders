@@ -347,7 +347,7 @@ def WriteSPDLParameter(f, p):
 		elif p.ptype == 'int':
 			writei(f, 'Value = %d;' % p.default, 2)
 		elif p.ptype == 'float':
-			writei(f, 'Value = %d;' % p.default, 2)
+			writei(f, 'Value = %f;' % p.default, 2)
 		elif p.ptype == 'rgb' or p.ptype == 'vector':
 			writei(f, 'Value = %f %f %f;' % p.default, 2)
 		elif p.ptype == 'string':
