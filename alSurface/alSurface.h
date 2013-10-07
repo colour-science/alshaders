@@ -38,7 +38,7 @@ struct ShaderData
    bool transmitAovs;
    int numLights;
    bool rrTransmission;
-   bool rrTransmissionDepth;
+   int rrTransmissionDepth;
 
    // AOV names
    std::vector<std::string> aovs;
