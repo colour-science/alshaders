@@ -3,9 +3,9 @@ set(SHADERS alBlackbody)
 foreach(SHADER ${SHADERS})
 	set(SRC ${SHADER}.cpp ../common/alUtil.cpp ../common/Color.cpp)
 	set(UI ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.ui.py)
-	set(MTD ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.mtd)
-	set(AE ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}Template.py)
-	set(SPDL ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.spdl)
+	set(MTD ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.mtd)
+	set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
+	set(SPDL ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spdl)
 
 	add_library(${SHADER} SHARED ${SRC})
 
