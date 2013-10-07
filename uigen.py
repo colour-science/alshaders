@@ -45,8 +45,9 @@ class Parameter(UiElement):
 	smx = None
 	connectible = True
 	enum_names = None
+	default = None
 
-	def __init__(self, name, ptype, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
+	def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
 		self.name = name
 		self.ptype = ptype
 		self.description = description
@@ -57,6 +58,10 @@ class Parameter(UiElement):
 		self.mx = mx
 		self.smn = smn
 		self.smx = smx
+
+		if ptype not in ('bool', 'int', 'float', 'rgb', 'vector', 'string', 'enum', 'matrix'):
+			raise ValueError('parameter %s has unrecognized ptype %r' % (name, ptype))
+
 		if ptype == 'enum':
 			self.enum_names = enum_names
 
@@ -64,6 +69,16 @@ class Parameter(UiElement):
 			self.connectible = False
 		else:
 			self.connectible = connectible
+
+		# do a quick sanity check on the ptype and default
+		if ptype == 'bool' and type(default) is not bool:
+			raise ValueError('parameter %s was typed as %s but default had type %r' % (name, ptype, type(default)))
+		elif ptype in ('rgb', 'vector') and type(default) is not tuple:
+			raise ValueError('parameter %s was typed as %s but default had type %r' % (name, ptype, type(default)))
+		elif ptype in ('string', 'enum') and type(default) is not str:
+			raise ValueError('parameter %s was typed as %s but default had type %r' % (name, ptype, type(default)))
+
+		self.default = default
 
 	def __str__(self):
 		return 'Parameter %s %s' % (self.name, self.ptype)
@@ -128,8 +143,8 @@ class ShaderDef:
 	def endGroup(self):
 		self.current_parent = self.current_parent.parent
 
-	def parameter(self, name, ptype, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
-		p = Parameter(name, ptype, label, description, mn, mx, smn, smx, connectible, enum_names)
+	def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
+		p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names)
 		if not self.current_parent.children:
 			self.current_parent.children = [p]
 		else:
@@ -327,6 +342,17 @@ def WriteSPDLParameter(f, p):
 			writei(f, 'Texturable = on;', 2)
 		else:
 			writei(f, 'Texturable = off;', 2)
+		if p.ptype == 'bool':
+			writei(f, 'Value = %s;' % str(p.default).lower(), 2)
+		elif p.ptype == 'int':
+			writei(f, 'Value = %d;' % p.default, 2)
+		elif p.ptype == 'float':
+			writei(f, 'Value = %d;' % p.default, 2)
+		elif p.ptype == 'rgb' or p.ptype == 'vector':
+			writei(f, 'Value = %f %f %f;' % p.default, 2)
+		elif p.ptype == 'string':
+			writei(f, 'Value = "%s";' % p.default, 2)
+
 	writei(f, '}', 1)
 
 def WriteSPDLPropertySet(f, sd):
@@ -371,23 +397,43 @@ def writeSPDLDefault(f, p, i):
 
 	writei(f, '}', 1)
 
-def WalkSPDL(f, el, d, wc):
+def WalkSPDLDefault(f, el, d):
 
 	if isinstance(el, Group):
-		if isinstance(el, Tab) and wc:
+		if isinstance(el, Tab):
 			writei(f, 'Tab "%s"' % el.name, d)
 		else:
 			writei(f, 'Group "%s"' % el.name, d)
 		writei(f, '{', d)
 		if el.children:
 			for e in el.children:
-				WalkSPDL(f, e, d+1, wc)
+				WalkSPDLDefault(f, e, d+1)
 		writei(f, '}', d)
 
 	elif isinstance(el, Parameter):
-		if wc or el.connectible:
-			writei(f, '%s;' % el.name, d)
+		writei(f, '%s;' % el.name, d)
 
+def WalkSPDLTestChildren(el):
+	childrenHaveMembers = False
+	if el.children:
+		for e in el.children:
+			if isinstance(e, Group):
+				childrenHaveMembers = childrenHaveMembers or WalkSPDLTestChildren(e)
+			elif isinstance(e, Parameter):
+				childrenHaveMembers = childrenHaveMembers or e.connectible
+	return childrenHaveMembers
+
+def WalkSPDLRender(f, el, d):
+	if isinstance(el, Group) and WalkSPDLTestChildren(el):
+		writei(f, 'Group "%s"' % el.name, d)
+		writei(f, '{', d)
+		if el.children:
+			for e in el.children:
+				WalkSPDLRender(f, e, d+1)
+		writei(f, '}', d)
+
+	elif isinstance(el, Parameter) and el.connectible:
+		writei(f, '%s;' % el.name, d)
 		
 
 def WriteSPDL(sd, fn):
@@ -436,14 +482,14 @@ def WriteSPDL(sd, fn):
 	writei(f, '{')
 	
 	for el in sd.root.children:
-		WalkSPDL(f, el, 1, True)
+		WalkSPDLDefault(f, el, 1)
 
 	writei(f, '}')
 	writei(f, 'Layout "RenderTree"')
 	writei(f, '{')
 	
 	for el in sd.root.children:
-		WalkSPDL(f, el, 1, False)
+		WalkSPDLRender(f, el, 1)
 
 	writei(f, '}')
 	# End Layout
@@ -504,25 +550,25 @@ def WriteSPDL(sd, fn):
 
 def remapControls(sd):
 	with group(sd, 'Remap', collapse=True):
-		sd.parameter('RMPinputMin', 'float', label='Input min')
-		sd.parameter('RMPinputMax', 'float', label='Input max')
+		sd.parameter('RMPinputMin', 'float', 0.0, label='Input min')
+		sd.parameter('RMPinputMax', 'float', 1.0, label='Input max')
 
 		with group(sd, 'Contrast', collapse=False):
-			sd.parameter('RMPcontrast', 'float', label='Contrast')
-			sd.parameter('RMPcontrastPivot', 'float', label='Pivot')
+			sd.parameter('RMPcontrast', 'float', 1.0, label='Contrast')
+			sd.parameter('RMPcontrastPivot', 'float', 0.18, label='Pivot')
 
 		with group(sd, 'Bias and gain', collapse=False):
-			sd.parameter('RMPbias', 'float', label='Bias')
-			sd.parameter('RMPgain', 'float', label='Gain')
+			sd.parameter('RMPbias', 'float', 0.5, label='Bias')
+			sd.parameter('RMPgain', 'float', 0.5, label='Gain')
 
-		sd.parameter('RMPoutputMin', 'float', label='Output min')
-		sd.parameter('RMPoutputMax', 'float', label='Output max')
+		sd.parameter('RMPoutputMin', 'float', 0.0, label='Output min')
+		sd.parameter('RMPoutputMax', 'float', 1.0, label='Output max')
 
 		with group(sd, 'Clamp', collapse=False):
-			sd.parameter('RMPclampEnable', 'float', label='Enable')
-			sd.parameter('RMPthreshold', 'float', label='Expand')
-			sd.parameter('RMPclampMin', 'float', label='Min')
-			sd.parameter('RMPclampMax', 'float', label='Max')
+			sd.parameter('RMPclampEnable', 'bool', False, label='Enable')
+			sd.parameter('RMPthreshold', 'bool', False, label='Expand')
+			sd.parameter('RMPclampMin', 'float', 0.0, label='Min')
+			sd.parameter('RMPclampMax', 'float', 1.0, label='Max')
 
 # Main. Load the UI file and build UI templates from the returned structure
 if __name__ == '__main__':
