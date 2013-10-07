@@ -166,7 +166,7 @@ enum alSurfaceParams
 node_parameters
 {
     AiParameterFLT("diffuseStrength", 1.0f );
-    AiParameterRGB("diffuseColor", 0.18f, 0.18f, 0.18f );
+    AiParameterRGB("diffuseColor", 0.5f, 0.5f, 0.5f );
     AiParameterFLT("diffuseRoughness", 0.0f );
 
     AiParameterFLT("backlightStrength", 0.0f );
@@ -213,7 +213,7 @@ node_parameters
     AiParameterFLT("transmissionStrength", 0.0f );
     AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
     AiParameterBOOL("transmissionLinkToSpecular1", true);
-    AiParameterFLT("transmissionRoughness", 0.1f );
+    AiParameterFLT("transmissionRoughness", 0.f );
     AiParameterFLT("transmissionIor", 1.4f );
     AiParameterFLT("transmissionRoughnessDepthScale", 1.5f);
     AiParameterBOOL("transmissionEnableCaustics", true);
