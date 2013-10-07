@@ -1,0 +1,20 @@
+# maya_ids.txt
+
+0x00116402 - alSurface
+0x00116403 - alHair
+0x00116404 - alBlackbody
+0x00116405 - alCombineColor
+0x00116406 - alCombineFloat
+0x00116407 - alLayer
+0x00116408 - alCellNoise
+0x00116409 - alFractal
+0x00116410 - alGaborNoise
+0x00116411 - alColorSpace
+0x0011640A - alPattern
+0x0011640B - alPhotometric
+0x0011640C - alRemapFloat
+0x0011640D - alRemapColor
+0x0011640E - alInputVector
+0x0011640F - alFlowNoise
+0x00116410 - alCurvature
+
