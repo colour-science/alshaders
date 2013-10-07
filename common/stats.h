@@ -1,5 +1,7 @@
 #include <iostream>
 #include <iomanip>
+#include <string>
+
 
 // stats.h
 struct Range

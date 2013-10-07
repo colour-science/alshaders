@@ -113,11 +113,6 @@ inline AtRGB fabs(const AtRGB& c)
     return rgb(fabsf(c.r), fabsf(c.g), fabsf(c.b));
 }
 
-inline bool finite(const AtRGB& c)
-{
-    return finite(c.r) && finite(c.g) && finite(c.b);
-}
-
 inline float maxh(const AtRGB& c)
 {
    return std::max(std::max(c.r, c.g), c.b);
@@ -242,7 +237,7 @@ inline AtVector uniformSampleSphere(float u1, float u2)
 
 inline float uniformConePdf(float cosThetaMax) 
 {
-    return 1.f / (2.f * M_PI * (1.f - cosThetaMax));
+    return 1.f / (2.f * AI_PI * (1.f - cosThetaMax));
 }
 
 
@@ -250,7 +245,7 @@ inline AtVector uniformSampleCone(float u1, float u2, float costhetamax)
 {
     float costheta = (1.f - u1) + u1 * costhetamax;
     float sintheta = sqrtf(1.f - costheta*costheta);
-    float phi = u2 * 2.f * M_PI;
+    float phi = u2 * 2.f * AI_PI;
     return aivec(cosf(phi) * sintheta, sinf(phi) * sintheta, costheta);
 }
 
@@ -260,7 +255,7 @@ inline AtVector uniformSampleCone(float u1, float u2, float costhetamax,
 {
     float costheta = lerp(costhetamax, 1.f, u1);
     float sintheta = sqrtf(1.f - costheta*costheta);
-    float phi = u2 * 2.f * M_PI;
+    float phi = u2 * 2.f * AI_PI;
     return cosf(phi) * sintheta * x + sinf(phi) * sintheta * y +
         costheta * z;
 }

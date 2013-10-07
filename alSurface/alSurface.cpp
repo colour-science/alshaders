@@ -5,6 +5,9 @@
 #include <OpenEXR/ImathMatrixAlgo.h>
 #include <map>
 #include <cassert>
+#include <cstdlib>
+
+
 
 #include "alUtil.h"
 #include "MIS.h"
@@ -886,7 +889,8 @@ shader_evaluate
     if (rr_transmission)
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
-        if (drand48() < kr)
+        // TODO: better random numbers here
+        if ((double)rand()/(RAND_MAX+1) < kr)
         {
             do_glossy = true;
             do_transmission = false;
