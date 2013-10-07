@@ -1,5 +1,0 @@
-[node alInputVector]
-    desc                    STRING      ""
-    maya.name               STRING      "alInputVector"
-    maya.classification     STRING      "shader/utility"
-    maya.id                 INT         0x0011640E
