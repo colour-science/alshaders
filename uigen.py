@@ -128,7 +128,7 @@ class ShaderDef:
 	def endGroup(self):
 		self.current_parent = self.current_parent.parent
 
-	def parameter(self, name, ptype, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=None, enum_names=None):
+	def parameter(self, name, ptype, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
 		p = Parameter(name, ptype, label, description, mn, mx, smn, smx, connectible, enum_names)
 		if not self.current_parent.children:
 			self.current_parent.children = [p]
@@ -367,7 +367,7 @@ def writeSPDLDefault(f, p, i):
 
 
 	if p.connectible:
-		writei(f, 'Commands = "{F5C75F11-2F05-11D3-AA95-00AA0068D2C0}";' % i, 2)
+		writei(f, 'Commands = "{F5C75F11-2F05-11D3-AA95-00AA0068D2C0}";', 2)
 
 	writei(f, '}', 1)
 
