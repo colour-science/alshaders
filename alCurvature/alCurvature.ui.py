@@ -6,7 +6,7 @@ ui.shader({
 	'output':'rgb',
 	'maya_name':'alCurvature',
 	'maya_classification':'texture',
-	'maya_id':'0x00116410',
+	'maya_id':'0x00116412',
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,

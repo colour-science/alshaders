@@ -8,13 +8,13 @@
 0x00116407 - alLayer
 0x00116408 - alCellNoise
 0x00116409 - alFractal
-0x00116410 - alGaborNoise
-0x00116411 - alColorSpace
 0x0011640A - alPattern
 0x0011640B - alPhotometric
 0x0011640C - alRemapFloat
 0x0011640D - alRemapColor
 0x0011640E - alInputVector
 0x0011640F - alFlowNoise
-0x00116410 - alCurvature
+0x00116410 - alGaborNoise
+0x00116411 - alColorSpace
+0x00116412 - alCurvature
 
