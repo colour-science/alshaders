@@ -1,16 +1,19 @@
 import uigen
-print "running uigen_test.py"
 
-ui.name = 'alSurface'
-ui.setDescription('General-purpose, physically plausible surface shader')
-ui.setMayaClassification('shader/surface')
-ui.setOutput('rgb')
-ui.maya_id = '0x00116402'
-ui.maya_swatch = True
-ui.maya_matte = True
-ui.maya_bump = True
-ui.soft_name = 'ALS_Surface'
-ui.soft_classification = 'material'
+ui.shader({
+	'name':'alSurface',
+	'description':'General-purpose, physically plausible surface shader',
+	'output':'rgb',
+	'maya_name':'alSurface',
+	'maya_classification':'shader/surface',
+	'maya_id':'0x00116402',
+	'maya_swatch':True,
+	'maya_matte':True,
+	'maya_bump':True,
+	'soft_name':'ALS_Surface',
+	'soft_classification':'material',
+	'soft_version':1
+})
 
 with uigen.group(ui, 'Diffuse', False):
 	ui.parameter(name='diffuseStrength', ptype='float', label='Strength', mn=0, mx=1, description='Multiplier on the diffuse result')
