@@ -885,7 +885,7 @@ shader_evaluate
     }
     AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
     bool tir = (!AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg)) && inside;
-    bool rr_transmission = (data->rrTransmission && sg->Rr >= data->rrTransmissionDepth && !tir);
+    bool rr_transmission = (data->rrTransmission && (sg->Rr >= data->rrTransmissionDepth) && !tir);
     if (rr_transmission)
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
