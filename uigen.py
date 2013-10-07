@@ -44,9 +44,9 @@ class Parameter(UiElement):
 	smn = None
 	smx = None
 	connectible = True
+	enum_names = None
 
-
-	def __init__(self, name, ptype, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True):
+	def __init__(self, name, ptype, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
 		self.name = name
 		self.ptype = ptype
 		self.description = description
@@ -57,9 +57,13 @@ class Parameter(UiElement):
 		self.mx = mx
 		self.smn = smn
 		self.smx = smx
+		if ptype == 'enum':
+			self.enum_names = enum_names
 
-		if ptype == 'bool' or ptype == 'string' or ptype == 'int':
+		if ptype == 'bool' or ptype == 'string' or ptype == 'int' or ptype == 'enum':
 			self.connectible = False
+		else:
+			self.connectible = connectible
 
 	def __str__(self):
 		return 'Parameter %s %s' % (self.name, self.ptype)
@@ -124,8 +128,8 @@ class ShaderDef:
 	def endGroup(self):
 		self.current_parent = self.current_parent.parent
 
-	def parameter(self, name, ptype, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=None):
-		p = Parameter(name, ptype, label, description, mn, mx, smn, smx, connectible)
+	def parameter(self, name, ptype, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=None, enum_names=None):
+		p = Parameter(name, ptype, label, description, mn, mx, smn, smx, connectible, enum_names)
 		if not self.current_parent.children:
 			self.current_parent.children = [p]
 		else:
@@ -146,6 +150,20 @@ class ShaderDef:
 
 	def __str__(self):
 		return 'ShaderDef %s' % self.name
+
+	def shader(self, d):
+		self.name = d['name']
+		self.description = d['description']
+		self.output = d['output']
+		self.maya_name = d['maya_name']
+		self.maya_classification = d['maya_classification']
+		self.maya_id = d['maya_id']
+		self.maya_swatch = d['maya_swatch']
+		self.maya_bump = d['maya_bump']
+		self.maya_matte = d['maya_matte']
+		self.soft_name = d['soft_name']
+		self.soft_classification = d['soft_classification']
+		self.soft_version = d['soft_version']
 
 class group:
 	name = ''
@@ -271,7 +289,7 @@ def WriteMTD(sd, fn):
 		WriteMTDParam(f, "softmin", "float", p.smn, 2)
 		WriteMTDParam(f, "softmax", "float", p.smx, 2)
 		WriteMTDParam(f, "desc", "string", p.description, 2)
-		WriteMTDParam(f, "connectible", "bool", True, 2)
+		WriteMTDParam(f, "linkable", "bool", p.connectible, 2)
 
 	for a in sd.aovs:
 		writei(f, '[attr %s]' % a.name, 1)
@@ -290,6 +308,8 @@ def getSPDLTypeName(t):
 		return 'scalar'
 	elif t == 'rgb':
 		return 'color'
+	elif t == 'enum':
+		return 'string'
 	else:
 		return t
 
@@ -335,8 +355,17 @@ def writeSPDLDefault(f, p, i):
 	writei(f, 'Name = "%s";' % p.label, 2)
 	if p.ptype == 'rgb':
 		writei(f, 'UIType = "rgb";', 2)
+	elif p.ptype=='enum':
+		writei(f, 'UIType = "Combo";', 2)
+		writei(f, 'Items', 2)
+		writei(f, '{', 2)
+		for ev in p.enum_names:
+			writei(f, '"%s" = "%s";' % (ev, ev), 3)
+		writei(f, '}', 2)
 	elif p.smn and p.smx:
 		writei(f, 'UIRange = %f To %f;' % (p.smn, p.smx), 2)
+
+
 	if p.connectible:
 		writei(f, 'Commands = "{F5C75F11-2F05-11D3-AA95-00AA0068D2C0}";' % i, 2)
 
@@ -473,6 +502,28 @@ def WriteSPDL(sd, fn):
 
 	f.close()
 
+def remapControls(sd):
+	with group(sd, 'Remap', collapse=True):
+		sd.parameter('RMPinputMin', 'float', label='Input min')
+		sd.parameter('RMPinputMax', 'float', label='Input max')
+
+		with group(sd, 'Contrast', collapse=False):
+			sd.parameter('RMPcontrast', 'float', label='Contrast')
+			sd.parameter('RMPcontrastPivot', 'float', label='Pivot')
+
+		with group(sd, 'Bias and gain', collapse=False):
+			sd.parameter('RMPbias', 'float', label='Bias')
+			sd.parameter('RMPgain', 'float', label='Gain')
+
+		sd.parameter('RMPoutputMin', 'float', label='Output min')
+		sd.parameter('RMPoutputMax', 'float', label='Output max')
+
+		with group(sd, 'Clamp', collapse=False):
+			sd.parameter('RMPclampEnable', 'float', label='Enable')
+			sd.parameter('RMPthreshold', 'float', label='Expand')
+			sd.parameter('RMPclampMin', 'float', label='Min')
+			sd.parameter('RMPclampMax', 'float', label='Max')
+
 # Main. Load the UI file and build UI templates from the returned structure
 if __name__ == '__main__':
 	if len(sys.argv) != 5:
@@ -487,7 +538,6 @@ if __name__ == '__main__':
 		print 'ERROR: ui object is not a ShaderDef. Did you assign something else to it by mistake?'
 		sys.exit(2)
 
-	print ui.maya_classification
 	WriteMTD(ui, sys.argv[2])
 	WriteAETemplate(ui, sys.argv[3])
 	WriteSPDL(ui, sys.argv[4])
