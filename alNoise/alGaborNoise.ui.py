@@ -15,26 +15,27 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('space', 'enum', 'Space', enum_names=[
+ui.parameter('space', 'enum','world' 'Space', enum_names=[
 	"world",
 	"object",
 	"Pref",
 	"UV"
 ])
-ui.parameter('frequency', 'float', 'Frequency', connectible=False)
-ui.parameter('octaves', 'int', 'Octaves', connectible=False)
-ui.parameter('anisotropy', 'enum', 'Anisotropy', enum_names=[
+ui.parameter('frequency', 'float', 1.0, 'Frequency', connectible=False)
+ui.parameter('anisotropy', 'enum','isotropic', 'Anisotropy', enum_names=[
 	"isotropic",
 	"anisotropic",
 	"hybrid"
 ])
-ui.parameter('anisotropyDirection', 'vector', 'Anisotropy direction')
-ui.parameter('bandwidth', 'float', 'Bandwidth', connectible=False)
-ui.parameter('angle', 'float', 'Angle', connectible=False)
-ui.parameter('advection', 'float', 'Advection', connectible=False)
-ui.parameter('turbulent', 'bool', 'Turbulent')
+ui.parameter('anisotropyDirection', 'vector', (0.0, 1.0, 0.0), 'Anisotropy direction')
+ui.parameter('filter', 'bool', False, 'Filter')
+ui.parameter('bandwidth', 'float', 1.0, 'Bandwidth', connectible=False)
+ui.parameter('impulses', 'float', 8.0, 'Bandwidth', connectible=False)
+ui.parameter('turbulent', 'bool', False, 'Turbulent')
 
 uigen.remapControls(ui)
 
-ui.parameter('color1', 'rgb', 'Color 1')
-ui.parameter('color2', 'rgb', 'Color 2')
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1')
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2')
+
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')

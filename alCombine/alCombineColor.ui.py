@@ -15,10 +15,10 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('input1', 'rgb')
-ui.parameter('input2', 'rgb')
-ui.parameter('input3', 'rgb')
-ui.parameter('combineOp', 'enum', 'Combine Op', enum_names=["multiply 1*2",
+ui.parameter('input1', 'rgb', (0.0, 0.0, 0.0))
+ui.parameter('input2', 'rgb', (0.0, 0.0, 0.0))
+ui.parameter('input3', 'rgb', (0.0, 0.0, 0.0))
+ui.parameter('combineOp', 'enum',  'multiply 1*2', 'Combine Op', enum_names=["multiply 1*2",
 	"add 1+2",
 	"divide 1/2",
 	"subtract 1-2",

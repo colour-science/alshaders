@@ -16,42 +16,42 @@ ui.shader({
 })
 
 with uigen.group(ui, 'Fibre properties', False):
-	ui.parameter('hairColor', 'rgb', 'Color')
-	ui.parameter('specularWidth', 'float', 'Highlight width', connectible=False)
-	ui.parameter('specularShift', 'float', 'Highlight shift', connectible=False)
-	ui.parameter('opacity', 'rgb')
+	ui.parameter('hairColor', 'rgb', (0.82, 0.68, 0.4), 'Color')
+	ui.parameter('specularWidth', 'float', 5.0, 'Highlight width', connectible=False)
+	ui.parameter('specularShift', 'float', -8.0, 'Highlight shift', connectible=False)
+	ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0))
 	with uigen.group(ui, 'Advanced'):
-		ui.parameter('glintRolloff', 'float', 'Glint rolloff', connectible=False)
-		ui.parameter('transmissionRolloff', 'float', 'Transmission rolloff', connectible=False)
-		ui.parameter('singleSaturation', 'float', 'Highlight saturation')
-		ui.parameter('multipleSaturation', 'float', 'Diffuse saturation')
+		ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False)
+		ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False)
+		ui.parameter('singleSaturation', 'float', 0.2, 'Highlight saturation')
+		ui.parameter('multipleSaturation', 'float', 0.2, 'Diffuse saturation')
 
 with uigen.group(ui, 'Diffuse', False):
-	ui.parameter('diffuseStrength', 'float', 'Strength')
-	ui.parameter('diffuseColor', 'rgb', 'Color')
-	ui.parameter('diffuseForward', 'float', 'Forward scattering')
-	ui.parameter('diffuseBack', 'float', 'Back scattering')
+	ui.parameter('diffuseStrength', 'float', 1.0, 'Strength')
+	ui.parameter('diffuseColor', 'rgb', (1.0, 1.0, 1.0), 'Tint')
+	ui.parameter('diffuseForward', 'float', 1.0, 'Forward scattering')
+	ui.parameter('diffuseBack', 'float', 1.0, 'Back scattering')
 	with uigen.group(ui, 'Advanced'):
-		ui.parameter('dualDepth', 'int', 'Dual depth')
+		ui.parameter('dualDepth', 'int', 0, 'Dual depth')
 
 with uigen.group(ui, 'Specular 1', False):
-	ui.parameter('specular1Strength', 'float', 'Strength')
-	ui.parameter('specular1Color', 'rgb', 'Tint')
-	ui.parameter('specular1WidthScale', 'float', 'Width scale')
+	ui.parameter('specular1Strength', 'float', 1.0, 'Strength')
+	ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Tint')
+	ui.parameter('specular1WidthScale', 'float', 1.0, 'Width scale')
 
 with uigen.group(ui, 'Specular 2', False):
-	ui.parameter('specular2Strength', 'float', 'Strength')
-	ui.parameter('specular2Color', 'rgb', 'Tint')
-	ui.parameter('specular2WidthScale', 'float', 'Width scale')
+	ui.parameter('specular2Strength', 'float', 1.0, 'Strength')
+	ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Tint')
+	ui.parameter('specular2WidthScale', 'float', 1.0, 'Width scale')
 	with uigen.group(ui, 'Glints', False):
-		ui.parameter('glintStrength', 'float', 'Strength')
-		ui.parameter('glintTexture', 'float', 'Texture')
-		ui.parameter('twist', 'float', 'Twist')
+		ui.parameter('glintStrength', 'float', 2.5, 'Strength')
+		ui.parameter('glintTexture', 'float', 1.0, 'Texture')
+		ui.parameter('twist', 'float', 20.0, 'Twist')
 
 with uigen.group(ui, 'Transmission', False):
-	ui.parameter('transmissionStrength', 'float', 'Strength')
-	ui.parameter('transmissionColor', 'rgb', 'Tint')
-	ui.parameter('transmissionWidthScale', 'float', 'Width scale')
+	ui.parameter('transmissionStrength', 'float', 1.0, 'Strength')
+	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Tint')
+	ui.parameter('transmissionWidthScale', 'float', 1.0, 'Width scale')
 
 with uigen.group(ui, 'AOVs'):
 	ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color')

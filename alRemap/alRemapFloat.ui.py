@@ -15,6 +15,6 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('input', 'float', 'Input')
+ui.parameter('input', 'float', 0.0, 'Input')
 
 uigen.remapControls(ui)

@@ -15,15 +15,15 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('input', 'rgb', 'Input')
-ui.parameter('gamma', 'float', 'Gamma')
-ui.parameter('saturation', 'float', 'Saturation')
-ui.parameter('hueOffset', 'float', 'Hue offset')
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Input')
+ui.parameter('gamma', 'float', 1.0, 'Gamma')
+ui.parameter('saturation', 'float', 1.0, 'Saturation')
+ui.parameter('hueOffset', 'float', 0.0, 'Hue offset')
 
 with uigen.group(ui, 'Contrast'):
-	ui.parameter('contrast', 'float', 'Contrast')
-	ui.parameter('contrastPivot', 'float', 'Pivot')
+	ui.parameter('contrast', 'float', 1.0, 'Contrast')
+	ui.parameter('contrastPivot', 'float', 0.18, 'Pivot')
 
-ui.parameter('gain', 'float', 'Gain')
-ui.parameter('exposure', 'float', 'Exposure')
-ui.parameter('mask', 'float', 'Mask')
+ui.parameter('gain', 'float', 1.0, 'Gain')
+ui.parameter('exposure', 'float', 0.0, 'Exposure')
+ui.parameter('mask', 'float', 1.0, 'Mask')

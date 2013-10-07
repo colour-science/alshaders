@@ -15,11 +15,11 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('samples', 'int')
-ui.parameter('sampleOffset', 'float')
-ui.parameter('sampleRadius', 'float')
+ui.parameter('samples', 'int', 2)
+ui.parameter('sampleOffset', 'float', 1.0)
+ui.parameter('sampleRadius', 'float', 1.0)
 
 uigen.remapControls(ui)
 
-ui.parameter('color1', 'rgb')
-ui.parameter('color1', 'rgb')
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0))
+ui.parameter('color1', 'rgb', (1.0, 1.0, 1.0))

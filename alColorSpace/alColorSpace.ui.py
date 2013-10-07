@@ -15,5 +15,5 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('input', 'rgb')
-ui.parameter('sourceSpace', 'enum', 'Source space', enum_names=['sRGB', 'Cineon', 'LogC'])
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0))
+ui.parameter('sourceSpace', 'enum', 'sRGB', 'Source space', enum_names=['sRGB', 'Cineon', 'LogC'])

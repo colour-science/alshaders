@@ -15,29 +15,31 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('space', 'enum', 'Space', enum_names=[
+ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
 	"world",
 	"object",
 	"Pref",
 	"UV"
 ])
 
-ui.parameter('axis', 'enum', 'Axis', enum_names=[
+ui.parameter('axis', 'enum', 'X', 'Axis', enum_names=[
 	"X",
 	"Y",
 	"Z"
 ])
 
-ui.parameter('shape', 'enum', 'Shape', enum_names=[
+ui.parameter('shape', 'enum', 'sine', 'Shape', enum_names=[
 	"sine",
 	"square",
 	"saw"
 ])
 
-ui.parameter('frequency', 'float', 'Frequency', connectible=False)
-ui.parameter('offset', 'float', 'Offset', connectible=False)
+ui.parameter('frequency', 'float', 5.0, 'Frequency', connectible=False)
+ui.parameter('offset', 'float', 0.0, 'Offset', connectible=False)
 
 uigen.remapControls(ui)
 
-ui.parameter('color1', 'rgb', 'Color 1')
-ui.parameter('color2', 'rgb', 'Color 2')
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1')
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2')
+
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')

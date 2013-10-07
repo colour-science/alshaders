@@ -15,7 +15,7 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('input', 'enum', 'Input', enum_names=[
+ui.parameter('input', 'enum', 'P', 'Input', enum_names=[
 	"P",
 	"Po",
 	"N",
@@ -32,16 +32,16 @@ ui.parameter('input', 'enum', 'Input', enum_names=[
 	"Custom"
 ])
 
-ui.parameter('userName', 'string', 'User name')
-ui.parameter('vector', 'vector', 'Custom')
-ui.parameter('type', 'enum', 'Type', enum_names=[
+ui.parameter('userName', 'string', '', 'User name')
+ui.parameter('vector', 'vector', (0.0, 0.0, 0.0), 'Custom')
+ui.parameter('type', 'enum', 'Point', 'Type', enum_names=[
 	"Point",
 	"Vector"
 ])
 
 with uigen.group(ui, 'Transform'):
-	ui.parameter('matrix', 'matrix', 'Matrix')
-	ui.parameter('coordinates', 'enum', 'Coordinates', enum_names=[
+	ui.parameter('matrix', 'matrix', None, 'Matrix')
+	ui.parameter('coordinates', 'enum', 'cartesian', 'Coordinates', enum_names=[
 		"cartesian",
 		"spherical",
 		"normalized spherical"

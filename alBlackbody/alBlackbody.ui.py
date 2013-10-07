@@ -15,9 +15,9 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('temperature', 'float', mn=273, mx=16000)
-ui.parameter('strength', 'float')
+ui.parameter('temperature', 'float', 1000.0, mn=273, mx=16000)
+ui.parameter('strength', 'float', 1.0)
 
 with uigen.group(ui, 'Advanced'):
-	ui.parameter('physicalIntensity', 'float', 'Physical intensity')
-	ui.parameter('physicalExposure', 'float', 'Physical exposure')
+	ui.parameter('physicalIntensity', 'float', 1.0, 'Physical intensity')
+	ui.parameter('physicalExposure', 'float', -16.0, 'Physical exposure')
