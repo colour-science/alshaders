@@ -57,6 +57,7 @@ enum alSurfaceParams
     // backlight
     p_backlightStrength,
     p_backlightColor,
+    p_backlightIndirectStrength,
 
     p_emissionStrength,
     p_emissionColor,
@@ -79,6 +80,7 @@ enum alSurfaceParams
 
     p_diffuseExtraSamples,
     p_diffuseEnableCaustics,
+    p_diffuseIndirectStrength,
 
     // specular
     p_specular1Strength,
@@ -88,6 +90,8 @@ enum alSurfaceParams
     p_specular1RoughnessDepthScale,
     p_specular1ExtraSamples,
     p_specular1Normal,
+    p_specular1IndirectStrength,
+
     p_specular2Strength,
     p_specular2Color,
     p_specular2Roughness,
@@ -95,6 +99,7 @@ enum alSurfaceParams
     p_specular2RoughnessDepthScale,
     p_specular2ExtraSamples,
     p_specular2Normal,
+    p_specular2IndirectStrength,
 
     // transmission
     p_transmissionStrength,
@@ -171,6 +176,7 @@ node_parameters
 
     AiParameterFLT("backlightStrength", 0.0f );
     AiParameterRGB("backlightColor", 0.18f, 0.18f, 0.18f );
+    AiParameterFLT("backlightIndirectStrength", 1.0f);
 
     AiParameterFLT("emissionStrength", 0.0f );
     AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
@@ -193,6 +199,7 @@ node_parameters
 
     AiParameterINT("diffuseExtraSamples", 0);
     AiParameterBOOL("diffuseEnableCaustics", false);
+    AiParameterFLT("diffuseIndirectStrength", 1.0f);
 
     AiParameterFLT("specular1Strength", 1.0f );
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
@@ -201,6 +208,7 @@ node_parameters
     AiParameterFLT("specular1RoughnessDepthScale", 1.5f);
     AiParameterINT("specular1ExtraSamples", 0);
     AiParameterVec("specular1Normal", 0, 0, 0);
+    AiParameterFLT("specular1IndirectStrength", 1.0f );
 
     AiParameterFLT("specular2Strength", 0.0f );
     AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
@@ -209,6 +217,7 @@ node_parameters
     AiParameterFLT("specular2RoughnessDepthScale", 1.5f);
     AiParameterINT("specular2ExtraSamples", 0);
     AiParameterVec("specular2Normal", 0, 0, 0);
+    AiParameterFLT("specular2IndirectStrength", 1.0f );
 
     AiParameterFLT("transmissionStrength", 0.0f );
     AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
@@ -565,6 +574,11 @@ shader_evaluate
     roughness2 = std::max(0.000001f, roughness2);
     //transmissionRoughness = std::max(0.000001f, transmissionRoughness);
 
+    float diffuseIndirectStrength = AiShaderEvalParamFlt(p_diffuseIndirectStrength);
+    float backlightIndirectStrength = AiShaderEvalParamFlt(p_backlightIndirectStrength);
+    float specular1IndirectStrength = AiShaderEvalParamFlt(p_specular1IndirectStrength);
+    float specular2IndirectStrength = AiShaderEvalParamFlt(p_specular2IndirectStrength);
+
     // Initialize result temporaries
     AtRGB result_diffuseDirect = AI_RGB_BLACK;
     AtRGB result_diffuseDirectRaw = AI_RGB_BLACK;
@@ -904,7 +918,7 @@ shader_evaluate
 
     // indirect_specular
     // -----------------
-    if (do_glossy)
+    if (do_glossy && specular1IndirectStrength > 0.0f)
     {
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
         // if we have perfect specular reflection, fall back to a single sample along the reflection direction
@@ -929,17 +943,17 @@ shader_evaluate
                 AiSamplerGetSample(sampit, samples);
                 if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                 {
-                    result_glossyIndirect = scrs.color * kr * specular1Color;
+                    result_glossyIndirect = scrs.color * kr * specular1Color * specular1IndirectStrength;
                     if (doDeepGroups)
                     {
                         for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                         {
-                            deepGroupsGlossy[i] += deepGroupPtr[i] * kr * specular1Color;
+                            deepGroupsGlossy[i] += deepGroupPtr[i] * kr * specular1Color * specular1IndirectStrength;
                         }
                     }
                 }
                 sg->Nf = Nfold;
-                kti = 1.0f - kti*maxh(specular1Color);
+                kti = 1.0f - kti*maxh(specular1Color) * specular1IndirectStrength;
             }
         }
         else
@@ -982,13 +996,13 @@ shader_evaluate
             result_glossyIndirect *= AiSamplerGetSampleInvCount(sampit);
             kti *= AiSamplerGetSampleInvCount(sampit);
             kti = 1.0f - kti*maxh(specular1Color);
-            result_glossyIndirect *= specular1Color;
+            result_glossyIndirect *= specular1Color * specular1IndirectStrength;
 
             if (doDeepGroups)
             {
                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                 {
-                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit) * specular1Color;
+                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit) * specular1Color * specular1IndirectStrength;
                 }
             }
         }
@@ -1038,20 +1052,20 @@ shader_evaluate
         result_glossy2Indirect*= AiSamplerGetSampleInvCount(sampit);
         kti2 *= AiSamplerGetSampleInvCount(sampit);
         kti2 = 1.0f - kti2*maxh(specular2Color);
-        result_glossy2Indirect *= specular2Color;
+        result_glossy2Indirect *= specular2Color * specular2IndirectStrength;
 
         if (doDeepGroups)
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroupsGlossy2[i] *= AiSamplerGetSampleInvCount(sampit) * specular2Color;
+                deepGroupsGlossy2[i] *= AiSamplerGetSampleInvCount(sampit) * specular2Color * specular2IndirectStrength;
             }
         }
     } // if (do_glossy2)
 
     // indirect_diffuse
     // ----------------
-    if (do_diffuse && kti*kti2*maxh(diffuseColor) > IMPORTANCE_EPS)
+    if (do_diffuse && kti*kti2*maxh(diffuseColor)*diffuseIndirectStrength > IMPORTANCE_EPS)
     {
         float kr = kti*kti2;
         AtSamplerIterator* sampit = AiSamplerIterator(data->diffuse_sampler, sg);
@@ -1089,14 +1103,14 @@ shader_evaluate
             }
             
         }
-        result_diffuseIndirectRaw *= AiSamplerGetSampleInvCount(sampit);
+        result_diffuseIndirectRaw *= AiSamplerGetSampleInvCount(sampit) * diffuseIndirectStrength;
         result_diffuseIndirect = result_diffuseIndirectRaw * diffuseColor;
 
         if (doDeepGroups)
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroupsDiffuse[i] *= AiSamplerGetSampleInvCount(sampit) * diffuseColor;
+                deepGroupsDiffuse[i] *= AiSamplerGetSampleInvCount(sampit) * diffuseColor * diffuseIndirectStrength;
             }
         }
     } // if (do_diffuse)
@@ -1377,7 +1391,7 @@ shader_evaluate
 
     // backlight
     // ---------
-    if (do_backlight && kti*kti2*maxh(diffuseColor) > IMPORTANCE_EPS)
+    if (do_backlight && kti*kti2*maxh(backlightColor)*backlightIndirectStrength > IMPORTANCE_EPS)
     {
         flipNormals(sg);
         float kr = kti*kti2;
@@ -1415,13 +1429,13 @@ shader_evaluate
                 }
             }
         }
-        result_backlightIndirect *= AiSamplerGetSampleInvCount(sampit) * backlightColor;
+        result_backlightIndirect *= AiSamplerGetSampleInvCount(sampit) * backlightColor * backlightIndirectStrength;
 
         if (doDeepGroups)
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroupsBacklight[i] *= AiSamplerGetSampleInvCount(sampit) * backlightColor;
+                deepGroupsBacklight[i] *= AiSamplerGetSampleInvCount(sampit) * backlightColor * backlightIndirectStrength;
             }
         }
         flipNormals(sg);

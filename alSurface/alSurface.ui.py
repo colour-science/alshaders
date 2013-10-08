@@ -23,6 +23,7 @@ with uigen.group(ui, 'Diffuse', False):
 	with uigen.group(ui, 'Backlight'):
 		ui.parameter('backlightStrength', 'float', 0.0, 'Strength', mn=0, mx=1)
 		ui.parameter('backlightColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
+		ui.parameter('backlightIndirectStrength', 'float', 1.0, 'Indirect strength')
 
 	with uigen.group(ui, 'SSS'):
 		ui.parameter('sssMix', 'float', 0.0, 'Mix', mn=0, mx=1)
@@ -33,6 +34,7 @@ with uigen.group(ui, 'Diffuse', False):
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('diffuseExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
 		ui.parameter('diffuseEnableCaustics', 'bool', False, 'Enable caustics')
+		ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect strength')
 # end Diffuse
 
 with uigen.group(ui, 'Specular 1', False):
@@ -45,6 +47,7 @@ with uigen.group(ui, 'Specular 1', False):
 		ui.parameter('specular1RoughnessDepthScale', 'float', 1.5, 'Roughness depth scale', connectible=False)
 		ui.parameter('specular1ExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
 		ui.parameter('specular1Normal', 'vector', (0.0, 0.0, 0.0), 'Normal')
+		ui.parameter('specular1IndirectStrength', 'float', 1.0, 'Indirect strength')
 # end Specular 1
 
 with uigen.group(ui, 'Specular 2'):
@@ -57,6 +60,7 @@ with uigen.group(ui, 'Specular 2'):
 		ui.parameter('specular2RoughnessDepthScale', 'float', 1.5, 'Roughness depth scale', connectible=False)
 		ui.parameter('specular2ExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
 		ui.parameter('specular2Normal', 'vector', (0.0, 0.0, 0.0), 'Normal')
+		ui.parameter('specular2IndirectStrength', 'float', 1.0, 'Indirect strength')
 # end Specular 2
 
 with uigen.group(ui, 'Transmission'):
