@@ -1438,7 +1438,7 @@ struct HairBsdf
                 result_TRTg_indirect += scrs.color * Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
             }
         }
-        float weight = AiSamplerGetSampleInvCount(sampit);
+        float weight = AiSamplerGetSampleInvCount(sampit) * glossyIndirectStrength;
         result_R_indirect *= weight; //< TODO: factor of pi?
         result_TT_indirect *= weight; //< TODO: factor of pi?
         result_TRT_indirect *= weight; //< TODO: factor of pi?
@@ -1474,7 +1474,7 @@ struct HairBsdf
                     result_TRTg_indirect += scrs.color * Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
                 }
             }
-            weight = AiSamplerGetSampleInvCount(sampit);
+            weight = AiSamplerGetSampleInvCount(sampit) * glossyIndirectStrength;
             result_R_indirect *= weight; //< TODO: factor of pi?
             result_TT_indirect *= weight; //< TODO: factor of pi?
             result_TRT_indirect *= weight; //< TODO: factor of pi?
@@ -1526,7 +1526,7 @@ struct HairBsdf
 
             }
             AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
-            weight = AiSamplerGetSampleInvCount(sampit);
+            weight = AiSamplerGetSampleInvCount(sampit) * diffuseIndirectStrength;
             result_Pl_indirect *= weight * diffuseColor;
             result_Pg_indirect *= weight * diffuseColor;
         }
