@@ -29,8 +29,8 @@ with uigen.group(ui, 'Fibre properties', False):
 with uigen.group(ui, 'Diffuse', False):
 	ui.parameter('diffuseStrength', 'float', 1.0, 'Strength')
 	ui.parameter('diffuseColor', 'rgb', (1.0, 1.0, 1.0), 'Tint')
-	ui.parameter('diffuseForward', 'float', 1.0, 'Forward scattering')
-	ui.parameter('diffuseBack', 'float', 1.0, 'Back scattering')
+	ui.parameter('diffuseForward', 'float', .7, 'Forward scattering')
+	ui.parameter('diffuseBack', 'float', .7, 'Back scattering')
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('dualDepth', 'int', 0, 'Dual depth')
 
@@ -52,6 +52,10 @@ with uigen.group(ui, 'Transmission', False):
 	ui.parameter('transmissionStrength', 'float', 1.0, 'Strength')
 	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Tint')
 	ui.parameter('transmissionWidthScale', 'float', 1.0, 'Width scale')
+
+with uigen.group(ui, 'IDs'):
+	for i in range(1,9):
+		ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0))
 
 with uigen.group(ui, 'AOVs'):
 	ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color')
@@ -83,4 +87,11 @@ with uigen.group(ui, 'AOVs'):
 	ui.aov('aov_id_6', 'rgb', 'ID [6]')
 	ui.aov('aov_id_7', 'rgb', 'ID [7]')
 	ui.aov('aov_id_8', 'rgb', 'ID [8]')
+
+with uigen.group(ui, 'Advanced'):
+	ui.parameter('MIS', 'bool', True)
+	ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Diffuse indirect strength')
+	ui.parameter('extraSamplesDiffuse', 'int', 0, 'Diffuse extra samples')
+	ui.parameter('glossyIndirectStrength', 'float', 1.0, 'Glossy indirect strength')
+	ui.parameter('extraSamplesGlossy', 'int', 0, 'Glossy extra samples')
 
