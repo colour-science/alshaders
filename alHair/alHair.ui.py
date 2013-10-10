@@ -31,8 +31,7 @@ with uigen.group(ui, 'Diffuse', False):
 	ui.parameter('diffuseColor', 'rgb', (1.0, 1.0, 1.0), 'Tint')
 	ui.parameter('diffuseForward', 'float', .7, 'Forward scattering')
 	ui.parameter('diffuseBack', 'float', .7, 'Back scattering')
-	with uigen.group(ui, 'Advanced'):
-		ui.parameter('dualDepth', 'int', 0, 'Dual depth')
+		
 
 with uigen.group(ui, 'Specular 1', False):
 	ui.parameter('specular1Strength', 'float', 1.0, 'Strength')
@@ -90,6 +89,7 @@ with uigen.group(ui, 'AOVs'):
 
 with uigen.group(ui, 'Advanced'):
 	ui.parameter('MIS', 'bool', True)
+	ui.parameter('dualDepth', 'int', 0, 'Brute force bounces')
 	ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Diffuse indirect strength')
 	ui.parameter('extraSamplesDiffuse', 'int', 0, 'Diffuse extra samples')
 	ui.parameter('glossyIndirectStrength', 'float', 1.0, 'Glossy indirect strength')
