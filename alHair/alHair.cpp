@@ -443,8 +443,13 @@ struct HairBsdf
         float multipleSaturation = AiShaderEvalParamFlt(p_multipleSaturation);
         hairColor = AiShaderEvalParamRGB(p_hairColor);
 
-        sp.absorption = clamp(AI_RGB_WHITE - pow(hairColor, singleSaturation), rgb(0.01f), rgb(0.99f));
-        sp.dabsorption = clamp(AI_RGB_WHITE - pow(hairColor, multipleSaturation), rgb(0.01f), rgb(0.99f));
+        float hcmax = maxh(hairColor);
+        AtRGB scol=hairColor, mcol=hairColor;
+        scol = pow(scol, singleSaturation);
+        mcol = pow(mcol, multipleSaturation);
+
+        sp.absorption = clamp(AI_RGB_WHITE - scol, rgb(0.01f), rgb(0.99f));
+        sp.dabsorption = clamp(AI_RGB_WHITE - mcol, rgb(0.01f), rgb(0.99f));
 
         diffuseColor = AiShaderEvalParamRGB(p_diffuseColor) * AiShaderEvalParamFlt(p_diffuseStrength);
         specular1Color = AiShaderEvalParamRGB(p_specular1Color) * AiShaderEvalParamFlt(p_specular1Strength);
