@@ -1,0 +1,9 @@
+/// file shelf_alShaders.mel
+/// Create a shelf with buttons for assigning light groups and object ids
+
+source "alsUtil.mel";
+
+global proc shelf_alShaders()
+{
+	
+}
