@@ -16,15 +16,15 @@ ui.shader({
 })
 
 with uigen.group(ui, 'Fibre properties', False):
-	ui.parameter('hairColor', 'rgb', (0.82, 0.68, 0.4), 'Color')
+	ui.parameter('hairColor', 'rgb', (1.0, 0.829, 0.488), 'Color')
 	ui.parameter('specularWidth', 'float', 5.0, 'Highlight width', connectible=False)
-	ui.parameter('specularShift', 'float', -8.0, 'Highlight shift', connectible=False)
+	ui.parameter('specularShift', 'float', -5.0, 'Highlight shift', connectible=False)
 	ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0))
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False)
 		ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False)
-		ui.parameter('singleSaturation', 'float', 0.2, 'Highlight saturation')
-		ui.parameter('multipleSaturation', 'float', 0.2, 'Diffuse saturation')
+		ui.parameter('singleSaturation', 'float', 0.15, 'Highlight saturation')
+		ui.parameter('multipleSaturation', 'float', 0.15, 'Diffuse saturation')
 
 with uigen.group(ui, 'Diffuse', False):
 	ui.parameter('diffuseStrength', 'float', 1.0, 'Strength')

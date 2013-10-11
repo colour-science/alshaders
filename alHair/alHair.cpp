@@ -153,8 +153,8 @@ static const char* id_names[NUM_ID_AOVS] =
 node_parameters
 {
     AiParameterFlt("twist", 20.0f);
-    AiParameterRGB("hairColor", 0.82f, 0.68f, 0.4f);
-    AiParameterFlt("specularShift", -8.0f);
+    AiParameterRGB("hairColor", 1.0f, 0.829f, 0.488f);
+    AiParameterFlt("specularShift", -5.0f);
     AiParameterFlt("specularWidth", 5.0f);
     AiParameterInt("extraSamplesDiffuse", 0);
     AiParameterInt("extraSamplesGlossy", 0);
@@ -173,8 +173,8 @@ node_parameters
     AiParameterInt("dualDepth", 0);
     AiParameterFlt("diffuseForward", 0.7f);
     AiParameterFlt("diffuseBack", 0.7f);
-    AiParameterFlt("singleSaturation", 0.2f);
-    AiParameterFlt("multipleSaturation", 0.2f);
+    AiParameterFlt("singleSaturation", 0.15f);
+    AiParameterFlt("multipleSaturation", 0.15f);
     AiParameterFlt("specular1WidthScale", 1.0f);
     AiParameterFlt("specular2WidthScale", 1.0f);
     AiParameterFlt("transmissionWidthScale", 1.0f);
