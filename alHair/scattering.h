@@ -14,6 +14,8 @@
 #define NG_NUMSTEPS 32
 #define BS_NUMSTEPS 256
 
+#define HAIR_RADIUS 2.0f
+
 void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorption, AtRGB kfr[3])
 {
     float x = clamp(1.0f - cosf(theta_d), 0.f, 1.f);
@@ -24,8 +26,8 @@ void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorptio
     float cf_front = lerp(0.02f, 0.5f, x3);
     float cf_back = lerp(0.04f, 0.9f, x5);
     kfr[0] = rgb(lerp(cf_front, cf_back, y5));
-    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
-    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
+    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS);
+    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS * lerp(1.5f, 2.0f, x3));
 }
 
 void hairAttenuation(float ior, float theta_d, float phi, float absorption, float kfr[3])
@@ -38,8 +40,8 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
     float cf_front = lerp(0.02f, 0.5f, x3);
     float cf_back = lerp(0.04f, 0.9f, x5);
     kfr[0] = lerp(cf_front, cf_back, y5);
-    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f);
-    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * lerp(1.5f, 2.0f, x3));
+    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * HAIR_RADIUS * 2.0f);
+    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS * lerp(1.5f, 2.0f, x3));
 }
 
 /// Normalized gaussian with offset
