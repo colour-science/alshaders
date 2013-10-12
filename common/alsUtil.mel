@@ -2,8 +2,46 @@
 
 global proc als_addColorAttr(string $node, string $attrName)
 {
+    if (objExists($node+"."+$attrName)) return;
+
     addAttr -ln $attrName -at float3 -usedAsColor -k 1 $node;
     addAttr -ln  ($attrName+"_r") -at "float" -k 1 -p $attrName $node;
     addAttr -ln  ($attrName+"_g") -at "float" -k 1 -p $attrName $node;
     addAttr -ln  ($attrName+"_b") -at "float" -k 1 -p $attrName $node;
+}
+
+global proc int als_isArnoldLight(string $node)
+{
+    string $t = `nodeType $node`;
+    return  ($t=="pointLight") || 
+            ($t == "spotLight") || 
+            ($t == "directionalLight") || 
+            ($t == "areaLight") ||
+            ($t == "aiAreaLight") ||
+            ($t == "aiSkyDomeLight") ||
+            ($t == "aiPhotometricLight");
+}
+
+global proc als_setLightGroup(string $node, int $group)
+{	
+	if (!objExists($node+".mtoa_constant_lightGroup"))
+	{
+		addAttr -ln "mtoa_constant_lightGroup" -at "long" $node;
+	}
+
+	setAttr ($node+".mtoa_constant_lightGroup") $group;
+}
+
+global proc als_setLightGroupOnSelection(int $group)
+{
+	string $sel[] = `ls -sl`;
+	string $desc[] = `listRelatives -ad $sel`;
+
+	for ($d in $desc)
+	{
+		if (als_isArnoldLight($d))
+		{
+			als_setLightGroup($d, $group);
+		}
+	}
 }
