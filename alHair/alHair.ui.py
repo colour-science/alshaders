@@ -23,7 +23,7 @@ with uigen.group(ui, 'Fibre properties', False):
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False)
 		ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False)
-		ui.parameter('singleSaturation', 'float', 0.15, 'Highlight saturation')
+		ui.parameter('singleSaturation', 'float', 0.10, 'Highlight saturation')
 		ui.parameter('multipleSaturation', 'float', 0.15, 'Diffuse saturation')
 
 with uigen.group(ui, 'Diffuse', False):

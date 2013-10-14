@@ -173,7 +173,7 @@ node_parameters
     AiParameterInt("dualDepth", 0);
     AiParameterFlt("diffuseForward", 0.7f);
     AiParameterFlt("diffuseBack", 0.7f);
-    AiParameterFlt("singleSaturation", 0.15f);
+    AiParameterFlt("singleSaturation", 0.1f);
     AiParameterFlt("multipleSaturation", 0.15f);
     AiParameterFlt("specular1WidthScale", 1.0f);
     AiParameterFlt("specular2WidthScale", 1.0f);
