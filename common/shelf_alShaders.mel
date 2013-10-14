@@ -2,6 +2,7 @@
 /// Create a shelf with buttons for assigning light groups and object ids
 
 source "alsUtil.mel";
+source "alsIdWindow";
 
 global proc shelf_alShaders()
 {
@@ -136,6 +137,21 @@ global proc shelf_alShaders()
         -align center
         -labelOffset 0
         -image "als_lg_8.png"
+        -font "plainLabelFont"
+        -marginWidth 1
+        -marginHeight 1
+        ;
+    shelfButton -command "als_idWindow" -ann "Open Object ID Window" -label "ID window"
+        -enable 1
+        -manage 1
+        -visible 1
+        -width 35
+        -height 35
+        -preventOverride 0
+        -enableBackground 0
+        -align center
+        -labelOffset 0
+        -image "als_id.png"
         -font "plainLabelFont"
         -marginWidth 1
         -marginHeight 1
