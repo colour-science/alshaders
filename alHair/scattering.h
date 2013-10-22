@@ -548,7 +548,7 @@ struct DualScattering
         if (_cachelookups > 0.0)
         {
             AiMsgInfo("[alHair] total lutgen time: %.2fs", _lutgen_time/1000.0f);
-            AiMsgInfo("[alHair] cache hit rate: %.2f", (1.0-_cachemisses/_cachelookups)*100.0);
+            AiMsgInfo("[alHair] unique luts generated: %d", int(_cachemisses));
         }
     }
 
