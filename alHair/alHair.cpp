@@ -54,6 +54,10 @@ enum alHairParams
     p_diffuseIndirectStrength,
     p_glossyIndirectStrength,
 
+    p_randomTangent,
+    p_randomHue,
+    p_randomSaturation,
+
     p_aiEnableMatte,
     p_aiMatteColor,
     p_aiMatteColorA,
@@ -182,6 +186,10 @@ node_parameters
     AiParameterBool("MIS", true);
     AiParameterFlt("diffuseIndirectStrength", 1.0f);
     AiParameterFlt("glossyIndirectStrength", 1.0f);
+
+    AiParameterFlt("randomTangent", 0.0f);
+    AiParameterFlt("randomHue", 0.0f);
+    AiParameterFlt("randomSaturation", 0.0f);
 
     AiParameterBOOL("aiEnableMatte", false);
     AiParameterRGB("aiMatteColor", 0.0f, 0.0f, 0.0f);
@@ -361,11 +369,6 @@ struct HairBsdf
     {
         depth = sg->Rr;
 
-        // Get a local coordinate frame based on the hair fibre direction
-        U = AiV3Normalize(sg->dPdv);
-        V = AiV3Cross(U, sg->N);
-        W = AiV3Cross(V, U);
-
         result_R_direct = AI_RGB_BLACK;
         result_R_indirect = AI_RGB_BLACK;
         result_TT_direct = AI_RGB_BLACK;
@@ -394,23 +397,33 @@ struct HairBsdf
     /// Parameter evaluation. This should be called after opacity() and before anything else.
     inline void evaluateParameters(AtShaderGlobals* sg, ShaderData* data)
     {
-        // Get the spherical angles of the exitant direction relative to the hair fibre
-        wo = -sg->Rd;
-        theta_r = AI_PIOVER2 - sphericalTheta(wo, U);
-        phi_r = sphericalPhi(wo, V, W);
-
         // Get a random value per curve
         AtUInt32 curve_id = 0;
         cn = 1.0f;
+        AtVector cv = aivec(0.0f);
+        float randomTangent = AiShaderEvalParamFlt(p_randomTangent) * 0.3f;
         if (AiUDataGetUInt("curve_id", &curve_id))
         {
             AtPoint2 p; p.x = float(curve_id); p.y = 0.0f;
             cn = AiCellNoise2(p);
+
+            AtPoint p2 = aivec(float(curve_id)+17.0f, 0.0f, 0.0f);
+            cv = (AiVCellNoise3(p2)*2.0f - aivec(1.0f));
         }
         else
         {
             cn = 0.5f;
         }
+
+        // Get a local coordinate frame based on the hair fibre direction
+        U = AiV3Normalize(sg->dPdv + cv*randomTangent);
+        V = AiV3Cross(U, sg->N);
+        W = AiV3Cross(V, U);
+
+        // Get the spherical angles of the exitant direction relative to the hair fibre
+        wo = -sg->Rd;
+        theta_r = AI_PIOVER2 - sphericalTheta(wo, U);
+        phi_r = sphericalPhi(wo, V, W);
 
         sp.beta_R = data->beta_R;
         sp.alpha_R = data->alpha_R;
@@ -442,6 +455,19 @@ struct HairBsdf
         float singleSaturation = AiShaderEvalParamFlt(p_singleSaturation);
         float multipleSaturation = AiShaderEvalParamFlt(p_multipleSaturation);
         hairColor = AiShaderEvalParamRGB(p_hairColor);
+
+        float randomHue = AiShaderEvalParamFlt(p_randomHue) * 0.1f;
+        float randomSaturation = AiShaderEvalParamFlt(p_randomSaturation);
+
+        if (randomHue != 0.0f || randomSaturation != 0.0f)
+        {
+            hairColor = rgb2hsv(hairColor);
+            hairColor.r += cv.x * randomHue;
+            hairColor.r = clamp(-1.0f, 1.0f, hairColor.r);
+            hairColor.g += cv.y * randomSaturation;
+            hairColor.g = clamp(0.0f, 1.0f, hairColor.g);
+            hairColor = hsv2rgb(hairColor);
+        }
 
         float hcmax = maxh(hairColor);
         AtRGB scol=hairColor, mcol=hairColor;

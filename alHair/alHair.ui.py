@@ -20,6 +20,12 @@ with uigen.group(ui, 'Fibre properties', False):
 	ui.parameter('specularWidth', 'float', 5.0, 'Highlight width', connectible=False)
 	ui.parameter('specularShift', 'float', -5.0, 'Highlight shift', connectible=False)
 	ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0))
+
+	with uigen.group(ui, 'Randomize'):
+		ui.parameter('randomTangent', 'float', 0.0, 'Tangent')
+		ui.parameter('randomHue', 'float', 0.0, 'Hue')
+		ui.parameter('randomSaturation', 'float', 0.0, 'Saturation')
+
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False)
 		ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False)
