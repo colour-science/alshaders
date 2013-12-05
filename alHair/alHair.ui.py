@@ -100,4 +100,6 @@ with uigen.group(ui, 'Advanced'):
 	ui.parameter('extraSamplesDiffuse', 'int', 0, 'Diffuse extra samples')
 	ui.parameter('glossyIndirectStrength', 'float', 1.0, 'Glossy indirect strength')
 	ui.parameter('extraSamplesGlossy', 'int', 0, 'Glossy extra samples')
+	ui.parameter('uparam', 'string', 'uparamcoord', 'U param')
+	ui.parameter('vparam', 'string', 'vparamcoord', 'V param')
 

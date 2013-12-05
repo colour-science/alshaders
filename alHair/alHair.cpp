@@ -58,6 +58,9 @@ enum alHairParams
     p_randomHue,
     p_randomSaturation,
 
+    p_uparam,
+    p_vparam,
+
     p_aiEnableMatte,
     p_aiMatteColor,
     p_aiMatteColorA,
@@ -191,6 +194,9 @@ node_parameters
     AiParameterFlt("randomHue", 0.0f);
     AiParameterFlt("randomSaturation", 0.0f);
 
+    AiParameterStr("uparam", "uparamcoord");
+    AiParameterStr("vparam", "vparamcoord");
+
     AiParameterBOOL("aiEnableMatte", false);
     AiParameterRGB("aiMatteColor", 0.0f, 0.0f, 0.0f);
     AiParameterFlt("aiMatteColorA", 0.0f);
@@ -294,6 +300,9 @@ struct HairBsdf
 
             doMis = params[p_doMis].BOOL;
 
+            uparam = params[p_uparam].STR;
+            vparam = params[p_vparam].STR;
+
             aovs.clear(); 
             aovs.push_back(params[p_aov_diffuse_color].STR); 
             aovs.push_back(params[p_aov_direct_diffuse].STR); 
@@ -362,6 +371,8 @@ struct HairBsdf
 
         std::vector<std::string> aovs;
         std::map<AtNode*, int> lightGroups;
+
+        std::string uparam, vparam;
     };
 
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
@@ -397,6 +408,17 @@ struct HairBsdf
     /// Parameter evaluation. This should be called after opacity() and before anything else.
     inline void evaluateParameters(AtShaderGlobals* sg, ShaderData* data)
     {
+        // save v coord 
+        float v = sg->v;
+
+        // replace uvs
+        float s, t;
+        if (AiUDataGetFlt(data->uparam.c_str(), &s) && AiUDataGetFlt(data->vparam.c_str(), &t))
+        {
+            sg->u = s;
+            sg->v = t;
+        }
+
         // Get a random value per curve
         AtUInt32 curve_id = 0;
         cn = 1.0f;
@@ -442,7 +464,7 @@ struct HairBsdf
         sp.gamma_g = data->gamma_g;
         float twist = AiShaderEvalParamFlt(p_twist);
         float glintTexture = AiShaderEvalParamFlt(p_glintTexture);
-        sp.phi_g = lerp((35.0f-30*(1.0f-glintTexture))*AI_DTOR, (35.0f+50.0f*glintTexture)*AI_DTOR, fabsf(sinf(AI_PI*(cn + (cn+sg->v)*(twist*cn)))));
+        sp.phi_g = lerp((35.0f-30*(1.0f-glintTexture))*AI_DTOR, (35.0f+50.0f*glintTexture)*AI_DTOR, fabsf(sinf(AI_PI*(cn + (cn+v)*(twist*cn)))));
 
         sp.ior = 1.55;
 
@@ -1737,7 +1759,6 @@ struct HairBsdf
 
     bool doLightGroups;
     AtRGB lightGroupsDirect[NUM_LIGHT_GROUPS];
-
 };
 
 node_loader
