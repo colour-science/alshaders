@@ -40,7 +40,7 @@ subdirs = [
 ] 
 
 # pattern for files to include in the source distribution
-name_src = 'alShaders-src-%s.%s.%s-ai-%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION, ARNOLD_VERSION)
+name_src = 'alShaders-src-%s.%s.%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
 ptrn_src_src = ['*.cpp', '*.h', '*.txt', '*.py']
 ptrn_src_bin = []
 files_src = ['BUILD_INSTRUCTIONS.txt', 'CMakeLists.txt', 'package.in.py', 'test.in.py', 'README', 'TODO.txt', 'local.cmake.win']
