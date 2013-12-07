@@ -46,7 +46,7 @@ node_loader
    node->name        = "alCombineColor";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -68,7 +68,7 @@ shader_evaluate
 {
 	AtRGB input1 = AiShaderEvalParamRGB(p_input1);
 	AtRGB input2 = AiShaderEvalParamRGB(p_input2);
-	AtFloat input3 = AiShaderEvalParamFlt(p_input3);
+	float input3 = AiShaderEvalParamFlt(p_input3);
 	int combineOp = AiShaderEvalParamInt(p_combineOp);
 
 	AtRGB f = input1;

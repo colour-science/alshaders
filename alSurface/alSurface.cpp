@@ -1,13 +1,9 @@
 #include <iostream>
 #include <ai_sampler.h>
-#include <OpenEXR/ImathVec.h>
-#include <OpenEXR/ImathMatrix.h>
-#include <OpenEXR/ImathMatrixAlgo.h>
 #include <map>
 #include <cassert>
 #include <cstdlib>
-
-
+#include <vector>
 
 #include "alUtil.h"
 #include "MIS.h"
@@ -295,7 +291,7 @@ node_loader
     node->name        = "alSurface";
     node->node_type   = AI_NODE_SHADER;
     strcpy(node->version, AI_VERSION);
-    return TRUE;
+    return true;
 }
 
 node_initialize
@@ -789,7 +785,7 @@ shader_evaluate
             if (do_glossy2)
             {
                 sg->Nf = specular2Normal;
-                AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color));
+                float r = (1.0f - brdfw.kr*maxh(specular1Color));
                 Lspecular2Direct =
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
                                         * r * specular_strength;
@@ -800,7 +796,7 @@ shader_evaluate
                 result_glossy2Direct += Lspecular2Direct;
                 sg->Nf = Nfold;
             }
-            AtFloat r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
+            float r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
             if (do_diffuse)
             {
                 LdiffuseDirect =
@@ -877,7 +873,12 @@ shader_evaluate
     result_glossy2Direct *= specular2Color;       
 
     // Sample BRDFS
+#if AI_VERSION_MAJOR_NUM > 0
+    float samples[2];
+#else
     double samples[2];
+#endif
+    
     AtRay wi_ray;
     AtVector wi;
     AtScrSample scrs;
@@ -1121,7 +1122,11 @@ shader_evaluate
     memset(childAovs, 0, sizeof(AtRGB)*NUM_AOVs);
     if (do_transmission)
     {
+#if AI_VERSION_MAJOR_NUM > 0
+        float samples[2];
+#else
         double samples[2];
+#endif
         float kt;
         AtRay wi_ray;
         AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
@@ -1448,7 +1453,13 @@ shader_evaluate
     if (do_sss)
     {
         AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor*sssDensityScale);
-        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
+#if AI_VERSION_MAJOR_NUM > 0
+    float r = 1.0f;
+    result_sss = AiBSSRDFCubic(sg, &r, &radius);
+#else
+    result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
+#endif
+        
     }
 
     // blend sss and diffuse

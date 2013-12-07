@@ -36,7 +36,7 @@ node_loader
    node->name        = "alCurvature";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -68,9 +68,9 @@ node_update
 
 shader_evaluate
 {
-	AtFloat result = 0.0f;
-	AtFloat sampleOffset = AiShaderEvalParamFlt(p_sampleOffset);
-	AtFloat sampleRadius = AiShaderEvalParamFlt(p_sampleRadius);
+	float result = 0.0f;
+	float sampleOffset = AiShaderEvalParamFlt(p_sampleOffset);
+	float sampleRadius = AiShaderEvalParamFlt(p_sampleRadius);
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
 	
@@ -84,10 +84,14 @@ shader_evaluate
 	AtSamplerIterator* sampit = AiSamplerIterator(data->sampler, sg);
 	AtRay ray;
 	AtShaderGlobals* hitpoint = AiShaderGlobals();
-	double samples[2];
+#if AI_VERSION_MAJOR_NUM > 0
+    float samples[2];
+#else
+    double samples[2];
+#endif
 	float du, dv;
 	AtVector dir = -sg->N;
-	AtFloat count = 0.0f;
+	float count = 0.0f;
 	while (AiSamplerGetSample(sampit, samples))
 	{
 		// sample a disk above the normal to get the src points

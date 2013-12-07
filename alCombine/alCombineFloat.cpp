@@ -46,7 +46,7 @@ node_loader
    node->name        = "alCombineFloat";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -66,9 +66,9 @@ node_update
 
 shader_evaluate
 {
-	AtFloat input1 = AiShaderEvalParamFlt(p_input1);
-	AtFloat input2 = AiShaderEvalParamFlt(p_input2);
-	AtFloat input3 = AiShaderEvalParamFlt(p_input3);
+	float input1 = AiShaderEvalParamFlt(p_input1);
+	float input2 = AiShaderEvalParamFlt(p_input2);
+	float input3 = AiShaderEvalParamFlt(p_input3);
 	int combineOp = AiShaderEvalParamInt(p_combineOp);
 
 	float f = input1;

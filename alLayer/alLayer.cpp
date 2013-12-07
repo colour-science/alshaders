@@ -129,7 +129,7 @@ node_loader
    node->name        = "alLayer";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -164,7 +164,7 @@ shader_evaluate
 
 	AtRGB result = AI_RGB_BLACK;
 	
-	AtFloat mix = AiShaderEvalParamFlt(p_mix);
+	float mix = AiShaderEvalParamFlt(p_mix);
 	int debug = AiShaderEvalParamEnum(p_debug);
 	if (debug == kMixer)
 	{

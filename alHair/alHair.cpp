@@ -1,3 +1,4 @@
+
 // Hair shader based on 
 // [1] ISHair: Importance Sampling for Hair Scattering by Ou et al. 2012
 // http://www.cs.dartmouth.edu/~ouj/site/Research/Entries/2012/6/21_ISHair__Importance_Sampling_for_Hair_Scattering.html
@@ -1721,7 +1722,11 @@ struct HairBsdf
     ShaderData* data;
     AtRay wi_ray;
     AtScrSample scrs;
+#if AI_VERSION_MAJOR_NUM > 0
+    float samples[2];
+#else
     double samples[2];
+#endif
     AtSamplerIterator* sampit;
 
     AtVector wo;
@@ -1769,7 +1774,7 @@ node_loader
    node->name        = "alHair";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize

@@ -6,11 +6,11 @@ AI_SHADER_NODE_EXPORT_METHODS(alBlackbody)
 
 struct BlackbodySpectrum
 {
-	BlackbodySpectrum(const AtFloat temperature)
+	BlackbodySpectrum(const float temperature)
 	: temp(temperature)
 	{}
 
-	AtFloat operator()(AtFloat wavelength) const
+	float operator()(float wavelength) const
 	{
 		 double lambda = wavelength * 1e-9;
 		 return (3.74183e-16 * pow(lambda, -5.0)) / (exp(1.4388e-2 / (lambda * temp)) - 1.0);
@@ -49,7 +49,7 @@ node_loader
    node->name        = "alBlackbody";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -84,10 +84,10 @@ node_update
 
 shader_evaluate
 {
-	AtFloat temperature = AiShaderEvalParamFlt(p_temperature);
-	AtFloat physicalIntensity = AiShaderEvalParamFlt(p_physicalIntensity);
-	AtFloat strength = AiShaderEvalParamFlt(p_strength);
-	AtFloat exposure = AiShaderEvalParamFlt(p_physicalExposure);
+	float temperature = AiShaderEvalParamFlt(p_temperature);
+	float physicalIntensity = AiShaderEvalParamFlt(p_physicalIntensity);
+	float strength = AiShaderEvalParamFlt(p_strength);
+	float exposure = AiShaderEvalParamFlt(p_physicalExposure);
 
 	AtRGB result = AI_RGB_BLACK;
 
