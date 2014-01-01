@@ -1,22 +1,11 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 
 project(alShaders)
 
 set(ALS_MAJOR_VERSION 0)
-set(ALS_MINOR_VERSION 3)
-set(ALS_PATCH_VERSION 3)
+set(ALS_MINOR_VERSION 4)
+set(ALS_PATCH_VERSION 0b5)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
-
-configure_file(
-    "${PROJECT_SOURCE_DIR}/package.in.py"
-    "${PROJECT_SOURCE_DIR}/package.py"
-)
-
-configure_file(
-    "${PROJECT_SOURCE_DIR}/test.in.py"
-    "${PROJECT_SOURCE_DIR}/test.py"
-)
-
 
 set(CMAKE_BUILD_TYPE RELEASE)
 set(CMAKE_VERBOSE_MAKEFILE FALSE)
@@ -28,7 +17,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 set(ARNOLD_VERSION 4.0.14.0)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 
-set(MTOA_VERSION 0.23.0)
+set(MTOA_VERSION 0.25.2)
 set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
 
 #set boost root path
@@ -58,14 +47,13 @@ endif()
 
 set(MTOA_SHADERS ${MTOA_ROOT}/shaders)
 set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
+set(MTOA_ICONS ${MTOA_ROOT}/icons)
 set(MTOA_UI ${MTOA_ROOT}/scripts/mtoa/ui/ae)
 
 include_directories(common)
 
 #include boost for alPhotometric
 include_directories(${BOOST_INCLUDE_PATH})
-
-include_directories(/usr/local/Cellar/ilmbase/1.0.3/include/)
 
 set(SUBDIRECTORIES 
         alSurface
@@ -76,7 +64,6 @@ set(SUBDIRECTORIES
         alPattern
         alCurvature
         alBlackbody
-        alPhotometric
         alInputVector
         alHair
         alColorSpace
@@ -86,4 +73,14 @@ set(SUBDIRECTORIES
 foreach(SUBDIR ${SUBDIRECTORIES})
     add_subdirectory(${SUBDIR})
 endforeach()
+
+configure_file(
+    "${PROJECT_SOURCE_DIR}/package.in.py"
+    "${PROJECT_SOURCE_DIR}/package.py"
+)
+
+configure_file(
+    "${PROJECT_SOURCE_DIR}/test.in.py"
+    "${PROJECT_SOURCE_DIR}/test.py"
+)
 

@@ -1,6 +1,6 @@
 #include "Color.h"
 
-inline AtPoint2 point2(AtFloat x, AtFloat y)
+inline AtPoint2 point2(float x, float y)
 {
 	AtPoint2 r;
 	r.x = x;
@@ -19,7 +19,7 @@ ColorSystem CsCIE("CIE", point2(0.7355, 0.2645), point2(0.2658, 0.7243), point2(
 ColorSystem CsRec709("Rec709", point2(0.64, 0.33), point2(0.30, 0.60), point2(0.15, 0.06), illumD65);
 
 
-AtFloat cieMatch[81][3] =
+float cieMatch[81][3] =
 {
 	{0.0014,0.0000,0.0065}, {0.0022,0.0001,0.0105}, {0.0042,0.0001,0.0201},
 	{0.0076,0.0002,0.0362}, {0.0143,0.0004,0.0679}, {0.0232,0.0006,0.1102},
@@ -52,10 +52,10 @@ AtFloat cieMatch[81][3] =
 
 AtRGB xyzToRgb(const ColorSystem& cs, const AtColor& xyz)
 {
-    AtFloat xr, yr, zr, xg, yg, zg, xb, yb, zb;
-    AtFloat xw, yw, zw;
-    AtFloat rx, ry, rz, gx, gy, gz, bx, by, bz;
-    AtFloat rw, gw, bw;
+    float xr, yr, zr, xg, yg, zg, xb, yb, zb;
+    float xw, yw, zw;
+    float rx, ry, rz, gx, gy, gz, bx, by, bz;
+    float rw, gw, bw;
     AtRGB rgb;
 
     xr = cs.red.x;    yr = cs.red.y;    zr = 1 - (xr + yr);

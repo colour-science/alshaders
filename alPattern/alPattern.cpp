@@ -79,7 +79,7 @@ node_loader
    node->name        = "alPattern";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -99,11 +99,11 @@ node_update
 
 shader_evaluate
 {
-	AtInt space = AiShaderEvalParamInt(p_space);
-	AtInt axis = AiShaderEvalParamInt(p_axis);
-	AtInt shape = AiShaderEvalParamInt(p_shape);
-	AtFloat frequency = AiShaderEvalParamFlt(p_frequency);
-	AtFloat offset = AiShaderEvalParamFlt(p_offset);
+	int space = AiShaderEvalParamInt(p_space);
+	int axis = AiShaderEvalParamInt(p_axis);
+	int shape = AiShaderEvalParamInt(p_shape);
+	float frequency = AiShaderEvalParamFlt(p_frequency);
+	float offset = AiShaderEvalParamFlt(p_offset);
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
 
@@ -137,8 +137,8 @@ shader_evaluate
 	// scale the space
 	P *= frequency;
 
-	AtFloat result = 0.0f;
-	AtFloat x = P.x;
+	float result = 0.0f;
+	float x = P.x;
 	if (axis == 1) x = P.y;
 	else if (axis == 2) x = P.z;
 	x += offset;

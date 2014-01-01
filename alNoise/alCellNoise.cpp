@@ -103,7 +103,7 @@ node_loader
    node->name        = "alCellNoise";
    node->node_type   = AI_NODE_SHADER;
    ::strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 
@@ -207,7 +207,7 @@ shader_evaluate
 	P *= data->frequency;
 
 	// get cellular result
-	AtFloat F[4];
+	float F[4];
 	AtVector delta[4];
 	AtUInt32 ID[4];
 	AiCellular(P, 4, data->octaves, data->lacunarity, data->randomness, F, delta, ID);
@@ -218,7 +218,7 @@ shader_evaluate
 		if (data->mynkowskiShape != 2.0f)
 		{
 			// Use Mynkowski distance metric instead of the distances computed by Arnold
-			AtFloat ims = 1.0f / data->mynkowskiShape;
+			float ims = 1.0f / data->mynkowskiShape;
 			for (int i=0; i < 4; ++i)
 			{
 				F[i] = pow(fabs(delta[i].x), data->mynkowskiShape) + pow(fabs(delta[i].y), data->mynkowskiShape) 

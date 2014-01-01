@@ -113,6 +113,37 @@ inline AtRGB fabs(const AtRGB& c)
     return rgb(fabsf(c.r), fabsf(c.g), fabsf(c.b));
 }
 
+inline float maxh(const AtRGB& c)
+{
+   return std::max(std::max(c.r, c.g), c.b);
+}
+
+inline float minh(const AtRGB& c)
+{
+   return std::min(std::min(c.r, c.g ), c.b);
+}
+
+
+inline float lerp(const float a, const float b, const float t)
+{
+   return (1-t)*a + t*b;
+}
+
+inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
+{
+   AtRGB r;
+   r.r = lerp( a.r, b.r, t );
+   r.g = lerp( a.g, b.g, t );
+   r.b = lerp( a.b, b.b, t );
+   return r;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const AtRGB& c)
+{
+    os << "(" << c.r << ", " << c.g << ", " << c.b << ")";
+    return os;
+}
+
 
 // concentricSampleDisk and cosineSampleHemisphere lifted from PBRT
 /*
@@ -204,6 +235,31 @@ inline AtVector uniformSampleSphere(float u1, float u2)
     return v;
 }
 
+inline float uniformConePdf(float cosThetaMax) 
+{
+    return 1.f / (2.f * AI_PI * (1.f - cosThetaMax));
+}
+
+
+inline AtVector uniformSampleCone(float u1, float u2, float costhetamax) 
+{
+    float costheta = (1.f - u1) + u1 * costhetamax;
+    float sintheta = sqrtf(1.f - costheta*costheta);
+    float phi = u2 * 2.f * AI_PI;
+    return aivec(cosf(phi) * sintheta, sinf(phi) * sintheta, costheta);
+}
+
+
+inline AtVector uniformSampleCone(float u1, float u2, float costhetamax,
+        const AtVector &x, const AtVector &y, const AtVector &z) 
+{
+    float costheta = lerp(costhetamax, 1.f, u1);
+    float sintheta = sqrtf(1.f - costheta*costheta);
+    float phi = u2 * 2.f * AI_PI;
+    return cosf(phi) * sintheta * x + sinf(phi) * sintheta * y +
+        costheta * z;
+}
+
 inline float sphericalTheta(const AtVector &v)
 {
     return acosf(clamp(v.z, -1.f, 1.f));
@@ -232,30 +288,7 @@ inline void sphericalDirection(float theta, float phi, const AtVector& U, const 
     w = U*cosf(theta)*sinf(phi) + V*cosf(theta)*cosf(phi) + W*sinf(theta);
 }
 
-inline float maxh(const AtRGB& c)
-{
-   return std::max(std::max(c.r, c.g), c.b);
-}
 
-inline float minh(const AtRGB& c)
-{
-   return std::min(std::min(c.r, c.g ), c.b);
-}
-
-
-inline float lerp(const float a, const float b, const float t)
-{
-   return (1-t)*a + t*b;
-}
-
-inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
-{
-   AtRGB r;
-   r.r = lerp( a.r, b.r, t );
-   r.g = lerp( a.g, b.g, t );
-   r.b = lerp( a.b, b.b, t );
-   return r;
-}
 
 inline float fresnel(float cosi, float etai)
 {
@@ -269,6 +302,11 @@ inline float fresnel(float cosi, float etai)
     float pp =    ((etai * cosi) - cost)
                     / ((etai * cosi) + cost);
     return (pl*pl+pp*pp)*0.5f;
+}
+
+inline float powerHeuristic(float fp, float gp)
+{
+    return SQR(fp) / (SQR(fp)+SQR(gp));
 }
 
 // Stolen wholesale from OSL:
@@ -352,6 +390,14 @@ inline AtRGB exp(AtRGB c)
     c.r = expf(c.r);
     c.g = expf(c.g);
     c.b = expf(c.b);
+    return c;
+}
+
+inline AtRGB fast_exp(AtRGB c)
+{
+    c.r = fast_exp(c.r);
+    c.g = fast_exp(c.g);
+    c.b = fast_exp(c.b);
     return c;
 }
 
@@ -822,3 +868,14 @@ inline AtVector floor(const AtVector& v)
     AiV3Create(r, floorf(v.x), floorf(v.y), floorf(v.z));
     return r;
 }
+
+inline bool AiIsFinite(const AtRGB& c)
+{
+    return AiIsFinite(c.r) && AiIsFinite(c.g) && AiIsFinite(c.b);
+}
+
+#define ALS_RAY_UNDEFINED 0
+#define ALS_RAY_SSS 1
+#define ALS_RAY_DUAL 2
+
+#define VAR(x) #x << ": " << x

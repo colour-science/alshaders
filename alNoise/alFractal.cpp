@@ -81,7 +81,7 @@ node_loader
    node->name        = "alFractal";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 struct ShaderData
@@ -128,8 +128,8 @@ node_update
 shader_evaluate
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
-	AtFloat distortion = AiShaderEvalParamFlt(p_distortion);
-	AtFloat ridgeOffset = AiShaderEvalParamFlt(p_ridgeOffset);
+	float distortion = AiShaderEvalParamFlt(p_distortion);
+	float ridgeOffset = AiShaderEvalParamFlt(p_ridgeOffset);
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
 	AtPoint Pin = AiShaderEvalParamPnt(p_P);
@@ -168,10 +168,10 @@ shader_evaluate
 
 	if (data->mode == NM_SCALAR)
 	{
-		AtFloat n = 0.0f;
-		AtFloat amp = 1.0f;
-		AtFloat weight = 1;
-		AtFloat v;
+		float n = 0.0f;
+		float amp = 1.0f;
+		float weight = 1;
+		float v;
 		for (int i=0; i < data->octaves; ++i)
 		{
 			AtPoint PP = P;
@@ -200,7 +200,7 @@ shader_evaluate
 	else
 	{
 		AtRGB n= rgb(0, 0, 0);
-		AtFloat amp = 1.0f;
+		float amp = 1.0f;
 		AtRGB weight = rgb(0, 0, 0);
 		AtRGB v;
 		for (int i=0; i < data->octaves; ++i)

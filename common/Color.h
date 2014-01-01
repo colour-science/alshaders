@@ -32,18 +32,18 @@ extern  ColorSystem CsCIE;
 extern  ColorSystem CsRec709;
 
 /// CIE spectral color matching functions from 380 to 780 nm, in 5nm increments
-extern AtFloat cieMatch[81][3];
+extern float cieMatch[81][3];
 
 /// Function to convert a spectral intensity to CIE XYZ. The template argument SpecFunc should be a functor that
 /// descrbes the desired spectral function. The functor should have the member:
-/// AtFloat operator(const AtFloat wavelength)
+/// float operator(const float wavelength)
 /// which should return the spectral intensity of the function at the given wavelength
 template <class SpecFunc>
 AtColor spectrumToXyz(const SpecFunc& sf)
 {
 	AtColor result;
-	AtFloat lambda = 380.0f;
-	AtFloat X=0.0f, Y=0.0f, Z=0.0f;
+	float lambda = 380.0f;
+	float X=0.0f, Y=0.0f, Z=0.0f;
 	for (int i = 0; lambda < 780.1; i++, lambda += 5)
 	{
 		double Me;
@@ -53,7 +53,7 @@ AtColor spectrumToXyz(const SpecFunc& sf)
 		Y += Me * cieMatch[i][1];
 		Z += Me * cieMatch[i][2];
 	}
-	AtFloat XYZ = (X + Y + Z);
+	float XYZ = (X + Y + Z);
 
 	result.r = X / XYZ ;
 	result.g = Y / XYZ ;

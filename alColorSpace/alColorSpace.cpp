@@ -39,7 +39,7 @@ node_loader
    node->name        = "alColorSpace";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
