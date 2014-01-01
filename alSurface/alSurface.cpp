@@ -1454,8 +1454,10 @@ shader_evaluate
     {
 #if AI_VERSION_MAJOR_NUM > 0
 		AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
-		float radius[3] = {sssRadiusColor.r, sssRadiusColor.g, sssRadiusColor.b};
-    	result_sss = AiBSSRDFCubic(sg, radius, weights, 3);
+		float radius[3] = {	MAX(0.0001f, sssRadius * sssRadiusColor.r), 
+							MAX(0.0001f, sssRadius * sssRadiusColor.g), 
+							MAX(0.0001f, sssRadius * sssRadiusColor.b) };
+    	result_sss = AiBSSRDFCubic(sg, radius, weights, 3) * diffuseColor * kti * kti2;
 #else
 		float radius = 1.f;
     	result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
