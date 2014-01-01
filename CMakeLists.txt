@@ -65,6 +65,8 @@ include_directories(common)
 #include boost for alPhotometric
 include_directories(${BOOST_INCLUDE_PATH})
 
+include_directories(/usr/local/Cellar/ilmbase/1.0.3/include/)
+
 set(SUBDIRECTORIES 
         alSurface
         alRemap
