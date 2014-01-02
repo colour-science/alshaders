@@ -69,6 +69,7 @@ set(SUBDIRECTORIES
         alInputVector
         alHair
         alColorSpace
+	alTriplanar
         common
 )
 

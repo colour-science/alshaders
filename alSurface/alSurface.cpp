@@ -1459,8 +1459,8 @@ shader_evaluate
 							MAX(0.0001f, sssRadius * sssRadiusColor.b) };
     	result_sss = AiBSSRDFCubic(sg, radius, weights, 3) * diffuseColor * kti * kti2;
 #else
-		float radius = 1.f;
-    	result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
+        AtRGB radius = sssRadiusColor * sssRadius;
+        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
 #endif
         
     }
