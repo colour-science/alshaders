@@ -93,19 +93,97 @@ node_update
 
 }
 
-inline bool tileCellNoise(float u, float v,  AtRGBA *textureResult, AtShaderGlobals *sg,
-                          AtTextureHandle *handle, AtTextureParams *params){
-        // lookup X
-    AtPoint PX;
-    PX.x = u;
-    PX.y = v;
-    PX.z = 0.f;
+AtPoint getProjectionP(const AtNode* node, const AtShaderGlobals *sg, const AtPoint &Pin, int space, float scale, float offset){
+    AtPoint P;
+    if (AiNodeIsLinked(node, "P"))
+    {
+        P = Pin;
+    }
+    else
+    {
+        switch (space)
+        {
+        case NS_OBJECT:
+            P = sg->Po;
+            break;
+        case NS_PREF:
+            if (!AiUDataGetPnt("Pref", &P))
+                P = sg->Po;
+            break;
+        default:
+            P = sg->P;
+            break;
+        }
+    }
+    return P / scale + offset;
+}
+
+void computeBlendWeights(const AtShaderGlobals *sg, int space, float blendSoftness, float *weights){
+    AtPoint N =
+    weights[0] = fabsf(sg->N.x);
+    weights[1] = fabsf(sg->N.y);
+    weights[2] = fabsf(sg->N.z);
+    float weightsum = 0.f;
+    for(int i=0; i<3; ++i){
+        weights[i] = weights[i] - (1.f-blendSoftness)/2.f;
+        weights[i] = MAX(weights[i], 0.00f);
+        weightsum += weights[i];
+    }
+    if(weightsum){
+        for(int i=0; i<3; ++i){
+            weights[i] /= weightsum;
+        }
+    }
+}
+
+inline AtRGB tileRegular(const AtPoint &P, float *weights, AtShaderGlobals *sg,
+AtTextureHandle *handle, AtTextureParams *params){
+    AtRGBA textureResult[3];
+    bool textureAccessX = false;
+    bool textureAccessY = false;
+    bool textureAccessZ = false;
+
+    // lookup X
+    sg->u = P.z + 123.94;
+    sg->v = P.y + 87.22;
+    textureResult[0] = AiTextureHandleAccess(sg, handle, params, &textureAccessX);
+
+    // lookup Y
+    sg->u = P.z + 9.2;
+    sg->v = P.x + 74.1;
+    textureResult[1] = AiTextureHandleAccess(sg, handle, params, &textureAccessY);
+
+    // lookup Z
+    sg->u = P.x - 12.55;
+    sg->v = P.y + 6;
+    textureResult[2] = AiTextureHandleAccess(sg, handle, params, &textureAccessZ);
+
+    if(textureAccessX && textureAccessY && textureAccessZ){
+        AtRGB result = AI_RGB_BLACK;
+        result += textureResult[0].rgb() * weights[0];
+        result += textureResult[1].rgb() * weights[1];
+        result += textureResult[2].rgb() * weights[2];
+        return result;
+    }
+    else {
+        // Something went wrong during lookup.
+        // TODO: Log the error
+        return AiColorCreate(1.f, 0.0f, 0.f);
+    }
+}
+
+inline bool lookupCellNoise(float u, float v,  AtRGBA *textureResult, AtShaderGlobals *sg,
+                            AtTextureHandle *handle, AtTextureParams *params){
+    AtPoint P;
+    P.x = u;
+    P.y = v;
+    P.z = 0.f;
 
     // run cellnoise
     float f;
     AtVector delta;
     AtUInt32 id;
-    AiCellular(PX, 1, 1, 1.92, 1, &f, &delta, &id);
+    AiCellular(P, 1, 1, 1.92, 1, &f, &delta, &id);
 
     // pick random direction for orientation
     AtVector orientVectorX;
@@ -133,8 +211,46 @@ inline bool tileCellNoise(float u, float v,  AtRGBA *textureResult, AtShaderGlob
     return success;
 }
 
+inline AtRGB tileCellnoise(const AtPoint &P, float *weights, AtShaderGlobals *sg,
+                           AtTextureHandle *handle, AtTextureParams *params){
+    AtRGBA textureResult[3];
+    bool textureAccessX = lookupCellNoise(P.y,
+                                          P.z,
+                                          &textureResult[0],
+                                          sg,
+                                          handle,
+                                          params);
+    bool textureAccessY = lookupCellNoise(P.x,
+                                          P.z,
+                                          &textureResult[1],
+                                          sg,
+                                          handle,
+                                          params);
+    bool textureAccessZ = lookupCellNoise(P.y,
+                                          P.x,
+                                          &textureResult[2],
+                                          sg,
+                                          handle,
+                                          params);
+
+
+    if(textureAccessX && textureAccessY && textureAccessZ){
+        AtRGB result = AI_RGB_BLACK;
+        result += textureResult[0].rgb() * weights[0];
+        result += textureResult[1].rgb() * weights[1];
+        result += textureResult[2].rgb() * weights[2];
+        return result;
+    }
+    else {
+        // Something went wrong during lookup.
+        // TODO: Log the error
+        return AiColorCreate(1.f, 0.0f, 0.f);
+    }
+}
+
 shader_evaluate
 {
+        // get shader parameters
 	int space = AiShaderEvalParamInt(p_space);
     int tiling = AiShaderEvalParamInt(p_tiling);
     float blendSoftness = AiShaderEvalParamFlt(p_blendSoftness);
@@ -143,116 +259,29 @@ shader_evaluate
 	float offset = AiShaderEvalParamFlt(p_offset);
     AtPoint Pin = AiShaderEvalParamPnt(p_P);
 
+        // get local data
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
-    // choose what space we want to calculate in
-    AtPoint P;
-    if (AiNodeIsLinked(node, "P"))
-    {
-        P = Pin;
-    }
-    else
-    {
-        switch (space)
-        {
-        case NS_OBJECT:
-            P = sg->Po;
+        // set up P and blend weights
+    AtPoint P = getProjectionP(node, sg, Pin, space, scale, offset);
+    float weights[3];
+    computeBlendWeights(sg, space, blendSoftness, weights);
+
+        // compute texture values
+    AtRGB result = AI_RGB_RED;
+    switch(tiling){
+        case TM_CELLNOISE:
+            result = tileCellnoise(P, weights, sg, data->texturehandle, data->textureparams);
             break;
-        case NS_PREF:
-            if (!AiUDataGetPnt("Pref", &P))
-                P = sg->Po;
+        case TM_REGULAR:
+            result = tileRegular(P, weights, sg, data->texturehandle, data->textureparams);
             break;
         default:
-            P = sg->P;
+            // TODO: We should never end up here. Log the error to inform the shader writer.
+            result = AI_RGB_BLUE;
             break;
-        }
     }
-
-        // compute blend weights
-    AtRGB textureResult = AI_RGB_BLACK;
-    float weights[3] = {fabsf(sg->N.x), fabsf(sg->N.y), fabsf(sg->N.z)};
-    float weightsum = 0.f;
-    for(int i=0; i<3; ++i){
-        weights[i] = weights[i] - (1.f-blendSoftness)/2.f;
-        weights[i] = MAX(weights[i], 0.00f);
-        weightsum += weights[i];
-    }
-    if(weightsum){
-        for(int i=0; i<3; ++i){
-            weights[i] /= weightsum;
-        }
-    }
-
-
-    if(tiling == TM_CELLNOISE){
-
-        AtRGBA textureResult[3];
-        bool textureAccessX = tileCellNoise((P.y + offset)/scale,
-                                            (P.z + offset)/scale,
-                                            &textureResult[0],
-                                            sg,
-                                            data->texturehandle,
-                                            data->textureparams);
-        bool textureAccessY = tileCellNoise((P.x + offset)/scale,
-                                            (P.z + offset)/scale,
-                                            &textureResult[1],
-                                            sg,
-                                            data->texturehandle,
-                                            data->textureparams);
-        bool textureAccessZ = tileCellNoise((P.y + offset)/scale,
-                                            (P.x + offset)/scale,
-                                            &textureResult[2],
-                                            sg,
-                                            data->texturehandle,
-                                            data->textureparams);
-
-
-        if(textureAccessX && textureAccessY && textureAccessZ){
-            AtRGB result = AI_RGB_BLACK;
-            result += textureResult[0].rgb() * weights[0];
-            result += textureResult[1].rgb() * weights[1];
-            result += textureResult[2].rgb() * weights[2];
-            sg->out.RGB = result;
-        }
-        else {
-            sg->out.RGB = AiColorCreate(1.f, 0.0f, 0.f);
-        }
-
-    } else {
-        // regular tiling
-        AtRGBA textureResultX;
-        AtRGBA textureResultY;
-        AtRGBA textureResultZ;
-        bool textureAccessX = false;
-        bool textureAccessY = false;
-        bool textureAccessZ = false;
-
-        // lookup X
-        sg->u = (P.z + 123.94) / scale + offset;
-        sg->v = (P.y + 87.22) / scale + offset;
-        textureResultX = AiTextureHandleAccess(sg, data->texturehandle, data->textureparams, &textureAccessX);
-
-        // lookup Y
-        sg->u = (P.z + 9.2) / scale + offset;
-        sg->v = (P.x + 74.1) / scale + offset;
-        textureResultY = AiTextureHandleAccess(sg, data->texturehandle, data->textureparams, &textureAccessY);
-
-        // lookup Z
-        sg->u = (P.x - 12.55) / scale + offset;
-        sg->v = (P.y + 6) / scale + offset;
-        textureResultZ = AiTextureHandleAccess(sg, data->texturehandle, data->textureparams, &textureAccessZ);
-
-        if(textureAccessX && textureAccessY && textureAccessZ){
-            textureResult += textureResultX.rgb() * weights[0];
-            textureResult += textureResultY.rgb() * weights[1];
-            textureResult += textureResultZ.rgb() * weights[2];
-            sg->out.RGB = textureResult;
-        }
-        else {
-            sg->out.RGB = AiColorCreate(1.f, 0.0f, 0.f);
-        }
-    }
-
+    sg->out.RGB = result;
 }
 
 
