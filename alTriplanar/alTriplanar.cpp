@@ -37,6 +37,7 @@ enum alTriplanarParams
     p_tiling,
     p_texture,
     p_blendSoftness,
+    p_cellSoftness,
     p_scale,
 	p_offset,
     p_P
@@ -48,6 +49,7 @@ node_parameters
     AiParameterENUM("tiling", 0, triplanarTilingNames);
     AiParameterSTR("texture", "");
     AiParameterFLT("blendSoftness", 0.1);
+    AiParameterFLT("cellSoftness", 0.1);
     AiParameterFLT("scale", 1.0f);
     AiParameterFLT("offset", 0.0f);
 	AiParameterPnt("P", 0.0f, 0.0f, 0.0f);
@@ -119,7 +121,6 @@ AtPoint getProjectionP(const AtNode* node, const AtShaderGlobals *sg, const AtPo
 }
 
 void computeBlendWeights(const AtShaderGlobals *sg, int space, float blendSoftness, float *weights){
-    AtPoint N =
     weights[0] = fabsf(sg->N.x);
     weights[1] = fabsf(sg->N.y);
     weights[2] = fabsf(sg->N.z);
@@ -172,66 +173,105 @@ AtTextureHandle *handle, AtTextureParams *params){
     }
 }
 
-inline bool lookupCellNoise(float u, float v,  AtRGBA *textureResult, AtShaderGlobals *sg,
-                            AtTextureHandle *handle, AtTextureParams *params){
+inline bool lookupCellNoise(float u, float v, float cellSoftness, AtShaderGlobals *sg,
+                            AtTextureHandle *handle, AtTextureParams *params, AtRGBA *textureResult){
     AtPoint P;
     P.x = u;
     P.y = v;
     P.z = 0.f;
 
+    int samples = (cellSoftness == 0) ? 1 : 3;
     // run cellnoise
-    float f;
-    AtVector delta;
-    AtUInt32 id;
-    AiCellular(P, 1, 1, 1.92, 1, &f, &delta, &id);
+    float weights[samples];
+    float f[samples];
+    AtVector delta[samples];
+    AtUInt32 id[samples];
+    AiCellular(P, samples, 1, 1.92, 1, f, delta, id);
 
-    // pick random direction for orientation
-    AtVector orientVectorX;
-    double phi = random(id) * M_PI * 2;
-    orientVectorX.x = cosf(phi);
-    orientVectorX.y = sinf(phi);
-    orientVectorX.z = 0.f;
+    if(samples == 1){
+        weights[0] = 1.f;
+    } else {
+        // find closest cell
+        float closestDistance = 100000.f;
+        float distances[samples];
+        for(int i=0; i<samples; ++i){
+            distances[i] = AiV3Length(delta[i]);
+            closestDistance = MIN(distances[i], closestDistance);
+        }
 
-    AtVector orientVectorZ;
-    orientVectorZ.x = 0.f;
-    orientVectorZ.y = 0.f;
-    orientVectorZ.z = 1.f;
-
-    AtVector orientVectorY = AiV3Cross(orientVectorX, orientVectorZ);
-
-    AiV3RotateToFrame(delta, orientVectorX, orientVectorY, orientVectorZ);
-
-    // find new uv coordinates
-    sg->u = delta.x;
-    sg->v = delta.y;
+        float weightsum = 0.f;
+        for(int i=0; i<samples; ++i){
+            float diff = distances[i] - closestDistance;
+            weights[i] = cellSoftness - diff;
+            weights[i] = MAX(0.f, weights[i]);
+            weightsum += weights[i];
+        }
+        for(int i=0; i<samples; ++i){
+            weights[i] /= weightsum;
+        }
+    }
 
     bool success = false;
-    *textureResult = AiTextureHandleAccess(sg, handle, params, &success);
+    *textureResult = AI_RGBA_BLACK;
+    for(int i=0; i<samples; ++i){
+        if(weights[i] > 0.f){
+            // pick random direction for orientation
+            AtVector orientVectorX;
+            double phi = random(id[i]) * M_PI * 2;
+            orientVectorX.x = cosf(phi);
+            orientVectorX.y = sinf(phi);
+            orientVectorX.z = 0.f;
+
+            AtVector orientVectorZ;
+            orientVectorZ.x = 0.f;
+            orientVectorZ.y = 0.f;
+            orientVectorZ.z = 1.f;
+
+            AtVector orientVectorY = AiV3Cross(orientVectorX, orientVectorZ);
+
+            AiV3RotateToFrame(delta[i], orientVectorX, orientVectorY, orientVectorZ);
+
+            // find new uv coordinates
+            sg->u = delta[i].x * 0.75; // super arbitrary scale. Could perhaps be a shader parameter?
+            sg->v = delta[i].y * 0.75;
+
+            // texture lookup
+            bool currentSuccess = false;
+            *textureResult += AiTextureHandleAccess(sg, handle, params, &success) * weights[i];
+            success += currentSuccess;
+        }
+    }
 
     return success;
 }
 
-inline AtRGB tileCellnoise(const AtPoint &P, float *weights, AtShaderGlobals *sg,
+inline AtRGB tileCellnoise(const AtPoint &P, float *weights, float cellSoftness, AtShaderGlobals *sg,
                            AtTextureHandle *handle, AtTextureParams *params){
     AtRGBA textureResult[3];
     bool textureAccessX = lookupCellNoise(P.y,
                                           P.z,
-                                          &textureResult[0],
+                                          cellSoftness,
                                           sg,
                                           handle,
-                                          params);
+                                          params,
+                                          &textureResult[0]
+                                          );
     bool textureAccessY = lookupCellNoise(P.x,
                                           P.z,
-                                          &textureResult[1],
+                                          cellSoftness,
                                           sg,
                                           handle,
-                                          params);
+                                          params,
+                                          &textureResult[1]
+                                          );
     bool textureAccessZ = lookupCellNoise(P.y,
                                           P.x,
-                                          &textureResult[2],
+                                          cellSoftness,
                                           sg,
                                           handle,
-                                          params);
+                                          params,
+                                          &textureResult[2]
+                                          );
 
 
     if(textureAccessX && textureAccessY && textureAccessZ){
@@ -255,6 +295,8 @@ shader_evaluate
     int tiling = AiShaderEvalParamInt(p_tiling);
     float blendSoftness = AiShaderEvalParamFlt(p_blendSoftness);
     blendSoftness = CLAMP(blendSoftness, 0.f, 1.f);
+    float cellSoftness = AiShaderEvalParamFlt(p_cellSoftness);
+    cellSoftness = CLAMP(cellSoftness, 0.f, 1.f);
     float scale = AiShaderEvalParamFlt(p_scale);
 	float offset = AiShaderEvalParamFlt(p_offset);
     AtPoint Pin = AiShaderEvalParamPnt(p_P);
@@ -271,7 +313,7 @@ shader_evaluate
     AtRGB result = AI_RGB_RED;
     switch(tiling){
         case TM_CELLNOISE:
-            result = tileCellnoise(P, weights, sg, data->texturehandle, data->textureparams);
+            result = tileCellnoise(P, weights, cellSoftness, sg, data->texturehandle, data->textureparams);
             break;
         case TM_REGULAR:
             result = tileRegular(P, weights, sg, data->texturehandle, data->textureparams);

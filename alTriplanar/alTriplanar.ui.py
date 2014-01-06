@@ -30,6 +30,8 @@ ui.parameter('texture', 'string', '', 'Texture', connectible=False)
 
 ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', "", 0., 1., 0., 1., connectible=False)
 
+ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', "", 0., 1., 0., 1., connectible=False)
+
 ui.parameter('scale', 'float', 1.0, 'Scale', connectible=False)
 
 ui.parameter('offset', 'float', 0.0, 'Offset', connectible=False)
