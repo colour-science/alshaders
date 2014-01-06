@@ -231,9 +231,9 @@ inline bool lookupCellNoise(float u, float v, float cellSoftness, AtShaderGlobal
 
             AiV3RotateToFrame(delta[i], orientVectorX, orientVectorY, orientVectorZ);
 
-            // find new uv coordinates
-            sg->u = delta[i].x * 0.75; // super arbitrary scale. Could perhaps be a shader parameter?
-            sg->v = delta[i].y * 0.75;
+            // find new uv coordinates, set the center of the cell to be 0.5/0.5;
+            sg->u = delta[i].x * 0.75 - 0.5;
+            sg->v = delta[i].y * 0.75 - 0.5;
 
             // texture lookup
             bool currentSuccess = false;
