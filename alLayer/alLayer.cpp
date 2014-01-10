@@ -166,6 +166,7 @@ shader_evaluate
 	
 	float mix = AiShaderEvalParamFlt(p_mix);
 	int debug = AiShaderEvalParamEnum(p_debug);
+
 	if (debug == kMixer)
 	{
 		result = AiColorCreate(mix, mix, mix);
@@ -189,6 +190,7 @@ shader_evaluate
 			if (sg->Rt & AI_RAY_CAMERA) // handle aovs
 			{
 				AtRGB tmp[NUM_AOVs];
+                memset(tmp, 0, sizeof(AtRGB)*NUM_AOVs);
 				AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
 				for (size_t i=0; i < data->aovs.size(); ++i)
 				{
@@ -196,7 +198,9 @@ shader_evaluate
 					{
 						tmp[i] = AI_RGB_BLACK;
 					}
+                    AiAOVSetRGB(sg, data->aovs[i].c_str(), AI_RGB_BLACK);
 				}
+
 				AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
 				result = lerp(layer1, layer2, mix);
 				for (size_t i=0; i < data->aovs.size(); ++i)

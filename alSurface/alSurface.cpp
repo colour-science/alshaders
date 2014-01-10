@@ -1452,12 +1452,15 @@ shader_evaluate
     // Diffusion multiple scattering
     if (do_sss)
     {
-        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor*sssDensityScale);
 #if AI_VERSION_MAJOR_NUM > 0
-    float r = 1.0f;
-    result_sss = AiBSSRDFCubic(sg, &r, &radius);
+		AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+		float radius[3] = {	MAX(0.0001f, sssRadius * sssRadiusColor.r), 
+							MAX(0.0001f, sssRadius * sssRadiusColor.g), 
+							MAX(0.0001f, sssRadius * sssRadiusColor.b) };
+    	result_sss = AiBSSRDFCubic(sg, radius, weights, 3) * diffuseColor * kti * kti2;
 #else
-    result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
+        AtRGB radius = sssRadiusColor * sssRadius;
+        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
 #endif
         
     }
