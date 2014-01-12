@@ -905,7 +905,7 @@ shader_evaluate
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
         // TODO: better random numbers here
-        if ((double)rand()/(RAND_MAX+1) < kr)
+        if ((double)rand()/(double(RAND_MAX)+1) < kr)
         {
             do_glossy = true;
             do_transmission = false;
@@ -1452,12 +1452,13 @@ shader_evaluate
     // Diffusion multiple scattering
     if (do_sss)
     {
-        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor*sssDensityScale);
+        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
 #if AI_VERSION_MAJOR_NUM > 0
-    float r = 1.0f;
-    result_sss = AiBSSRDFCubic(sg, &r, &radius);
+        AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+        float r[3] = {radius.r, radius.g, radius.b};
+        result_sss = AiBSSRDFCubic(sg, r, weights, 3);
 #else
-    result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
+        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
 #endif
         
     }
