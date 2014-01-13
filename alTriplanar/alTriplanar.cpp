@@ -121,9 +121,9 @@ AtPoint getProjectionP(const AtNode* node, const AtShaderGlobals *sg, const AtPo
 }
 
 void computeBlendWeights(const AtShaderGlobals *sg, int space, float blendSoftness, float *weights){
-    weights[0] = fabsf(sg->N.x);
-    weights[1] = fabsf(sg->N.y);
-    weights[2] = fabsf(sg->N.z);
+    weights[0] = fabsf(sg->Ng.x);
+    weights[1] = fabsf(sg->Ng.y);
+    weights[2] = fabsf(sg->Ng.z);
     float weightsum = 0.f;
     for(int i=0; i<3; ++i){
         weights[i] = weights[i] - (1.f-blendSoftness)/2.f;
