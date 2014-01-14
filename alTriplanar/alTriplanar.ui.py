@@ -35,5 +35,3 @@ ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', "", 0., 1., 0., 1., 
 ui.parameter('scale', 'float', 1.0, 'Scale', connectible=False)
 
 ui.parameter('offset', 'float', 0.0, 'Offset', connectible=False)
-
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')

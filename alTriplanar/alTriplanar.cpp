@@ -39,8 +39,7 @@ enum alTriplanarParams
     p_blendSoftness,
     p_cellSoftness,
     p_scale,
-	p_offset,
-    p_P
+    p_offset
 };
 
 node_parameters
@@ -52,7 +51,6 @@ node_parameters
     AiParameterFLT("cellSoftness", 0.1);
     AiParameterFLT("scale", 1.0f);
     AiParameterFLT("offset", 0.0f);
-	AiParameterPnt("P", 0.0f, 0.0f, 0.0f);
 }
 
 node_loader
@@ -95,35 +93,32 @@ node_update
 
 }
 
-AtPoint getProjectionP(const AtNode* node, const AtShaderGlobals *sg, const AtPoint &Pin, int space, float scale, float offset){
-    AtPoint P;
-    if (AiNodeIsLinked(node, "P"))
+AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, float scale, float offset, AtPoint *P, AtVector *N){
+    switch (space)
     {
-        P = Pin;
-    }
-    else
-    {
-        switch (space)
-        {
-        case NS_OBJECT:
-            P = sg->Po;
-            break;
-        case NS_PREF:
-            if (!AiUDataGetPnt("Pref", &P))
-                P = sg->Po;
-            break;
-        default:
-            P = sg->P;
-            break;
+    case NS_OBJECT:
+        *P = sg->Po;
+        *N = AiShaderGlobalsTransformNormal(sg, sg->Ng, AI_WORLD_TO_OBJECT);
+        break;
+    case NS_PREF:
+        if (!(AiUDataGetPnt("Pref", P) && AiUDataGetVec("Nref", N))){
+            // TODO: Output warning about not finding the correct data.
+            *P = sg->Po;
+            *N = AiShaderGlobalsTransformNormal(sg, sg->Ng, AI_WORLD_TO_OBJECT);
         }
+        break;
+    default:
+        *P = sg->P;
+        *N = sg->Ng;
+        break;
     }
-    return P / scale + offset;
+    *P /= scale + offset;
 }
 
-void computeBlendWeights(const AtShaderGlobals *sg, int space, float blendSoftness, float *weights){
-    weights[0] = fabsf(sg->Ng.x);
-    weights[1] = fabsf(sg->Ng.y);
-    weights[2] = fabsf(sg->Ng.z);
+void computeBlendWeights(const AtVector N, int space, float blendSoftness, float *weights){
+    weights[0] = fabsf(N.x);
+    weights[1] = fabsf(N.y);
+    weights[2] = fabsf(N.z);
     float weightsum = 0.f;
     for(int i=0; i<3; ++i){
         weights[i] = weights[i] - (1.f-blendSoftness)/2.f;
@@ -299,15 +294,16 @@ shader_evaluate
     cellSoftness = CLAMP(cellSoftness, 0.f, 1.f);
     float scale = AiShaderEvalParamFlt(p_scale);
 	float offset = AiShaderEvalParamFlt(p_offset);
-    AtPoint Pin = AiShaderEvalParamPnt(p_P);
 
         // get local data
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
         // set up P and blend weights
-    AtPoint P = getProjectionP(node, sg, Pin, space, scale, offset);
+    AtPoint P;
+    AtPoint N;
+    getProjectionGeometry(node, sg, space, scale, offset, &P, &N);
     float weights[3];
-    computeBlendWeights(sg, space, blendSoftness, weights);
+    computeBlendWeights(N, space, blendSoftness, weights);
 
         // compute texture values
     AtRGB result = AI_RGB_RED;
