@@ -32,6 +32,18 @@ ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', "", 0., 1., 0., 1.
 
 ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', "", 0., 1., 0., 1., connectible=False)
 
-ui.parameter('scale', 'float', 1.0, 'Scale', connectible=False)
+ui.parameter('scalex', 'float', 1.0, 'X Scale', connectible=False)
+ui.parameter('scaley', 'float', 1.0, 'Y Scale', connectible=False)
+ui.parameter('scalez', 'float', 1.0, 'Z Scale', connectible=False)
 
-ui.parameter('offset', 'float', 0.0, 'Offset', connectible=False)
+ui.parameter('offsetx', 'float', 0.0, 'X Offset', connectible=False)
+ui.parameter('offsety', 'float', 0.0, 'Y Offset', connectible=False)
+ui.parameter('offsetz', 'float', 0.0, 'Z Offset', connectible=False)
+
+ui.parameter('rotx', 'float', 0.0, 'X Rotation', "", 0., 360., 0., 360., connectible=False)
+ui.parameter('roty', 'float', 0.0, 'Y Rotation', "", 0., 360., 0., 360., connectible=False)
+ui.parameter('rotz', 'float', 0.0, 'Z Rotation', "", 0., 360., 0., 360., connectible=False)
+
+ui.parameter('rotjitterx', 'float', 1.0, 'X Rotation Jitter', "", 0., 1., 0., 1., connectible=False)
+ui.parameter('rotjittery', 'float', 1.0, 'Y Rotation Jitter', "", 0., 1., 0., 1., connectible=False)
+ui.parameter('rotjitterz', 'float', 1.0, 'Z Rotation Jitter', "", 0., 1., 0., 1., connectible=False)
