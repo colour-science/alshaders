@@ -26,7 +26,7 @@
 	AiParameterFLT("RMPgain", 0.5f);				\
 	AiParameterFLT("RMPoutputMin", 0.0f);			\
 	AiParameterFLT("RMPoutputMax", 1.0f);			\
-	AiParameterBOOL("RMPclampEnable", false);		\
+    AiParameterBOOL("RMPclampEnable", true);		\
 	AiParameterBOOL("RMPthreshold", false);		\
 	AiParameterFLT("RMPclampMin", 0.0f);			\
 	AiParameterFLT("RMPclampMax", 1.0f);			\
