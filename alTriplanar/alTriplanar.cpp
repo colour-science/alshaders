@@ -38,8 +38,18 @@ enum alTriplanarParams
     p_texture,
     p_blendSoftness,
     p_cellSoftness,
-    p_scale,
-    p_offset
+    p_scalex,
+    p_scaley,
+    p_scalez,
+    p_offsetx,
+    p_offsety,
+    p_offsetz,
+    p_rotx,
+    p_roty,
+    p_rotz,
+    p_rotjitterx,
+    p_rotjittery,
+    p_rotjitterz
 };
 
 node_parameters
@@ -49,8 +59,18 @@ node_parameters
     AiParameterSTR("texture", "");
     AiParameterFLT("blendSoftness", 0.1);
     AiParameterFLT("cellSoftness", 0.1);
-    AiParameterFLT("scale", 1.0f);
-    AiParameterFLT("offset", 0.0f);
+    AiParameterFLT("scalex", 1.0f);
+    AiParameterFLT("scaley", 1.0f);
+    AiParameterFLT("scalez", 1.0f);
+    AiParameterFLT("offsetx", 0.0f);
+    AiParameterFLT("offsety", 0.0f);
+    AiParameterFLT("offsetz", 0.0f);
+    AiParameterFLT("rotx", 0.0f);
+    AiParameterFLT("roty", 0.0f);
+    AiParameterFLT("rotz", 0.0f);
+    AiParameterFLT("rotjitterx", 1.0f);
+    AiParameterFLT("rotjittery", 1.0f);
+    AiParameterFLT("rotjitterz", 1.0f);
 }
 
 node_loader
@@ -93,7 +113,7 @@ node_update
 
 }
 
-AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, float scale, float offset, AtPoint *P, AtVector *N){
+AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, AtPoint *P, AtVector *N){
     switch (space)
     {
     case NS_OBJECT:
@@ -112,7 +132,6 @@ AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int
         *N = sg->Ng;
         break;
     }
-    *P /= scale + offset;
 }
 
 void computeBlendWeights(const AtVector N, int space, float blendSoftness, float *weights){
@@ -132,26 +151,61 @@ void computeBlendWeights(const AtVector N, int space, float blendSoftness, float
     }
 }
 
-inline AtRGB tileRegular(const AtPoint &P, float *weights, AtShaderGlobals *sg,
-AtTextureHandle *handle, AtTextureParams *params){
+inline void rotateUVs(AtPoint &P, float degrees){
+    AtVector orientVectorX;
+    const double d2r = 1. / 360. * M_PI;
+    double phi = d2r * degrees;
+    orientVectorX.x = cosf(phi);
+    orientVectorX.y = sinf(phi);
+    orientVectorX.z = 0.f;
+
+    AtVector orientVectorZ;
+    orientVectorZ.x = 0.f;
+    orientVectorZ.y = 0.f;
+    orientVectorZ.z = 1.f;
+
+    AtVector orientVectorY = AiV3Cross(orientVectorX, orientVectorZ);
+
+    AiV3RotateToFrame(P, orientVectorX, orientVectorY, orientVectorZ);
+}
+
+inline AtRGB tileRegular(const AtPoint &P, const AtPoint &scale, const AtPoint &offset,
+                         float *weights, const AtPoint &rot, AtShaderGlobals *sg,
+                         AtTextureHandle *handle, AtTextureParams *params){
     AtRGBA textureResult[3];
     bool textureAccessX = false;
     bool textureAccessY = false;
     bool textureAccessZ = false;
 
     // lookup X
-    sg->u = P.z + 123.94;
-    sg->v = P.y + 87.22;
+    AtPoint ProjP;
+    ProjP.x = (P.y + 123.94 + offset.x) * scale.x ;
+    ProjP.y = (P.z + 87.22 + offset.x) * scale.x;
+    ProjP.z = 0.;
+    rotateUVs(ProjP, rot.x);
+
+    sg->u = ProjP.x;
+    sg->v = ProjP.y;
     textureResult[0] = AiTextureHandleAccess(sg, handle, params, &textureAccessX);
 
     // lookup Y
-    sg->u = P.z + 9.2;
-    sg->v = P.x + 74.1;
+    ProjP.x = (P.x + 74.1 + offset.y) * scale.y;
+    ProjP.y = (P.z + 9.2 + offset.y) * scale.y;
+    ProjP.z = 0.;
+    rotateUVs(ProjP, rot.y);
+
+    sg->u = ProjP.x;
+    sg->v = ProjP.y;
     textureResult[1] = AiTextureHandleAccess(sg, handle, params, &textureAccessY);
 
     // lookup Z
-    sg->u = P.x - 12.55;
-    sg->v = P.y + 6;
+    ProjP.x = (P.x + 123.94 + offset.z) * scale.z;
+    ProjP.y = (P.y + 87.22 + offset.z) * scale.z;
+    ProjP.z = 0.;
+    rotateUVs(ProjP, rot.z);
+
+    sg->u = ProjP.x;
+    sg->v = ProjP.y;
     textureResult[2] = AiTextureHandleAccess(sg, handle, params, &textureAccessZ);
 
     if(textureAccessX && textureAccessY && textureAccessZ){
@@ -168,8 +222,10 @@ AtTextureHandle *handle, AtTextureParams *params){
     }
 }
 
-inline bool lookupCellNoise(float u, float v, float cellSoftness, AtShaderGlobals *sg,
-                            AtTextureHandle *handle, AtTextureParams *params, AtRGBA *textureResult){
+inline bool lookupCellNoise(float u, float v, float cellSoftness,
+                            float rot, float rotjitter,
+                            AtShaderGlobals *sg, AtTextureHandle *handle,
+                            AtTextureParams *params, AtRGBA *textureResult){
     AtPoint P;
     P.x = u;
     P.y = v;
@@ -210,9 +266,10 @@ inline bool lookupCellNoise(float u, float v, float cellSoftness, AtShaderGlobal
     *textureResult = AI_RGBA_BLACK;
     for(int i=0; i<samples; ++i){
         if(weights[i] > 0.f){
-            // pick random direction for orientation
+            // pick direction for orientation
             AtVector orientVectorX;
-            double phi = random(id[i]) * M_PI * 2;
+            double jitter = (random(id[i])-0.5) * rotjitter;
+            double phi = modulo(rot/360. + jitter, 1.f) * M_PI * 2.;
             orientVectorX.x = cosf(phi);
             orientVectorX.y = sinf(phi);
             orientVectorX.z = 0.f;
@@ -240,28 +297,36 @@ inline bool lookupCellNoise(float u, float v, float cellSoftness, AtShaderGlobal
     return success;
 }
 
-inline AtRGB tileCellnoise(const AtPoint &P, float *weights, float cellSoftness, AtShaderGlobals *sg,
+inline AtRGB tileCellnoise(const AtPoint &P, const AtPoint &scale, const AtPoint &offset,
+                           float *weights, float cellSoftness,
+                           const AtPoint &rot, const AtPoint &rotjitter, AtShaderGlobals *sg,
                            AtTextureHandle *handle, AtTextureParams *params){
     AtRGBA textureResult[3];
-    bool textureAccessX = lookupCellNoise(P.y,
-                                          P.z,
+    bool textureAccessX = lookupCellNoise((P.y + offset.x) * scale.x,
+                                          (P.z + offset.x) * scale.x,
                                           cellSoftness,
+                                          rot.x,
+                                          rotjitter.x,
                                           sg,
                                           handle,
                                           params,
                                           &textureResult[0]
                                           );
-    bool textureAccessY = lookupCellNoise(P.x,
-                                          P.z,
+    bool textureAccessY = lookupCellNoise((P.x + offset.y) * scale.y,
+                                          (P.z + offset.y) * scale.y,
                                           cellSoftness,
+                                          rot.y,
+                                          rotjitter.y,
                                           sg,
                                           handle,
                                           params,
                                           &textureResult[1]
                                           );
-    bool textureAccessZ = lookupCellNoise(P.y,
-                                          P.x,
+    bool textureAccessZ = lookupCellNoise((P.y + offset.z) * scale.z,
+                                          (P.x + offset.z) * scale.z,
                                           cellSoftness,
+                                          rot.z,
+                                          rotjitter.z,
                                           sg,
                                           handle,
                                           params,
@@ -287,13 +352,34 @@ shader_evaluate
 {
         // get shader parameters
 	int space = AiShaderEvalParamInt(p_space);
+
     int tiling = AiShaderEvalParamInt(p_tiling);
+
     float blendSoftness = AiShaderEvalParamFlt(p_blendSoftness);
     blendSoftness = CLAMP(blendSoftness, 0.f, 1.f);
+
     float cellSoftness = AiShaderEvalParamFlt(p_cellSoftness);
     cellSoftness = CLAMP(cellSoftness, 0.f, 1.f);
-    float scale = AiShaderEvalParamFlt(p_scale);
-	float offset = AiShaderEvalParamFlt(p_offset);
+
+    AtPoint scale;
+    scale.x = 1.f/AiShaderEvalParamFlt(p_scalex);
+    scale.y = 1.f/AiShaderEvalParamFlt(p_scaley);
+    scale.z = 1.f/AiShaderEvalParamFlt(p_scalez);
+
+    AtPoint offset;
+    offset.x = AiShaderEvalParamFlt(p_offsetx);
+    offset.y = AiShaderEvalParamFlt(p_offsety);
+    offset.z = AiShaderEvalParamFlt(p_offsetz);
+
+    AtPoint rot;
+    rot.x = AiShaderEvalParamFlt(p_rotx);
+    rot.y = AiShaderEvalParamFlt(p_roty);
+    rot.z = AiShaderEvalParamFlt(p_rotz);
+
+    AtPoint rotjitter;
+    rotjitter.x = AiShaderEvalParamFlt(p_rotjitterx);
+    rotjitter.y = AiShaderEvalParamFlt(p_rotjittery);
+    rotjitter.z = AiShaderEvalParamFlt(p_rotjitterz);
 
         // get local data
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
@@ -301,7 +387,7 @@ shader_evaluate
         // set up P and blend weights
     AtPoint P;
     AtPoint N;
-    getProjectionGeometry(node, sg, space, scale, offset, &P, &N);
+    getProjectionGeometry(node, sg, space, &P, &N);
     float weights[3];
     computeBlendWeights(N, space, blendSoftness, weights);
 
@@ -309,10 +395,10 @@ shader_evaluate
     AtRGB result = AI_RGB_RED;
     switch(tiling){
         case TM_CELLNOISE:
-            result = tileCellnoise(P, weights, cellSoftness, sg, data->texturehandle, data->textureparams);
+            result = tileCellnoise(P, scale, offset, weights, cellSoftness, rot, rotjitter, sg, data->texturehandle, data->textureparams);
             break;
         case TM_REGULAR:
-            result = tileRegular(P, weights, sg, data->texturehandle, data->textureparams);
+            result = tileRegular(P, scale, offset, weights, rot, sg, data->texturehandle, data->textureparams);
             break;
         default:
             // TODO: We should never end up here. Log the error to inform the shader writer.
