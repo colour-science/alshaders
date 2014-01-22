@@ -153,7 +153,7 @@ void computeBlendWeights(const AtVector N, int space, float blendSoftness, float
 
 inline void rotateUVs(AtPoint &P, float degrees){
     AtVector orientVectorX;
-    const double d2r = 1. / 360. * M_PI;
+    const double d2r = 1. / 360. * M_PI * 2;
     double phi = d2r * degrees;
     orientVectorX.x = cosf(phi);
     orientVectorX.y = sinf(phi);
@@ -179,8 +179,8 @@ inline AtRGB tileRegular(const AtPoint &P, const AtPoint &scale, const AtPoint &
 
     // lookup X
     AtPoint ProjP;
-    ProjP.x = (P.y + 123.94 + offset.x) * scale.x ;
-    ProjP.y = (P.z + 87.22 + offset.x) * scale.x;
+    ProjP.x = (P.z + 123.94 + offset.x) * scale.x ;
+    ProjP.y = (P.y + 87.22 + offset.x) * scale.x;
     ProjP.z = 0.;
     rotateUVs(ProjP, rot.x);
 
