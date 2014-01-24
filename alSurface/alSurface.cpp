@@ -1454,9 +1454,9 @@ shader_evaluate
     {
 #if AI_VERSION_MAJOR_NUM > 0
 		AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
-		float radius[3] = {	MAX(0.0001f, sssRadius * sssRadiusColor.r), 
-							MAX(0.0001f, sssRadius * sssRadiusColor.g), 
-							MAX(0.0001f, sssRadius * sssRadiusColor.b) };
+        float radius[3] = {	MAX(0.0001f, sssRadius * sssRadiusColor.r * sssDensityScale),
+                            MAX(0.0001f, sssRadius * sssRadiusColor.g * sssDensityScale),
+                            MAX(0.0001f, sssRadius * sssRadiusColor.b * sssDensityScale) };
     	result_sss = AiBSSRDFCubic(sg, radius, weights, 3) * diffuseColor * kti * kti2;
 #else
         AtRGB radius = sssRadiusColor * sssRadius;
