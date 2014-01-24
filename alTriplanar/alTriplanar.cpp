@@ -18,6 +18,21 @@ static const char* triplanarSpaceNames[] =
 	NULL
 };
 
+enum TriplanarNormalEnum
+{
+    N_GEOMETRIC = 0,
+    N_SMOOTH,
+    N_SMOOTHNOBUMP,
+};
+
+static const char* triplanarNormalNames[] =
+{
+    "Geometric",
+    "Smooth",
+    "SmoothNoBump",
+    NULL
+};
+
 enum TriplanarTiling
 {
     TM_REGULAR = 0,
@@ -34,6 +49,7 @@ static const char* triplanarTilingNames[] =
 enum alTriplanarParams
 {
     p_space,
+    p_normal,
     p_tiling,
     p_texture,
     p_blendSoftness,
@@ -55,6 +71,7 @@ enum alTriplanarParams
 node_parameters
 {
 	AiParameterENUM("space", 0, triplanarSpaceNames);
+    AiParameterENUM("normal", 0, triplanarNormalNames);
     AiParameterENUM("tiling", 0, triplanarTilingNames);
     AiParameterSTR("texture", "");
     AiParameterFLT("blendSoftness", 0.1);
@@ -113,23 +130,40 @@ node_update
 
 }
 
-AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, AtPoint *P, AtVector *N){
+AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, int normal, AtPoint *P, AtVector *N){
+    AtVector baseN;
+    switch (normal)
+    {
+    case N_GEOMETRIC:
+        baseN = sg->Ng;
+        break;
+    case N_SMOOTH:
+        baseN = sg->N;
+        break;
+    case N_SMOOTHNOBUMP:
+        baseN = sg->Ns;
+        break;
+    default:
+        baseN = sg->N;
+        break;
+    }
+
     switch (space)
     {
     case NS_OBJECT:
         *P = sg->Po;
-        *N = AiShaderGlobalsTransformNormal(sg, sg->Ng, AI_WORLD_TO_OBJECT);
+        *N = AiShaderGlobalsTransformNormal(sg, baseN, AI_WORLD_TO_OBJECT);
         break;
     case NS_PREF:
         if (!(AiUDataGetPnt("Pref", P) && AiUDataGetVec("Nref", N))){
             // TODO: Output warning about not finding the correct data.
             *P = sg->Po;
-            *N = AiShaderGlobalsTransformNormal(sg, sg->Ng, AI_WORLD_TO_OBJECT);
+            *N = AiShaderGlobalsTransformNormal(sg, baseN, AI_WORLD_TO_OBJECT);
         }
         break;
     default:
         *P = sg->P;
-        *N = sg->Ng;
+        *N = baseN;
         break;
     }
 }
@@ -257,8 +291,10 @@ inline bool lookupCellNoise(float u, float v, float cellSoftness,
             weights[i] = MAX(0.f, weights[i]);
             weightsum += weights[i];
         }
-        for(int i=0; i<samples; ++i){
-            weights[i] /= weightsum;
+        if(weightsum){
+            for(int i=0; i<samples; ++i){
+                weights[i] /= weightsum;
+            }
         }
     }
 
@@ -353,6 +389,8 @@ shader_evaluate
         // get shader parameters
 	int space = AiShaderEvalParamInt(p_space);
 
+    int normal = AiShaderEvalParamInt(p_normal);
+
     int tiling = AiShaderEvalParamInt(p_tiling);
 
     float blendSoftness = AiShaderEvalParamFlt(p_blendSoftness);
@@ -387,7 +425,7 @@ shader_evaluate
         // set up P and blend weights
     AtPoint P;
     AtPoint N;
-    getProjectionGeometry(node, sg, space, &P, &N);
+    getProjectionGeometry(node, sg, space, normal, &P, &N);
     float weights[3];
     computeBlendWeights(N, space, blendSoftness, weights);
 

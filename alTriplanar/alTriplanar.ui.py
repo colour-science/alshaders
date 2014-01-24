@@ -21,6 +21,12 @@ ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
         "Pref"
 ])
 
+ui.parameter('normal', 'enum', 'geometric', 'Normal', enum_names=[
+        "geometric",
+        "smooth",
+        "smooth-NoBump"
+])
+
 ui.parameter('tiling', 'enum', 'regular', 'Tiling', enum_names=[
         "regular",
         "cellnoise"
@@ -28,22 +34,22 @@ ui.parameter('tiling', 'enum', 'regular', 'Tiling', enum_names=[
 
 ui.parameter('texture', 'string', '', 'Texture', connectible=False)
 
-ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', "", 0., 1., 0., 1., connectible=False)
+ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', "", 0., 1., 0., 1.)
 
-ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', "", 0., 1., 0., 1., connectible=False)
+ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', "", 0., 1., 0., 1.)
 
-ui.parameter('scalex', 'float', 1.0, 'X Scale', connectible=False)
-ui.parameter('scaley', 'float', 1.0, 'Y Scale', connectible=False)
-ui.parameter('scalez', 'float', 1.0, 'Z Scale', connectible=False)
+ui.parameter('scalex', 'float', 1.0, 'X Scale')
+ui.parameter('scaley', 'float', 1.0, 'Y Scale')
+ui.parameter('scalez', 'float', 1.0, 'Z Scale')
 
-ui.parameter('offsetx', 'float', 0.0, 'X Offset', connectible=False)
-ui.parameter('offsety', 'float', 0.0, 'Y Offset', connectible=False)
-ui.parameter('offsetz', 'float', 0.0, 'Z Offset', connectible=False)
+ui.parameter('offsetx', 'float', 0.0, 'X Offset')
+ui.parameter('offsety', 'float', 0.0, 'Y Offset')
+ui.parameter('offsetz', 'float', 0.0, 'Z Offset')
 
-ui.parameter('rotx', 'float', 0.0, 'X Rotation', "", 0., 360., 0., 360., connectible=False)
-ui.parameter('roty', 'float', 0.0, 'Y Rotation', "", 0., 360., 0., 360., connectible=False)
-ui.parameter('rotz', 'float', 0.0, 'Z Rotation', "", 0., 360., 0., 360., connectible=False)
+ui.parameter('rotx', 'float', 0.0, 'X Rotation', "", 0., 360., 0., 360.)
+ui.parameter('roty', 'float', 0.0, 'Y Rotation', "", 0., 360., 0., 360.)
+ui.parameter('rotz', 'float', 0.0, 'Z Rotation', "", 0., 360., 0., 360.)
 
-ui.parameter('rotjitterx', 'float', 1.0, 'X Rotation Jitter', "", 0., 1., 0., 1., connectible=False)
-ui.parameter('rotjittery', 'float', 1.0, 'Y Rotation Jitter', "", 0., 1., 0., 1., connectible=False)
-ui.parameter('rotjitterz', 'float', 1.0, 'Z Rotation Jitter', "", 0., 1., 0., 1., connectible=False)
+ui.parameter('rotjitterx', 'float', 1.0, 'X Rotation Jitter', "", 0., 1., 0., 1.)
+ui.parameter('rotjittery', 'float', 1.0, 'Y Rotation Jitter', "", 0., 1., 0., 1.)
+ui.parameter('rotjitterz', 'float', 1.0, 'Z Rotation Jitter', "", 0., 1., 0., 1.)
