@@ -13,6 +13,9 @@ set(CMAKE_SKIP_RPATH TRUE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 
+# Fix to stop crash on OSX < 10.9
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
+
 # pre-set the arnold and mtoa versions and root paths
 set(ARNOLD_VERSION 4.1.3.2)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
