@@ -10,7 +10,7 @@
 
 #include <ai.h>
 
-#define IMPORTANCE_EPS 0.01f
+#define IMPORTANCE_EPS 0.001f
 
 
 inline AtRGB rgb(float f)
