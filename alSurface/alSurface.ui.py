@@ -100,7 +100,7 @@ with uigen.group(ui, 'IDs'):
 # end IDs
 
 with uigen.group(ui, 'AOVs'):
-	ui.parameter('lightGroupsIndirect', 'bool', False, 'Indirect light groups')
+        ui.parameter('lightGroupsIndirect', 'bool', True, 'Indirect light groups')
 	ui.parameter('standardCompatibleAOVs', 'bool', False, 'Write standard AOVs only')
 	ui.parameter('transmitAovs', 'bool', False, 'Transmit AOVs')
 	ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color')
