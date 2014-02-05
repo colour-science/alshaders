@@ -130,7 +130,35 @@ node_update
 
 }
 
-AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, int normal, AtPoint *P, AtVector *N){
+struct SGCache{
+	
+	void initCache(const AtShaderGlobals *sg){
+		u = sg->u;
+		v = sg->v;
+		dudx = sg->dudx;
+		dudy = sg->dudy;
+		dvdx = sg->dvdx;
+		dvdy = sg->dvdy;
+	}
+
+	void restoreSG(AtShaderGlobals *sg){
+		sg->u = u;
+		sg->v = v;
+		sg->dudx = dudx;
+		sg->dudy = dudy;
+		sg->dvdx = dvdx;
+		sg->dvdy = dvdy;
+	}
+
+	float u;
+	float v;
+	float dudx;
+	float dudy;
+	float dvdx;
+	float dvdy;
+};
+
+AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, int normal, AtPoint *P, AtVector *N, AtVector *dPdx, AtVector *dPdy){
     AtVector baseN;
     switch (normal)
     {
@@ -150,20 +178,34 @@ AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int
 
     switch (space)
     {
+	case NS_WORLD:
+		*P = sg->P;
+		*N = baseN;
+		*dPdx = sg->dPdx;
+		*dPdy = sg->dPdy;
+		break;
     case NS_OBJECT:
         *P = sg->Po;
         *N = AiShaderGlobalsTransformNormal(sg, baseN, AI_WORLD_TO_OBJECT);
+		*dPdx = AiShaderGlobalsTransformVector(sg, sg->dPdx, AI_WORLD_TO_OBJECT);
+		*dPdy = AiShaderGlobalsTransformVector(sg, sg->dPdy, AI_WORLD_TO_OBJECT);
         break;
     case NS_PREF:
         if (!(AiUDataGetPnt("Pref", P) && AiUDataGetVec("Nref", N))){
             // TODO: Output warning about not finding the correct data.
             *P = sg->Po;
             *N = AiShaderGlobalsTransformNormal(sg, baseN, AI_WORLD_TO_OBJECT);
-        }
+			*dPdx = AiShaderGlobalsTransformVector(sg, sg->dPdx, AI_WORLD_TO_OBJECT);
+			*dPdy = AiShaderGlobalsTransformVector(sg, sg->dPdy, AI_WORLD_TO_OBJECT);	
+        } else {
+			AiUDataGetDxyDerivativesPnt("Pref", dPdx, dPdy);
+		}
         break;
     default:
         *P = sg->P;
         *N = baseN;
+   		*dPdx = sg->dPdx;
+		*dPdy = sg->dPdy;
         break;
     }
 }
@@ -203,7 +245,8 @@ inline void rotateUVs(AtPoint &P, float degrees){
     AiV3RotateToFrame(P, orientVectorX, orientVectorY, orientVectorZ);
 }
 
-inline AtRGB tileRegular(const AtPoint &P, const AtPoint &scale, const AtPoint &offset,
+inline AtRGB tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector dPdy,
+						 const AtPoint &scale, const AtPoint &offset,
                          float *weights, const AtPoint &rot, AtShaderGlobals *sg,
                          AtTextureHandle *handle, AtTextureParams *params){
     AtRGBA textureResult[3];
@@ -220,6 +263,11 @@ inline AtRGB tileRegular(const AtPoint &P, const AtPoint &scale, const AtPoint &
 
     sg->u = ProjP.x;
     sg->v = ProjP.y;
+	sg->dudx = dPdx.z * scale.x;
+	sg->dudy = dPdy.z * scale.x;
+	sg->dvdx = dPdx.y * scale.x;
+	sg->dvdy = dPdy.y * scale.x;
+                
     textureResult[0] = AiTextureHandleAccess(sg, handle, params, &textureAccessX);
 
     // lookup Y
@@ -230,6 +278,10 @@ inline AtRGB tileRegular(const AtPoint &P, const AtPoint &scale, const AtPoint &
 
     sg->u = ProjP.x;
     sg->v = ProjP.y;
+	sg->dudx = dPdx.x * scale.y;
+	sg->dudy = dPdy.x * scale.y;
+	sg->dvdx = dPdx.z * scale.y;
+	sg->dvdy = dPdy.z * scale.y;
     textureResult[1] = AiTextureHandleAccess(sg, handle, params, &textureAccessY);
 
     // lookup Z
@@ -240,6 +292,10 @@ inline AtRGB tileRegular(const AtPoint &P, const AtPoint &scale, const AtPoint &
 
     sg->u = ProjP.x;
     sg->v = ProjP.y;
+ 	sg->dudx = dPdx.x * scale.z;
+	sg->dudy = dPdy.x * scale.z;
+	sg->dvdx = dPdx.y * scale.z;
+	sg->dvdy = dPdy.y * scale.z;
     textureResult[2] = AiTextureHandleAccess(sg, handle, params, &textureAccessZ);
 
     if(textureAccessX && textureAccessY && textureAccessZ){
@@ -256,8 +312,8 @@ inline AtRGB tileRegular(const AtPoint &P, const AtPoint &scale, const AtPoint &
     }
 }
 
-inline bool lookupCellNoise(float u, float v, float cellSoftness,
-                            float rot, float rotjitter,
+inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx, float dvdy,
+							float cellSoftness, float rot, float rotjitter,
                             AtShaderGlobals *sg, AtTextureHandle *handle,
                             AtTextureParams *params, AtRGBA *textureResult){
     AtPoint P;
@@ -300,6 +356,10 @@ inline bool lookupCellNoise(float u, float v, float cellSoftness,
 
     bool success = false;
     *textureResult = AI_RGBA_BLACK;
+	sg->dudx = dudx;
+	sg->dudy = dudy;
+	sg->dvdx = dvdx;
+	sg->dvdy = dvdy;
     for(int i=0; i<samples; ++i){
         if(weights[i] > 0.f){
             // pick direction for orientation
@@ -333,13 +393,18 @@ inline bool lookupCellNoise(float u, float v, float cellSoftness,
     return success;
 }
 
-inline AtRGB tileCellnoise(const AtPoint &P, const AtPoint &scale, const AtPoint &offset,
+inline AtRGB tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVector &dPdy,
+						   const AtPoint &scale, const AtPoint &offset,
                            float *weights, float cellSoftness,
                            const AtPoint &rot, const AtPoint &rotjitter, AtShaderGlobals *sg,
                            AtTextureHandle *handle, AtTextureParams *params){
     AtRGBA textureResult[3];
     bool textureAccessX = lookupCellNoise((P.y + offset.x) * scale.x,
                                           (P.z + offset.x) * scale.x,
+										  dPdx.y * scale.x,
+										  dPdy.y * scale.x,
+										  dPdx.z * scale.x,
+										  dPdy.z * scale.x,
                                           cellSoftness,
                                           rot.x,
                                           rotjitter.x,
@@ -350,6 +415,10 @@ inline AtRGB tileCellnoise(const AtPoint &P, const AtPoint &scale, const AtPoint
                                           );
     bool textureAccessY = lookupCellNoise((P.x + offset.y) * scale.y,
                                           (P.z + offset.y) * scale.y,
+    									  dPdx.x * scale.y,
+										  dPdy.x * scale.y,
+										  dPdx.z * scale.y,
+										  dPdy.z * scale.y,
                                           cellSoftness,
                                           rot.y,
                                           rotjitter.y,
@@ -360,7 +429,11 @@ inline AtRGB tileCellnoise(const AtPoint &P, const AtPoint &scale, const AtPoint
                                           );
     bool textureAccessZ = lookupCellNoise((P.y + offset.z) * scale.z,
                                           (P.x + offset.z) * scale.z,
-                                          cellSoftness,
+        								  dPdx.y * scale.z,
+										  dPdy.y * scale.z,
+										  dPdx.x * scale.z,
+										  dPdy.x * scale.z,
+                                      	  cellSoftness,
                                           rot.z,
                                           rotjitter.z,
                                           sg,
@@ -425,7 +498,11 @@ shader_evaluate
         // set up P and blend weights
     AtPoint P;
     AtPoint N;
-    getProjectionGeometry(node, sg, space, normal, &P, &N);
+	AtVector dPdx;
+	AtVector dPdy;
+	SGCache SGC;
+	SGC.initCache(sg);
+    getProjectionGeometry(node, sg, space, normal, &P, &N, &dPdx, &dPdy);
     float weights[3];
     computeBlendWeights(N, space, blendSoftness, weights);
 
@@ -433,10 +510,10 @@ shader_evaluate
     AtRGB result = AI_RGB_RED;
     switch(tiling){
         case TM_CELLNOISE:
-            result = tileCellnoise(P, scale, offset, weights, cellSoftness, rot, rotjitter, sg, data->texturehandle, data->textureparams);
+            result = tileCellnoise(P, dPdx, dPdy, scale, offset, weights, cellSoftness, rot, rotjitter, sg, data->texturehandle, data->textureparams);
             break;
         case TM_REGULAR:
-            result = tileRegular(P, scale, offset, weights, rot, sg, data->texturehandle, data->textureparams);
+            result = tileRegular(P, dPdx, dPdy, scale, offset, weights, rot, sg, data->texturehandle, data->textureparams);
             break;
         default:
             // TODO: We should never end up here. Log the error to inform the shader writer.
@@ -444,6 +521,9 @@ shader_evaluate
             break;
     }
     sg->out.RGB = result;
+
+		// clean up after ourselves
+	SGC.restoreSG(sg);
 }
 
 
