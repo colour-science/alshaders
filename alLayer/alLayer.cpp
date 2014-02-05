@@ -187,38 +187,12 @@ shader_evaluate
 		}
 		else
 		{
-			if (sg->Rt & AI_RAY_CAMERA) // handle aovs
-			{
-				AtRGB tmp[NUM_AOVs];
-                memset(tmp, 0, sizeof(AtRGB)*NUM_AOVs);
-				AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
-				for (size_t i=0; i < data->aovs.size(); ++i)
-				{
-					if (!AiAOVGetRGB(sg, data->aovs[i].c_str(), tmp[i]))
-					{
-						tmp[i] = AI_RGB_BLACK;
-					}
-                    AiAOVSetRGB(sg, data->aovs[i].c_str(), AI_RGB_BLACK);
-				}
-
-				AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
-				result = lerp(layer1, layer2, mix);
-				for (size_t i=0; i < data->aovs.size(); ++i)
-				{
-					AtRGB tmp2;
-					if (!AiAOVGetRGB(sg, data->aovs[i].c_str(), tmp2))
-					{
-						tmp2 = AI_RGB_BLACK;
-					}
-					AiAOVSetRGB(sg, data->aovs[i].c_str(), lerp(tmp[i], tmp2, mix));
-				}
-			}
-			else // just layer the results
-			{
-				AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
-				AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
-				result = lerp(layer1, layer2, mix);
-			}
+            double r = (double)rand()/RAND_MAX; // importance sample between layers
+            if(r > mix){
+                result = AiShaderEvalParamRGB(p_layer1);
+            } else {
+                result = AiShaderEvalParamRGB(p_layer2);
+            }
 		}
 	}
 
