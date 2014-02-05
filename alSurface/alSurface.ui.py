@@ -94,6 +94,8 @@ with uigen.group(ui, 'Emission'):
 	ui.parameter('emissionTargetColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 # end Emission
 
+ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity')
+
 with uigen.group(ui, 'IDs'):
 	for i in range(1,9):
 		ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0))

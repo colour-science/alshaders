@@ -161,6 +161,8 @@ enum alSurfaceParams
     p_rrTransmission,
     p_rrTransmissionDepth,
 
+    p_opacity,
+
     p_bump
 };
 
@@ -278,6 +280,8 @@ node_parameters
 
     AiParameterBool("rrTransmission", false);
     AiParameterInt("rrTransmissionDepth", 1);
+
+    AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
 }
 
 #ifdef MSVC
@@ -416,6 +420,8 @@ shader_evaluate
     bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
     bool ssInScattering = AiShaderEvalParamBool(p_ssInScattering);
 
+    AtRGB opacity = AiShaderEvalParamRGB(p_opacity);
+
     // precalculate scattering coefficients as we'll need them for shadows etc.
     AtRGB sigma_t = AI_RGB_BLACK;
     AtRGB sigma_s = AI_RGB_BLACK;
@@ -509,9 +515,16 @@ shader_evaluate
 
         // store intersection position
         AiStateSetMsgPnt("alsPreviousIntersection", sg->P);
-        sg->out_opacity = outOpacity;
+        sg->out_opacity = outOpacity * opacity;
         return;
     }
+
+    if (maxh(opacity) < IMPORTANCE_EPS) 
+    {
+        sg->out.RGB = AI_RGB_BLACK;
+        sg->out_opacity = AI_RGB_BLACK;
+    }
+    sg->out_opacity = opacity;
 
     // Evaluate bump;
     AtRGB bump = AiShaderEvalParamRGB(p_bump);
