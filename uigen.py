@@ -3,6 +3,7 @@
 
 import sys
 import uuid
+from string import maketrans
 
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
@@ -12,27 +13,49 @@ def enum(*sequential, **named):
 
 class UiElement:
 	name = ''
+	ident = ''
 	description = None
 	parent = None
+	children = None
+
 
 class Group(UiElement):
 	collapse = True
-	children = None
+	
 
-	def __init__(self, name, collapse=True, description=None):
+	def __init__(self, name, collapse=True, description=None, ident=None):
 		self.name = name
 		self.collapse = collapse
 		self.description = description
+		
+		if ident==None:
+			ident = name.replace(' ', '')
+			ident = ident.replace('_', '')
+			ident = ident.lower()
+			temptrans = maketrans('','')
+			self.ident = ident.translate(temptrans,'aeiouy')
+			
+		else:
+			self.ident = ident
 
 	def __str__(self):
 		return 'Group %s' % self.name
 
 
 class Tab(Group):
-	def __init__(self, name, collapse=True, description=None):
+	def __init__(self, name, collapse=True, description=None,  ident=None):
 		self.name = name
 		self.collapse = collapse
 		self.description = description
+		
+		if ident==None:
+			ident = name.replace(' ', '')
+			ident = ident.replace('_', '')
+			ident = ident.lower()
+			temptrans = maketrans('','')
+			self.ident = ident.translate(temptrans,'aeiouy')
+		else:
+			self.ident = ident
 
 	def __str__(self):
 		return 'Tab %s' % self.name
@@ -52,9 +75,9 @@ class Parameter(UiElement):
 		self.name = name
 		self.ptype = ptype
 		self.description = description
-		if not label:
-			label = name
 		self.label = label
+		if not label:
+			label = name		
 		self.mn = mn
 		self.mx = mx
 		self.smn = smn
@@ -112,6 +135,9 @@ class ShaderDef:
 	current_parent = None
 	parameters = []
 	aovs = []
+	groups = []
+	tabs = []
+	groupsntabs = []
 
 	def __init__(self):
 		self.root = Group('__ROOT__', False)
@@ -126,12 +152,12 @@ class ShaderDef:
 	def setOutput(self, o):
 		self.output = o
 
-	def beginGroup(self, name, collapse=True, description=''):
+	def beginGroup(self, name, collapse=True, description='', ident=None):
 		g = None
 		if self.current_parent is self.root:
-			g = Tab(name, collapse, description)
+			g = Tab(name, collapse, description,ident)
 		else:
-			g = Group(name, collapse, description)
+			g = Group(name, collapse, description,ident)
 
 		if not self.current_parent.children:
 			self.current_parent.children = [g]
@@ -181,20 +207,30 @@ class ShaderDef:
 		self.soft_classification = d['soft_classification']
 		self.soft_version = d['soft_version']
 
+	def uniqueGroupIdents(self):
+		grpidents = []		
+		for grp in self.groups:
+			oldident=grp.ident
+			if grp.ident in grpidents:
+				grp.ident = '%s%d' % (grp.ident, grpidents.count(oldident))
+			grpidents.append(oldident)		
+
 class group:
 	name = ''
 	collapse = True
 	description = ''
 	ui = None
+	ident = None
 
-	def __init__(self, ui, name, collapse=True, description=None):
+	def __init__(self, ui, name, collapse=True, description=None, ident=None):
 		self.ui = ui
-		self.name = name
+		self.name = name		
 		self.collapse = collapse
 		self.description = description
+		self.ident = ident
 
 	def __enter__(self):
-		self.ui.beginGroup(self.name, self.collapse, self.description)
+		self.ui.beginGroup(self.name, self.collapse, self.description, self.ident)
 
 	def __exit__(self, type, value, traceback):
 		self.ui.endGroup()
@@ -272,6 +308,102 @@ def WriteAETemplate(sd, fn):
 
 	f.close()
 
+def WalkMDTHeader(sd, el, f, d):
+	#make list of groups and tabs
+	if isinstance(el, Group):
+		sd.groupsntabs.append(el)
+		if not isinstance(el, Tab):		
+			sd.groups.append(el)
+
+	if isinstance(el, Tab):		
+		sd.tabs.append(el)
+
+	if el.children:
+		for e in el.children:
+			WalkMDTHeader(sd, e, f, d)
+	
+
+
+def findTotalChildGroups(tab):
+	if tab.children:
+		totalchildren=len(tab.children)	
+	
+		for t in tab.children:
+			totalchildren+=findTotalChildGroups(t)
+
+		return totalchildren
+	else:
+		return 0	
+
+	
+def writeParameterOrder(f, grp, first, orderc):
+	firstfolder=first
+	ordercount=orderc
+	for gr in grp.children:
+		if isinstance(gr, Parameter):
+			f.write('%s ' % gr.name)
+
+		if isinstance(gr, Group) and not isinstance(gr, Tab):
+			f.write('%s ' % gr.ident)
+			writeParameterOrder(f,gr,firstfolder,ordercount)
+		
+		if isinstance(gr, Tab):
+			if firstfolder == 1:
+				f.write('folder1 ')
+				firstfolder=0
+			ordercount+=1
+			f.write('"\n\thoudini.order%d STRING "' % ordercount)
+		
+			writeParameterOrder(f,gr, firstfolder,ordercount)	
+				
+
+def WriteMDTHeader(sd, f):
+	#f = open(fn, 'w')
+	writei(f, '[node %s]' % sd.name, 0)
+	writei(f, 'desc STRING "%s"' % sd.description, 1)
+	writei(f, 'maya.name STRING "%s"' % sd.name, 1)
+	writei(f, 'maya.classification STRING "%s"' % sd.maya_classification, 1)
+	writei(f, 'maya.id INT %s' % sd.maya_id, 1)
+	writei(f, 'houdini.label STRING "%s"' % sd.name, 1)
+	writei(f, 'houdini.icon STRING "SHOP_surface"', 1)
+	
+	
+	#build tab and group arrays
+	for e in sd.root.children:
+		WalkMDTHeader(sd, e, f, 2)
+	
+	#make all groupident unique
+	sd.uniqueGroupIdents()	
+				
+	#print tabs and numchildren to folder array
+	if len(sd.tabs)>0:
+		f.write('\thoudini.parm.folder.folder1 STRING "')	
+		
+		for t in range(len(sd.tabs)):			
+			totalchildren= findTotalChildGroups(sd.tabs[t])			
+
+			if t<len(sd.tabs)-1:
+				f.write("%s;%d;" % (sd.tabs[t].name, totalchildren))
+			else:	
+				f.write("%s;%d" % (sd.tabs[t].name, totalchildren))	
+		f.write('"\n')
+
+	#print all groups
+	for g in sd.groups:
+		writei(f, 'houdini.parm.heading.%s STRING "%s"' % (g.ident, g.name),1)
+	
+
+	#print parameter order
+	f.write('\thoudini.order STRING "')
+	writeParameterOrder(f,sd.root,1,1)
+
+	for av in sd.aovs:
+		f.write('%s ' % av.name)
+
+	f.write('"\n')	
+
+	#f.close()
+
 def WriteMTDParam(f, name, ptype, value, d):
 	if value == None:
 		return
@@ -290,6 +422,51 @@ def WriteMTDParam(f, name, ptype, value, d):
 		writei(f, '%s STRING "%r"' % (name, value), d)
 
 def WriteMTD(sd, fn):
+	f = open(fn, 'w')	
+	
+	WriteMDTHeader(sd, f)	
+	#for e in sd.root.children:
+	#	WalkMDTHeader(e, f, 2)
+
+	writei(f, '')
+
+	for p in sd.parameters:
+		writei(f, '[attr %s]' % p.name, 1)
+		writei(f, 'houdini.label STRING "%s"' % p.name, 2)
+		WriteMTDParam(f, "min", "float", p.mn, 2)
+		WriteMTDParam(f, "max", "float", p.mx, 2)
+		WriteMTDParam(f, "softmin", "float", p.smn, 2)
+		WriteMTDParam(f, "softmax", "float", p.smx, 2)
+		WriteMTDParam(f, "desc", "string", p.description, 2)
+		WriteMTDParam(f, "linkable", "bool", 1, 2)
+
+	for a in sd.aovs:
+		writei(f, '[attr %s]' % a.name, 1)
+		writei(f, 'houdini.label STRING "%s"' % a.name, 2)
+		writei(f, 'aov.type INT 0x05', 2)
+		writei(f, 'aov.enable_composition BOOL TRUE', 2)
+		writei(f, 'default STRING "%s"' % a.name[4:], 2)
+
+	f.close()
+
+def WriteMTDParamOLD(f, name, ptype, value, d):####GOOD OLD CODE FOR MAYA MTD
+	if value == None:
+		return
+
+	if ptype == 'bool':
+		if value:
+			bval = "TRUE"
+		else:
+			bval = "FALSE"
+		writei(f, '%s BOOL %s' % (name, bval), d)
+	elif ptype == 'int':
+		writei(f, '%s INT %d' % (name, value), d)
+	elif ptype == 'float':
+		writei(f, '%s FLOAT %r' % (name, value), d)
+	elif ptype == 'string':
+		writei(f, '%s STRING "%r"' % (name, value), d)
+
+def WriteMTDOLD(sd, fn):####GOOD OLD CODE FOR MAYA MTD
 	f = open(fn, 'w')
 	writei(f, '[node %s]' % sd.name, 0)
 	writei(f, 'desc STRING "%s"' % sd.description, 1)
@@ -586,6 +763,7 @@ if __name__ == '__main__':
 		sys.exit(2)
 
 	WriteMTD(ui, sys.argv[2])
+	##WriteHouiniMTD(ui, sys.argv[2])
 	WriteAETemplate(ui, sys.argv[3])
 	WriteSPDL(ui, sys.argv[4])
 
