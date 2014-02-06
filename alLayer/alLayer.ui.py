@@ -12,7 +12,8 @@ ui.shader({
 	'maya_bump':False,
 	'soft_name':'ALS_Layer',
 	'soft_classification':'material',
-	'soft_version':1
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alLayer'
 })
 
 ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1')

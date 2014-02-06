@@ -12,7 +12,8 @@ ui.shader({
 	'maya_bump':False,
 	'soft_name':'ALS_Blackbody',
 	'soft_classification':'texture',
-	'soft_version':1
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alBlackbody'
 })
 
 ui.parameter('temperature', 'float', 1000.0, mn=273, mx=16000)

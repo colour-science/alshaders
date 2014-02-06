@@ -12,7 +12,9 @@ ui.shader({
 	'maya_bump':False,
 	'soft_name':'ALS_Pattern',
 	'soft_classification':'texture',
-	'soft_version':1
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alpattern'
+	
 })
 
 ui.parameter('space', 'enum', 'world', 'Space', enum_names=[

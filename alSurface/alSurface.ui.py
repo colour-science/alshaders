@@ -12,7 +12,9 @@ ui.shader({
 	'maya_bump':True,
 	'soft_name':'ALS_Surface',
 	'soft_classification':'material',
-	'soft_version':1
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alSurface'
+	
 })
 
 with uigen.group(ui, 'Diffuse', False):

@@ -129,6 +129,7 @@ class ShaderDef:
 	maya_matte = False
 	soft_name = None
 	soft_classification = None
+	help_url = None
 	soft_version = 1
 	hierarchy_depth = 0
 	root = None
@@ -205,6 +206,11 @@ class ShaderDef:
 		self.soft_name = d['soft_name']
 		self.soft_classification = d['soft_classification']
 		self.soft_version = d['soft_version']
+		if 'help_url' in d.keys():
+			self.help_url = d['help_url']
+		else:
+			self.help_url = 'https://bitbucket.org/anderslanglands/alshaders/wiki/Home'
+
 
 	#all groups need unique ident in houdini
 	def uniqueGroupIdents(self):
@@ -364,8 +370,9 @@ def WriteMDTHeader(sd, f):
 	writei(f, 'maya.name STRING "%s"' % sd.name, 1)
 	writei(f, 'maya.classification STRING "%s"' % sd.maya_classification, 1)
 	writei(f, 'maya.id INT %s' % sd.maya_id, 1)
-	writei(f, 'houdini.label STRING "%s"' % sd.name, 1)
-	writei(f, 'houdini.icon STRING "SHOP_surface"', 1)
+	#writei(f, 'houdini.label STRING "%s"' % sd.name, 1)
+	#writei(f, 'houdini.icon STRING "SHOP_surface"', 1)
+	writei(f, 'houdini.help_url STRING "%s"' % sd.help_url ,1)
 
 				
 	#print tabs and numchildren to folder array

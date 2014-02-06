@@ -12,7 +12,8 @@ ui.shader({
 	'maya_bump':False,
 	'soft_name':'ALS_Hair',
 	'soft_classification':'material',
-	'soft_version':1
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alHair'
 })
 
 with uigen.group(ui, 'Fibre properties', False):
