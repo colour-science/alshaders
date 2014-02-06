@@ -74,10 +74,10 @@ class Parameter(UiElement):
 	def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
 		self.name = name
 		self.ptype = ptype
-		self.description = description
-		self.label = label
+		self.description = description		
 		if not label:
-			label = name		
+			label = name	
+		self.label = label	
 		self.mn = mn
 		self.mx = mx
 		self.smn = smn
@@ -137,7 +137,6 @@ class ShaderDef:
 	aovs = []
 	groups = []
 	tabs = []
-	groupsntabs = []
 
 	def __init__(self):
 		self.root = Group('__ROOT__', False)
@@ -207,6 +206,7 @@ class ShaderDef:
 		self.soft_classification = d['soft_classification']
 		self.soft_version = d['soft_version']
 
+	#all groups need unique ident in houdini
 	def uniqueGroupIdents(self):
 		grpidents = []		
 		for grp in self.groups:
@@ -308,10 +308,10 @@ def WriteAETemplate(sd, fn):
 
 	f.close()
 
-def WalkMDTHeader(sd, el, f, d):
-	#make list of groups and tabs
+
+#make list of groups and tabs
+def buildGroupList(sd, el):	
 	if isinstance(el, Group):
-		sd.groupsntabs.append(el)
 		if not isinstance(el, Tab):		
 			sd.groups.append(el)
 
@@ -320,10 +320,10 @@ def WalkMDTHeader(sd, el, f, d):
 
 	if el.children:
 		for e in el.children:
-			WalkMDTHeader(sd, e, f, d)
+			buildGroupList(sd, e)
 	
 
-
+#find the total number of child groups and parameters of a Tab
 def findTotalChildGroups(tab):
 	if tab.children:
 		totalchildren=len(tab.children)	
@@ -335,8 +335,9 @@ def findTotalChildGroups(tab):
 	else:
 		return 0	
 
-	
-def writeParameterOrder(f, grp, first, orderc):
+
+#print ordered list of all parameters and groups	
+def writeParameterOrder(f, grp, first=1, orderc=1):
 	firstfolder=first
 	ordercount=orderc
 	for gr in grp.children:
@@ -357,8 +358,7 @@ def writeParameterOrder(f, grp, first, orderc):
 			writeParameterOrder(f,gr, firstfolder,ordercount)	
 				
 
-def WriteMDTHeader(sd, f):
-	#f = open(fn, 'w')
+def WriteMDTHeader(sd, f):	
 	writei(f, '[node %s]' % sd.name, 0)
 	writei(f, 'desc STRING "%s"' % sd.description, 1)
 	writei(f, 'maya.name STRING "%s"' % sd.name, 1)
@@ -366,14 +366,7 @@ def WriteMDTHeader(sd, f):
 	writei(f, 'maya.id INT %s' % sd.maya_id, 1)
 	writei(f, 'houdini.label STRING "%s"' % sd.name, 1)
 	writei(f, 'houdini.icon STRING "SHOP_surface"', 1)
-	
-	
-	#build tab and group arrays
-	for e in sd.root.children:
-		WalkMDTHeader(sd, e, f, 2)
-	
-	#make all groupident unique
-	sd.uniqueGroupIdents()	
+
 				
 	#print tabs and numchildren to folder array
 	if len(sd.tabs)>0:
@@ -402,8 +395,7 @@ def WriteMDTHeader(sd, f):
 
 	f.write('"\n')	
 
-	#f.close()
-
+	
 def WriteMTDParam(f, name, ptype, value, d):
 	if value == None:
 		return
@@ -421,12 +413,18 @@ def WriteMTDParam(f, name, ptype, value, d):
 	elif ptype == 'string':
 		writei(f, '%s STRING "%r"' % (name, value), d)
 
-def WriteMTD(sd, fn):
+def WriteMTD(sd, fn):		
+	
+	#build tab and group lists
+	for e in sd.root.children:
+		buildGroupList(sd, e)
+	
+	#make all groupident unique
+	sd.uniqueGroupIdents()	
+
 	f = open(fn, 'w')	
 	
 	WriteMDTHeader(sd, f)	
-	#for e in sd.root.children:
-	#	WalkMDTHeader(e, f, 2)
 
 	writei(f, '')
 
@@ -449,48 +447,6 @@ def WriteMTD(sd, fn):
 
 	f.close()
 
-def WriteMTDParamOLD(f, name, ptype, value, d):####GOOD OLD CODE FOR MAYA MTD
-	if value == None:
-		return
-
-	if ptype == 'bool':
-		if value:
-			bval = "TRUE"
-		else:
-			bval = "FALSE"
-		writei(f, '%s BOOL %s' % (name, bval), d)
-	elif ptype == 'int':
-		writei(f, '%s INT %d' % (name, value), d)
-	elif ptype == 'float':
-		writei(f, '%s FLOAT %r' % (name, value), d)
-	elif ptype == 'string':
-		writei(f, '%s STRING "%r"' % (name, value), d)
-
-def WriteMTDOLD(sd, fn):####GOOD OLD CODE FOR MAYA MTD
-	f = open(fn, 'w')
-	writei(f, '[node %s]' % sd.name, 0)
-	writei(f, 'desc STRING "%s"' % sd.description, 1)
-	writei(f, 'maya.name STRING "%s"' % sd.name, 1)
-	writei(f, 'maya.classification STRING "%s"' % sd.maya_classification, 1)
-	writei(f, 'maya.id INT %s' % sd.maya_id, 1)
-	writei(f, '')
-
-	for p in sd.parameters:
-		writei(f, '[attr %s]' % p.name, 1)
-		WriteMTDParam(f, "min", "float", p.mn, 2)
-		WriteMTDParam(f, "max", "float", p.mx, 2)
-		WriteMTDParam(f, "softmin", "float", p.smn, 2)
-		WriteMTDParam(f, "softmax", "float", p.smx, 2)
-		WriteMTDParam(f, "desc", "string", p.description, 2)
-		WriteMTDParam(f, "linkable", "bool", p.connectible, 2)
-
-	for a in sd.aovs:
-		writei(f, '[attr %s]' % a.name, 1)
-		writei(f, 'aov.type INT 0x05', 2)
-		writei(f, 'aov.enable_composition BOOL TRUE', 2)
-		writei(f, 'default STRING "%s"' % a.name[4:], 2)
-
-	f.close()
 
 def getSPDLTypeName(t):
 	if t == 'bool':
@@ -762,8 +718,7 @@ if __name__ == '__main__':
 		print 'ERROR: ui object is not a ShaderDef. Did you assign something else to it by mistake?'
 		sys.exit(2)
 
-	WriteMTD(ui, sys.argv[2])
-	##WriteHouiniMTD(ui, sys.argv[2])
+	WriteMTD(ui, sys.argv[2])	
 	WriteAETemplate(ui, sys.argv[3])
 	WriteSPDL(ui, sys.argv[4])
 
