@@ -438,7 +438,7 @@ def WriteMTD(sd, fn):
 		WriteMTDParam(f, "softmin", "float", p.smn, 2)
 		WriteMTDParam(f, "softmax", "float", p.smx, 2)
 		WriteMTDParam(f, "desc", "string", p.description, 2)
-		WriteMTDParam(f, "linkable", "bool", 1, 2)
+		WriteMTDParam(f, "linkable", "bool", p.connectible, 2)
 
 	for a in sd.aovs:
 		writei(f, '[attr %s]' % a.name, 1)

@@ -13,17 +13,6 @@ set(CMAKE_SKIP_RPATH TRUE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 
-# pre-set the arnold and mtoa versions and root paths
-set(ARNOLD_VERSION 4.0.14.0)
-set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
-
-set(MTOA_VERSION 0.25.2)
-set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
-
-#set boost root path
-set(BOOST_ROOT /Users/anders/vfx/boost/1.43.0)
-set(BOOST_INCLUDE_PATH ${BOOST_ROOT}/include)
-
 # check if we have a local cmake include file and include it if we do
 # this is useful for overriding our arnold and mtoa locations
 if(EXISTS ${CMAKE_SOURCE_DIR}/local.cmake)
@@ -45,16 +34,24 @@ link_directories(${ARNOLD_ROOT}/lib)
 endif()
 
 
+if(DEFINED MTOA_ROOT)
+message(INFO " --- Will compile for MtoA")
 set(MTOA_SHADERS ${MTOA_ROOT}/shaders)
 set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
 set(MTOA_ICONS ${MTOA_ROOT}/icons)
 set(MTOA_UI ${MTOA_ROOT}/scripts/mtoa/ui/ae)
+else()
+message(INFO " --- Will not compile for MtoA. To compile for Mtoa set the MTOA_ROOT variable in local.cmake.")
+endif()
+
+if(DEFINED HTOA_ROOT)
+message(INFO " --- Will compile for HtoA")
+set(HTOA_SHADERS ${HTOA_ROOT}/shaders)
+else()
+message(INFO " --- Will not compile for HtoA. To compile for HtoA set the HTOA_ROOT variable in local.cmake.")
+endif()
 
 include_directories(common)
-
-#include boost for alPhotometric
-include_directories(${BOOST_INCLUDE_PATH})
-
 include_directories(/usr/local/Cellar/ilmbase/1.0.3/include/)
 
 set(SUBDIRECTORIES 

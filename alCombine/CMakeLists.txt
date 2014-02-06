@@ -15,9 +15,16 @@ foreach(SHADER ${SHADERS})
 	add_custom_command(OUTPUT ${MTD} COMMAND ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} DEPENDS ${UI})
 	add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
 
+	if(DEFINED MTOA_SHADERS)
 	install(TARGETS ${SHADER} DESTINATION ${MTOA_SHADERS})
 	install(FILES ${MTD} DESTINATION ${MTOA_SHADERS})
 	install(FILES ${AE} DESTINATION ${MTOA_UI})
+	endif()
+	if(DEFINED HTOA_SHADERS)
+	install(TARGETS ${SHADER} DESTINATION ${HTOA_SHADERS})
+	install(FILES ${MTD} DESTINATION ${HTOA_SHADERS})
+	endif()
+
 endforeach()
 
 
