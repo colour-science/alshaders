@@ -9,11 +9,10 @@
 	"settings":
 	{
 	
-		"sublimeclang_options":
-		[
-			"-I${folder:${project_path:alshaders.sublime-project}}/*",
-			"-IC:/Users/anders/vfx/arnold/4.0.14.0/include",
-            "-IC:/Boost/include/boost-1_43"
-		]
+		"sublimeclang_options" :
+        [
+            "-Wno-reorder"
+        ],
+        "sublimeclang_options_script": "${project_path:scripts/compileflags.rb} ${project_path:build}"
 	}
 }
