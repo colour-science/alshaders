@@ -290,6 +290,7 @@ def WriteMTDParam(f, name, ptype, value, d):
 
 def WriteMTD(sd, fn):
 	f = open(fn, 'w')
+        ## REMOVE ME
 	writei(f, '[node %s]' % sd.name, 0)
 	writei(f, 'desc STRING "%s"' % sd.description, 1)
 	writei(f, 'maya.name STRING "%s"' % sd.name, 1)
@@ -303,6 +304,7 @@ def WriteMTD(sd, fn):
 		WriteMTDParam(f, "max", "float", p.mx, 2)
 		WriteMTDParam(f, "softmin", "float", p.smn, 2)
 		WriteMTDParam(f, "softmax", "float", p.smx, 2)
+                ## Test
 		WriteMTDParam(f, "desc", "string", p.description, 2)
 		WriteMTDParam(f, "linkable", "bool", p.connectible, 2)
 
@@ -310,6 +312,7 @@ def WriteMTD(sd, fn):
 		writei(f, '[attr %s]' % a.name, 1)
 		writei(f, 'aov.type INT 0x05', 2)
 		writei(f, 'aov.enable_composition BOOL TRUE', 2)
+                ## Test
 		writei(f, 'default STRING "%s"' % a.name[4:], 2)
 
 	f.close()
