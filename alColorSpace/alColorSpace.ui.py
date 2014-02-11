@@ -12,7 +12,8 @@ ui.shader({
 	'maya_bump':False,
 	'soft_name':'ALS_ColorSpace',
 	'soft_classification':'texture',
-	'soft_version':1
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alColorSpace'
 })
 
 ui.parameter('input', 'rgb', (0.0, 0.0, 0.0))

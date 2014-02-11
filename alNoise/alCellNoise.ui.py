@@ -12,7 +12,8 @@ ui.shader({
 	'maya_bump':False,
 	'soft_name':'ALS_CellNoise',
 	'soft_classification':'texture',
-	'soft_version':1
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alcellnoise'
 })
 
 ui.parameter('space', 'enum', 'world',  'Space', enum_names=[
@@ -27,7 +28,7 @@ ui.parameter('mode', 'enum', 'features', 'Mode', enum_names=[
 	"chips"
 ])
 
-with uigen.group(ui, 'Features', False):
+with uigen.group(ui, 'Features', False, None):
 	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False)
 	ui.parameter('lacunarity', 'int', 2.121, 'Lacunarity', connectible=False)
 	ui.parameter('randomness', 'int', 1.0, 'Randomness', connectible=False)
@@ -44,7 +45,7 @@ with uigen.group(ui, 'Features', False):
 		ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1')
 		ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2')
 
-with uigen.group(ui, 'Chips', False):
+with uigen.group(ui,'Chips', False):
 	ui.parameter('smoothChips', 'bool', False, 'Smooth chips')
 	ui.parameter('chipColor1', 'rgb', (.383, .318, .252), 'Chip color 1')
 	ui.parameter('chipProb1', 'float', 0.2, 'Chip probability 1')

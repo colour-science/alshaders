@@ -12,7 +12,9 @@ ui.shader({
 	'maya_bump':True,
 	'soft_name':'ALS_Surface',
 	'soft_classification':'material',
-	'soft_version':1
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alSurface'
+	
 })
 
 with uigen.group(ui, 'Diffuse', False):
@@ -89,9 +91,9 @@ with uigen.group(ui, 'Transmission'):
 		ui.parameter('rrTransmissionDepth', 'int', 1, 'RR depth')
 # end Transmission
 
-with uigen.group(ui, 'Emission'):
+with uigen.group(ui, 'Emission'):	
 	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', mn=0)
-	ui.parameter('emissionTargetColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
+	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 # end Emission
 
 with uigen.group(ui, 'IDs'):
@@ -99,7 +101,7 @@ with uigen.group(ui, 'IDs'):
 		ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0))
 # end IDs
 
-with uigen.group(ui, 'AOVs'):
+with uigen.group(ui, 'aovs', 'AOVs'):
         ui.parameter('lightGroupsIndirect', 'bool', True, 'Indirect light groups')
 	ui.parameter('standardCompatibleAOVs', 'bool', False, 'Write standard AOVs only')
 	ui.parameter('transmitAovs', 'bool', False, 'Transmit AOVs')
