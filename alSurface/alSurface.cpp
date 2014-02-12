@@ -1473,7 +1473,7 @@ shader_evaluate
 #else
         result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
 #endif
-        
+        result_sss *= diffuseColor;
     }
 
     // blend sss and diffuse
