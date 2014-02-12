@@ -4,7 +4,7 @@ project(alShaders)
 
 set(ALS_MAJOR_VERSION 0)
 set(ALS_MINOR_VERSION 4)
-set(ALS_PATCH_VERSION 0b7)
+set(ALS_PATCH_VERSION 0b8)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
 
 set(CMAKE_BUILD_TYPE RELEASE)
@@ -17,7 +17,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
 
 # pre-set the arnold and mtoa versions and root paths
-set(ARNOLD_VERSION 4.1.3.2)
+set(ARNOLD_VERSION 4.0.14.0)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 
 set(MTOA_VERSION 1.0.0)
