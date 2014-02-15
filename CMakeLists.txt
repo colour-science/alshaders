@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake)
+
 project(alShaders)
 
 set(ALS_MAJOR_VERSION 0)
@@ -17,15 +19,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
 
 # pre-set the arnold and mtoa versions and root paths
-set(ARNOLD_VERSION 4.0.14.0)
-set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
+# set(ARNOLD_VERSION 4.1.3.2)
+# set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 
 set(MTOA_VERSION 1.0.0)
 set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
-
-#set boost root path
-set(BOOST_ROOT /Users/anders/vfx/boost/1.43.0)
-set(BOOST_INCLUDE_PATH ${BOOST_ROOT}/include)
 
 # check if we have a local cmake include file and include it if we do
 # this is useful for overriding our arnold and mtoa locations
@@ -36,17 +34,10 @@ else()
     message(INFO " --- No local.cmake found")
 endif()
 
-include_directories(${ARNOLD_ROOT}/include)
-link_directories(${ARNOLD_ROOT}/bin)
-# fix for windows paths
-# FIXME: ugly double-if because OR wants to spit a warning
-if (WIN32)
-link_directories(${ARNOLD_ROOT}/lib)
-endif()
-if (WIN64)
-link_directories(${ARNOLD_ROOT}/lib)
-endif()
-
+# Find Arnold SDK
+find_package( Arnold REQUIRED )
+include_directories(${ARNOLD_INCLUDE_DIR})
+link_directories(${ARNOLD_LIBRARY_DIR})
 
 set(MTOA_SHADERS ${MTOA_ROOT}/shaders)
 set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
@@ -54,9 +45,6 @@ set(MTOA_ICONS ${MTOA_ROOT}/icons)
 set(MTOA_UI ${MTOA_ROOT}/scripts/mtoa/ui/ae)
 
 include_directories(common)
-
-#include boost for alPhotometric
-include_directories(${BOOST_INCLUDE_PATH})
 
 set(SUBDIRECTORIES 
         alSurface
