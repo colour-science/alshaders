@@ -33,7 +33,6 @@ subdirs = [
     'alLayer',
     'alNoise',
     'alPattern',
-    'alPhotometric',
     'alRemap',
     'alSurface',
     'common'
