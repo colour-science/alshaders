@@ -1,4 +1,4 @@
-set(SHADERS alTriplanar)
+set(SHADERS alJitterColor)
 
 foreach(SHADER ${SHADERS})
 	set(SRC ${SHADER}.cpp ../common/alUtil.cpp)

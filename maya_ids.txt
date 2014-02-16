@@ -20,3 +20,4 @@
 0x00116413 - alTriplanar
 0x00116414 - alSwitchColor
 0x00116415 - alSwitchFloat
+0x00116416 - alJitterCOlor

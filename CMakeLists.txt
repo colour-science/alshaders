@@ -68,6 +68,7 @@ set(SUBDIRECTORIES
         alColorSpace
 	alTriplanar
         alSwitch
+        alJitterColor
         common
 )
 

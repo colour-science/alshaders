@@ -905,7 +905,7 @@ shader_evaluate
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
         // TODO: better random numbers here
-        if ((double)rand()/(RAND_MAX+1) < kr)
+        if ((double)rand()/RAND_MAX < kr)
         {
             do_glossy = true;
             do_transmission = false;
