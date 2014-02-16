@@ -17,11 +17,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
 
 # pre-set the arnold and mtoa versions and root paths
-set(ARNOLD_VERSION 4.0.14.0)
+set(ARNOLD_VERSION 4.1.3.2)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 
 set(MTOA_VERSION 1.0.0)
-set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
+set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION}_maya2014)
 
 #set boost root path
 set(BOOST_ROOT /Users/anders/vfx/boost/1.43.0)
