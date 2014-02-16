@@ -67,6 +67,7 @@ set(SUBDIRECTORIES
         alHair
         alColorSpace
 	alTriplanar
+        alSwitch
         common
 )
 

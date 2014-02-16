@@ -18,4 +18,5 @@
 0x00116411 - alColorSpace
 0x00116412 - alCurvature
 0x00116413 - alTriplanar
-
+0x00116414 - alSwitchColor
+0x00116415 - alSwitchFloat
