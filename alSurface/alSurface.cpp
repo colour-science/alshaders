@@ -60,8 +60,12 @@ enum alSurfaceParams
 
     // sss
     p_sssMix,
-    p_sssRadius,
-    p_sssRadiusColor,
+    p_sssRadius1,
+    p_sssRadiusColor1,
+    p_sssRadius2,
+    p_sssRadiusColor2,
+    p_sssRadius3,
+    p_sssRadiusColor3,
     p_sssDensityScale,
 
     p_ssStrength,
@@ -183,9 +187,15 @@ node_parameters
     AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
     AiParameterFLT("sssMix", 0.0f );
-    AiParameterFLT("sssRadius", 3.6f );
-    AiParameterRGB("sssRadiusColor", .439f, .156f, .078f );
-    AiMetaDataSetBool(mds, "sssRadiusColor", "always_linear", true);  // no inverse-gamma correction
+    AiParameterFLT("sssRadius1", 3.6f );
+    AiParameterRGB("sssRadiusColor1", .439f, .156f, .078f );
+    AiMetaDataSetBool(mds, "sssRadiusColor1", "always_linear", true);  // no inverse-gamma correction
+    AiParameterFLT("sssRadius2", 3.6f );
+    AiParameterRGB("sssRadiusColor2", .439f, .156f, .078f );
+    AiMetaDataSetBool(mds, "sssRadiusColor2", "always_linear", true);  // no inverse-gamma correction
+    AiParameterFLT("sssRadius3", 3.6f );
+    AiParameterRGB("sssRadiusColor3", .439f, .156f, .078f );
+    AiMetaDataSetBool(mds, "sssRadiusColor3", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssDensityScale", 1.0f );
 
     AiParameterFLT("ssStrength", 0.0f );
@@ -550,8 +560,12 @@ shader_evaluate
     bool diffuseEnableCaustics = AiShaderEvalParamBool(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
     float sssMix = AiShaderEvalParamFlt( p_sssMix );
-    AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
-    float sssRadius = AiShaderEvalParamFlt( p_sssRadius );
+    AtRGB sssRadiusColor1 = AiShaderEvalParamRGB( p_sssRadiusColor1 );
+    float sssRadius1 = AiShaderEvalParamFlt( p_sssRadius1 );
+    AtRGB sssRadiusColor2 = AiShaderEvalParamRGB( p_sssRadiusColor2 );
+    float sssRadius2 = AiShaderEvalParamFlt( p_sssRadius2 );
+    AtRGB sssRadiusColor3 = AiShaderEvalParamRGB( p_sssRadiusColor3 );
+    float sssRadius3 = AiShaderEvalParamFlt( p_sssRadius3 );
     float sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
     AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
     AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
@@ -1479,11 +1493,17 @@ shader_evaluate
     // Diffusion multiple scattering
     if (do_sss)
     {
-        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
+        AtRGB radius = max(rgb(0.0001), sssRadius1*sssRadiusColor1/sssDensityScale);
 #if AI_VERSION_MAJOR_NUM > 0
+    #if 0
         AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
         float r[3] = {radius.r, radius.g, radius.b};
         result_sss = AiBSSRDFCubic(sg, r, weights, 3);
+    #else
+        AtRGB weights[3] = {sssRadiusColor1, sssRadiusColor2, sssRadiusColor3};
+        float r[3] = {sssRadius1/sssDensityScale, sssRadius2/sssDensityScale, sssRadius3/sssDensityScale};
+        result_sss = AiBSSRDFCubic(sg, r, weights, 3);
+    #endif
 #else
         result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
 #endif

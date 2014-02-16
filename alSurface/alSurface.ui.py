@@ -27,9 +27,14 @@ with uigen.group(ui, 'Diffuse', False):
 
 	with uigen.group(ui, 'SSS'):
 		ui.parameter('sssMix', 'float', 0.0, 'Mix', mn=0, mx=1)
-		ui.parameter('sssRadius', 'float', 3.6, 'Distance', mn=0)
-		ui.parameter('sssRadiusColor', 'rgb', (.439, .156, .078), 'Color')
 		ui.parameter('sssDensityScale', 'float', 1.0, 'Density scale', mn=0)
+		ui.parameter('sssRadius1', 'float', 3.6, 'Distance 1', mn=0)
+		ui.parameter('sssRadiusColor1', 'rgb', (.439, .156, .078), 'Color 1')
+		ui.parameter('sssRadius2', 'float', 3.6, 'Distance 2', mn=0)
+		ui.parameter('sssRadiusColor2', 'rgb', (.439, .156, .078), 'Color 2')
+		ui.parameter('sssRadius3', 'float', 3.6, 'Distance 3', mn=0)
+		ui.parameter('sssRadiusColor3', 'rgb', (.439, .156, .078), 'Color 3')
+		
 
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('diffuseExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
