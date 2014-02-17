@@ -27,7 +27,7 @@ with uigen.group(ui, 'Diffuse', False):
 
 	with uigen.group(ui, 'SSS'):
 		ui.parameter('sssMix', 'float', 0.0, 'Mix', mn=0, mx=1)
-		ui.parameter('sssDensityScale', 'float', 1.0, 'Density scale', mn=0)
+		ui.parameter('sssDensityScale', 'float', 1.0, 'Radius Multiplier', mn=0)
 		ui.parameter('sssRadius1', 'float', 3.6, 'Distance 1', mn=0)
 		ui.parameter('sssWeight1', 'float', .4, 'Weight 1', mn=0)
 		ui.parameter('sssRadiusColor1', 'rgb', (.439, .156, .078), 'Color 1')
