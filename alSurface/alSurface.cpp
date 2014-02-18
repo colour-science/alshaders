@@ -60,9 +60,9 @@ enum alSurfaceParams
 
     // sss
     p_sssMix,
-    p_sssRadius1,
+    p_sssRadius,
     p_sssWeight1,
-    p_sssRadiusColor1,
+    p_sssRadiusColor,
     p_sssRadius2,
     p_sssWeight2,
     p_sssRadiusColor2,
@@ -190,17 +190,17 @@ node_parameters
     AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
     AiParameterFLT("sssMix", 0.0f );
-    AiParameterFLT("sssRadius1", 3.6f );
-    AiParameterFLT("sssWeight1", .4f  );
-    AiParameterRGB("sssRadiusColor1", .439f, .156f, .078f );
-    AiMetaDataSetBool(mds, "sssRadiusColor1", "always_linear", true);  // no inverse-gamma correction
-    AiParameterFLT("sssRadius2", 3.6f );
-    AiParameterFLT("sssWeight2", .4f);
-    AiParameterRGB("sssRadiusColor2", .439f, .156f, .078f );
+    AiParameterFLT("sssRadius", 1.5f );
+    AiParameterFLT("sssWeight1", 1.0f  );
+    AiParameterRGB("sssRadiusColor", .439, .156, .078);
+    AiMetaDataSetBool(mds, "sssRadiusColor", "always_linear", true);  // no inverse-gamma correction
+    AiParameterFLT("sssRadius2", 4.0f );
+    AiParameterFLT("sssWeight2", 0.0f );
+    AiParameterRGB("sssRadiusColor2", .439, .08, .018 );
     AiMetaDataSetBool(mds, "sssRadiusColor2", "always_linear", true);  // no inverse-gamma correction
-    AiParameterFLT("sssRadius3", 3.6f );
-    AiParameterFLT("sssWeight3", .4f);
-    AiParameterRGB("sssRadiusColor3", .439f, .156f, .078f );
+    AiParameterFLT("sssRadius3", .75f );
+    AiParameterFLT("sssWeight3", .0f);
+    AiParameterRGB("sssRadiusColor3", .523, .637, .667 );
     AiMetaDataSetBool(mds, "sssRadiusColor3", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssDensityScale", 1.0f );
 
@@ -566,8 +566,8 @@ shader_evaluate
     bool diffuseEnableCaustics = AiShaderEvalParamBool(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
     float sssMix = AiShaderEvalParamFlt( p_sssMix );
-    AtRGB sssRadiusColor1 = AiShaderEvalParamRGB( p_sssRadiusColor1 );
-    float sssRadius1 = AiShaderEvalParamFlt( p_sssRadius1 );
+    AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
+    float sssRadius = AiShaderEvalParamFlt( p_sssRadius );
     float sssWeight1 = AiShaderEvalParamFlt( p_sssWeight1 );
     AtRGB sssRadiusColor2 = AiShaderEvalParamRGB( p_sssRadiusColor2 );
     float sssRadius2 = AiShaderEvalParamFlt( p_sssRadius2 );
@@ -576,6 +576,13 @@ shader_evaluate
     float sssRadius3 = AiShaderEvalParamFlt( p_sssRadius3 );
     float sssWeight3 = AiShaderEvalParamFlt( p_sssWeight3 );
     float sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
+
+    // normalize weights
+    float normweight = 1.0f / (sssWeight1+sssWeight2+sssWeight3);
+    sssWeight1 *= normweight;
+    sssWeight2 *= normweight;
+    sssWeight3 *= normweight;
+
     AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
     AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
     AtVector specular1Normal = sg->Nf;
@@ -1502,27 +1509,33 @@ shader_evaluate
     // Diffusion multiple scattering
     if (do_sss)
     {
-        AtRGB radius = max(rgb(0.0001), sssRadius1*sssRadiusColor1/sssDensityScale);
+        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
 #if AI_VERSION_MAJOR_NUM > 0
-    #if 0
-        AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
-        float r[3] = {radius.r, radius.g, radius.b};
-        result_sss = AiBSSRDFCubic(sg, r, weights, 3);
-    #else
-        AtRGB r1 = sssRadius1*sssRadiusColor1/sssDensityScale;
-        AtRGB r2 = sssRadius2*sssRadiusColor2/sssDensityScale;
-        AtRGB r3 = sssRadius3*sssRadiusColor3/sssDensityScale;
-        AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
-                            AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
-                            AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
-        float r[9] = {  r1.r, r1.g, r1.b,
-                        r2.r, r2.g, r2.b,
-                        r3.r, r3.g, r3.b};
-        result_sss = AiBSSRDFCubic(sg, r, weights, 9);
-    #endif
+        // if the user has only specified one layer (default) then just use that
+        if (sssWeight2 == 0.0f && sssWeight3 == 0.0f)
+        {
+            AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+            float r[3] = {radius.r, radius.g, radius.b};
+            result_sss = AiBSSRDFCubic(sg, r, weights, 3);
+        }
+        else
+        {
+            //AtRGB r1 = sssRadius*sssRadiusColor/sssDensityScale;
+            AtRGB r2 = sssRadius2*sssRadiusColor2/sssDensityScale;
+            AtRGB r3 = sssRadius3*sssRadiusColor3/sssDensityScale;
+            AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
+                                AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
+                                AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
+            float r[9] = {  radius.r, radius.g, radius.b,
+                            r2.r, r2.g, r2.b,
+                            r3.r, r3.g, r3.b};
+            result_sss = AiBSSRDFCubic(sg, r, weights, 9);
+        }
 #else
         result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
 #endif
+        //result_sss += AiIndirectDiffuse(&sg->N, sg);
+
         result_sss *= diffuseColor;
     }
 
