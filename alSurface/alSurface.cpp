@@ -628,9 +628,9 @@ shader_evaluate
     int glossy_samples = data->GI_glossy_samples;
     int diffuse_samples = data->GI_diffuse_samples;
 
-    int dummy;
+    float dummy;
     if (sg->Rr_diff > 0 || sg->Rr_gloss > 1 || sssMix < 0.01f
-        || AiStateGetMsgInt("als_hairNumIntersections", &dummy))
+        || AiStateGetMsgFlt("als_hairNumIntersections", &dummy))
     {
         do_sss = false;
         sssMix = 0.0f;
