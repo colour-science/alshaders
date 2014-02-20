@@ -177,7 +177,7 @@ shader_evaluate
 			AtPoint PP = P;
 			if (distortion != 0.0f)
 				PP += distortion * AiVNoise3(P, 1, 0, 0);
-			v = AiPerlin3(PP);
+			v = AiPerlin4(PP, data->time);
 			if (data->turbulent) v = fabs(v);
 			if (data->ridged)
 			{
@@ -208,7 +208,7 @@ shader_evaluate
 			AtPoint PP = P;
 			if (distortion != 0.0f)
 				PP += distortion * AiVNoise3(P, 1, 0, 0);
-			v = rgb(AiVNoise3(PP, 1, 0, 0));
+			v = rgb(AiVNoise4(PP, data->time, 1, 0, 0));
 			if (data->turbulent) v = fabs(v);
 			if (data->ridged)
 			{

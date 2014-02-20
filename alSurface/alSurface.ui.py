@@ -50,6 +50,7 @@ with uigen.group(ui, 'Specular 1', False):
 		ui.parameter('specular1ExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
 		ui.parameter('specular1Normal', 'vector', (0.0, 0.0, 0.0), 'Normal')
 		ui.parameter('specular1IndirectStrength', 'float', 1.0, 'Indirect strength')
+		ui.parameter('specular1IndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
 # end Specular 1
 
 with uigen.group(ui, 'Specular 2'):
@@ -63,6 +64,7 @@ with uigen.group(ui, 'Specular 2'):
 		ui.parameter('specular2ExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
 		ui.parameter('specular2Normal', 'vector', (0.0, 0.0, 0.0), 'Normal')
 		ui.parameter('specular2IndirectStrength', 'float', 1.0, 'Indirect strength')
+		ui.parameter('specular2IndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
 # end Specular 2
 
 with uigen.group(ui, 'Transmission'):
@@ -89,12 +91,15 @@ with uigen.group(ui, 'Transmission'):
 		ui.parameter('transmissionEnableCaustics', 'bool', True, 'Enable internal reflections')
 		ui.parameter('rrTransmission', 'bool', False, 'RR')
 		ui.parameter('rrTransmissionDepth', 'int', 1, 'RR depth')
+		ui.parameter('transmissionClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
 # end Transmission
 
 with uigen.group(ui, 'Emission'):	
 	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', mn=0)
 	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 # end Emission
+
+ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity')
 
 with uigen.group(ui, 'IDs'):
 	for i in range(1,9):

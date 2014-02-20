@@ -87,6 +87,7 @@ enum alSurfaceParams
     p_specular1ExtraSamples,
     p_specular1Normal,
     p_specular1IndirectStrength,
+    p_specular1IndirectClamp,
 
     p_specular2Strength,
     p_specular2Color,
@@ -96,6 +97,7 @@ enum alSurfaceParams
     p_specular2ExtraSamples,
     p_specular2Normal,
     p_specular2IndirectStrength,
+    p_specular2IndirectClamp,
 
     // transmission
     p_transmissionStrength,
@@ -106,6 +108,7 @@ enum alSurfaceParams
     p_transmissionRoughnessDepthScale,
     p_transmissionEnableCaustics,
     p_transmissionExtraSamples,
+    p_transmissionClamp,
 
     p_lightGroupsIndirect,
 
@@ -161,6 +164,8 @@ enum alSurfaceParams
     p_rrTransmission,
     p_rrTransmissionDepth,
 
+    p_opacity,
+
     p_bump
 };
 
@@ -205,6 +210,7 @@ node_parameters
     AiParameterINT("specular1ExtraSamples", 0);
     AiParameterVec("specular1Normal", 0, 0, 0);
     AiParameterFLT("specular1IndirectStrength", 1.0f );
+    AiParameterFLT("specular1IndirectClamp", 0.0f );
 
     AiParameterFLT("specular2Strength", 0.0f );
     AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
@@ -214,6 +220,7 @@ node_parameters
     AiParameterINT("specular2ExtraSamples", 0);
     AiParameterVec("specular2Normal", 0, 0, 0);
     AiParameterFLT("specular2IndirectStrength", 1.0f );
+    AiParameterFLT("specular2IndirectClamp", 0.0f );
 
     AiParameterFLT("transmissionStrength", 0.0f );
     AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
@@ -223,6 +230,7 @@ node_parameters
     AiParameterFLT("transmissionRoughnessDepthScale", 1.5f);
     AiParameterBOOL("transmissionEnableCaustics", true);
     AiParameterINT("transmissionExtraSamples", 0);
+    AiParameterFLT("transmissionClamp", 0.0f );
 
     AiParameterBOOL("lightGroupsIndirect", true);
 
@@ -278,6 +286,8 @@ node_parameters
 
     AiParameterBool("rrTransmission", false);
     AiParameterInt("rrTransmissionDepth", 1);
+
+    AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
 }
 
 #ifdef MSVC
@@ -380,6 +390,13 @@ node_update
 
     data->rrTransmission = params[p_rrTransmission].BOOL;
     data->rrTransmissionDepth = params[p_rrTransmissionDepth].INT;
+
+    data->specular1IndirectClamp = params[p_specular1IndirectClamp].FLT;
+    if (data->specular1IndirectClamp == 0.0f) data->specular1IndirectClamp = AI_INFINITE;
+    data->specular2IndirectClamp = params[p_specular2IndirectClamp].FLT;
+    if (data->specular2IndirectClamp == 0.0f) data->specular2IndirectClamp = AI_INFINITE;
+    data->transmissionClamp = params[p_transmissionClamp].FLT;
+    if (data->transmissionClamp == 0.0f) data->transmissionClamp = AI_INFINITE;
 };
 
 
@@ -415,6 +432,8 @@ shader_evaluate
     AtRGB ssTargetColor = AiShaderEvalParamRGB(p_ssTargetColor);
     bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
     bool ssInScattering = AiShaderEvalParamBool(p_ssInScattering);
+
+    AtRGB opacity = AiShaderEvalParamRGB(p_opacity);
 
     // precalculate scattering coefficients as we'll need them for shadows etc.
     AtRGB sigma_t = AI_RGB_BLACK;
@@ -509,9 +528,16 @@ shader_evaluate
 
         // store intersection position
         AiStateSetMsgPnt("alsPreviousIntersection", sg->P);
-        sg->out_opacity = outOpacity;
+        sg->out_opacity = outOpacity * opacity;
         return;
     }
+
+    if (maxh(opacity) < IMPORTANCE_EPS) 
+    {
+        sg->out.RGB = AI_RGB_BLACK;
+        sg->out_opacity = AI_RGB_BLACK;
+    }
+    sg->out_opacity = opacity;
 
     // Evaluate bump;
     AtRGB bump = AiShaderEvalParamRGB(p_bump);
@@ -905,7 +931,7 @@ shader_evaluate
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
         // TODO: better random numbers here
-        if ((double)rand()/RAND_MAX < kr)
+        if ((double)rand()/(double(RAND_MAX)+1) < kr)
         {
             do_glossy = true;
             do_transmission = false;
@@ -940,16 +966,21 @@ shader_evaluate
                 {
                     kr = 1.0f;
                 }
-                // call AiSamplerGetSample to force Arnold to drop back to a single shadow sample for successive bounces
-                AiSamplerGetSample(sampit, samples);
+                // Previously we pulled the sampler here as an optimization. This nets us about a 10-30%
+                // speedup in the case of pure dielectrics, but severely fucks up sss, both on the surface
+                // being cast, and in reflected surfaces. Looping the sampler is slower, but never slower
+                // than not pulling the sampler at all, and sometimes faster, so we might as well do this
+                // for now until we can understand more clearly what's going on.
+                while (AiSamplerGetSample(sampit, samples)){}
+                //AiSamplerGetSample(sampit, samples);
                 if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                 {
-                    result_glossyIndirect = scrs.color * kr * specular1Color * specular1IndirectStrength;
+                    result_glossyIndirect = min(scrs.color, rgb(data->specular1IndirectClamp)) * kr * specular1Color * specular1IndirectStrength;
                     if (doDeepGroups)
                     {
                         for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                         {
-                            deepGroupsGlossy[i] += deepGroupPtr[i] * kr * specular1Color * specular1IndirectStrength;
+                            deepGroupsGlossy[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * kr * specular1Color * specular1IndirectStrength;
                         }
                     }
                 }
@@ -979,14 +1010,15 @@ shader_evaluate
                         if (AiTrace(&wi_ray, &scrs))
                         {
                             AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
-                            result_glossyIndirect += scrs.color * f;
+                            //result_glossyIndirect += min(scrs.color, data->specular1IndirectClamp) * f;
+                            result_glossyIndirect += min(scrs.color, rgb(data->specular1IndirectClamp)) * f;
 
                             // accumulate the lightgroup contributions calculated by the child shader
                             if (doDeepGroups)
                             {
                                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                                 {
-                                    deepGroupsGlossy[i] += deepGroupPtr[i] * f;
+                                    deepGroupsGlossy[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * f;
                                 }
                             }
                         }
@@ -1032,7 +1064,7 @@ shader_evaluate
                     if (AiTrace(&wi_ray, &scrs))
                     {
                         AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
-                        result_glossy2Indirect += scrs.color*f;
+                        result_glossy2Indirect += min(scrs.color, rgb(data->specular2IndirectClamp)) * f;
                         kti2 += kr; 
                         
                         // accumulate the lightgroup contributions calculated by the child shader
@@ -1040,7 +1072,7 @@ shader_evaluate
                         {
                             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                             {
-                                deepGroupsGlossy2[i] += deepGroupPtr[i] * f;
+                                deepGroupsGlossy2[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * f;
                             }
                         }
                     }
@@ -1175,7 +1207,7 @@ shader_evaluate
                         transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
                     AtRGB f = transmittance;
-                    result_transmission += sample.color * f;
+                    result_transmission += min(sample.color, rgb(data->transmissionClamp)) * f;
                     // accumulate the lightgroup contributions calculated by the child shader
                     if (doDeepGroups)
                     {
@@ -1217,7 +1249,7 @@ shader_evaluate
                         transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
                         transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
-                    result_transmission += sample.color * transmittance;
+                    result_transmission += min(sample.color, rgb(data->transmissionClamp)) * transmittance;
                     // accumulate the lightgroup contributions calculated by the child shader
                     if (doDeepGroups)
                     {
@@ -1452,17 +1484,15 @@ shader_evaluate
     // Diffusion multiple scattering
     if (do_sss)
     {
+        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
 #if AI_VERSION_MAJOR_NUM > 0
-		AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
-        float radius[3] = {	MAX(0.0001f, sssRadius * sssRadiusColor.r * sssDensityScale),
-                            MAX(0.0001f, sssRadius * sssRadiusColor.g * sssDensityScale),
-                            MAX(0.0001f, sssRadius * sssRadiusColor.b * sssDensityScale) };
-    	result_sss = AiBSSRDFCubic(sg, radius, weights, 3) * diffuseColor * kti * kti2;
+        AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+        float r[3] = {radius.r, radius.g, radius.b};
+        result_sss = AiBSSRDFCubic(sg, r, weights, 3);
 #else
-        AtRGB radius = sssRadiusColor * sssRadius;
         result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
 #endif
-        
+        result_sss *= diffuseColor;
     }
 
     // blend sss and diffuse

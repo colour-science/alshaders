@@ -40,6 +40,10 @@ struct ShaderData
    bool rrTransmission;
    int rrTransmissionDepth;
 
+   float specular1IndirectClamp;
+   float specular2IndirectClamp;
+   float transmissionClamp;
+
    // AOV names
    std::vector<std::string> aovs;
 };
