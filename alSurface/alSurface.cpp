@@ -968,10 +968,8 @@ shader_evaluate
                 }
                 // Previously we pulled the sampler here as an optimization. This nets us about a 10-30%
                 // speedup in the case of pure dielectrics, but severely fucks up sss, both on the surface
-                // being cast, and in reflected surfaces. Looping the sampler is slower, but never slower
-                // than not pulling the sampler at all, and sometimes faster, so we might as well do this
-                // for now until we can understand more clearly what's going on.
-                while (AiSamplerGetSample(sampit, samples)){}
+                // being cast, and in reflected surfaces.
+                // Remove this for now until we can figure out exactly what's going on
                 //AiSamplerGetSample(sampit, samples);
                 if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                 {
