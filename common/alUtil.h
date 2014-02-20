@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <iostream>
 #include <climits>
+#include <cfloat>
 
 #include <ai.h>
 
@@ -81,7 +82,6 @@ inline AtVector min(const AtVector& c1, const AtVector& c2)
     c.z = std::min(c1.z, c2.z);
     return c;
 }
-
 
 inline int clamp(int a, int mn, int mx)
 {

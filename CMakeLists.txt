@@ -4,7 +4,7 @@ project(alShaders)
 
 set(ALS_MAJOR_VERSION 0)
 set(ALS_MINOR_VERSION 4)
-set(ALS_PATCH_VERSION 0b5)
+set(ALS_PATCH_VERSION 0b9)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
 
 set(CMAKE_BUILD_TYPE RELEASE)
@@ -13,12 +13,15 @@ set(CMAKE_SKIP_RPATH TRUE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 
+# Fix to stop crash on OSX < 10.9
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
+
 # pre-set the arnold and mtoa versions and root paths
-set(ARNOLD_VERSION 4.0.14.0)
+set(ARNOLD_VERSION 4.1.3.2)
 set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
 
-set(MTOA_VERSION 0.25.2)
-set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
+set(MTOA_VERSION 1.0.0)
+set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION}_maya2014)
 
 #set boost root path
 set(BOOST_ROOT /Users/anders/vfx/boost/1.43.0)
