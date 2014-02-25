@@ -43,7 +43,7 @@ with uigen.group(ui, 'Specular 1', False):
 	ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1)
 	ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Color')
 	ui.parameter('specular1Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
-	ui.parameter('specular1Ior', 'float', 1.4, 'IOR', mn=1)
+	ui.parameter('specular1Ior', 'float', 1.4, 'IOR', mn=0, mx=100)
 
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('specular1RoughnessDepthScale', 'float', 1.5, 'Roughness depth scale', connectible=False)
@@ -57,7 +57,7 @@ with uigen.group(ui, 'Specular 2'):
 	ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1)
 	ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Color')
 	ui.parameter('specular2Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
-	ui.parameter('specular2Ior', 'float', 1.4, 'IOR', mn=1)
+	ui.parameter('specular2Ior', 'float', 1.4, 'IOR', mn=0, mx=100)
 
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('specular2RoughnessDepthScale', 'float', 1.5, 'Roughness depth scale', connectible=False)
@@ -72,7 +72,7 @@ with uigen.group(ui, 'Transmission'):
 	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 	ui.parameter('transmissionLinkToSpecular1', 'bool', True, 'Link to specular 1')
 	ui.parameter('transmissionRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1)
-	ui.parameter('transmissionIor', 'float', 1.4, 'IOR', mn=1)
+	ui.parameter('transmissionIor', 'float', 1.4, 'IOR', mn=1, mx=100)
 
 	with uigen.group(ui, 'Scattering'):
 		ui.parameter('ssStrength', 'float', 0.0, 'Strength', mn=0, mx=1)
@@ -98,8 +98,8 @@ with uigen.group(ui, 'Emission'):
 	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', mn=0)
 	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 # end Emission
-
-ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity')
+with uigen.group(ui, 'Opacity'):	
+        ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity')
 
 with uigen.group(ui, 'IDs'):
 	for i in range(1,9):
