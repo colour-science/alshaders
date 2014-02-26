@@ -532,12 +532,10 @@ shader_evaluate
         return;
     }
 
-    if (maxh(opacity) < IMPORTANCE_EPS) 
-    {
-        sg->out.RGB = AI_RGB_BLACK;
-        sg->out_opacity = AI_RGB_BLACK;
+        // Apply opacity roulette
+    if(maxh(opacity) < IMPORTANCE_EPS || AiShaderGlobalsApplyOpacity(sg, opacity)){
+        return;
     }
-    sg->out_opacity = opacity;
 
     // Evaluate bump;
     AtRGB bump = AiShaderEvalParamRGB(p_bump);
