@@ -532,8 +532,11 @@ shader_evaluate
         return;
     }
 
+    if(maxh(opacity) < IMPORTANCE_EPS){
+        opacity = AI_RGB_BLACK;
+    }
         // Apply opacity roulette
-    if(maxh(opacity) < IMPORTANCE_EPS || AiShaderGlobalsApplyOpacity(sg, opacity)){
+    if(AiShaderGlobalsApplyOpacity(sg, opacity)){
         return;
     }
 
