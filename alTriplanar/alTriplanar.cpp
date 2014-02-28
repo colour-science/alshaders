@@ -267,8 +267,13 @@ inline AtRGB tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector 
 	sg->dudy = dPdy.z * scale.x;
 	sg->dvdx = dPdx.y * scale.x;
 	sg->dvdy = dPdy.y * scale.x;
-                
-    textureResult[0] = AiTextureHandleAccess(sg, handle, params, &textureAccessX);
+
+    if(weights[0] > 0.){
+        textureResult[0] = AiTextureHandleAccess(sg, handle, params, &textureAccessX);
+    } else {
+        textureResult[0] = AI_RGBA_BLACK;
+        textureAccessX = true;
+    }
 
     // lookup Y
     ProjP.x = (P.x + 74.1 + offset.y) * scale.y;
@@ -282,7 +287,13 @@ inline AtRGB tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector 
 	sg->dudy = dPdy.x * scale.y;
 	sg->dvdx = dPdx.z * scale.y;
 	sg->dvdy = dPdy.z * scale.y;
-    textureResult[1] = AiTextureHandleAccess(sg, handle, params, &textureAccessY);
+
+    if(weights[1] > 0.){
+        textureResult[1] = AiTextureHandleAccess(sg, handle, params, &textureAccessY);
+    } else {
+        textureResult[1] = AI_RGBA_BLACK;
+        textureAccessY = true;
+    }
 
     // lookup Z
     ProjP.x = (P.x + 123.94 + offset.z) * scale.z;
@@ -296,7 +307,13 @@ inline AtRGB tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector 
 	sg->dudy = dPdy.x * scale.z;
 	sg->dvdx = dPdx.y * scale.z;
 	sg->dvdy = dPdy.y * scale.z;
-    textureResult[2] = AiTextureHandleAccess(sg, handle, params, &textureAccessZ);
+
+    if(weights[2] > 0.){
+        textureResult[2] = AiTextureHandleAccess(sg, handle, params, &textureAccessZ);
+    } else {
+        textureResult[2] = AI_RGBA_BLACK;
+        textureAccessZ = true;
+    }
 
     if(textureAccessX && textureAccessY && textureAccessZ){
         AtRGB result = AI_RGB_BLACK;
@@ -399,7 +416,10 @@ inline AtRGB tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVecto
                            const AtPoint &rot, const AtPoint &rotjitter, AtShaderGlobals *sg,
                            AtTextureHandle *handle, AtTextureParams *params){
     AtRGBA textureResult[3];
-    bool textureAccessX = lookupCellNoise((P.y + offset.x) * scale.x,
+
+    bool textureAccessX = true;
+    if(weights[0] > 0.){
+        textureAccessX = lookupCellNoise((P.y + offset.x) * scale.x,
                                           (P.z + offset.x) * scale.x,
 										  dPdx.y * scale.x,
 										  dPdy.y * scale.x,
@@ -413,7 +433,14 @@ inline AtRGB tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVecto
                                           params,
                                           &textureResult[0]
                                           );
-    bool textureAccessY = lookupCellNoise((P.x + offset.y) * scale.y,
+    } else {
+        textureResult[0] = AI_RGBA_BLACK;
+    }
+
+
+    bool textureAccessY = true;
+    if(weights[1] > 0.){
+        textureAccessY = lookupCellNoise((P.x + offset.y) * scale.y,
                                           (P.z + offset.y) * scale.y,
     									  dPdx.x * scale.y,
 										  dPdy.x * scale.y,
@@ -427,7 +454,13 @@ inline AtRGB tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVecto
                                           params,
                                           &textureResult[1]
                                           );
-    bool textureAccessZ = lookupCellNoise((P.y + offset.z) * scale.z,
+    } else {
+        textureResult[1] = AI_RGBA_BLACK;
+    }
+
+    bool textureAccessZ = true;
+    if(weights[2] > 0.){
+        textureAccessZ = lookupCellNoise((P.y + offset.z) * scale.z,
                                           (P.x + offset.z) * scale.z,
         								  dPdx.y * scale.z,
 										  dPdy.y * scale.z,
@@ -441,7 +474,9 @@ inline AtRGB tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVecto
                                           params,
                                           &textureResult[2]
                                           );
-
+    } else {
+        textureResult[2] = AI_RGBA_BLACK;
+    }
 
     if(textureAccessX && textureAccessY && textureAccessZ){
         AtRGB result = AI_RGB_BLACK;
