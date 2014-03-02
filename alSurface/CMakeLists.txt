@@ -12,7 +12,7 @@ add_library(${SHADER} SHARED ${SRC})
 target_link_libraries(${SHADER} ai)
 set_target_properties(${SHADER} PROPERTIES PREFIX "")
 
-add_custom_command(OUTPUT ${MTD} COMMAND ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} DEPENDS ${UI})
+add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} DEPENDS ${UI})
 add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
 
 install(TARGETS ${SHADER} DESTINATION ${MTOA_SHADERS})
