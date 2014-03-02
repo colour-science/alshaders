@@ -70,6 +70,7 @@ set(SUBDIRECTORIES
         alInputVector
         alHair
         alColorSpace
+        alDiamond
         common
 )
 

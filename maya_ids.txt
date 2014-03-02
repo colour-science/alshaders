@@ -17,4 +17,5 @@
 0x00116410 - alGaborNoise
 0x00116411 - alColorSpace
 0x00116412 - alCurvature
+0x00116413 - alDiamond
 
