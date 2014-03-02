@@ -44,6 +44,9 @@ struct ShaderData
    float specular2IndirectClamp;
    float transmissionClamp;
 
+   int AA_samples;
+   float AA_samples_inv;
+
    // AOV names
    std::vector<std::string> aovs;
 };
