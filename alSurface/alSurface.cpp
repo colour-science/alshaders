@@ -1265,6 +1265,11 @@ shader_evaluate
                         }
                     }
                 }
+                else // trace the background if we've hit nothing
+                {
+                    AiTraceBackground(&wi_ray, &sample);
+                    result_transmission += sample.color;
+                }
             }
         }
         else
@@ -1397,6 +1402,11 @@ shader_evaluate
                                 childAovs[i] += transmittedAovPtr[i] * transmittance;
                             }
                         }
+                    }
+                    else // trace the background if we've hit nothing
+                    {
+                        AiTraceBackground(&wi_ray, &sample);
+                        result_transmission += sample.color;
                     }
                 }  
             }
