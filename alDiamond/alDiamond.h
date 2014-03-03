@@ -40,6 +40,12 @@ struct ShaderData
    bool rrTransmission;
    int rrTransmissionDepth;
 
+   int AA_samples;
+   float AA_samples_inv;
+   int total_depth;
+   int* perm_table;
+   int xres;
+
    float specular1IndirectClamp;
    float specular2IndirectClamp;
    float transmissionClamp;

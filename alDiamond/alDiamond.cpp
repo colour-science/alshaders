@@ -7,7 +7,7 @@
 
 #include "alUtil.h"
 #include "MIS.h"
-#include "../alSurface/alSurface.h"
+#include "alDiamond.h"
 #include "aovs.h"
 
 AI_SHADER_NODE_EXPORT_METHODS(alDiamondMtd)
@@ -313,6 +313,7 @@ node_initialize
     data->glossy2_sampler = NULL;
     data->refraction_sampler = NULL;
     data->backlight_sampler = NULL;
+    data->perm_table = NULL;
 };
 
 node_finish
@@ -326,6 +327,8 @@ node_finish
         AiSamplerDestroy(data->glossy2_sampler);
         AiSamplerDestroy(data->refraction_sampler);
         AiSamplerDestroy(data->backlight_sampler);
+
+        delete[] data->perm_table;
 
         AiNodeSetLocalData(node, NULL);
         delete data;
@@ -360,6 +363,15 @@ node_update
 
     data->AA_samples = SQR(AiNodeGetInt(options, "AA_samples"));
     data->AA_samples_inv = 1.0f / float(data->AA_samples);
+
+    data->total_depth = AiNodeGetInt(options, "GI_total_depth");
+    delete[] data->perm_table;
+    data->perm_table = new int[data->AA_samples*data->total_depth];
+    for (int d=0; d < data->total_depth; ++d)
+    {
+        permute(&(data->perm_table[d*data->AA_samples]), data->AA_samples);
+    }
+    data->xres = AiNodeGetInt(options, "xres");
 
     // setup samples
     AiSamplerDestroy(data->diffuse_sampler);
@@ -595,7 +607,7 @@ shader_evaluate
     AtRGB wavelength = AI_RGB_WHITE;
     //ior = transmissionIor = 2.5;
 
-    bool dispersion = true;
+    bool dispersion = false;
 
     if (dispersion)
     {
@@ -993,9 +1005,13 @@ shader_evaluate
     if (rr_transmission)
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
-        // TODO: better random numbers here
-        float u = drand48();
-        //float u = (float(sg->si) + drand48())*data->AA_samples_inv;
+
+        // get a permuted, stratified random number
+        float u = (float(data->perm_table[sg->Rr*data->AA_samples+sg->si]) + drand48())*data->AA_samples_inv;
+        // offset based on pixel
+        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, 0, 64);
+        u = fmodf(u+offset, 1.0f);
+        
         if (u < kr)
         {
             do_glossy = true;
