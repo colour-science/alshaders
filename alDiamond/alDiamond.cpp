@@ -534,6 +534,24 @@ shader_evaluate
         sg->out_opacity = outOpacity * opacity;
         return;
     }
+    else if (sg->Rr > 0)
+    {
+        bool alD_inside = false;
+        AiStateGetMsgBool("alD_inside", &alD_inside);
+        if (AiV3Dot(sg->N, sg->Rd) < 0.0f && alD_inside)
+        {
+            // self-intersection surface, ignore us.
+            sg->out_opacity = AI_RGB_BLACK;
+            sg->out.RGB = AI_RGB_BLACK;
+            return;
+        }
+    }
+    else
+    {
+        // first intersection
+        AiStateSetMsgBool("alD_inside", true);
+    }
+    
 
     if (maxh(opacity) < IMPORTANCE_EPS) 
     {
@@ -587,35 +605,31 @@ shader_evaluate
             if (u_w < 1.0/3.0)
             {
                 ior = transmissionIor = 2.46;
-                wavelength = AI_RGB_RED;
-                //wavelength = rgb(0.8, 0.1, 0.1);
+                //wavelength = AI_RGB_RED;
+                wavelength = rgb(0.8, 0.1, 0.1);
             }
             else if (u_w < 2.0/3.0)
             {
                 ior = transmissionIor = 2.44;
-                wavelength = AI_RGB_GREEN;
-                //wavelength = rgb(0.1, 0.8, 0.1);
+                //wavelength = AI_RGB_GREEN;
+                wavelength = rgb(0.1, 0.8, 0.1);
             }
             else
             {
                 ior = transmissionIor = 2.42;
-                wavelength = AI_RGB_BLUE;
-                //wavelength = rgb(0.1, 0.1, 0.8);
+                //wavelength = AI_RGB_BLUE;
+                wavelength = rgb(0.1, 0.1, 0.8);
             }
 
             AiStateSetMsgFlt("als_ior", ior);
-            AiStateSetMsgRGB("als_wavelength", wavelength);
             wavelength *= 3.0f;
         }
         else
         {
             AiStateGetMsgFlt("als_ior", &ior);
             transmissionIor = ior;
-            AiStateGetMsgRGB("als_wavelength", &wavelength);
         }
     }
-
-    //wavelength = AI_RGB_WHITE;
 
     float eta = 1.0f / ior;
     float ior2 = std::max(1.001f, AiShaderEvalParamFlt(p_specular2Ior));
