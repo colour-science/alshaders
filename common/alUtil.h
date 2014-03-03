@@ -597,6 +597,32 @@ inline float sampleTEAFloat(AtUInt32 v0, AtUInt32 v1, int rounds = 4) {
     return x.f - 1.0f;
 }
 
+/// Generate a random integer in the range [0,n)
+// TODO: this isn't great
+inline int rand0n(int n)
+{
+    return rand() / (RAND_MAX / n + 1);
+}
+
+/// Generate a randomly permted [0,n) sequence
+/// TODO: use a reproducible rng here
+inline void permute(int* perm, int n)
+{
+    int i;
+    for (i=0; i < n; ++i)
+    {
+        perm[i] = i;
+    }
+
+    while (--i)
+    {
+        int tmp = perm[i];
+        int rindex = rand0n(i);
+        perm[i] = perm[rindex];
+        perm[rindex] = tmp;
+    }
+}
+
 // TODO: make this better
 #define M_RAN_INVM32 2.32830643653869628906e-010
 inline double random(AtUInt32 ui) { return ui * M_RAN_INVM32; }
