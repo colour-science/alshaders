@@ -72,7 +72,7 @@ with uigen.group(ui, 'Transmission'):
 	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 	ui.parameter('transmissionLinkToSpecular1', 'bool', True, 'Link to specular 1')
 	ui.parameter('transmissionRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1)
-	ui.parameter('transmissionIor', 'float', 1.4, 'IOR', mn=1, mx=100)
+	ui.parameter('transmissionIor', 'float', 1.4, 'IOR', mn=0, mx=100)
 
 	with uigen.group(ui, 'Scattering'):
 		ui.parameter('ssStrength', 'float', 0.0, 'Strength', mn=0, mx=1)
