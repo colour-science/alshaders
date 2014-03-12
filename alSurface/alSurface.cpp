@@ -404,7 +404,7 @@ shader_evaluate
 {
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
-    float ior = std::max(1.001f, AiShaderEvalParamFlt(p_specular1Ior));
+    float ior = AiShaderEvalParamFlt(p_specular1Ior);
     float roughness = AiShaderEvalParamFlt( p_specular1Roughness );
     roughness *= roughness;
     float transmissionRoughness;
@@ -419,7 +419,7 @@ shader_evaluate
     {
         transmissionRoughness = AiShaderEvalParamFlt(p_transmissionRoughness);
         transmissionRoughness *= transmissionRoughness;
-        transmissionIor = std::max(1.001f, AiShaderEvalParamFlt(p_transmissionIor));
+        transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
     }
     AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
 
@@ -572,7 +572,7 @@ shader_evaluate
     roughness2 *= roughness2;
 
     float eta = 1.0f / ior;
-    float ior2 = std::max(1.001f, AiShaderEvalParamFlt(p_specular2Ior));
+    float ior2 = AiShaderEvalParamFlt(p_specular2Ior);
     float eta2 = 1.0f / ior2;
 
 
