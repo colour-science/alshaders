@@ -16,7 +16,7 @@ ui.shader({
 })
 
 with uigen.group(ui, 'Diffuse', False):
-	ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the diffuse result')
+	ui.parameter('diffuseStrength', 'float', 0.0, 'Strength', mn=0, mx=1, description='Multiplier on the diffuse result')
 	ui.parameter('diffuseColor', 'rgb', (0.5, 0.5, 0.5), 'Color')
 	ui.parameter('diffuseRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1)
 
@@ -40,8 +40,8 @@ with uigen.group(ui, 'Diffuse', False):
 with uigen.group(ui, 'Specular 1', False):
 	ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1)
 	ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Color')
-	ui.parameter('specular1Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
-	ui.parameter('specular1Ior', 'float', 1.4, 'IOR', mn=1)
+	ui.parameter('specular1Roughness', 'float', 0.0, 'Roughness', mn=0, mx=1)
+	ui.parameter('specular1Ior', 'float', 2.4, 'IOR', mn=1)
 
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('specular1RoughnessDepthScale', 'float', 1.5, 'Roughness depth scale', connectible=False)
@@ -66,7 +66,7 @@ with uigen.group(ui, 'Specular 2'):
 # end Specular 2
 
 with uigen.group(ui, 'Transmission'):
-	ui.parameter('transmissionStrength', 'float', 0.0, 'Strength', mn=0, mx=1)
+	ui.parameter('transmissionStrength', 'float', 1.0, 'Strength', mn=0, mx=1)
 	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 	ui.parameter('transmissionLinkToSpecular1', 'bool', True, 'Link to specular 1')
 	ui.parameter('transmissionRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1)
@@ -87,9 +87,10 @@ with uigen.group(ui, 'Transmission'):
 		ui.parameter('transmissionRoughnessDepthScale', 'float', 1.4, 'Roughness depth scale')
 		ui.parameter('transmissionExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
 		ui.parameter('transmissionEnableCaustics', 'bool', True, 'Enable internal reflections')
-		ui.parameter('rrTransmission', 'bool', False, 'RR')
+		ui.parameter('rrTransmission', 'bool', True, 'RR')
 		ui.parameter('rrTransmissionDepth', 'int', 1, 'RR depth')
 		ui.parameter('transmissionClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
+		ui.parameter('dispersion', 'bool', True, 'Dispersion', connectible=False)
 # end Transmission
 
 with uigen.group(ui, 'Emission'):

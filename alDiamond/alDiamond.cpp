@@ -166,12 +166,14 @@ enum alDiamondParams
 
     p_opacity,
 
+    p_dispersion,
+
     p_bump
 };
 
 node_parameters
 {
-    AiParameterFLT("diffuseStrength", 1.0f );
+    AiParameterFLT("diffuseStrength", .0f );
     AiParameterRGB("diffuseColor", 0.5f, 0.5f, 0.5f );
     AiParameterFLT("diffuseRoughness", 0.0f );
 
@@ -204,8 +206,8 @@ node_parameters
 
     AiParameterFLT("specular1Strength", 1.0f );
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
-    AiParameterFLT("specular1Roughness", 0.3f );
-    AiParameterFLT("specular1Ior", 1.4f );
+    AiParameterFLT("specular1Roughness", 0.0f );
+    AiParameterFLT("specular1Ior", 2.4f );
     AiParameterFLT("specular1RoughnessDepthScale", 1.5f);
     AiParameterINT("specular1ExtraSamples", 0);
     AiParameterVec("specular1Normal", 0, 0, 0);
@@ -222,7 +224,7 @@ node_parameters
     AiParameterFLT("specular2IndirectStrength", 1.0f );
     AiParameterFLT("specular2IndirectClamp", 0.0f );
 
-    AiParameterFLT("transmissionStrength", 0.0f );
+    AiParameterFLT("transmissionStrength", 1.0f );
     AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
     AiParameterBOOL("transmissionLinkToSpecular1", true);
     AiParameterFLT("transmissionRoughness", 0.f );
@@ -284,10 +286,12 @@ node_parameters
     AiParameterBool("standardCompatibleAOVs", false);
     AiParameterBool("transmitAovs", false);
 
-    AiParameterBool("rrTransmission", false);
+    AiParameterBool("rrTransmission", true);
     AiParameterInt("rrTransmissionDepth", 1);
 
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
+
+    AiParameterBool("dispersion", true);
 }
 
 #ifdef MSVC
@@ -546,6 +550,7 @@ shader_evaluate
         sg->out_opacity = outOpacity * opacity;
         return;
     }
+#if 1
     else if (sg->Rr > 0)
     {
         bool alD_inside = false;
@@ -563,7 +568,7 @@ shader_evaluate
         // first intersection
         AiStateSetMsgBool("alD_inside", true);
     }
-    
+#endif    
 
     if (maxh(opacity) < IMPORTANCE_EPS) 
     {
@@ -607,7 +612,7 @@ shader_evaluate
     AtRGB wavelength = AI_RGB_WHITE;
     //ior = transmissionIor = 2.5;
 
-    bool dispersion = false;
+    bool dispersion = AiShaderEvalParamBool(p_dispersion);
 
     if (dispersion)
     {
@@ -618,19 +623,19 @@ shader_evaluate
             {
                 ior = transmissionIor = 2.46;
                 //wavelength = AI_RGB_RED;
-                wavelength = rgb(0.8, 0.1, 0.1);
+                wavelength = rgb(0.6, 0.2, 0.2);
             }
             else if (u_w < 2.0/3.0)
             {
                 ior = transmissionIor = 2.44;
                 //wavelength = AI_RGB_GREEN;
-                wavelength = rgb(0.1, 0.8, 0.1);
+                wavelength = rgb(0.2, 0.6, 0.2);
             }
             else
             {
                 ior = transmissionIor = 2.42;
                 //wavelength = AI_RGB_BLUE;
-                wavelength = rgb(0.1, 0.1, 0.8);
+                wavelength = rgb(0.2, 0.2, 0.6);
             }
 
             AiStateSetMsgFlt("als_ior", ior);
