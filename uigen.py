@@ -314,6 +314,47 @@ def WriteMTD(sd, fn):
 
 	f.close()
 
+def WalkArgs(el, f, d):
+	if isinstance(el, Group):
+		writei(f, '<page name="%s">' % (el.name), d)
+
+		if el.children:
+			for e in el.children:
+				WalkArgs(e, f, d+1)
+
+		writei(f, '</page>', d)
+	elif isinstance(el, AOV):
+		writei(f, '<param name="%s" label="%s"/>' % (el.name, el.label), d)
+	elif isinstance(el, Parameter):
+		if el.ptype == 'bool':
+			writei(f, '<param name="%s" label="%s" widget="checkBox"/>' % (el.name, el.label), d)
+		elif el.ptype == 'int':
+			writei(f, '<param name="%s" label="%s" int="True"/>' % (el.name, el.label), d)
+		elif el.ptype == 'rgb':
+			writei(f, '<param name="%s" label="%s" widget="color"/>' % (el.name, el.label), d)
+		elif el.ptype == 'enum':
+			writei(f, '<param name="%s" label="%s" widget="popup">' % (el.name, el.label), d)
+			
+			writei(f, '<hintlist name="options">', d+1)
+			
+			for en in el.enum_names:
+				writei(f, '<string value="%s"/>' % en, d+2)	
+
+			writei(f, '</hintlist>', d+1)
+			writei(f, '</param>', d)
+		else:
+			writei(f, '<param name="%s" label="%s"/>' % (el.name, el.label), d)
+
+
+def WriteArgs(sd, fn):
+	f = open(fn, 'w')
+	writei(f, '<args format="1.0">', 0)
+
+	for e in sd.root.children:
+		WalkArgs(e, f, 0)
+
+	writei(f, '</args>', 0)
+
 def getSPDLTypeName(t):
 	if t == 'bool':
 		return 'boolean'
@@ -494,53 +535,6 @@ def WriteSPDL(sd, fn):
 	writei(f, '}')
 	# End Layout
 
-# 	#Begin Logic
-# 	writei(f, 'Logic')
-# 	writei(f, '{')
-	
-# 	if sd.aovs:
-# 		f.write("""
-# 	Sub OnInit
-# 		Dim oRenderChannels
-# 		Set oRenderChannels = ActiveProject.ActiveScene.PassContainer.Properties( "Scene Render Options" ).RenderChannels
-
-# 		If TypeName(oRenderChannels) = "Nothing" Then
-# 			LogMessage "Scene Render Options property not found. Can't enumerate render channels.", siError
-# 			Exit Sub
-# 		End If
-# 		If oRenderChannels.Count = 0 Then
-# 			LogMessage "No render channels defined.", siError
-# 			Exit Sub
-# 		End If
-
-# 		Dim		idx
-# 		ReDim oChannelList( oRenderChannels.Count * 2 + 1 )
-
-# 		idx = 0
-# 		for each oChannel in oRenderChannels
-# 			If oChannel.ChannelType = siRenderChannelColorType And oChannel.UserDefined Then
-# 				oChannelList( idx * 2 + 0 ) = oChannel.Name
-# 				oChannelList( idx * 2 + 1 ) = oChannel.Name
-# 				idx = idx + 1
-# 			End If
-# 		next
-
-# 		ReDim Preserve oChannelList( idx * 2 - 1 )
-
-# 		Dim oChannelCombo
-# """)
-# 		for a in sd.aovs:
-# 			writei(f, 'Set oChannelCombo = PPG.PPGLayout.Item("%s")' % a.name, 2)
-# 			writei(f, 'oChannelCombo.UIItems = oChannelList', 2)
-
-# 		f.write("""
-
-# 		PPG.Refresh
-# 	End Sub
-# """)
-# 	writei(f, '}')
-# 	#End Logic
-
 	writei(f, 'Plugin = Shader')
 	writei(f, '{')
 	writei(f, 'Filename = "%s";' % sd.name, 1)
@@ -572,8 +566,8 @@ def remapControls(sd):
 
 # Main. Load the UI file and build UI templates from the returned structure
 if __name__ == '__main__':
-	if len(sys.argv) != 5:
-		print 'ERROR: must supply exactly ui source input and mtd, ae and spdl outputs'
+	if len(sys.argv) != 6:
+		print 'ERROR: must supply exactly ui source input and mtd, ae, spdl and args outputs'
 		sys.exit(1)
 
 	ui = ShaderDef()
@@ -587,6 +581,8 @@ if __name__ == '__main__':
 	WriteMTD(ui, sys.argv[2])
 	WriteAETemplate(ui, sys.argv[3])
 	WriteSPDL(ui, sys.argv[4])
+	WriteArgs(ui, sys.argv[5])
+
 
 	
 
