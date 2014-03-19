@@ -6,10 +6,10 @@ struct BrdfData_wrap
 {
    void* brdf_data;
    AtShaderGlobals* sg;
-   float eta;
+   AtColor eta;
    AtVector V;
    AtVector N;
-   mutable float kr;
+   mutable AtRGB kr;
 };
 
 
@@ -18,7 +18,9 @@ AtRGB AiWardDuerMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    AtVector H;
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
-   float kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
+   AtRGB kr = AiColor(fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r),
+                      fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r),
+                      fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r));
    return kr *  AiWardDuerMISBRDF(brdfw->brdf_data, indir);
 }
 
@@ -39,7 +41,11 @@ AtRGB AiCookTorranceMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    AtVector H;
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
-   brdfw->kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
+
+   brdfw->kr.r = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r);
+   brdfw->kr.g = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.g);
+   brdfw->kr.b = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.b);
+
    return brdfw->kr *  AiCookTorranceMISBRDF(brdfw->brdf_data, indir);
 }
 
@@ -61,8 +67,8 @@ AtRGB AiOrenNayarMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    AtVector H;
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
-   //float kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
-   float kr = fresnel(std::max(0.0f,AiV3Dot(brdfw->N,brdfw->V)),brdfw->eta);
+
+   float kr = fresnel(std::max(0.0f,AiV3Dot(brdfw->N,brdfw->V)), AiColorMaxRGB(brdfw->eta));
    return AiOrenNayarMISBRDF(brdfw->brdf_data, indir) * (1-kr);
 }
 
