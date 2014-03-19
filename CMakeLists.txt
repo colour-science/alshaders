@@ -69,6 +69,7 @@ set(SUBDIRECTORIES
 		alTriplanar
         alSwitch
         alJitterColor
+        alCache
         common
 )
 
