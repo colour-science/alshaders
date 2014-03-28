@@ -658,9 +658,9 @@ shader_evaluate
     int glossy_samples = data->GI_glossy_samples;
     int diffuse_samples = data->GI_diffuse_samples;
 
-    int dummy;
+    float dummy;
     if (sg->Rr_diff > 0 || sg->Rr_gloss > 1 || sssMix < 0.01f
-        || AiStateGetMsgInt("als_hairNumIntersections", &dummy))
+        || AiStateGetMsgFlt("als_hairNumIntersections", &dummy))
     {
         do_sss = false;
         sssMix = 0.0f;
@@ -996,8 +996,11 @@ shader_evaluate
                 {
                     kr = 1.0f;
                 }
-                // call AiSamplerGetSample to force Arnold to drop back to a single shadow sample for successive bounces
-                AiSamplerGetSample(sampit, samples);
+                // Previously we pulled the sampler here as an optimization. This nets us about a 10-30%
+                // speedup in the case of pure dielectrics, but severely fucks up sss, both on the surface
+                // being cast, and in reflected surfaces.
+                // Remove this for now until we can figure out exactly what's going on
+                //AiSamplerGetSample(sampit, samples);
                 if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                 {
                     result_glossyIndirect = min(scrs.color, rgb(data->specular1IndirectClamp)) * kr * specular1Color * specular1IndirectStrength;
@@ -1504,7 +1507,7 @@ shader_evaluate
     } // if (do_backlight)
 
     // Emission
-    result_emission = emissionColor;
+    result_emission = emissionColor * kti * kti2;
 
     // Diffusion multiple scattering
     if (do_sss)

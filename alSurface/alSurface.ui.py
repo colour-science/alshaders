@@ -102,7 +102,7 @@ with uigen.group(ui, 'Transmission'):
 
 with uigen.group(ui, 'Emission'):
 	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', mn=0)
-	ui.parameter('emissionTargetColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
+	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 # end Emission
 
 ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity')
