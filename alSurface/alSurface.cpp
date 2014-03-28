@@ -1477,7 +1477,7 @@ shader_evaluate
     } // if (do_backlight)
 
     // Emission
-    result_emission = emissionColor;
+    result_emission = emissionColor * kti * kti2;
 
     // Diffusion multiple scattering
     if (do_sss)
