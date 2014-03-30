@@ -3,7 +3,11 @@
 
 #include <new>
 #include <cstdlib>
+#include <stdlib.h>
+
+#if !defined(__APPLE__)
 #include <malloc.h>
+#endif
 
 #define CACHE_LINE_ALIGNMENT 64
 #define SIMD_ALIGNMENT 16;
