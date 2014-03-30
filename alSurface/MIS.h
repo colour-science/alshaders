@@ -2,84 +2,72 @@
 #include <ai.h>
 #include "alUtil.h"
 
-struct BrdfData_wrap
+void sampleHemisphereCosine(AtVector *vec, float r1, float r2)
 {
-   void* brdf_data;
-   AtShaderGlobals* sg;
-   AtColor eta;
-   AtVector V;
-   AtVector N;
-   mutable AtRGB kr;
+    float stheta = sqrtf(float(r1));
+    float phi = float(AI_PITIMES2 * r2);
+    vec->x = stheta * cosf(phi);
+    vec->y = stheta * sinf(phi);
+    vec->z = sqrtf(1.0f - float(r1));
+}
+
+struct DiffuseBRDF
+{
+    void *brdf_data;
+    const AtShaderGlobals *sg;
+
+    AtColor result;
+    bool active;
+
+    float albedo;
+    AtColor strength;
+    AtColor color;
+
 };
 
 
-AtRGB AiWardDuerMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
-{
-   AtVector H;
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   AiV3Normalize(H,(*indir)+brdfw->V);
-   AtRGB kr = AiColor(fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r),
-                      fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r),
-                      fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r));
-   return kr *  AiWardDuerMISBRDF(brdfw->brdf_data, indir);
+void diffuseBRDFinit(DiffuseBRDF *brdf, const AtShaderGlobals *sg){
+    brdf->sg = sg;
+    brdf->active = true;
+    brdf->result = AI_RGB_BLACK;
+    brdf->albedo = 0.f;
+    brdf->strength = AI_RGB_BLUE;
 }
 
-float AiWardDuerMISPDF_wrap( const void* brdf_data, const AtVector* indir )
-{
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   return AiWardDuerMISPDF(brdfw->brdf_data, indir);
+void diffuseBRDFcomputeAlbedo(DiffuseBRDF *brdf){
+    brdf->albedo = 1.f;
 }
 
-AtVector AiWardDuerMISSample_wrap( const void* brdf_data, float randx, float randy )
-{
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   return AiWardDuerMISSample(brdfw->brdf_data, randx, randy);
+void diffuseBRDFinitMIS(DiffuseBRDF *brdf){
+    brdf->brdf_data = AiOrenNayarMISCreateData(brdf->sg, 0.f);
 }
 
-AtRGB AiCookTorranceMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
-{
-   AtVector H;
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   AiV3Normalize(H,(*indir)+brdfw->V);
+//struct SpecularBRDF
+//{
+//    void *brdf_data;
 
-   brdfw->kr.r = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r);
-   brdfw->kr.g = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.g);
-   brdfw->kr.b = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.b);
+//    AtColor result;
+//    bool active;
 
-   return brdfw->kr *  AiCookTorranceMISBRDF(brdfw->brdf_data, indir);
-}
+//    float albedo;
+//    AtColor strength;
+//    float metallic;
+//    float roughness;
+//    AtColor eta;
 
-float AiCookTorranceMISPDF_wrap( const void* brdf_data, const AtVector* indir )
-{
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   return AiCookTorranceMISPDF(brdfw->brdf_data, indir);
-}
+//};
 
-AtVector AiCookTorranceMISSample_wrap( const void* brdf_data, float randx, float randy )
-{
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   return AiCookTorranceMISSample(brdfw->brdf_data, randx, randy);
-}
+//struct TransmisionBRDF
+//{
+//    void *brdf_data;
 
+//    bool active;
+//    AtColor result;
 
-AtRGB AiOrenNayarMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
-{
-   AtVector H;
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   AiV3Normalize(H,(*indir)+brdfw->V);
+//    float albedo;
+//    AtColor strength;
+//    float roughness;
+//    AtColor eta;
 
-   float kr = fresnel(std::max(0.0f,AiV3Dot(brdfw->N,brdfw->V)), AiColorMaxRGB(brdfw->eta));
-   return AiOrenNayarMISBRDF(brdfw->brdf_data, indir) * (1-kr);
-}
+//};
 
-float AiOrenNayarMISPDF_wrap( const void* brdf_data, const AtVector* indir )
-{
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   return AiOrenNayarMISPDF(brdfw->brdf_data, indir);
-}
-
-AtVector AiOrenNayarMISSample_wrap( const void* brdf_data, float randx, float randy )
-{
-   const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
-   return AiOrenNayarMISSample(brdfw->brdf_data, randx, randy);
-}
