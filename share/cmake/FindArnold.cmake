@@ -1,6 +1,14 @@
 # FindArnold.cmake
 SET(Arnold_FOUND FALSE)
 
+# If there's no arnold version explicitly defined
+if (NOT DEFINED ARNOLD_VERSION)
+	# Try to grab it from the env
+	if (DEFINED ENV{ARNOLD_VERSION})
+		set(ARNOLD_VERSION $ENV{ARNOLD_VERSION})
+	endif()
+endif()
+
 # if local.cmake hasn't defined it already...
 if (NOT DEFINED ARNOLD_ROOT)
 	# if the environment variable isn't set...
