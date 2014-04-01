@@ -27,9 +27,17 @@ with uigen.group(ui, 'Diffuse', False):
 
 	with uigen.group(ui, 'SSS'):
 		ui.parameter('sssMix', 'float', 0.0, 'Mix', mn=0, mx=1)
-		ui.parameter('sssRadius', 'float', 3.6, 'Distance', mn=0)
-		ui.parameter('sssRadiusColor', 'rgb', (.439, .156, .078), 'Color')
-		ui.parameter('sssDensityScale', 'float', 1.0, 'Density scale', mn=0)
+		ui.parameter('sssDensityScale', 'float', 1.0, 'Radius Multiplier', mn=0)
+		ui.parameter('sssRadius', 'float', 1.5, 'Distance 1', mn=0)
+		ui.parameter('sssWeight1', 'float', 1.0, 'Weight 1', mn=0)
+		ui.parameter('sssRadiusColor', 'rgb', (.439, .156, .078), 'Color 1')
+		ui.parameter('sssRadius2', 'float', 4.0, 'Distance 2', mn=0)
+		ui.parameter('sssWeight2', 'float', 0.0, 'Weight 2', mn=0)
+		ui.parameter('sssRadiusColor2', 'rgb', (.439, .08, .018), 'Color 2')
+		ui.parameter('sssRadius3', 'float', 1.0, 'Distance 3', mn=0)
+		ui.parameter('sssWeight3', 'float', 0.0, 'Weight 3', mn=0)
+		ui.parameter('sssRadiusColor3', 'rgb', (.523, .637, .667), 'Color 3')
+		
 
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('diffuseExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
@@ -94,7 +102,7 @@ with uigen.group(ui, 'Transmission'):
 
 with uigen.group(ui, 'Emission'):
 	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', mn=0)
-	ui.parameter('emissionTargetColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
+	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
 # end Emission
 
 ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity')

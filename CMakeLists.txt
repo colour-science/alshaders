@@ -6,46 +6,60 @@ project(alShaders)
 
 set(ALS_MAJOR_VERSION 0)
 set(ALS_MINOR_VERSION 4)
-set(ALS_PATCH_VERSION 0b9)
+set(ALS_PATCH_VERSION 0b11)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
 
 set(CMAKE_BUILD_TYPE RELEASE)
 set(CMAKE_VERBOSE_MAKEFILE FALSE)
 set(CMAKE_SKIP_RPATH TRUE)
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
-
 # Fix to stop crash on OSX < 10.9
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
 
-# pre-set the arnold and mtoa versions and root paths
-# set(ARNOLD_VERSION 4.1.3.2)
-# set(ARNOLD_ROOT /Users/anders/vfx/arnold/${ARNOLD_VERSION})
-
-set(MTOA_VERSION 1.0.0)
-set(MTOA_ROOT /Users/anders/vfx/mtoa/${MTOA_VERSION})
+# Compiler flags
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    # TODO: is there a good set of flags for windows builds?
+else()
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
+endif()
 
 # check if we have a local cmake include file and include it if we do
-# this is useful for overriding our arnold and mtoa locations
+# this is useful for setting our arnold location as an alternative to
+# environment variables
 if(EXISTS ${CMAKE_SOURCE_DIR}/local.cmake)
-    message(INFO " --- Using local.cmake")
+    message(STATUS "Using local.cmake")
     include(${CMAKE_SOURCE_DIR}/local.cmake)
-else()
-    message(INFO " --- No local.cmake found")
 endif()
 
 # Find Arnold SDK
-find_package( Arnold REQUIRED )
+find_package(Arnold REQUIRED)
 include_directories(${ARNOLD_INCLUDE_DIR})
 link_directories(${ARNOLD_LIBRARY_DIR})
 
-set(MTOA_SHADERS ${MTOA_ROOT}/shaders)
-set(MTOA_SCRIPTS ${MTOA_ROOT}/scripts)
-set(MTOA_ICONS ${MTOA_ROOT}/icons)
-set(MTOA_UI ${MTOA_ROOT}/scripts/mtoa/ui/ae)
+if (NOT DEFINED INSTALL_DIR)
+    set(INSTALL_DIR "${CMAKE_BINARY_DIR}/dist/${ALS_VERSION}/ai${ARNOLD_VERSION}")
+    message("INSTALL_DIR not defined. Defaulting to:\n\t${INSTALL_DIR}")
+else()
+    message("Installing to:\n\t${INSTALL_DIR}")
+endif()
 
+# Set up installation paths
+set(DSO_INSTALL_DIR ${INSTALL_DIR}/bin)
+set(MTD_INSTALL_DIR ${INSTALL_DIR}/bin)
+set(AE_INSTALL_DIR ${INSTALL_DIR}/ae)
+set(SPDL_INSTALL_DIR ${INSTALL_DIR}/spdl)
+set(ARGS_INSTALL_DIR ${INSTALL_DIR}/Args)
+
+message("Shader binaries will be installed to:\n\t${DSO_INSTALL_DIR}")
+message("Shader MTD will be installed to: \n\t${MTD_INSTALL_DIR}")
+message("AETemplates will be installed to: \n\t${AE_INSTALL_DIR}")
+message("SPDL will be installed to: \n\t${SPDL_INSTALL_DIR}")
+message("Katana Args will be installed to: \n\t${ARGS_INSTALL_DIR}")
+
+# Include common files
 include_directories(common)
 
+# Set the list of subdirectories to recurse into to find stuff to build
 set(SUBDIRECTORIES 
         alSurface
         alRemap
@@ -61,10 +75,38 @@ set(SUBDIRECTORIES
         common
 )
 
+# define shader build function
+function(build_shader)
+    foreach(SHADER ${ARGV})
+        set(SRC ${SHADER}.cpp ../common/alUtil.cpp ../common/Color.cpp)
+        set(UI ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.ui)
+        set(MTD ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.mtd)
+        set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
+        set(SPDL ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spdl)
+        set(KARGS ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.args)
+
+        add_library(${SHADER} SHARED ${SRC})
+
+        target_link_libraries(${SHADER} ai)
+        set_target_properties(${SHADER} PROPERTIES PREFIX "")
+
+        add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} DEPENDS ${UI})
+        add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
+
+        install(TARGETS ${SHADER} DESTINATION ${DSO_INSTALL_DIR})
+        install(FILES ${MTD} DESTINATION ${MTD_INSTALL_DIR})
+        install(FILES ${AE} DESTINATION ${AE_INSTALL_DIR})
+        install(FILES ${SPDL} DESTINATION ${SPDL_INSTALL_DIR})
+        install(FILES ${KARGS} DESTINATION ${ARGS_INSTALL_DIR})
+    endforeach()
+endfunction(build_shader)
+
+# loop over subdirectories
 foreach(SUBDIR ${SUBDIRECTORIES})
     add_subdirectory(${SUBDIR})
 endforeach()
 
+# 
 configure_file(
     "${PROJECT_SOURCE_DIR}/package.in.py"
     "${PROJECT_SOURCE_DIR}/package.py"
