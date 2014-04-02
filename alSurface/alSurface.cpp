@@ -1552,25 +1552,7 @@ shader_evaluate
 
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)
-    {
-        if (doDeepGroups)
-        {
-            AtRGB deepGroups[NUM_LIGHT_GROUPS];
-            memset(deepGroups, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
-            for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
-            {
-                deepGroups[i] = deepGroupsDiffuse[i] 
-                                + deepGroupsGlossy[i] 
-                                + deepGroupsGlossy2[i] 
-                                + deepGroupsTransmission[i]
-                                + deepGroupsBacklight[i] 
-                                + lightGroupsDirect[i];
-
-                if (deepGroups[i] != AI_RGB_BLACK)
-                    AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), deepGroups[i]);
-            }
-        }
-        
+    {   
         if (data->standardAovs)
         {
             AtRGB tmp;
@@ -1624,10 +1606,30 @@ shader_evaluate
         }
         else
         {
-            for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
+            if (doDeepGroups)
             {
-                if (lightGroupsDirect[i] != AI_RGB_BLACK)
-                    AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), lightGroupsDirect[i]);
+                AtRGB deepGroups[NUM_LIGHT_GROUPS];
+                memset(deepGroups, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+                for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
+                {
+                    deepGroups[i] = deepGroupsDiffuse[i] 
+                                    + deepGroupsGlossy[i] 
+                                    + deepGroupsGlossy2[i] 
+                                    + deepGroupsTransmission[i]
+                                    + deepGroupsBacklight[i] 
+                                    + lightGroupsDirect[i];
+
+                    if (deepGroups[i] != AI_RGB_BLACK)
+                        AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), deepGroups[i]);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
+                {
+                    if (lightGroupsDirect[i] != AI_RGB_BLACK)
+                        AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), lightGroupsDirect[i]);
+                }
             }
 
             if (diffuseColor != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_diffuse_color].c_str(), diffuseColor);
