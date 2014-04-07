@@ -404,7 +404,21 @@ shader_evaluate
 {
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
-    float ior = AiShaderEvalParamFlt(p_specular1Ior);
+    bool spec1Metal = true;
+    AtRGB specular1Color = AiColor(AiShaderEvalParamFlt( p_specular1Strength ));
+    float iorf = AiShaderEvalParamFlt(p_specular1Ior);
+    AtColor ior;
+
+    if(spec1Metal == false){
+        specular1Color *= AiShaderEvalParamRGB( p_specular1Color );
+        ior = AiColor(iorf);
+    } else {
+        ior = AiShaderEvalParamRGB( p_specular1Color );
+        ior.r = lerp(1.0001f, iorf, ior.r);
+        ior.g = lerp(1.0001f, iorf, ior.g);
+        ior.b = lerp(1.0001f, iorf, ior.b);
+    }
+
     float roughness = AiShaderEvalParamFlt( p_specular1Roughness );
     roughness *= roughness;
     float transmissionRoughness;
@@ -413,7 +427,7 @@ shader_evaluate
     if (transmissionLinkToSpecular1)
     {
         transmissionRoughness = roughness;
-        transmissionIor = ior;
+        transmissionIor = maxh(ior);
     }
     else
     {
@@ -554,8 +568,22 @@ shader_evaluate
     AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
     float sssRadius = AiShaderEvalParamFlt( p_sssRadius );
     float sssDensityScale = AiShaderEvalParamFlt( p_sssDensityScale );
-    AtRGB specular1Color = AiShaderEvalParamRGB( p_specular1Color ) * AiShaderEvalParamFlt( p_specular1Strength );
-    AtRGB specular2Color = AiShaderEvalParamRGB( p_specular2Color ) * AiShaderEvalParamFlt( p_specular2Strength );
+
+    bool spec2Metal = true;
+    AtRGB specular2Color = AiColor(AiShaderEvalParamFlt( p_specular2Strength ));
+    float ior2f = AiShaderEvalParamFlt(p_specular2Ior);
+    AtColor ior2;
+
+    if(spec2Metal == false){
+        specular2Color *= AiShaderEvalParamRGB( p_specular2Color );
+        ior2 = AiColor(ior2f);
+    } else {
+        ior2 = AiShaderEvalParamRGB( p_specular2Color );
+        ior2.r = lerp(1.0001f, ior2f, ior2.r);
+        ior2.g = lerp(1.0001f, ior2f, ior2.g);
+        ior2.b = lerp(1.0001f, ior2f, ior2.b);
+    }
+
     AtVector specular1Normal = sg->Nf;
     if (data->specular1NormalConnected)
     {
@@ -571,9 +599,8 @@ shader_evaluate
     float roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
     roughness2 *= roughness2;
 
-    float eta = 1.0f / ior;
-    float ior2 = AiShaderEvalParamFlt(p_specular2Ior);
-    float eta2 = 1.0f / ior2;
+    AtColor eta = AiColor(1.0f/ior.r, 1.0f/ior.g, 1.0f/ior.b);
+    AtColor eta2 = AiColor(1.0f/ior2.r, 1.0f/ior2.g, 1.0f/ior2.b);
 
 
     float specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
@@ -809,10 +836,18 @@ shader_evaluate
                 // put back the original surface normal
                 sg->Nf = Nfold;
             }
+
+            AtColor r;
+            if(spec1Metal == true){
+                r = AiColor(1.0f - maxh(specular1Color));
+            }
+            else {
+                r = AiColor(1.0f - maxh(brdfw.kr)*maxh(specular1Color));
+            }
+
             if (do_glossy2)
             {
                 sg->Nf = specular2Normal;
-                float r = (1.0f - brdfw.kr*maxh(specular1Color));
                 Lspecular2Direct =
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
                                         * r * specular_strength;
@@ -823,7 +858,13 @@ shader_evaluate
                 result_glossy2Direct += Lspecular2Direct;
                 sg->Nf = Nfold;
             }
-            float r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
+
+            if(spec2Metal == true){
+                r *= AiColor(1.0f - maxh(specular2Color));
+            } else {
+                r *= AiColor(1.0f - maxh(brdfw2.kr)*maxh(specular2Color));
+            }
+
             if (do_diffuse)
             {
                 LdiffuseDirect =
@@ -862,29 +903,41 @@ shader_evaluate
                 AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
                     * specular_strength;
             }
+
+            AtColor r;
+            if(spec1Metal == true){
+                r = AiColor(1.0f - maxh(specular1Color));
+            }
+            else {
+                r = AiColor(1.0f - maxh(brdfw.kr)*maxh(specular1Color));
+            }
+
+
             if (do_glossy2)
             {
                 result_glossy2Direct +=
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                                        * (1.0f - brdfw.kr*maxh(specular1Color)) 
-                                        * specular_strength;
+                                        * r * specular_strength;
             }
+
+            if(spec2Metal == true){
+                r *= AiColor(1.0f - maxh(specular2Color));
+            } else {
+                r *= AiColor(1.0f - maxh(brdfw2.kr)*maxh(specular2Color));
+            }
+
             if (do_diffuse)
             {
                 result_diffuseDirect +=
                 AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * (1.0f - brdfw.kr*maxh(specular1Color))
-                                        * (1.0f - brdfw2.kr*maxh(specular2Color))
-                                        * diffuse_strength;
+                                        * r * diffuse_strength;
             }
             if (do_backlight)
             {
                 flipNormals(sg);
                 result_backlightDirect +=
                 AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                    * (1.0f - brdfw.kr*maxh(specular1Color))
-                    * (1.0f - brdfw2.kr*maxh(specular2Color))
-                    * diffuse_strength;
+                    * r * diffuse_strength;
                 flipNormals(sg);
             }
         }
@@ -910,7 +963,8 @@ shader_evaluate
     AtVector wi;
     AtScrSample scrs;
     AtVector H;
-    float kr=1, kt=1;
+    AtColor kr = AiColor(1.f);
+    float kt = 1;
 
     // figure out whether to choose glossy or transmission for russian roulette
     // TODO: unify all the IOR calculations
@@ -928,11 +982,15 @@ shader_evaluate
     AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
     bool tir = (!AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg)) && inside;
     bool rr_transmission = (data->rrTransmission && (sg->Rr >= data->rrTransmissionDepth) && !tir);
+    // TODO: Implement rr for metallic speculars
+    if(spec1Metal == true){
+        rr_transmission = false;
+    }
     if (rr_transmission)
     {
-        kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
+        kr = AiColor(fresnel(AiV3Dot(-sg->Rd, sg->Nf), maxh(eta)));
         // TODO: better random numbers here
-        if ((double)rand()/(double(RAND_MAX)+1) < kr)
+        if ((double)rand()/(double(RAND_MAX)+1) < maxh(kr))
         {
             do_glossy = true;
             do_transmission = false;
@@ -960,12 +1018,19 @@ shader_evaluate
                 AiReflectRay(&wi_ray, &sg->Nf, sg);
                 if (!rr_transmission)
                 {
-                    kr = fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta);
-                    kti = kr;
+                    kr = AiColor(fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta.r));
+                    if(eta.g != eta.r){
+                        kr.g = fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta.g);
+                    }
+                    if(eta.b != eta.r){
+                        kr.b = fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta.b);
+                    }
+
+                    kti = maxh(kr);
                 }
                 else
                 {
-                    kr = 1.0f;
+                    kr = AiColor(1.0f);
                 }
                 // Previously we pulled the sampler here as an optimization. This nets us about a 10-30%
                 // speedup in the case of pure dielectrics, but severely fucks up sss, both on the surface
@@ -974,7 +1039,7 @@ shader_evaluate
                 // for now until we can understand more clearly what's going on.
                 while (AiSamplerGetSample(sampit, samples)){}
                 //AiSamplerGetSample(sampit, samples);
-                if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
+                if (maxh(kr) > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                 {
                     result_glossyIndirect = min(scrs.color, rgb(data->specular1IndirectClamp)) * kr * specular1Color * specular1IndirectStrength;
                     if (doDeepGroups)
@@ -1003,9 +1068,17 @@ shader_evaluate
                     // get half-angle vector for fresnel
                     wi_ray.dir = wi;
                     AiV3Normalize(H, wi+brdfw.V);
-                    kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
-                    kti += kr;
-                    if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+                    kr = AiColor(fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta.r));
+                    if(eta.g != eta.r){
+                        kr.g = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta.g);
+                    }
+                    if(eta.b != eta.r){
+                        kr.g = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta.b);
+                    }
+
+                    kti += maxh(kr);
+
+                    if (maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                     {
                         // if we're in a camera ray, pass the sample index down to the child SG
                         if (AiTrace(&wi_ray, &scrs))
@@ -1058,15 +1131,24 @@ shader_evaluate
             {
                 wi_ray.dir = wi;
                 AiV3Normalize(H, wi+brdfw2.V);
+
                 // add the fresnel for this layer
-                kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
-                if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+                kr = AiColor(fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2.r));
+                if(eta2.g != eta2.r){
+                    kr.g = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2.g);
+                }
+                if(eta2.b != eta2.r){
+                    kr.b = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2.b);
+                }
+
+                if (maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
                     if (AiTrace(&wi_ray, &scrs))
                     {
                         AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
                         result_glossy2Indirect += min(scrs.color, rgb(data->specular2IndirectClamp)) * f;
-                        kti2 += kr; 
+
+                        kti2 += maxh(kr);
                         
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
