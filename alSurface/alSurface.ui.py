@@ -41,7 +41,11 @@ with uigen.group(ui, 'Diffuse', False):
 
 with uigen.group(ui, 'Specular 1', False):
 	ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1)
-	ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Color')
+        ui.parameter('specular1Mode', 'enum', 'regular', 'Mode', enum_names=[
+                "regular",
+                "metal"
+        ])
+        ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Color')
 	ui.parameter('specular1Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
 	ui.parameter('specular1Ior', 'float', 1.4, 'IOR', mn=0, mx=100)
 
@@ -55,6 +59,10 @@ with uigen.group(ui, 'Specular 1', False):
 
 with uigen.group(ui, 'Specular 2'):
 	ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1)
+        ui.parameter('specular2Mode', 'enum', 'regular', 'Mode', enum_names=[
+                "regular",
+                "metal"
+        ])
 	ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Color')
 	ui.parameter('specular2Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
 	ui.parameter('specular2Ior', 'float', 1.4, 'IOR', mn=0, mx=100)
