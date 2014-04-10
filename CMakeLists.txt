@@ -70,6 +70,7 @@ set(SUBDIRECTORIES
         alSwitch
         alJitterColor
         alCache
+        alImage
         common
 )
 
