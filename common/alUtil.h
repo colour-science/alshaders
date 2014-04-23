@@ -446,6 +446,8 @@ inline float bias(float f, float b)
 
 inline float biasandgain(float f, float b, float g)
 {
+    if (f < 0.f) return f;
+
     if (b != 0.5f)
     {
         f = bias(f, b);
