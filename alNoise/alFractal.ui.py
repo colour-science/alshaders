@@ -28,7 +28,7 @@ ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
 ])
 ui.parameter('scale', 'vector', (1.0, 1.0, 1.0), 'Vector', connectible=False)
 ui.parameter('frequency', 'float', 1.0, 'Frequency', connectible=False)
-ui.parameter('time', 'float', 0.0, 'Time', connectible=False)
+ui.parameter('time', 'float', 0.0, 'Time')
 ui.parameter('octaves', 'int', 8, 'Octaves', connectible=False)
 ui.parameter('distortion', 'float', 0.0, 'Distortion', connectible=False)
 ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', connectible=False)
