@@ -23,3 +23,4 @@
 0x00116416 - alJitterColor
 0x00116417 - alCache
 0x00116419 - alImage
+0x0011641A - alIntToFloat
