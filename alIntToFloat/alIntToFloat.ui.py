@@ -3,7 +3,7 @@ import uigen
 ui.shader({
         'name':'alIntToFloat',
         'description':'Converts int input to float output',
-        'output':'float',
+        'output':'rgb',
         'maya_name':'alIntToFloat',
 	'maya_classification':'texture',
         'maya_id':'0x0011641A',
