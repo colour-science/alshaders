@@ -3,9 +3,9 @@
 
 AI_SHADER_NODE_EXPORT_METHODS(alIntToFloatMtd)
 
-enum alSwitchParams
+enum alIntToFloatParams
 {
-    p_inputA
+    p_input
 };
 
 node_parameters
@@ -16,7 +16,7 @@ node_parameters
 node_loader
 {
    if (i>0) return 0;
-   node->methods     = alSwitchColorMtd;
+   node->methods     = alIntToFloatMtd;
    node->output_type = AI_TYPE_FLOAT;
    node->name        = "alIntToFloat";
    node->node_type   = AI_NODE_SHADER;
@@ -41,7 +41,7 @@ node_update
 
 shader_evaluate
 {
-    sg->out.FLT = AiShaderEvalParamINT(p_input);
+    sg->out.FLT = AiShaderEvalParamInt(p_input);
 }
 
 

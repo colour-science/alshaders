@@ -66,11 +66,12 @@ set(SUBDIRECTORIES
         alInputVector
         alHair
         alColorSpace
-		alTriplanar
+        alTriplanar
         alSwitch
         alJitterColor
         alCache
         alImage
+        alIntToFloat
         common
 )
 
