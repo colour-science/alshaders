@@ -71,7 +71,6 @@ set(SUBDIRECTORIES
         alJitterColor
         alCache
         alImage
-        alIntToFloat
         common
 )
 
