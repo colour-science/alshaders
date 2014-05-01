@@ -117,7 +117,6 @@ node_update
 	data->space = params[p_space].INT;
 	data->frequency = params[p_frequency].FLT;
 	data->scale = params[p_scale].PNT;
-	data->time = params[p_time].FLT;
 	data->octaves = params[p_octaves].INT;
 	data->lacunarity = params[p_lacunarity].FLT;
 	data->gain = params[p_gain].FLT;
@@ -130,6 +129,7 @@ shader_evaluate
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 	float distortion = AiShaderEvalParamFlt(p_distortion);
 	float ridgeOffset = AiShaderEvalParamFlt(p_ridgeOffset);
+	float time = AiShaderEvalParamFlt(p_time);
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
 	AtPoint Pin = AiShaderEvalParamPnt(p_P);
@@ -177,7 +177,7 @@ shader_evaluate
 			AtPoint PP = P;
 			if (distortion != 0.0f)
 				PP += distortion * AiVNoise3(P, 1, 0, 0);
-			v = AiPerlin4(PP, data->time);
+			v = AiPerlin4(PP, time);
 			if (data->turbulent) v = fabs(v);
 			if (data->ridged)
 			{
@@ -208,7 +208,7 @@ shader_evaluate
 			AtPoint PP = P;
 			if (distortion != 0.0f)
 				PP += distortion * AiVNoise3(P, 1, 0, 0);
-			v = rgb(AiVNoise4(PP, data->time, 1, 0, 0));
+			v = rgb(AiVNoise4(PP, time, 1, 0, 0));
 			if (data->turbulent) v = fabs(v);
 			if (data->ridged)
 			{
