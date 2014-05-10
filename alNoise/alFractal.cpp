@@ -223,10 +223,10 @@ shader_evaluate
 
 			P *= data->lacunarity;
 		}
-		RemapFloat r = REMAP_FLOAT_CREATE;
-		n.r = r.remap(n.r);
-		n.g = r.remap(n.g);
-		n.b = r.remap(n.b);
+        RemapFloat r = REMAP_FLOAT_CREATE;
+        n.r = r.remap(n.r);
+        n.g = r.remap(n.g);
+        n.b = r.remap(n.b);
 
 		sg->out.RGB = n;
 	}
