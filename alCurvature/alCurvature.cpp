@@ -117,6 +117,7 @@ shader_evaluate
 	result = r.remap(result);
 
 	sg->out.RGB = AiColorCreate(std::max(result, 0.0f), std::max(-result, 0.0f), 0.0f);
+	AiShaderGlobalsDestroy(hitpoint);
 }
 
 
