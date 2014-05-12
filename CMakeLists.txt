@@ -77,6 +77,7 @@ set(SUBDIRECTORIES
         alInputVector
         alHair
         alColorSpace
+        alMeasured
         common
 )
 
