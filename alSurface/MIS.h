@@ -6,10 +6,10 @@ struct BrdfData_wrap
 {
    void* brdf_data;
    AtShaderGlobals* sg;
-   AtColor eta;
+   float eta;
    AtVector V;
    AtVector N;
-   mutable AtColor kr;
+   mutable float kr;
 };
 
 
@@ -18,16 +18,8 @@ AtRGB AiWardDuerMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    AtVector H;
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
-
-   brdfw->kr = AiColor(fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r));
-   if(brdfw->eta.g != brdfw->eta.r){
-       brdfw->kr.g = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.g);
-   }
-   if(brdfw->eta.b != brdfw->eta.r){
-       brdfw->kr.b = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.b);
-   }
-
-   return brdfw->kr *  AiWardDuerMISBRDF(brdfw->brdf_data, indir);
+   float kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
+   return kr *  AiWardDuerMISBRDF(brdfw->brdf_data, indir);
 }
 
 float AiWardDuerMISPDF_wrap( const void* brdf_data, const AtVector* indir )
@@ -47,14 +39,7 @@ AtRGB AiCookTorranceMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    AtVector H;
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
-
-   brdfw->kr = AiColor(fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.r));
-   if(brdfw->eta.g != brdfw->eta.r){
-       brdfw->kr.g = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.g);
-   }
-   if(brdfw->eta.b != brdfw->eta.r){
-       brdfw->kr.b = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta.b);
-   }
+   brdfw->kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
    return brdfw->kr *  AiCookTorranceMISBRDF(brdfw->brdf_data, indir);
 }
 
@@ -76,7 +61,8 @@ AtRGB AiOrenNayarMISBRDF_wrap( const void* brdf_data, const AtVector* indir )
    AtVector H;
    const BrdfData_wrap* brdfw = reinterpret_cast<const BrdfData_wrap*>(brdf_data);
    AiV3Normalize(H,(*indir)+brdfw->V);
-   float kr = fresnel(std::max(0.0f,AiV3Dot(brdfw->N,brdfw->V)),maxh(brdfw->eta));
+   //float kr = fresnel(std::max(0.0f,AiV3Dot(H,*indir)),brdfw->eta);
+   float kr = fresnel(std::max(0.0f,AiV3Dot(brdfw->N,brdfw->V)),brdfw->eta);
    return AiOrenNayarMISBRDF(brdfw->brdf_data, indir) * (1-kr);
 }
 
