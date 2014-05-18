@@ -3,6 +3,7 @@
 #include <ai.h>
 #include <map>
 #include <string>
+#include <vector>
 
 struct ShaderData
 {
@@ -39,6 +40,13 @@ struct ShaderData
    int numLights;
    bool rrTransmission;
    int rrTransmissionDepth;
+
+   // data for doing RR
+   int AA_samples;
+   float AA_samples_inv;
+   int total_depth;
+   int* perm_table;
+   int xres;
 
    float specular1IndirectClamp;
    float specular2IndirectClamp;

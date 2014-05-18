@@ -329,6 +329,7 @@ node_initialize
     data->glossy2_sampler = NULL;
     data->refraction_sampler = NULL;
     data->backlight_sampler = NULL;
+    data->perm_table = NULL;
 };
 
 node_finish
@@ -342,7 +343,8 @@ node_finish
         AiSamplerDestroy(data->glossy2_sampler);
         AiSamplerDestroy(data->refraction_sampler);
         AiSamplerDestroy(data->backlight_sampler);
-
+        delete[] data->perm_table;
+        
         AiNodeSetLocalData(node, NULL);
         delete data;
     }
@@ -413,6 +415,19 @@ node_update
     if (data->specular2IndirectClamp == 0.0f) data->specular2IndirectClamp = AI_INFINITE;
     data->transmissionClamp = params[p_transmissionClamp].FLT;
     if (data->transmissionClamp == 0.0f) data->transmissionClamp = AI_INFINITE;
+
+    // Set up info for RR
+    data->AA_samples = SQR(AiNodeGetInt(options, "AA_samples"));
+    data->AA_samples_inv = 1.0f / float(data->AA_samples);
+
+    data->total_depth = AiNodeGetInt(options, "GI_total_depth");
+    delete[] data->perm_table;
+    data->perm_table = new int[data->AA_samples*data->total_depth];
+    for (int d=0; d < data->total_depth; ++d)
+    {
+        permute(&(data->perm_table[d*data->AA_samples]), data->AA_samples);
+    }
+    data->xres = AiNodeGetInt(options, "xres");
 };
 
 
@@ -947,11 +962,11 @@ shader_evaluate
     if (AiV3Dot(sg->N, sg->Rd) > 0.0f) inside = true;
 
     float n1 = 1.0f;
-    float n2 = 1.5f;
+    float n2 = ior;
 
     if (inside)
     {
-        n1 = 1.5f;
+        n1 = ior;
         n2 = 1.0f;
     }
     AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
@@ -960,8 +975,14 @@ shader_evaluate
     if (rr_transmission)
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
-        // TODO: better random numbers here
-        if ((double)rand()/(double(RAND_MAX)+1) < kr)
+
+        // get a permuted, stratified random number
+        float u = (float(data->perm_table[sg->Rr*data->AA_samples+sg->si]) + drand48())*data->AA_samples_inv;
+        // offset based on pixel
+        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, 0, 64);
+        u = fmodf(u+offset, 1.0f);
+        
+        if (u < kr)
         {
             do_glossy = true;
             do_transmission = false;
