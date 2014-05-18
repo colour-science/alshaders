@@ -158,7 +158,7 @@ struct SGCache{
 	float dvdy;
 };
 
-AtPoint getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, int normal, AtPoint *P, AtVector *N, AtVector *dPdx, AtVector *dPdy){
+void getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int space, int normal, AtPoint *P, AtVector *N, AtVector *dPdx, AtVector *dPdy){
     AtVector baseN;
     switch (normal)
     {
