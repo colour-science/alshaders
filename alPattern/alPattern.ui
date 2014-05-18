@@ -37,7 +37,7 @@ ui.parameter('shape', 'enum', 'sine', 'Shape', enum_names=[
 ])
 
 ui.parameter('frequency', 'float', 5.0, 'Frequency', connectible=False)
-ui.parameter('offset', 'float', 0.0, 'Offset', connectible=False)
+ui.parameter('offset', 'float', 0.0, 'Offset', connectible=True)
 
 uigen.remapControls(ui)
 

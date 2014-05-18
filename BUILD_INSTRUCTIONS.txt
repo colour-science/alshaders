@@ -4,26 +4,27 @@ Simply copy the files from the subdirectories to the relevant subdirectories of 
 the appropriate paths):
 
 For MtoA
-- libraries (*.dylib, *.so, *.dll) and *.mtd files go in 'shaders'
-- *.py interface templates go in 'scripts/mtoa/ui/ae'
+- Libraries and MTD files found in the 'bin' directory go somewhere in your ARNOLD_PLUGIN_PATH or in 'shaders' under your MtoA installation directory
+- *.py interface templates found in the 'ae' directory go somwhere in your MTOA_TEMPLATES_PATH or in 'scripts/mtoa/ui/ae' under your MtoA installation directory
 
 For SitoA
 - I have no idea :)
 
+For Katana
+- Libraries and MTD files found in the 'bin' directory go somewhere in your ARNOLD_PLUGIN_PATH
+- Copy the Args directory to the same place as you copy the binaries
 
 SOURCE DISTRIBUTION
 -------------------
-This project uses CMake >= 2.8 to build. It has been tested on Mac OS X >=10.7 and Windows 7 with MSVC++2010. It *should* work 
-without modification on Linux but I haven't tested this thoroughly yet. 
+This project uses CMake >= 2.8 to build. It has been tested on Mac OS X >=10.7, Windows 7 with MSVC++2010 and Centos6.5 with gcc4.2.1
 
-In order to set it up to build in your environment, create a local.cmake file and set ARNOLD_ROOT to point to 
-the root of your Arnold installation (in order to find the include files and libai.so), then set MTOA_ROOT to point to
-the root of your MtoA installation if you want to install the shaders and AEtemplates there. If you want to install the
-shaders and AEtemplates somewhere else, set MTOA_SHADERS and MTOA_SCRIPTS appropriately. 
-You'll also need to set BOOST_INCLUDE to point to where your have your Boost headers installed in order to build alPhotometric.
-If you don't have Boost you can skip alPhotometric by removing it from the list of subdirectories in the main CMakeLists.txt file.
-The project contains an example local.cmake file (called local.cmake.win to stop it affecting the build) that has my build setup
-for Windows in it.
+In order to set it up to build in your environment you need to tell CMake where Arnold is installed. You can either rely on the FindArnold package working automatically, or specify ARNOLD_ROOT in one of the following ways:
+1) Set ARNOLD_ROOT in your environment before running CMake
+2) Pass ARNOLD_ROOT to cmake directly as in:
+> cmake -DARNOLD_ROOT=<path> ..
+3) Create a local.cmake file and set it in there
+
+By default, the shaders will be installed to build/dist. From there you can copy the files to the appropriate paths on your system. If you would like to install directly to a specific path you can set INSTALL_DIR as described for ARNOLD_ROOT above to install to ${INSTALL_DIR}/bin etc. Alternatively setting INSTALL_ROOT instead will install to ${INSTALL_ROOT}/${ALS_VERSION}/ai${ARNOLD_VERSION}
 
 Once those variables are set, cd to the top-level alShaders directory (assuming that's where you cloned it to), then:
 > mkdir build

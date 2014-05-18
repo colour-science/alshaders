@@ -1,0 +1,18 @@
+import uigen
+
+ui.shader({
+	'name':'alMeasured',
+	'description':'Use a measured BRDF from the MERL database',
+	'output':'rgb',
+	'maya_name':'alMeasured',
+	'maya_classification':'shader/surface',
+	'maya_id':'0x00116418',
+	'maya_swatch':True,
+	'maya_matte':True,
+	'maya_bump':False,
+	'soft_name':'ALS_Measured',
+	'soft_classification':'material',
+	'soft_version':1
+})
+
+ui.parameter('filename', 'string', '', 'Filename')

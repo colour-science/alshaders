@@ -33,7 +33,6 @@ subdirs = [
     'alLayer',
     'alNoise',
     'alPattern',
-    'alPhotometric',
     'alRemap',
     'alSurface',
     'common'
@@ -41,26 +40,38 @@ subdirs = [
 
 # pattern for files to include in the source distribution
 name_src = 'alShaders-src-%s.%s.%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION)
-ptrn_src_src = ['*.cpp', '*.h', '*.txt', '*.py']
+ptrn_src_src = ['*.cpp', '*.h', '*.txt', '*.py', '*.ui']
 ptrn_src_bin = []
-files_src = ['BUILD_INSTRUCTIONS.txt', 'CMakeLists.txt', 'package.in.py', 'test.in.py', 'README', 'TODO.txt', 'local.cmake.win']
+ptrn_src_ae = None
+ptrn_src_spdl = None
+ptrn_src_args = None
+files_src = ['BUILD_INSTRUCTIONS.txt', 'CMakeLists.txt', 'package.in.py', 'test.in.py', 'README', 'TODO.txt', 'local.cmake.win', 'uigen.py']
 
 # patterns for files to include in the osx binary distribution
 name_osx = 'alShaders-osx-%s.%s.%s-ai-%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION, ARNOLD_VERSION)
 ptrn_osx_src = ['*.py']
-ptrn_osx_bin  = ['*.dylib', '*.mtd', '*.py']
+ptrn_osx_bin  = ['*.dylib', '*.mtd']
+ptrn_osx_ae = ['*.py']
+ptrn_osx_spdl = None
+ptrn_osx_args = None
 files_osx = ['BUILD_INSTRUCTIONS.txt', 'README']
 
 # patterns for files to include in the windows binary distribution
 name_win = 'alShaders-win-%s.%s.%s-ai-%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION, ARNOLD_VERSION)
 ptrn_win_src = ['*.py']
-ptrn_win_bin  = ['*.dll', '*.mtd', '*.py', '*.spdl']
+ptrn_win_bin  = ['*.dll', '*.mtd']
+ptrn_win_ae = ['*.py']
+ptrn_win_spdl = ['*.spdl']
+ptrn_win_args = None
 files_win = ['BUILD_INSTRUCTIONS.txt', 'README']
 
 # patterns for files to include in the linux binary distribution
 name_linux = 'alShaders-linux-%s.%s.%s-ai-%s' % (MAJOR_VERSION,MINOR_VERSION,PATCH_VERSION, ARNOLD_VERSION)
 ptrn_linux_src = ['*.py']
-ptrn_linux_bin  = ['*.so', '*.mtd', '*.py', '*.spdl']
+ptrn_linux_bin  = ['*.so', '*.mtd']
+ptrn_linux_ae = ['*.py']
+ptrn_linux_spdl = ['*.spdl']
+ptrn_linux_args = ['*.args']
 files_linux = ['BUILD_INSTRUCTIONS.txt', 'README']
 
 def copyPatternsToDistDir(subDirs, subDirPrefix, filePatterns, distDir, isSrc=False):
@@ -93,28 +104,37 @@ def createArchive(distDir, name, isSrc=False):
         f.add(distDir, arcname = name)
         f.close()
     
-def createDistribution(name, ptrn_src, ptrn_bin, files, isSrc=False):
+def createDistribution(name, ptrn_src, ptrn_bin, ptrn_ae, ptrn_spdl, ptrn_args, files, isSrc=False):
     distdir = 'build/%s' % name
     shutil.rmtree(distdir, ignore_errors=True)
     os.mkdir(distdir)
     if len(ptrn_src):
         copyPatternsToDistDir(subdirs, '.', ptrn_src, distdir, isSrc)
     if len(ptrn_bin):
-        copyPatternsToDistDir(subdirs, 'build', ptrn_bin, distdir, isSrc)
-    copyFilesToDistDir(files, distdir)  
+        copyPatternsToDistDir(subdirs, 'build', ptrn_bin, os.path.join(distdir, 'bin'), isSrc)
+    if ptrn_ae:
+        copyPatternsToDistDir(subdirs, 'build', ptrn_ae, os.path.join(distdir, 'ae'), isSrc)
+    if ptrn_spdl:
+        copyPatternsToDistDir(subdirs, 'build', ptrn_spdl, os.path.join(distdir, 'spdl'), isSrc)
+    if ptrn_args:
+        copyPatternsToDistDir(subdirs, 'build', ptrn_args, os.path.join(distdir, 'Args'), isSrc)
+    copyFilesToDistDir(files, distdir)
+    # TODO: really need a better packaging system to avoid this. Time for another look at CPack?
+    if not isSrc:
+        shutil.move(os.path.join(distdir, 'alShaders.py'), os.path.join(distdir, 'ae'))
     createArchive(distdir, name, isSrc)
 
 # source distribution
-createDistribution(name_src, ptrn_src_src, ptrn_src_bin, files_src, True)
+createDistribution(name_src, ptrn_src_src, ptrn_src_bin, ptrn_src_ae, ptrn_src_spdl, ptrn_src_args, files_src, True)
 if platform.system() == "Darwin":
     # OS X distribution
-    createDistribution(name_osx, ptrn_osx_src, ptrn_osx_bin, files_osx)
+    createDistribution(name_osx, ptrn_osx_src, ptrn_osx_bin, ptrn_osx_ae, ptrn_osx_spdl, ptrn_osx_args, files_osx)
 elif platform.system() == "Windows":
     # Windows
-    createDistribution(name_win, ptrn_win_src, ptrn_win_bin, files_win)
+    createDistribution(name_win, ptrn_win_src, ptrn_win_bin, ptrn_win_ae, ptrn_win_spdl, ptrn_win_args, files_win)
 elif platform.system() == "Linux":
     # Linux
-    createDistribution(name_linux, ptrn_linux_src, ptrn_linux_bin, files_linux)
+    createDistribution(name_linux, ptrn_linux_src, ptrn_linux_bin, ptrn_linux_ae, ptrn_linux_spdl, ptrn_linux_args, files_linux)
 else:
     print 'Warning: unknown system "%s", not creating binary package' % platform.system()
 

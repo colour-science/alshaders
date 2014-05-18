@@ -3,6 +3,7 @@
 #include <ai.h>
 #include <map>
 #include <string>
+#include <vector>
 
 struct ShaderData
 {

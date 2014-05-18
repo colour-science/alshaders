@@ -13,7 +13,6 @@
 
 #define IMPORTANCE_EPS 0.001f
 
-
 inline AtRGB rgb(float f)
 {
     AtRGB c;
