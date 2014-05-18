@@ -876,6 +876,32 @@ inline bool AiIsFinite(const AtRGB& c)
     return AiIsFinite(c.r) && AiIsFinite(c.g) && AiIsFinite(c.b);
 }
 
+/// Generate a random integer in the range [0,n)
+// TODO: this isn't great
+inline int rand0n(int n)
+{
+    return rand() / (RAND_MAX / n + 1);
+}
+
+/// Generate a randomly permted [0,n) sequence
+/// TODO: use a reproducible rng here
+inline void permute(int* perm, int n)
+{
+    int i;
+    for (i=0; i < n; ++i)
+    {
+        perm[i] = i;
+    }
+
+    while (--i)
+    {
+        int tmp = perm[i];
+        int rindex = rand0n(i);
+        perm[i] = perm[rindex];
+        perm[rindex] = tmp;
+    }
+}
+
 #define ALS_RAY_UNDEFINED 0
 #define ALS_RAY_SSS 1
 #define ALS_RAY_DUAL 2
