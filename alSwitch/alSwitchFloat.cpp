@@ -7,14 +7,26 @@ enum alSwitchParams
 {
     p_inputA,
     p_inputB,
+    p_inputC,
+    p_inputD,
+    p_inputE,
+    p_inputF,
+    p_inputG,
+    p_inputH,
     p_mix,
     p_threshold
 };
 
 node_parameters
 {
-    AiParameterFLT("inputA", 0.f);
-    AiParameterFLT("inputB", 1.f);
+    AiParameterFLT("inputA", 0.0f);
+    AiParameterFLT("inputB", 1.0f);
+    AiParameterFLT("inputC", .15f);
+    AiParameterFLT("inputD", .30f);
+    AiParameterFLT("inputE", .45f);
+    AiParameterFLT("inputF", .60f);
+    AiParameterFLT("inputG", .75f);
+    AiParameterFLT("inputH", .90f);
     AiParameterFLT("mix", 1.0f);
     AiParameterFLT("threshold", 0.5f);
 }
@@ -50,11 +62,45 @@ shader_evaluate
     float mix = AiShaderEvalParamFlt(p_mix);
     float threshold = AiShaderEvalParamFlt(p_threshold);
 
-    if(mix <= threshold){
-        sg->out.FLT = AiShaderEvalParamFlt(p_inputA);
-    } else {
-        sg->out.FLT = AiShaderEvalParamFlt(p_inputB);
+    int input = floorf(mix);
+    if (mix-input >= threshold) input++;
+    input = clamp(input, 0, 7);
+
+    float result = 0.0f;
+
+    switch(input)
+    {
+    case 0:
+        result = AiShaderEvalParamFlt(p_inputA);
+        break;
+    case 1:
+        result = AiShaderEvalParamFlt(p_inputB);
+        break;
+    case 2:
+        result = AiShaderEvalParamFlt(p_inputC);
+        break;
+    case 3:
+        result = AiShaderEvalParamFlt(p_inputD);
+        break;
+    case 4:
+        result = AiShaderEvalParamFlt(p_inputE);
+        break;
+    case 5:
+        result = AiShaderEvalParamFlt(p_inputF);
+        break;
+    case 6:
+        result = AiShaderEvalParamFlt(p_inputG);
+        break;
+    case 7:
+        result = AiShaderEvalParamFlt(p_inputH);
+        break;
+    default:
+        // should never get here
+        result = 0.0f;
+        break;
     }
+
+    sg->out.FLT = result;
 }
 
 

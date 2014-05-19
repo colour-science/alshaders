@@ -2,7 +2,7 @@ import uigen
 
 ui.shader({
         'name':'alSwitchColor',
-        'description':'Binary switch between input A and B',
+        'description':'Eight-way switch between inputs',
 	'output':'rgb',
         'maya_name':'alSwitchColor',
 	'maya_classification':'texture',
@@ -15,7 +15,13 @@ ui.shader({
 	'soft_version':1
 })
 
-ui.parameter('inputA', 'rgb', (0.0, 0.0, 0.0), 'InputA')
-ui.parameter('inputB', 'rgb', (1.0, 1.0, 1.0), 'InputB')
+ui.parameter('inputA', 'rgb', (0.0, 0.0, 0.0), 'Input 0')
+ui.parameter('inputB', 'rgb', (1.0, 1.0, 1.0), 'Input 1')
+ui.parameter('inputC', 'rgb', (1.0, 0.0, 0.0), 'Input 2')
+ui.parameter('inputD', 'rgb', (0.0, 1.0, 0.0), 'Input 3')
+ui.parameter('inputE', 'rgb', (0.0, 0.0, 1.0), 'Input 4')
+ui.parameter('inputF', 'rgb', (1.0, 1.0, 0.0), 'Input 5')
+ui.parameter('inputG', 'rgb', (1.0, 0.0, 1.0), 'Input 6')
+ui.parameter('inputH', 'rgb', (0.0, 1.0, 1.0), 'Input 7')
 ui.parameter('mix', 'float', 1.0, 'mix')
 ui.parameter('threshold', 'float', 0.5, 'threshold')
