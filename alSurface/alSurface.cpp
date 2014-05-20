@@ -166,6 +166,15 @@ enum alSurfaceParams
     p_aov_id_7,
     p_aov_id_8,
 
+    p_aov_shadow_group_1,
+    p_aov_shadow_group_2,
+    p_aov_shadow_group_3,
+    p_aov_shadow_group_4,
+    p_aov_shadow_group_5,
+    p_aov_shadow_group_6,
+    p_aov_shadow_group_7,
+    p_aov_shadow_group_8,
+
     p_standardAovs,
     p_transmitAovs,
     p_rrTransmission,
@@ -296,6 +305,14 @@ node_parameters
     AiParameterStr("aov_id_6", "id_6");
     AiParameterStr("aov_id_7", "id_7");
     AiParameterStr("aov_id_8", "id_8");
+    AiParameterStr("aov_shadow_group_1", "shadow_group_1");
+    AiParameterStr("aov_shadow_group_2", "shadow_group_2");
+    AiParameterStr("aov_shadow_group_3", "shadow_group_3");
+    AiParameterStr("aov_shadow_group_4", "shadow_group_4");
+    AiParameterStr("aov_shadow_group_5", "shadow_group_5");
+    AiParameterStr("aov_shadow_group_6", "shadow_group_6");
+    AiParameterStr("aov_shadow_group_7", "shadow_group_7");
+    AiParameterStr("aov_shadow_group_8", "shadow_group_8");
 
     AiParameterBool("standardCompatibleAOVs", false);
     AiParameterBool("transmitAovs", false);
@@ -732,6 +749,9 @@ shader_evaluate
     AtRGB lightGroupsDirect[NUM_LIGHT_GROUPS];
     memset(lightGroupsDirect, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
 
+    // Decide whether to calculate shadow groups or not.
+    bool doShadowGroups = (sg->Rt & AI_RAY_CAMERA);
+
     // if this is a camera ray, prepare the temporary storage for deep groups
     AtRGB* deepGroupPtr = NULL;
     AtRGB result_directGroup[NUM_LIGHT_GROUPS];
@@ -822,7 +842,10 @@ shader_evaluate
     void* bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
     flipNormals(sg);
     // }
-    
+
+    AtRGBA shadowGroups[NUM_LIGHT_GROUPS];
+    memset(shadowGroups, 0, sizeof(AtRGBA)*NUM_LIGHT_GROUPS);
+
     // Light loop
     AiLightsPrepare(sg);
     if (doDeepGroups || (sg->Rt & AI_RAY_CAMERA)) 
@@ -832,6 +855,19 @@ shader_evaluate
         {
             // get the group assigned to this light from the hash table using the light's pointer
             int lightGroup = data->lightGroups[sg->Lp];
+
+            // Get the shadow values for shadow AOVs
+            if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+            {
+                shadowGroups[lightGroup].rgb() += sg->Liu * sg->we * fabsf(AiV3Dot(sg->Nf, sg->Ld)) * sg->Lo;
+                shadowGroups[lightGroup].a += maxh(sg->Lo) * sg->we;
+            }
+
+            // The user might have set the shadow_density value to something slightly less than 1
+            // in order to get shadow AOVs from small lights to work correctly. If that's the case
+            // then skip the remaining work.
+            if (minh(sg->Lo) >= 0.995) continue;
+
             // per-light specular and diffuse strength multipliers
             float specular_strength = AiLightGetSpecular(sg->Lp);
             float diffuse_strength = AiLightGetDiffuse(sg->Lp);
@@ -892,6 +928,7 @@ shader_evaluate
                 result_backlightDirect += LbacklightDirect;
                 flipNormals(sg);
             }
+            
         }
     }
     else
@@ -1570,7 +1607,6 @@ shader_evaluate
     result_backlightIndirect *= (1-sssMix);
     result_sss *= sssMix;
 
-
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)
     {   
@@ -1652,6 +1688,13 @@ shader_evaluate
                         AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), lightGroupsDirect[i]);
                 }
             }
+
+            for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
+            {
+                if (shadowGroups[i] != AI_RGBA_BLACK)
+                    AiAOVSetRGBA(sg, data->aovs_rgba[k_shadow_group_1+i].c_str(), shadowGroups[i]);
+            }
+
 
             if (diffuseColor != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_diffuse_color].c_str(), diffuseColor);
             if (result_diffuseDirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_diffuse].c_str(), result_diffuseDirect);
