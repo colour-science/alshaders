@@ -138,6 +138,16 @@ inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
    return r;
 }
 
+inline AtRGBA lerp(const AtRGBA& a, const AtRGBA& b, const float t)
+{
+   AtRGBA r;
+   r.r = lerp( a.r, b.r, t );
+   r.g = lerp( a.g, b.g, t );
+   r.b = lerp( a.b, b.b, t );
+   r.a = lerp( a.a, b.a, t );
+   return r;
+}
+
 inline std::ostream& operator<<(std::ostream& os, const AtRGB& c)
 {
     os << "(" << c.r << ", " << c.g << ", " << c.b << ")";

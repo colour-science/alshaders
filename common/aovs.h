@@ -41,6 +41,7 @@ data->aovs.push_back(params[p_aov_id_8].STR); \
 assert(NUM_AOVs == data->aovs.size() && "NUM_AOVs does not match size of aovs array!"); \
 for (size_t i=0; i < data->aovs.size(); ++i) \
     	AiAOVRegister(data->aovs[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY); \
+data->aovs_rgba.clear(); \
 data->aovs_rgba.push_back(params[p_aov_shadow_group_1].STR); \
 data->aovs_rgba.push_back(params[p_aov_shadow_group_2].STR); \
 data->aovs_rgba.push_back(params[p_aov_shadow_group_3].STR); \

@@ -204,11 +204,60 @@ shader_evaluate
 		}
 		else
 		{
-            double r = (double)rand()/RAND_MAX; // importance sample between layers
-            if(r > mix){
-                result = AiShaderEvalParamRGB(p_layer1);
-            } else {
-                result = AiShaderEvalParamRGB(p_layer2);
+            if (sg->Rt & AI_RAY_CAMERA) // handle aovs
+            {
+                // RGB AOVs
+                AtRGB tmp[NUM_AOVs];
+                memset(tmp, 0, sizeof(AtRGB)*NUM_AOVs);
+                AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
+                for (size_t i=0; i < data->aovs.size(); ++i)
+                {
+                    if (!AiAOVGetRGB(sg, data->aovs[i].c_str(), tmp[i]))
+                    {
+                        tmp[i] = AI_RGB_BLACK;
+                    }
+                    AiAOVSetRGB(sg, data->aovs[i].c_str(), AI_RGB_BLACK);
+                }
+
+                AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
+                result = lerp(layer1, layer2, mix);
+                for (size_t i=0; i < data->aovs.size(); ++i)
+                {
+                    AtRGB tmp2;
+                    if (!AiAOVGetRGB(sg, data->aovs[i].c_str(), tmp2))
+                    {
+                        tmp2 = AI_RGB_BLACK;
+                    }
+                    AiAOVSetRGB(sg, data->aovs[i].c_str(), lerp(tmp[i], tmp2, mix));
+                }
+
+                // RGBA AOVs
+                AtRGBA tmp_rgba[NUM_AOVs_RGBA];
+                memset(tmp_rgba, 0, sizeof(AtRGB)*NUM_AOVs_RGBA);
+                for (size_t i=0; i < data->aovs_rgba.size(); ++i)
+                {
+                    if (!AiAOVGetRGBA(sg, data->aovs_rgba[i].c_str(), tmp_rgba[i]))
+                    {
+                        tmp_rgba[i] = AI_RGBA_BLACK;
+                    }
+                    AiAOVSetRGBA(sg, data->aovs_rgba[i].c_str(), AI_RGBA_BLACK);
+                }
+
+                for (size_t i=0; i < data->aovs_rgba.size(); ++i)
+                {
+                    AtRGBA tmp_rgba2;
+                    if (!AiAOVGetRGBA(sg, data->aovs_rgba[i].c_str(), tmp_rgba2))
+                    {
+                        tmp_rgba2 = AI_RGBA_BLACK;
+                    }
+                    AiAOVSetRGBA(sg, data->aovs_rgba[i].c_str(), lerp(tmp_rgba[i], tmp_rgba2, mix));
+                }
+            }
+            else // just layer the results
+            {
+                AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
+                AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
+                result = lerp(layer1, layer2, mix);
             }
 		}
 	}
