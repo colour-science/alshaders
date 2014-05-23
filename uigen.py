@@ -448,7 +448,10 @@ def WriteMTD(sd, fn):
 	for a in sd.aovs:
 		writei(f, '[attr %s]' % a.name, 1)
 		writei(f, 'houdini.label STRING "%s"' % a.name, 2)
-		writei(f, 'aov.type INT 0x05', 2)
+		if (a.ptype == 'rgb'):
+			writei(f, 'aov.type INT 0x05', 2)
+		elif (a.ptype == 'rgba'):
+			writei(f, 'aov.type INT 0x06', 2)
 		writei(f, 'aov.enable_composition BOOL TRUE', 2)               
 		writei(f, 'default STRING "%s"' % a.name[4:], 2)
 

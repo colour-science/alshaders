@@ -54,4 +54,5 @@ struct ShaderData
 
    // AOV names
    std::vector<std::string> aovs;
+   std::vector<std::string> aovs_rgba;
 };

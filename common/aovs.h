@@ -1,7 +1,7 @@
 // aovs.h
 
 #define NUM_AOVs 33
-
+#define NUM_AOVs_RGBA 8
 
 #define REGISTER_AOVS \
 data->aovs.clear(); \
@@ -38,9 +38,20 @@ data->aovs.push_back(params[p_aov_id_5].STR); \
 data->aovs.push_back(params[p_aov_id_6].STR); \
 data->aovs.push_back(params[p_aov_id_7].STR); \
 data->aovs.push_back(params[p_aov_id_8].STR); \
-assert(NUM_AOVs == data->aovs.size() && "[alLayer] NUM_AOVs does not match size of aovs array!"); \
+assert(NUM_AOVs == data->aovs.size() && "NUM_AOVs does not match size of aovs array!"); \
 for (size_t i=0; i < data->aovs.size(); ++i) \
-    	AiAOVRegister(data->aovs[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    	AiAOVRegister(data->aovs[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY); \
+data->aovs_rgba.push_back(params[p_aov_shadow_group_1].STR); \
+data->aovs_rgba.push_back(params[p_aov_shadow_group_2].STR); \
+data->aovs_rgba.push_back(params[p_aov_shadow_group_3].STR); \
+data->aovs_rgba.push_back(params[p_aov_shadow_group_4].STR); \
+data->aovs_rgba.push_back(params[p_aov_shadow_group_5].STR); \
+data->aovs_rgba.push_back(params[p_aov_shadow_group_6].STR); \
+data->aovs_rgba.push_back(params[p_aov_shadow_group_7].STR); \
+data->aovs_rgba.push_back(params[p_aov_shadow_group_8].STR); \
+assert(NUM_AOVs_RGBA == data->aovs_rgba.size() && "NUM_AOVs_RGBA does not match size of aovs_rgba array!"); \
+for (size_t i=0; i < data->aovs_rgba.size(); ++i) \
+        AiAOVRegister(data->aovs_rgba[i].c_str(), AI_TYPE_RGBA, AI_AOV_BLEND_OPACITY); \
 
 enum AovIndices
 {
@@ -77,4 +88,16 @@ enum AovIndices
     k_id_6,
     k_id_7,
     k_id_8,
+};
+
+enum AovRGBIndices
+{
+    k_shadow_group_1=0,
+    k_shadow_group_2,
+    k_shadow_group_3,
+    k_shadow_group_4,
+    k_shadow_group_5,
+    k_shadow_group_6,
+    k_shadow_group_7,
+    k_shadow_group_8
 };

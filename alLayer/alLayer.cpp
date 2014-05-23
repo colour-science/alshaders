@@ -12,6 +12,7 @@ struct ShaderData
 {
     // AOV names
     std::vector<std::string> aovs;
+    std::vector<std::string> aovs_rgba;
     bool standardAovs;
 };
 
@@ -56,6 +57,14 @@ enum alLayerParams
     p_aov_id_6,
     p_aov_id_7,
     p_aov_id_8,
+    p_aov_shadow_group_1,
+    p_aov_shadow_group_2,
+    p_aov_shadow_group_3,
+    p_aov_shadow_group_4,
+    p_aov_shadow_group_5,
+    p_aov_shadow_group_6,
+    p_aov_shadow_group_7,
+    p_aov_shadow_group_8,
 
     p_standardAovs
 };
@@ -117,6 +126,14 @@ node_parameters
     AiParameterStr("aov_id_6", "id_6");
     AiParameterStr("aov_id_7", "id_7");
     AiParameterStr("aov_id_8", "id_8");
+    AiParameterStr("aov_shadow_group_1", "shadow_group_1");
+    AiParameterStr("aov_shadow_group_2", "shadow_group_2");
+    AiParameterStr("aov_shadow_group_3", "shadow_group_3");
+    AiParameterStr("aov_shadow_group_4", "shadow_group_4");
+    AiParameterStr("aov_shadow_group_5", "shadow_group_5");
+    AiParameterStr("aov_shadow_group_6", "shadow_group_6");
+    AiParameterStr("aov_shadow_group_7", "shadow_group_7");
+    AiParameterStr("aov_shadow_group_8", "shadow_group_8");
 
     AiParameterBool("standardCompatibleAOVs", false);
 }
