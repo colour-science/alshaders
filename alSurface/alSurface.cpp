@@ -9,6 +9,7 @@
 #include "MIS.h"
 #include "alSurface.h"
 #include "aovs.h"
+#include "tea.h"
 
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
@@ -347,6 +348,27 @@ node_finish
         
         AiNodeSetLocalData(node, NULL);
         delete data;
+    }
+}
+
+/// Generate a randomly permted [0,n) sequence
+/// TODO: use a reproducible rng here
+inline void permute(int* perm, int n)
+{
+    int i;
+    for (i=0; i < n; ++i)
+    {
+        perm[i] = i;
+    }
+
+    while (--i)
+    {
+        int tmp = perm[i];
+        srand48(TEA_STREAM_ALSURFACE_RR_PERMUTE);
+        //int rindex = sampleTEA(i, TEA_STREAM_ALSURFACE_RR_PERMUTE) % i;
+        int rindex = rand0n(i);
+        perm[i] = perm[rindex];
+        perm[rindex] = tmp;
     }
 }
 
@@ -977,11 +999,11 @@ shader_evaluate
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
 
         // get a permuted, stratified random number
-        float u = (float(data->perm_table[sg->Rr*data->AA_samples+sg->si]) + drand48())*data->AA_samples_inv;
+        float u = (float(data->perm_table[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_JITTER))*data->AA_samples_inv;
         // offset based on pixel
-        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, 0, 64);
+        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_OFFSET);
         u = fmodf(u+offset, 1.0f);
-        
+
         if (u < kr)
         {
             do_glossy = true;
