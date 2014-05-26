@@ -642,13 +642,13 @@ shader_evaluate
     AtVector specular1Normal = sg->Nf;
     if (data->specular1NormalConnected)
     {
-        specular1Normal = AiShaderEvalParamVec(p_specular1Normal);
+        specular1Normal = AiV3Normalize(AiShaderEvalParamVec(p_specular1Normal));
     }
 
     AtVector specular2Normal = sg->Nf;
     if (data->specular2NormalConnected)
     {
-        specular2Normal = AiShaderEvalParamVec(p_specular2Normal);
+        specular2Normal = AiV3Normalize(AiShaderEvalParamVec(p_specular2Normal));
     }
 
     float roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
