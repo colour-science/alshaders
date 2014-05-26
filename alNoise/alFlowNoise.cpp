@@ -87,7 +87,7 @@ THE SOFTWARE.
  * Permutation table. This is just a random jumble of all numbers 0-255,
  * repeated twice to avoid wrapping the index at 255 for each lookup.
  */
-unsigned char perm[512] = {151,160,137,91,90,15,
+static unsigned char perm[512] = {151,160,137,91,90,15,
   131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
   190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
   88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -551,12 +551,7 @@ node_loader
 struct ShaderData
 {
     int space;
-    float frequency;
     int octaves;
-    float lacunarity;
-    float gain;
-    float angle;
-    float advection;
     bool turbulent;
 };
 
@@ -576,12 +571,7 @@ node_update
 {
     ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
     data->space = params[p_space].INT;
-    data->frequency = params[p_frequency].FLT;
     data->octaves = params[p_octaves].INT;
-    data->lacunarity = params[p_lacunarity].FLT;
-    data->gain = params[p_gain].FLT;
-    data->angle = params[p_angle].FLT;
-    data->advection = params[p_advection].FLT;
     data->turbulent = params[p_turbulent].BOOL;
 }
 
@@ -590,6 +580,11 @@ shader_evaluate
     ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
     AtRGB color1 = AiShaderEvalParamRGB(p_color1);
     AtRGB color2 = AiShaderEvalParamRGB(p_color2);
+    float frequency = AiShaderEvalParamFlt(p_frequency);
+    float angle = AiShaderEvalParamFlt(p_angle);
+    float advection = AiShaderEvalParamFlt(p_advection);
+    float lacunarity = AiShaderEvalParamFlt(p_lacunarity);
+    float gain = AiShaderEvalParamFlt(p_gain);
 
     // choose what space we want to calculate in
     AtPoint P;
@@ -620,7 +615,7 @@ shader_evaluate
         }
     }
 
-    P *= data->frequency;
+    P *= frequency;
 
     float amp = 1.0f;
     float g = 1.0f;
@@ -630,13 +625,13 @@ shader_evaluate
     float n;
     for (int i=0; i < data->octaves; ++i)
     {
-        n = srdnoise(P+advect, data->angle, deriv);
+        n = srdnoise(P+advect, angle, deriv);
         if (data->turbulent) n = fabsf(n);
         result += n * g;
-        advect -= deriv * data->advection * g;
+        advect -= deriv * advection * g;
 
-        P *= data->lacunarity;
-        g *= data->gain;
+        P *= lacunarity;
+        g *= gain;
     }
 
     RemapFloat r = REMAP_FLOAT_CREATE;

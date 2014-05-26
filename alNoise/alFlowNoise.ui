@@ -22,13 +22,13 @@ ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
 	"Pref",
 	"UV"
 ])
-ui.parameter('frequency', 'float', 1.0, 'Frequency', connectible=False)
+ui.parameter('frequency', 'float', 1.0, 'Frequency')
 ui.parameter('octaves', 'int', 4, 'Octaves', connectible=False)
-ui.parameter('lacunarity', 'float', 2.172, 'Lacunarity', connectible=False)
-ui.parameter('gain', 'float', 0.5, 'Gain', connectible=False)
-ui.parameter('angle', 'float', 0.0, 'Angle', connectible=False)
-ui.parameter('advection', 'float', 0.25, 'Advection', connectible=False)
-ui.parameter('turbulent', 'bool', False, 'Turbulent')
+ui.parameter('lacunarity', 'float', 2.172, 'Lacunarity')
+ui.parameter('gain', 'float', 0.5, 'Gain')
+ui.parameter('angle', 'float', 0.0, 'Angle')
+ui.parameter('advection', 'float', 0.25, 'Advection')
+ui.parameter('turbulent', 'bool', False, 'Turbulent', connectible=False)
 
 uigen.remapControls(ui)
 
