@@ -22,7 +22,7 @@ ui.parameter('space', 'enum', 'world',  'Space', enum_names=[
 	"Pref",
 	"UV"
 ])
-ui.parameter('frequency', 'float', 1.0 ,'Frequency', connectible=False)
+ui.parameter('frequency', 'float', 1.0 ,'Frequency')
 ui.parameter('mode', 'enum', 'features', 'Mode', enum_names=[
 	"features",
 	"chips"
@@ -30,8 +30,8 @@ ui.parameter('mode', 'enum', 'features', 'Mode', enum_names=[
 
 with uigen.group(ui, 'Features', False, None):
 	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False)
-	ui.parameter('lacunarity', 'int', 2.121, 'Lacunarity', connectible=False)
-	ui.parameter('randomness', 'int', 1.0, 'Randomness', connectible=False)
+	ui.parameter('lacunarity', 'int', 2.121, 'Lacunarity')
+	ui.parameter('randomness', 'int', 1.0, 'Randomness')
 
 	with uigen.group(ui, 'Feature weights', False):
 		ui.parameter('f1w', 'float', -1.0, 'F1')

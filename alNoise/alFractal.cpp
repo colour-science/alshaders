@@ -88,12 +88,7 @@ struct ShaderData
 {
 	int mode;
 	int space;
-	float frequency;
-	AtVector scale;
-	float time;
 	int octaves;
-	float lacunarity;
-	float gain;
 	bool turbulent;
 	bool ridged;
 };
@@ -115,11 +110,7 @@ node_update
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 	data->mode = params[p_mode].INT;
 	data->space = params[p_space].INT;
-	data->frequency = params[p_frequency].FLT;
-	data->scale = params[p_scale].PNT;
 	data->octaves = params[p_octaves].INT;
-	data->lacunarity = params[p_lacunarity].FLT;
-	data->gain = params[p_gain].FLT;
 	data->turbulent = params[p_turbulent].BOOL;
 	data->ridged = params[p_ridged].BOOL;
 }
@@ -127,6 +118,10 @@ node_update
 shader_evaluate
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
+	float frequency = AiShaderEvalParamFlt(p_frequency);
+	AtPoint scale = AiShaderEvalParamVec(p_scale);
+	float gain = AiShaderEvalParamFlt(p_gain);
+	float lacunarity = AiShaderEvalParamFlt(p_lacunarity);
 	float distortion = AiShaderEvalParamFlt(p_distortion);
 	float ridgeOffset = AiShaderEvalParamFlt(p_ridgeOffset);
 	float time = AiShaderEvalParamFlt(p_time);
@@ -162,9 +157,9 @@ shader_evaluate
 		}
 	}
 
-	P *= data->frequency;
+	P *= frequency;
 
-	P *= data->scale;
+	P *= scale;
 
 	if (data->mode == NM_SCALAR)
 	{
@@ -188,9 +183,9 @@ shader_evaluate
 				weight = clamp(weight, 0.0f, 1.0f);
 			}
 			n += v * amp;
-			amp *= data->gain;
+			amp *= gain;
 
-			P *= data->lacunarity;
+			P *= lacunarity;
 		}
 		RemapFloat r = REMAP_FLOAT_CREATE;
 		n = r.remap(n);
@@ -219,9 +214,9 @@ shader_evaluate
 				weight = clamp(weight, AI_RGB_BLACK, AI_RGB_WHITE);
 			}
 			n += v * amp;
-			amp *= data->gain;
+			amp *= gain;
 
-			P *= data->lacunarity;
+			P *= lacunarity;
 		}
         RemapFloat r = REMAP_FLOAT_CREATE;
         n.r = r.remap(n.r);

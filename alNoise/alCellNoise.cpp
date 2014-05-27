@@ -110,15 +110,8 @@ node_loader
 struct ShaderData
 {
 	int space;
-	float frequency;
 	int mode;
 	int octaves;
-	float randomness;
-	float lacunarity;
-	float f1w;
-	float f2w;
-	float f3w;
-	float f4w;
 	float mynkowskiShape;
 	bool smoothChips;
 	float chipProb1;
@@ -144,15 +137,8 @@ node_update
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 	data->space = params[p_space].INT;
-	data->frequency = params[p_frequency].FLT;
 	data->mode = params[p_mode].INT;
 	data->octaves = params[p_octaves].INT;
-	data->randomness= params[p_randomness].FLT;
-	data->lacunarity = params[p_lacunarity].FLT;
-	data->f1w = params[p_f1w].FLT;
-	data->f2w = params[p_f2w].FLT;
-	data->f3w = params[p_f3w].FLT;
-	data->f4w = params[p_f4w].FLT;
 	data->mynkowskiShape = params[p_mynkowskiShape].FLT;
 	data->smoothChips = params[p_smoothChips].BOOL;
 	data->chipProb1 = params[p_chipProb1].FLT;
@@ -167,6 +153,14 @@ shader_evaluate
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
+
+	float frequency = AiShaderEvalParamFlt(p_frequency);
+	float lacunarity = AiShaderEvalParamFlt(p_lacunarity);
+	float randomness = AiShaderEvalParamFlt(p_randomness);
+	float f1w = AiShaderEvalParamFlt(p_f1w);
+	float f2w = AiShaderEvalParamFlt(p_f2w);
+	float f3w = AiShaderEvalParamFlt(p_f3w);
+	float f4w = AiShaderEvalParamFlt(p_f4w);
 
 	AtRGB chipColor1 = AiShaderEvalParamRGB(p_chipColor1);
 	AtRGB chipColor2 = AiShaderEvalParamRGB(p_chipColor2);
@@ -204,13 +198,13 @@ shader_evaluate
 		}
 	}
 	// scale the space
-	P *= data->frequency;
+	P *= frequency;
 
 	// get cellular result
 	float F[4];
 	AtVector delta[4];
 	AtUInt32 ID[4];
-	AiCellular(P, 4, data->octaves, data->lacunarity, data->randomness, F, delta, ID);
+	AiCellular(P, 4, data->octaves, lacunarity, randomness, F, delta, ID);
 
 	if (data->mode == CN_FEATURES)
 	{
@@ -228,7 +222,7 @@ shader_evaluate
 		}
 
 		// weight the feature distances
-		float n = F[0]*data->f1w + F[1]*data->f2w + F[2]*data->f3w + F[3]*data->f4w;
+		float n = F[0]*f1w + F[1]*f2w + F[2]*f3w + F[3]*f4w;
 
 		// normalize for the number of octaves
 		n /= float(data->octaves);

@@ -22,7 +22,7 @@ ui.parameter('space', 'enum','world' 'Space', enum_names=[
 	"Pref",
 	"UV"
 ])
-ui.parameter('frequency', 'float', 1.0, 'Frequency', connectible=False)
+ui.parameter('frequency', 'float', 1.0, 'Frequency')
 ui.parameter('anisotropy', 'enum','isotropic', 'Anisotropy', enum_names=[
 	"isotropic",
 	"anisotropic",
@@ -30,8 +30,8 @@ ui.parameter('anisotropy', 'enum','isotropic', 'Anisotropy', enum_names=[
 ])
 ui.parameter('anisotropyDirection', 'vector', (0.0, 1.0, 0.0), 'Anisotropy direction')
 ui.parameter('filter', 'bool', False, 'Filter')
-ui.parameter('bandwidth', 'float', 1.0, 'Bandwidth', connectible=False)
-ui.parameter('impulses', 'float', 8.0, 'Bandwidth', connectible=False)
+ui.parameter('bandwidth', 'float', 1.0, 'Bandwidth')
+ui.parameter('impulses', 'float', 8.0, 'Impulses', connectible=False)
 ui.parameter('turbulent', 'bool', False, 'Turbulent')
 
 uigen.remapControls(ui)
