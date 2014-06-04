@@ -33,7 +33,7 @@ message(STATUS "ARNOLD_INCLUDE_DIR is ${ARNOLD_INCLUDE_DIR}")
 
 # Find the Arnold library directory
 # We link against the lib stub on Windows, because Windows is special.
-set(ARNOLD_LIBDIR "arse")
+set(ARNOLD_LIBDIR "bin")
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	set(ARNOLD_LIBDIR "lib")
 endif()
