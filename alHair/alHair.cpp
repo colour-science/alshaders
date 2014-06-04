@@ -774,10 +774,10 @@ struct HairBsdf
         AtRGB kfr[3];
         hairAttenuation(hb->sp.ior, geo.theta_d, geo.phi_d, hb->sp.absorption, kfr);
         
-        AtRGB f_R = hb->bsdf_R(geo) * kfr[0] * hb->specular1Color;
-        AtRGB f_TT =  hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor;
-        AtRGB f_TRT = hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color;
-        AtRGB f_TRTg = hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color * hb->glintStrength;
+        AtRGB f_R = hb->do_glossy ? hb->bsdf_R(geo) * kfr[0] * hb->specular1Color : AI_RGB_BLACK;
+        AtRGB f_TT = hb->do_glossy ? hb->bsdf_TT(geo) * kfr[1] * hb->transmissionColor : AI_RGB_BLACK;
+        AtRGB f_TRT = hb->do_glossy ? hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color : AI_RGB_BLACK;
+        AtRGB f_TRTg = hb->do_glossy ? hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color * hb->glintStrength : AI_RGB_BLACK;
 
         // Store terms needed for MIS
         if (hb->is_bsdf_sample) 
@@ -889,7 +889,7 @@ struct HairBsdf
     /// Integrate the direct illumination for all diffuse and glossy lobes
     inline void integrateDirectMis(AtShaderGlobals* sg)
     {
-        if (!do_glossy) return;
+        if (sg->Rt & AI_RAY_DIFFUSE) return;
         // Tell Arnold we want the full sphere for lighting.
         sg->fhemi = false;
         //sg->skip_shadow = true;
@@ -1211,9 +1211,6 @@ struct HairBsdf
 
     inline void integrateDirectDualMis(AtShaderGlobals* sg)
     {
-        bool do_glossy = true;
-        if (sg->Rt & AI_RAY_DIFFUSE) do_glossy = false;
-
         float als_hairNumIntersections = 0;
         AtRGB T_f = AI_RGB_BLACK;
         AtRGB sigma_f = AI_RGB_BLACK;
@@ -1472,9 +1469,12 @@ struct HairBsdf
     {
         if (glossyIndirectStrength == 0.0f) return;
 
+        if (!do_glossy) return;
+
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
 
         sampit = AiSamplerIterator(data->sampler_glossy, sg);
+        AiStateSetMsgInt("als_raytype", ALS_RAY_HAIR);
         while(AiSamplerGetSample(sampit, samples))
         {
             wi_ray.dir = HairGlossySample(this, samples[0], samples[1]);
@@ -1492,6 +1492,7 @@ struct HairBsdf
                 result_TRTg_indirect += scrs.color * Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
             }
         }
+        AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
         float weight = AiSamplerGetSampleInvCount(sampit) * glossyIndirectStrength;
         result_R_indirect *= weight; //< TODO: factor of pi?
         result_TT_indirect *= weight; //< TODO: factor of pi?
@@ -1509,6 +1510,7 @@ struct HairBsdf
 
         if (do_glossy && glossyIndirectStrength > 0.0f)
         {
+            AiStateSetMsgInt("als_raytype", ALS_RAY_HAIR);
             sampit = AiSamplerIterator(data->sampler_glossy, sg);
             while(AiSamplerGetSample(sampit, samples))
             {
@@ -1528,6 +1530,7 @@ struct HairBsdf
                     result_TRTg_indirect += scrs.color * Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
                 }
             }
+            AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
             weight = AiSamplerGetSampleInvCount(sampit) * glossyIndirectStrength;
             result_R_indirect *= weight; //< TODO: factor of pi?
             result_TT_indirect *= weight; //< TODO: factor of pi?

@@ -855,5 +855,6 @@ inline int rand0n(int n)
 #define ALS_RAY_UNDEFINED 0
 #define ALS_RAY_SSS 1
 #define ALS_RAY_DUAL 2
+#define ALS_RAY_HAIR 3
 
 #define VAR(x) #x << ": " << x

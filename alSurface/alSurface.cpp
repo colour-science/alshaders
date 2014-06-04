@@ -526,6 +526,10 @@ shader_evaluate
         }
     }
 
+    // check custom ray type
+    int als_raytype;
+    AiStateGetMsgInt("als_raytype", &als_raytype);
+
     // if it's a shadow ray, handle shadow colouring through absorption
     // algorithm based heavily on the example in Kettle
     if (sg->Rt & AI_RAY_SHADOW)
@@ -714,7 +718,8 @@ shader_evaluate
 
     float dummy;
     if (sg->Rr_diff > 0 || sg->Rr_gloss > 1 || sssMix < 0.01f
-        || AiStateGetMsgFlt("als_hairNumIntersections", &dummy))
+        || AiStateGetMsgFlt("als_hairNumIntersections", &dummy)
+        || als_raytype == ALS_RAY_HAIR)
     {
         do_sss = false;
         sssMix = 0.0f;
@@ -735,7 +740,8 @@ shader_evaluate
     if (    (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
             || maxh(specular1Color) < IMPORTANCE_EPS             // disable glossy if contribution is small
             || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
-            || roughness > 1.0f  )                               // kill glossy if roughness has been scaled up too far
+            || roughness > 1.0f 
+            || als_raytype == ALS_RAY_HAIR )                               // kill glossy if roughness has been scaled up too far
     {
         do_glossy = false;
     }
@@ -743,7 +749,8 @@ shader_evaluate
     if (    (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
             || maxh(specular2Color) < IMPORTANCE_EPS             // disable glossy2 if contribution is small
             || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
-            || roughness2 > 1.0f )                              // kill glossy if roughness has been scaled up too far
+            || roughness2 > 1.0f 
+            || als_raytype == ALS_RAY_HAIR)                      // kill glossy if roughness has been scaled up too far
     {
         do_glossy2 = false;
     }
@@ -755,7 +762,8 @@ shader_evaluate
 
 
     if (    (sg->Rr_diff > 0)                               // disable transmitted caustics
-            || maxh(transmissionColor) < IMPORTANCE_EPS)    // disable transmission if contribution is small
+            || maxh(transmissionColor) < IMPORTANCE_EPS
+            || als_raytype == ALS_RAY_HAIR)    // disable transmission if contribution is small
     {
         do_transmission = false;
     }
