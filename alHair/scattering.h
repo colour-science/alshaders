@@ -2,6 +2,8 @@
 #pragma once
 
 #include <sstream>
+#include <ai.h>
+#include "alUtil.h"
 
 #define PIOVER4 0.7853981633974483f
 #define ONEOVER4PI 0.07957747154594767
