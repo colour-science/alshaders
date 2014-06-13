@@ -25,16 +25,21 @@ ARNOLD_VERSION = '@ARNOLD_VERSION@'
 
 subdirs = [
     'alBlackbody',
+    'alCache',
     'alColorSpace',
     'alCombine',
     'alCurvature',
 	'alHair',
 	'alInputVector',
+    'alJitterColor',
     'alLayer',
+    'alMeasured',
     'alNoise',
     'alPattern',
     'alRemap',
     'alSurface',
+    'alSwitch',
+    'alTriplanar',
     'common'
 ] 
 
