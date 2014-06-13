@@ -32,6 +32,7 @@ struct ShaderData
    int total_samples;
    AtCritSec cs;
    std::map<AtNode*, int> lightGroups;
+   std::map<AtNode*, float> shadowDensities;
    bool specular1NormalConnected;
    bool specular2NormalConnected;
    bool lightGroupsIndirect;

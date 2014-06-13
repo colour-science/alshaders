@@ -437,6 +437,8 @@ node_update
             data->lightGroups[light] = AiNodeGetInt(light, "lightGroup") - 1;
         else 
             data->lightGroups[light] = -1;
+
+        data->shadowDensities[light] = AiNodeGetFlt(light, "shadow_density");
     }
     AiNodeIteratorDestroy(it);
     data->lightGroupsIndirect = params[p_lightGroupsIndirect].BOOL;
@@ -896,7 +898,8 @@ shader_evaluate
             // The user might have set the shadow_density value to something slightly less than 1
             // in order to get shadow AOVs from small lights to work correctly. If that's the case
             // then skip the remaining work.
-            if (minh(sg->Lo) >= 0.995) continue;
+            float sd = data->shadowDensities[sg->Lp];
+            if (minh(sg->Lo) >= sd) continue;
 
             // per-light specular and diffuse strength multipliers
             float specular_strength = AiLightGetSpecular(sg->Lp);
