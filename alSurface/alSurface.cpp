@@ -898,8 +898,10 @@ shader_evaluate
             // The user might have set the shadow_density value to something slightly less than 1
             // in order to get shadow AOVs from small lights to work correctly. If that's the case
             // then skip the remaining work.
-            float sd = data->shadowDensities[sg->Lp];
-            if (minh(sg->Lo) >= sd) continue;
+            // ... but we can't actually do this here because it biases the result with MIS.
+            // ... hmmm. Need to think about this some more. For now let's just disable
+            // float sd = data->shadowDensities[sg->Lp];
+            // if (maxh(sg->Lo) >= sd) continue;
 
             // per-light specular and diffuse strength multipliers
             float specular_strength = AiLightGetSpecular(sg->Lp);
