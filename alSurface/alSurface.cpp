@@ -381,7 +381,7 @@ inline void permute(int* perm, int n)
     while (--i)
     {
         int tmp = perm[i];
-        srand48(TEA_STREAM_ALSURFACE_RR_PERMUTE);
+        srand(TEA_STREAM_ALSURFACE_RR_PERMUTE);
         //int rindex = sampleTEA(i, TEA_STREAM_ALSURFACE_RR_PERMUTE) % i;
         int rindex = rand0n(i);
         perm[i] = perm[rindex];

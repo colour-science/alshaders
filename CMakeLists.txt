@@ -18,10 +18,10 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
 
 # Compiler flags
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # TODO: is there a good set of flags for windows builds?
+    # Disable some of the bullshit warnings MSVC wants to barf
+    add_definitions( "-W3 -D_CRT_SECURE_NO_WARNINGS -wd4005 -wd4996 -wd4305 -wd4244 -nologo" )
 else()
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -fvisibility=hidden")
 endif()
 
 # check if we have a local cmake include file and include it if we do

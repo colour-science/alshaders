@@ -229,7 +229,7 @@ void computeBlendWeights(const AtVector N, int space, float blendSoftness, float
 
 inline void rotateUVs(AtPoint &P, float degrees){
     AtVector orientVectorX;
-    const double d2r = 1. / 360. * M_PI * 2;
+    const double d2r = 1. / 360. * AI_PI * 2;
     double phi = d2r * degrees;
     orientVectorX.x = cosf(phi);
     orientVectorX.y = sinf(phi);
@@ -330,7 +330,7 @@ inline AtRGB tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector 
 }
 
 inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx, float dvdy,
-							float cellSoftness, float rot, float rotjitter,
+							const float cellSoftness, float rot, float rotjitter,
                             AtShaderGlobals *sg, AtTextureHandle *handle,
                             AtTextureParams *params, AtRGBA *textureResult){
     AtPoint P;
@@ -340,10 +340,10 @@ inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx
 
     int samples = (cellSoftness == 0) ? 1 : 3;
     // run cellnoise
-    float weights[samples];
-    float f[samples];
-    AtVector delta[samples];
-    AtUInt32 id[samples];
+    float weights[3];
+    float f[3];
+    AtVector delta[3];
+    AtUInt32 id[3];
     AiCellular(P, samples, 1, 1.92, 1, f, delta, id);
 
     if(samples == 1){
@@ -351,7 +351,7 @@ inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx
     } else {
         // find closest cell
         float closestDistance = 100000.f;
-        float distances[samples];
+        float distances[3];
         for(int i=0; i<samples; ++i){
             distances[i] = AiV3Length(delta[i]);
             closestDistance = MIN(distances[i], closestDistance);
@@ -382,7 +382,7 @@ inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx
             // pick direction for orientation
             AtVector orientVectorX;
             double jitter = (random(id[i])-0.5) * rotjitter;
-            double phi = modulo(rot/360. + jitter, 1.f) * M_PI * 2.;
+            double phi = modulo(rot/360. + jitter, 1.f) * AI_PI * 2.;
             orientVectorX.x = cosf(phi);
             orientVectorX.y = sinf(phi);
             orientVectorX.z = 0.f;
@@ -403,7 +403,7 @@ inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx
             // texture lookup
             bool currentSuccess = false;
             *textureResult += AiTextureHandleAccess(sg, handle, params, &success) * weights[i];
-            success += currentSuccess;
+            success |= currentSuccess;
         }
     }
 

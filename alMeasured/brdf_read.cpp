@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstdio>
 #include <algorithm>
+#include <ai.h>
 
 #define BRDF_SAMPLING_RES_THETA_H       90
 #define BRDF_SAMPLING_RES_THETA_D       90
@@ -137,7 +138,7 @@ inline int theta_half_index(double theta_half)
 {
 	if (theta_half <= 0.0)
 		return 0;
-	double theta_half_deg = ((theta_half / (M_PI/2.0))*BRDF_SAMPLING_RES_THETA_H);
+	double theta_half_deg = ((theta_half / (AI_PI/2.0))*BRDF_SAMPLING_RES_THETA_H);
 	double temp = theta_half_deg*BRDF_SAMPLING_RES_THETA_H;
 	temp = sqrt(temp);
 	int ret_val = (int)temp;
@@ -153,7 +154,7 @@ inline int theta_half_index(double theta_half)
 // Out: [0 .. 89]
 inline int theta_diff_index(double theta_diff)
 {
-	int tmp = int(theta_diff / (M_PI * 0.5) * BRDF_SAMPLING_RES_THETA_D);
+	int tmp = int(theta_diff / (AI_PI * 0.5) * BRDF_SAMPLING_RES_THETA_D);
 	if (tmp < 0)
 		return 0;
 	else if (tmp < BRDF_SAMPLING_RES_THETA_D - 1)
@@ -169,11 +170,11 @@ inline int phi_diff_index(double phi_diff)
 	// Because of reciprocity, the BRDF is unchanged under
 	// phi_diff -> phi_diff + M_PI
 	if (phi_diff < 0.0)
-		phi_diff += M_PI;
+		phi_diff += AI_PI;
 
 	// In: phi_diff in [0 .. pi]
 	// Out: tmp in [0 .. 179]
-	int tmp = int(phi_diff / M_PI * BRDF_SAMPLING_RES_PHI_D / 2);
+	int tmp = int(phi_diff / AI_PI * BRDF_SAMPLING_RES_PHI_D / 2);
 	if (tmp < 0)	
 		return 0;
 	else if (tmp < BRDF_SAMPLING_RES_PHI_D / 2 - 1)
