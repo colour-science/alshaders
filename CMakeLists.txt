@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share)
 
 project(alShaders)
 
@@ -117,6 +117,9 @@ endfunction(build_shader)
 foreach(SUBDIR ${SUBDIRECTORIES})
     add_subdirectory(${SUBDIR})
 endforeach()
+
+# add top-level files
+INSTALL(FILES README INSTALL DESTINATION ${INSTALL_DIR})
 
 # 
 configure_file(
