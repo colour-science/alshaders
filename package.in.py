@@ -20,7 +20,7 @@ def mkdir_p(path):
 MAJOR_VERSION = '@ALS_MAJOR_VERSION@'
 MINOR_VERSION = '@ALS_MINOR_VERSION@'
 PATCH_VERSION = '@ALS_PATCH_VERSION@'
-
+ALS_VERSION = "%s.%s.%s" % (MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
 ARNOLD_VERSION = '@ARNOLD_VERSION@'
 
 subdirs = [
@@ -110,23 +110,14 @@ def createArchive(distDir, name, isSrc=False):
         f.close()
     
 def createDistribution(name, ptrn_src, ptrn_bin, ptrn_ae, ptrn_spdl, ptrn_args, files, isSrc=False):
-    distdir = 'build/%s' % name
+    if isSrc:
+        distdir = 'build/%s' % name
+    else:
+        distdir = 'build/dist/%s/%s' % (ALS_VERSION, ARNOLD_VERSION)
     shutil.rmtree(distdir, ignore_errors=True)
     os.mkdir(distdir)
     if len(ptrn_src):
         copyPatternsToDistDir(subdirs, '.', ptrn_src, distdir, isSrc)
-    if len(ptrn_bin):
-        copyPatternsToDistDir(subdirs, 'build', ptrn_bin, os.path.join(distdir, 'bin'), isSrc)
-    if ptrn_ae:
-        copyPatternsToDistDir(subdirs, 'build', ptrn_ae, os.path.join(distdir, 'ae'), isSrc)
-    if ptrn_spdl:
-        copyPatternsToDistDir(subdirs, 'build', ptrn_spdl, os.path.join(distdir, 'spdl'), isSrc)
-    if ptrn_args:
-        copyPatternsToDistDir(subdirs, 'build', ptrn_args, os.path.join(distdir, 'Args'), isSrc)
-    copyFilesToDistDir(files, distdir)
-    # TODO: really need a better packaging system to avoid this. Time for another look at CPack?
-    if not isSrc:
-        shutil.move(os.path.join(distdir, 'alShaders.py'), os.path.join(distdir, 'ae'))
     createArchive(distdir, name, isSrc)
 
 # source distribution
