@@ -51,9 +51,9 @@ ptrn_src = ['*.cpp', '*.h', '*.txt', '*.py', '*.ui', '*.cmake']
 # Binary distribution
 files_src = ['INSTALL', 'CMakeLists.txt', 'package.in.py', 'test.in.py', 'README', 'TODO.txt', 'local.cmake.win', 'uigen.py']
 
-name_osx = 'alShaders-osx-%s-ai-%s' % (ALS_VERSION, ARNOLD_VERSION)
-name_win = 'alShaders-win-%s-ai-%s' % (ALS_VERSION, ARNOLD_VERSION)
-name_linux = 'alShaders-linux-%s-ai-%s' % (ALS_VERSION, ARNOLD_VERSION)
+name_osx = 'alShaders-osx-%s-ai%s' % (ALS_VERSION, ARNOLD_VERSION)
+name_win = 'alShaders-win-%s-ai%s' % (ALS_VERSION, ARNOLD_VERSION)
+name_linux = 'alShaders-linux-%s-ai%s' % (ALS_VERSION, ARNOLD_VERSION)
 
 
 def copyPatternsToDistDir(subDirs, subDirPrefix, filePatterns, distDir):
