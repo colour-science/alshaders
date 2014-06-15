@@ -107,7 +107,6 @@ createSourceDistribution(name_src, ptrn_src, files_src)
 
 # Binary distribution
 droot = 'build/dist/%s/ai%s' % (ALS_VERSION, ARNOLD_VERSION)
-createBinaryDistribution(name_osx, droot)
 
 if platform.system() == "Darwin":
     # OS X distribution
