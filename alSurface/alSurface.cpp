@@ -381,8 +381,6 @@ inline void permute(int* perm, int n)
     while (--i)
     {
         int tmp = perm[i];
-        srand(TEA_STREAM_ALSURFACE_RR_PERMUTE);
-        //int rindex = sampleTEA(i, TEA_STREAM_ALSURFACE_RR_PERMUTE) % i;
         int rindex = rand0n(i);
         perm[i] = perm[rindex];
         perm[rindex] = tmp;
@@ -464,6 +462,10 @@ node_update
     data->total_depth = AiNodeGetInt(options, "GI_total_depth");
     delete[] data->perm_table;
     data->perm_table = new int[data->AA_samples*data->total_depth];
+    // permute uses rand() to generate the random number stream so seed it first
+    // so we get a determistic sequence between renders
+    srand(TEA_STREAM_ALSURFACE_RR_PERMUTE);
+    // generate the permutation table for RR;
     for (int d=0; d < data->total_depth; ++d)
     {
         permute(&(data->perm_table[d*data->AA_samples]), data->AA_samples);
@@ -1051,8 +1053,8 @@ shader_evaluate
         // get a permuted, stratified random number
         float u = (float(data->perm_table[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_JITTER))*data->AA_samples_inv;
         // offset based on pixel
-        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_OFFSET);
-        u = fmodf(u+offset, 1.0f);
+        //float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_OFFSET);
+        //u = fmodf(u+offset, 1.0f);
 
         if (u < kr)
         {
