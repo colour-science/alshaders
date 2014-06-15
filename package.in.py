@@ -96,7 +96,6 @@ def createBinaryDistribution(name, droot):
             rroot = os.path.relpath(root, droot)
             for f in files:
                 rfile = os.path.join(rroot, f)
-                print rfile
                 zf.write(os.path.join(droot, rfile), arcname=rfile)
     else:
         f = tarfile.open(os.path.join('..', '%s.tar.gz' % name), 'w:gz')
