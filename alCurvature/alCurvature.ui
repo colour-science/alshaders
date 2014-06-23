@@ -22,4 +22,4 @@ ui.parameter('sampleRadius', 'float', 1.0)
 uigen.remapControls(ui)
 
 ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0))
-ui.parameter('color1', 'rgb', (1.0, 1.0, 1.0))
+ui.parameter('color2', 'rgb', (1.0, 1.0, 1.0))
