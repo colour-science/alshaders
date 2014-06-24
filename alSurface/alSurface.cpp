@@ -1053,8 +1053,8 @@ shader_evaluate
         // get a permuted, stratified random number
         float u = (float(data->perm_table[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_JITTER))*data->AA_samples_inv;
         // offset based on pixel
-        //float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_OFFSET);
-        //u = fmodf(u+offset, 1.0f);
+        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_OFFSET);
+        u = fmodf(u+offset, 1.0f);
 
         if (u < kr)
         {
