@@ -232,7 +232,7 @@ node_parameters
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
     AiParameterFLT("specular1Roughness", 0.3f );
     AiParameterFLT("specular1Ior", 1.4f );
-    AiParameterFLT("specular1RoughnessDepthScale", 1.5f);
+    AiParameterFLT("specular1RoughnessDepthScale", 1.0f);
     AiParameterINT("specular1ExtraSamples", 0);
     AiParameterVec("specular1Normal", 0, 0, 0);
     AiParameterFLT("specular1IndirectStrength", 1.0f );
@@ -242,7 +242,7 @@ node_parameters
     AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
     AiParameterFLT("specular2Roughness", 0.3f );
     AiParameterFLT("specular2Ior", 1.4f );
-    AiParameterFLT("specular2RoughnessDepthScale", 1.5f);
+    AiParameterFLT("specular2RoughnessDepthScale", 1.0f);
     AiParameterINT("specular2ExtraSamples", 0);
     AiParameterVec("specular2Normal", 0, 0, 0);
     AiParameterFLT("specular2IndirectStrength", 1.0f );
@@ -253,7 +253,7 @@ node_parameters
     AiParameterBOOL("transmissionLinkToSpecular1", true);
     AiParameterFLT("transmissionRoughness", 0.f );
     AiParameterFLT("transmissionIor", 1.4f );
-    AiParameterFLT("transmissionRoughnessDepthScale", 1.5f);
+    AiParameterFLT("transmissionRoughnessDepthScale", 1.0f);
     AiParameterBOOL("transmissionEnableCaustics", true);
     AiParameterINT("transmissionExtraSamples", 0);
     AiParameterFLT("transmissionClamp", 0.0f );
