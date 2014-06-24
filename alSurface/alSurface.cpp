@@ -772,6 +772,12 @@ shader_evaluate
         do_transmission = false;
     }
 
+
+    // get path throughput so far
+    AtRGB path_throughput = AI_RGB_WHITE;
+    if (sg->Rr > 0) AiStateGetMsgRGB("als_throughput", &path_throughput);
+    
+
     // build a local frame for sampling
     AtVector U, V;
     AiBuildLocalFramePolar(&U, &V, &sg->N);
@@ -1046,6 +1052,7 @@ shader_evaluate
     AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
     bool tir = (!AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg)) && inside;
     bool rr_transmission = (data->rrTransmission && (sg->Rr >= data->rrTransmissionDepth) && !tir);
+    bool rr_glossy = false;
     if (rr_transmission)
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
@@ -1053,8 +1060,8 @@ shader_evaluate
         // get a permuted, stratified random number
         float u = (float(data->perm_table[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_JITTER))*data->AA_samples_inv;
         // offset based on pixel
-        //float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_OFFSET);
-        //u = fmodf(u+offset, 1.0f);
+        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_OFFSET);
+        u = fmodf(u+offset, 1.0f);
 
         if (u < kr)
         {
@@ -1084,26 +1091,50 @@ shader_evaluate
                 AiReflectRay(&wi_ray, &sg->Nf, sg);
                 if (!rr_transmission)
                 {
-                    kr = fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta);
+                    kr = fresnel(std::max(0.0f,AiV3Dot(-sg->Rd, sg->Nf)),eta);
                     kti = kr;
                 }
                 else
                 {
                     kr = 1.0f;
+                    kti = 0.0f;
                 }
                 // Previously we pulled the sampler here as an optimization. This nets us about a 10-30%
                 // speedup in the case of pure dielectrics, but severely fucks up sss, both on the surface
                 // being cast, and in reflected surfaces.
                 // Remove this for now until we can figure out exactly what's going on
                 //AiSamplerGetSample(sampit, samples);
-                if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
+                AtRGB f = kr * specular1Color * specular1IndirectStrength;
+                bool cont = true;
+                AtRGB throughput = path_throughput * f;
+#if 0
+                
+                float rr_p = maxh(throughput);
+                if (rr_p < 0.01f)
                 {
-                    result_glossyIndirect = min(scrs.color, rgb(data->specular1IndirectClamp)) * kr * specular1Color * specular1IndirectStrength;
-                    if (doDeepGroups)
+                    cont = false;
+                    float u = drand48();
+                    if (u < rr_p)
                     {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        cont = true;
+                        rr_p = 1.0f / rr_p;
+                        throughput *= rr_p;
+                        f *= rr_p;
+                    }
+                }
+#endif
+                if (cont)
+                {
+                    AiStateSetMsgRGB("als_throughput", throughput);
+                    if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
+                    {
+                        result_glossyIndirect = min(scrs.color, rgb(data->specular1IndirectClamp)) * f;
+                        if (doDeepGroups)
                         {
-                            deepGroupsGlossy[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * kr * specular1Color * specular1IndirectStrength;
+                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                            {
+                                deepGroupsGlossy[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * f;
+                            }
                         }
                     }
                 }
@@ -1243,17 +1274,38 @@ shader_evaluate
             
             // trace the ray
             wi_ray.dir = wi;
-            if (AiTrace(&wi_ray, &scrs))
+            AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
+            AtRGB throughput = path_throughput * f * diffuseColor;
+            float rr_p = maxh(throughput);
+            bool cont = true;
+#if 1
+            if (rr_p < 0.1f)
             {
-                AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
-                result_diffuseIndirectRaw += scrs.color * f;
-
-                // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
+                cont = false;
+                float u = drand48();
+                if (u < rr_p)
                 {
-                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    cont = true;
+                    rr_p = 1.0f / rr_p;
+                    throughput *= rr_p;
+                    f *= rr_p;
+                }
+            }
+#endif
+            if (cont)
+            {
+                AiStateSetMsgRGB("als_throughput", throughput);
+                if (AiTrace(&wi_ray, &scrs))
+                {
+                    result_diffuseIndirectRaw += scrs.color * f;
+
+                    // accumulate the lightgroup contributions calculated by the child shader
+                    if (doDeepGroups)
                     {
-                        deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
+                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        {
+                            deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
+                        }
                     }
                 }
             }
