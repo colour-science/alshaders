@@ -1213,11 +1213,14 @@ shader_evaluate
                 AiV3Normalize(H, wi+brdfw2.V);
                 // add the fresnel for this layer
                 kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
+                AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
+                AtRGB throughput = path_throughput * f * specular2Color * specular2IndirectStrength;
+                AiStateSetMsgRGB("als_throughput", throughput);
                 if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
                     if (AiTrace(&wi_ray, &scrs))
                     {
-                        AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
+                        
                         result_glossy2Indirect += min(scrs.color, rgb(data->specular2IndirectClamp)) * f;
                         kti2 += kr; 
                         
