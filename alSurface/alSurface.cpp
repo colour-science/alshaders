@@ -1058,13 +1058,13 @@ shader_evaluate
 
         if (u < kr)
         {
-            do_glossy = true;
-            do_transmission = false;
+            do_glossy &= true;
+            do_transmission &= false;
         }
         else
         {
-            do_glossy = false;
-            do_transmission = true;
+            do_glossy &= false;
+            do_transmission &= true;
         }
     }
 
@@ -1090,6 +1090,7 @@ shader_evaluate
                 else
                 {
                     kr = 1.0f;
+                    kti = 1.0f;
                 }
                 // Previously we pulled the sampler here as an optimization. This nets us about a 10-30%
                 // speedup in the case of pure dielectrics, but severely fucks up sss, both on the surface
@@ -1297,7 +1298,7 @@ shader_evaluate
         AtSamplerIterator* sampit = AiSamplerIterator(data->refraction_sampler, sg);
         if (transmissionRoughness == 0.0f)
         {
-            if (rr_transmission)
+            if (!rr_transmission)
             {
                 kt = 1.0f - fresnel(transmissionIor, sg->N, wo, R, wi, inside);
             }
