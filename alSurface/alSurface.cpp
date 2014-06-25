@@ -11,6 +11,12 @@
 #include "aovs.h"
 #include "tea.h"
 
+#define RR_BOUNCES
+#define RR_SPEC1_THRESH 0.01
+#define RR_SPEC2_THRESH 0.01
+#define RR_DIFF_THRESH 0.2
+#define RR_BACK_THRESH 0.2
+
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
 #define GlossyMISBRDF AiCookTorranceMISBRDF
@@ -1065,13 +1071,13 @@ shader_evaluate
 
         if (u < kr)
         {
-            do_glossy = true;
-            do_transmission = false;
+            do_glossy &= true;
+            do_transmission &= false;
         }
         else
         {
-            do_glossy = false;
-            do_transmission = true;
+            do_glossy &= false;
+            do_transmission &= true;
         }
     }
 
@@ -1097,7 +1103,7 @@ shader_evaluate
                 else
                 {
                     kr = 1.0f;
-                    kti = 0.0f;
+                    kti = 1.0f;
                 }
                 // Previously we pulled the sampler here as an optimization. This nets us about a 10-30%
                 // speedup in the case of pure dielectrics, but severely fucks up sss, both on the surface
@@ -1107,10 +1113,9 @@ shader_evaluate
                 AtRGB f = kr * specular1Color * specular1IndirectStrength;
                 bool cont = true;
                 AtRGB throughput = path_throughput * f;
-#if 0
-                
+#ifdef RR_BOUNCES
                 float rr_p = maxh(throughput);
-                if (rr_p < 0.01f)
+                if (rr_p < roughness*0.1f)
                 {
                     cont = false;
                     float u = drand48();
@@ -1158,12 +1163,31 @@ shader_evaluate
                     AiV3Normalize(H, wi+brdfw.V);
                     kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
                     kti += kr;
+
                     if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                     {
-                        // if we're in a camera ray, pass the sample index down to the child SG
-                        if (AiTrace(&wi_ray, &scrs))
+                        AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
+                        AtRGB throughput = path_throughput * f * specular1Color * specular1IndirectStrength;
+                        bool cont = true;
+#ifdef RR_BOUNCES
+                    float rr_p = maxh(throughput);
+                    if (rr_p < roughness*0.1f)
+                    {
+                        cont = false;
+                        float u = drand48();
+                        if (u < rr_p)
                         {
-                            AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
+                            cont = true;
+                            rr_p = 1.0f / rr_p;
+                            throughput *= rr_p;
+                            f *= rr_p;
+                        }
+                    }
+#endif
+                        // if we're in a camera ray, pass the sample index down to the child SG
+                        if (cont && AiTrace(&wi_ray, &scrs))
+                        {
+                            
                             //result_glossyIndirect += min(scrs.color, data->specular1IndirectClamp) * f;
                             result_glossyIndirect += min(scrs.color, rgb(data->specular1IndirectClamp)) * f;
 
@@ -1216,7 +1240,23 @@ shader_evaluate
                 AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
                 AtRGB throughput = path_throughput * f * specular2Color * specular2IndirectStrength;
                 AiStateSetMsgRGB("als_throughput", throughput);
-                if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+                bool cont = true;
+#ifdef RR_BOUNCES
+                float rr_p = maxh(throughput);
+                if (rr_p < roughness2*0.1f)
+                {
+                    cont = false;
+                    float u = drand48();
+                    if (u < rr_p)
+                    {
+                        cont = true;
+                        rr_p = 1.0f / rr_p;
+                        throughput *= rr_p;
+                        f *= rr_p;
+                    }
+                }
+#endif
+                if (cont && kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
                     if (AiTrace(&wi_ray, &scrs))
                     {
@@ -1281,8 +1321,8 @@ shader_evaluate
             AtRGB throughput = path_throughput * f * diffuseColor;
             float rr_p = maxh(throughput);
             bool cont = true;
-#if 1
-            if (rr_p < 0.1f)
+#ifdef RR_BOUNCES
+            if (rr_p < RR_DIFF_THRESH)
             {
                 cont = false;
                 float u = drand48();
@@ -1375,6 +1415,8 @@ shader_evaluate
             if (refraction)
             {
                 AiSamplerGetSample(sampit, samples);
+                AtRGB throughput = path_throughput * kti;
+                AiStateSetMsgRGB("als_throughput", throughput);
                 if (kt > IMPORTANCE_EPS && AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
@@ -1418,6 +1460,8 @@ shader_evaluate
             else //total internal reflection
             {
                 AiSamplerGetSample(sampit, samples);
+                AtRGB throughput = path_throughput * kti;
+                AiStateSetMsgRGB("als_throughput", throughput);
                 if (AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
@@ -1505,6 +1549,9 @@ shader_evaluate
                     // eq. 38 and eq. 17
                     float pdf = pm * (transmissionIor * transmissionIor) * fabsf(cosHI) / Ht2;
 
+                    AtRGB f = rgb(brdf/pdf);
+                    AtRGB throughput = path_throughput * kti * f;
+                    AiStateSetMsgRGB("als_throughput", throughput);
                     if (AiTrace(&wi_ray, &sample))
                     {
                         AtRGB transmittance = AI_RGB_WHITE;
@@ -1513,8 +1560,9 @@ shader_evaluate
                             transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
                             transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
                             transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
+                            f *= transmittance;
                         }
-                        AtRGB f = brdf/pdf * transmittance;
+                        
                         result_transmission += sample.color * f;
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
@@ -1551,6 +1599,8 @@ shader_evaluate
                 }
                 else if (AiV3IsZero(wi)) // total internal reflection
                 {
+                    AtRGB throughput = path_throughput * kti;
+                    AiStateSetMsgRGB("als_throughput", throughput);
                     if (AiTrace(&wi_ray, &sample))
                     {
                         AtRGB transmittance = AI_RGB_WHITE;
@@ -1629,9 +1679,27 @@ shader_evaluate
             
             // trace the ray
             wi_ray.dir = wi;
-            if (AiTrace(&wi_ray, &scrs))
+            AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
+            AtRGB throughput = path_throughput * f;
+            AiStateSetMsgRGB("als_throughput", throughput);
+            bool cont = true;
+#ifdef RR_BOUNCES
+                float rr_p = maxh(throughput);
+                if (rr_p < RR_BACK_THRESH)
+                {
+                    cont = false;
+                    float u = drand48();
+                    if (u < rr_p)
+                    {
+                        cont = true;
+                        rr_p = 1.0f / rr_p;
+                        throughput *= rr_p;
+                        f *= rr_p;
+                    }
+                }
+#endif
+            if (cont && AiTrace(&wi_ray, &scrs))
             {
-                AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
                 result_backlightIndirect += scrs.color * f;
 
                 // accumulate the lightgroup contributions calculated by the child shader
