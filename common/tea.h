@@ -6,10 +6,6 @@
 * \file tea.h 
 */
 
-#define TEA_STREAM_ALSURFACE_RR_OFFSET 0
-#define TEA_STREAM_ALSURFACE_RR_PERMUTE 1
-#define TEA_STREAM_ALSURFACE_RR_JITTER 2
-
 /**
  * \ref Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
