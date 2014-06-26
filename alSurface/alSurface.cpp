@@ -12,10 +12,11 @@
 #include "tea.h"
 
 #define RR_BOUNCES
+#define RR_PERMUTED
 #define RR_SPEC1_THRESH 0.01
 #define RR_SPEC2_THRESH 0.01
-#define RR_DIFF_THRESH 0.2
-#define RR_BACK_THRESH 0.2
+#define RR_DIFF_THRESH 0.1
+#define RR_BACK_THRESH 0.1
 
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
@@ -354,6 +355,10 @@ node_initialize
     data->refraction_sampler = NULL;
     data->backlight_sampler = NULL;
     data->perm_table = NULL;
+    data->perm_table_diffuse = NULL;
+    data->perm_table_spec1 = NULL;
+    data->perm_table_spec2 = NULL;
+    data->perm_table_backlight = NULL;
 };
 
 node_finish
@@ -368,6 +373,10 @@ node_finish
         AiSamplerDestroy(data->refraction_sampler);
         AiSamplerDestroy(data->backlight_sampler);
         delete[] data->perm_table;
+        delete[] data->perm_table_diffuse;
+        delete[] data->perm_table_spec1;
+        delete[] data->perm_table_spec2;
+        delete[] data->perm_table_backlight;
         
         AiNodeSetLocalData(node, NULL);
         delete data;
@@ -467,14 +476,51 @@ node_update
     data->total_depth = AiNodeGetInt(options, "GI_total_depth");
     delete[] data->perm_table;
     data->perm_table = new int[data->AA_samples*data->total_depth];
+    delete[] data->perm_table_diffuse;
+    data->perm_table_diffuse = new int[data->AA_samples*data->total_depth];
+    delete[] data->perm_table_spec1;
+    data->perm_table_spec1 = new int[data->AA_samples*data->total_depth];
+    delete[] data->perm_table_spec2;
+    data->perm_table_spec2 = new int[data->AA_samples*data->total_depth];
+    delete[] data->perm_table_backlight;
+    data->perm_table_backlight = new int[data->AA_samples*data->total_depth];
     // permute uses rand() to generate the random number stream so seed it first
     // so we get a determistic sequence between renders
-    srand(TEA_STREAM_ALSURFACE_RR_PERMUTE);
+    srand(RAND_STREAM_ALSURFACE_RR_PERMUTE);
     // generate the permutation table for RR;
     for (int d=0; d < data->total_depth; ++d)
     {
         permute(&(data->perm_table[d*data->AA_samples]), data->AA_samples);
     }
+
+    srand(RAND_STREAM_ALSURFACE_RR_DIFF_PERMUTE);
+    // generate the permutation table for rr_diffuse
+    for (int d=0; d < data->total_depth; ++d)
+    {
+        permute(&(data->perm_table_diffuse[d*data->AA_samples]), data->AA_samples);
+    }
+
+    srand(RAND_STREAM_ALSURFACE_RR_SPEC1_PERMUTE);
+    // generate the permutation table for rr_spec1
+    for (int d=0; d < data->total_depth; ++d)
+    {
+        permute(&(data->perm_table_spec1[d*data->AA_samples]), data->AA_samples);
+    }
+
+    srand(RAND_STREAM_ALSURFACE_RR_SPEC2_PERMUTE);
+    // generate the permutation table for rr_spec2
+    for (int d=0; d < data->total_depth; ++d)
+    {
+        permute(&(data->perm_table_spec2[d*data->AA_samples]), data->AA_samples);
+    }
+
+    srand(RAND_STREAM_ALSURFACE_RR_BACKLIGHT_PERMUTE);
+    // generate the permutation table for rr_backlight
+    for (int d=0; d < data->total_depth; ++d)
+    {
+        permute(&(data->perm_table_backlight[d*data->AA_samples]), data->AA_samples);
+    }
+
     data->xres = AiNodeGetInt(options, "xres");
 };
 
@@ -1114,10 +1160,18 @@ shader_evaluate
                 AtRGB throughput = path_throughput * f;
 #ifdef RR_BOUNCES
                 float rr_p = maxh(throughput);
-                if (rr_p < roughness*0.1f)
+                if (rr_p < 0)//roughness*0.1f)
                 {
                     cont = false;
+#ifdef RR_PERMUTED
+                    // get a permuted, stratified random number
+                    float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))*data->AA_samples_inv;
+                    // offset based on pixel
+                    float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC1_OFFSET);
+                    u = fmodf(u+offset, 1.0f);
+#else
                     float u = drand48();
+#endif
                     if (u < rr_p)
                     {
                         cont = true;
@@ -1132,12 +1186,12 @@ shader_evaluate
                     AiStateSetMsgRGB("als_throughput", throughput);
                     if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                     {
-                        result_glossyIndirect = min(scrs.color, rgb(data->specular1IndirectClamp)) * f;
+                        result_glossyIndirect = min(scrs.color * f, rgb(data->specular1IndirectClamp));
                         if (doDeepGroups)
                         {
                             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                             {
-                                deepGroupsGlossy[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * f;
+                                deepGroupsGlossy[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
                             }
                         }
                     }
@@ -1170,10 +1224,18 @@ shader_evaluate
                         bool cont = true;
 #ifdef RR_BOUNCES
                     float rr_p = maxh(throughput);
-                    if (rr_p < roughness*0.1f)
+                    if (rr_p < 0)//roughness*0.1f)
                     {
                         cont = false;
+#ifdef RR_PERMUTED
+                        // get a permuted, stratified random number
+                        float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))*data->AA_samples_inv;
+                        // offset based on pixel
+                        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC1_OFFSET);
+                        u = fmodf(u+offset, 1.0f);
+#else
                         float u = drand48();
+#endif
                         if (u < rr_p)
                         {
                             cont = true;
@@ -1188,14 +1250,14 @@ shader_evaluate
                         {
                             
                             //result_glossyIndirect += min(scrs.color, data->specular1IndirectClamp) * f;
-                            result_glossyIndirect += min(scrs.color, rgb(data->specular1IndirectClamp)) * f;
+                            result_glossyIndirect += min(scrs.color * f, rgb(data->specular1IndirectClamp));
 
                             // accumulate the lightgroup contributions calculated by the child shader
                             if (doDeepGroups)
                             {
                                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                                 {
-                                    deepGroupsGlossy[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * f;
+                                    deepGroupsGlossy[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
                                 }
                             }
                         }
@@ -1242,10 +1304,18 @@ shader_evaluate
                 bool cont = true;
 #ifdef RR_BOUNCES
                 float rr_p = maxh(throughput);
-                if (rr_p < roughness2*0.1f)
+                if (rr_p < 0)//roughness2*0.1f)
                 {
                     cont = false;
+#ifdef RR_PERMUTED
+                    // get a permuted, stratified random number
+                    float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC2_JITTER))*data->AA_samples_inv;
+                    // offset based on pixel
+                    float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC2_OFFSET);
+                    u = fmodf(u+offset, 1.0f);
+#else
                     float u = drand48();
+#endif
                     if (u < rr_p)
                     {
                         cont = true;
@@ -1260,7 +1330,7 @@ shader_evaluate
                     if (AiTrace(&wi_ray, &scrs))
                     {
                         
-                        result_glossy2Indirect += min(scrs.color, rgb(data->specular2IndirectClamp)) * f;
+                        result_glossy2Indirect += min(scrs.color * f, rgb(data->specular2IndirectClamp));
                         kti2 += kr; 
                         
                         // accumulate the lightgroup contributions calculated by the child shader
@@ -1268,7 +1338,7 @@ shader_evaluate
                         {
                             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                             {
-                                deepGroupsGlossy2[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * f;
+                                deepGroupsGlossy2[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
                             }
                         }
                     }
@@ -1324,7 +1394,15 @@ shader_evaluate
             if (rr_p < RR_DIFF_THRESH)
             {
                 cont = false;
+#ifdef RR_PERMUTED
+                // get a permuted, stratified random number
+                float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_DIFF_JITTER))*data->AA_samples_inv;
+                // offset based on pixel
+                float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_DIFF_OFFSET);
+                u = fmodf(u+offset, 1.0f);
+#else
                 float u = drand48();
+#endif
                 if (u < rr_p)
                 {
                     cont = true;
@@ -1426,7 +1504,7 @@ shader_evaluate
                         transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
                     AtRGB f = transmittance;
-                    result_transmission += min(sample.color, rgb(data->transmissionClamp)) * f;
+                    result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                     // accumulate the lightgroup contributions calculated by the child shader
                     if (doDeepGroups)
                     {
@@ -1470,7 +1548,7 @@ shader_evaluate
                         transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
                         transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
-                    result_transmission += min(sample.color, rgb(data->transmissionClamp)) * transmittance;
+                    result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
                     // accumulate the lightgroup contributions calculated by the child shader
                     if (doDeepGroups)
                     {
@@ -1687,7 +1765,15 @@ shader_evaluate
                 if (rr_p < RR_BACK_THRESH)
                 {
                     cont = false;
+#ifdef RR_PERMUTED
+                    // get a permuted, stratified random number
+                    float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER))*data->AA_samples_inv;
+                    // offset based on pixel
+                    float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_OFFSET);
+                    u = fmodf(u+offset, 1.0f);
+#else
                     float u = drand48();
+#endif
                     if (u < rr_p)
                     {
                         cont = true;
