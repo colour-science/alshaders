@@ -375,7 +375,6 @@ node_finish
 }
 
 /// Generate a randomly permted [0,n) sequence
-/// TODO: use a reproducible rng here
 inline void permute(int* perm, int n)
 {
     int i;
