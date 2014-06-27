@@ -1640,7 +1640,7 @@ shader_evaluate
                             f *= transmittance;
                         }
                         
-                        result_transmission += sample.color * f;
+                        result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
                         {
@@ -1671,7 +1671,7 @@ shader_evaluate
                     {
                         AiTraceBackground(&wi_ray, &sample);
                         float f = brdf/pdf;
-                        result_transmission += sample.color * f;
+                        result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                     }
                 }
                 else if (AiV3IsZero(wi)) // total internal reflection
@@ -1687,7 +1687,7 @@ shader_evaluate
                             transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
                             transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                         }
-                        result_transmission += sample.color * transmittance;
+                        result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
                         {
