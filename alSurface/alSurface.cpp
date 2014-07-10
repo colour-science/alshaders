@@ -90,6 +90,8 @@ enum alSurfaceParams
     p_specular1Strength,
     p_specular1Color,
     p_specular1Roughness,
+    p_specular1Anisotropy,
+    p_specular1Rotation,
     p_specular1Ior,
     p_specular1RoughnessDepthScale,
     p_specular1ExtraSamples,
@@ -100,6 +102,8 @@ enum alSurfaceParams
     p_specular2Strength,
     p_specular2Color,
     p_specular2Roughness,
+    p_specular2Anisotropy,
+    p_specular2Rotation,
     p_specular2Ior,
     p_specular2RoughnessDepthScale,
     p_specular2ExtraSamples,
@@ -231,6 +235,8 @@ node_parameters
     AiParameterFLT("specular1Strength", 1.0f );
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
     AiParameterFLT("specular1Roughness", 0.3f );
+    AiParameterFLT("specular1Anisotropy", 0.5f );
+    AiParameterFLT("specular1Rotation", 0.0f );
     AiParameterFLT("specular1Ior", 1.4f );
     AiParameterFLT("specular1RoughnessDepthScale", 1.0f);
     AiParameterINT("specular1ExtraSamples", 0);
@@ -241,6 +247,8 @@ node_parameters
     AiParameterFLT("specular2Strength", 0.0f );
     AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
     AiParameterFLT("specular2Roughness", 0.3f );
+    AiParameterFLT("specular2Anisotropy", 0.5f );
+    AiParameterFLT("specular2Rotation", 0.0f );
     AiParameterFLT("specular2Ior", 1.4f );
     AiParameterFLT("specular2RoughnessDepthScale", 1.0f);
     AiParameterINT("specular2ExtraSamples", 0);
@@ -674,19 +682,68 @@ shader_evaluate
 
     bool transmissionEnableCaustics = AiShaderEvalParamBool(p_transmissionEnableCaustics);
 
+    // adapt the roughness values for anisotropy
+    float specular1Anisotropy = CLAMP(AiShaderEvalParamFlt(p_specular1Anisotropy), 0.0f, 1.0f);
+    float aniso_t = sqrtf(fabsf(2.0f * specular1Anisotropy - 1.0f));
+    float roughness_x = (specular1Anisotropy >= 0.5f) ? roughness : LERP(aniso_t, roughness, 0.00001f);
+    float roughness_y = (specular1Anisotropy <= 0.5f) ? roughness : LERP(aniso_t, roughness, 0.00001f);
+    float specular2Anisotropy = CLAMP(AiShaderEvalParamFlt(p_specular2Anisotropy), 0.0f, 1.0f);
+    aniso_t = sqrtf(fabsf(2.0f * specular2Anisotropy - 1.0f));
+    float roughness2_x = (specular2Anisotropy >= 0.5f) ? roughness2 : LERP(aniso_t, roughness2, 0.00001f);
+    float roughness2_y = (specular2Anisotropy <= 0.5f) ? roughness2 : LERP(aniso_t, roughness2, 0.00001f);
+
     // Grab the roughness from the previous surface and make sure we're slightly rougher than it to avoid glossy-glossy fireflies
     float alsPreviousRoughness = 0.0f;
     AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
     if (sg->Rr > 0)
     {
-        roughness = std::max(roughness, alsPreviousRoughness*specular1RoughnessDepthScale);
-        roughness2 = std::max(roughness2, alsPreviousRoughness*specular2RoughnessDepthScale);
+        roughness_x = std::max(roughness_x, alsPreviousRoughness*specular1RoughnessDepthScale);
+        roughness_y = std::max(roughness_y, alsPreviousRoughness*specular1RoughnessDepthScale);
+        roughness2_x = std::max(roughness2_x, alsPreviousRoughness*specular2RoughnessDepthScale);
+        roughness2_y = std::max(roughness2_y, alsPreviousRoughness*specular2RoughnessDepthScale);
     }
 
     // clamp roughnesses
     //roughness = std::max(0.000001f, roughness);
     roughness2 = std::max(0.000001f, roughness2);
     //transmissionRoughness = std::max(0.000001f, transmissionRoughness);
+
+    // build a local frame for sampling
+    AtVector U, V;
+    if (!AiV3isZero(sg->dPdu))
+    {
+        // we have valid a valid dPdu derivative, construct V 
+        AtVector Utmp = AiV3Normalize(sg->dPdu);
+        V = AiV3Normalize(AiV3Cross(sg->Nf, Utmp));
+        U = AiV3Cross(V, sg->Nf);
+    }
+    else
+    {
+        AiBuildLocalFramePolar(&U, &V, &sg->Nf);
+    }
+
+    // rotated frames for anisotropy
+    AtVector U1 = U, U2 = U;
+    AtVector V1 = V, V2 = V;
+    if (specular1Anisotropy != 0.5f)
+    {
+        float specular1Rotation = AiShaderEvalParamFlt(p_specular1Rotation);
+        const float cos_phi = cosf(specular1Rotation * AI_PI);
+        const float sin_phi = sinf(specular1Rotation * AI_PI);
+        U1 = cos_phi * U - sin_phi * V;
+        V1 = cos_phi * V + sin_phi * U;
+    }
+    if (specular2Anisotropy != 0.5f)
+    {
+        float specular2Rotation = AiShaderEvalParamFlt(p_specular2Rotation);
+        const float cos_phi = cosf(specular2Rotation * AI_PI);
+        const float sin_phi = sinf(specular2Rotation * AI_PI);
+        U1 = cos_phi * U - sin_phi * V;
+        V1 = cos_phi * V + sin_phi * U;
+    }
+
+    // View direction, omega_o
+    AtVector wo = -sg->Rd;
 
     float diffuseIndirectStrength = AiShaderEvalParamFlt(p_diffuseIndirectStrength);
     float backlightIndirectStrength = AiShaderEvalParamFlt(p_backlightIndirectStrength);
@@ -772,12 +829,7 @@ shader_evaluate
         do_transmission = false;
     }
 
-    // build a local frame for sampling
-    AtVector U, V;
-    AiBuildLocalFramePolar(&U, &V, &sg->N);
-
-    // View direction, omega_o
-    AtVector wo = -sg->Rd;
+    
 
     // prepare temporaries for light group calculation
     AtRGB lightGroupsDirect[NUM_LIGHT_GROUPS];
@@ -846,7 +898,7 @@ shader_evaluate
     AtVector Nfold = sg->Nf;
     sg->N = sg->Nf = specular1Normal;
     void* mis;
-    mis = GlossyMISCreateData(sg,&U,&V,roughness,roughness);
+    mis = GlossyMISCreateData(sg,&U1,&V1,roughness_x,roughness_y);
     BrdfData_wrap brdfw;
     brdfw.brdf_data = mis;
     brdfw.sg = sg;
@@ -858,7 +910,7 @@ shader_evaluate
 
     sg->N = sg->Nf = specular2Normal;   
     void* mis2;
-    mis2 = GlossyMISCreateData(sg,&U,&V,roughness2,roughness2);
+    mis2 = GlossyMISCreateData(sg,&U2,&V2,roughness2_x,roughness2_y);
     BrdfData_wrap brdfw2;
     brdfw2.brdf_data = mis2;
     brdfw2.sg = sg;
@@ -1078,7 +1130,7 @@ shader_evaluate
         {
             if (!tir)
             {
-                AiStateSetMsgFlt("alsPreviousRoughness", roughness);
+                AiStateSetMsgFlt("alsPreviousRoughness", std::max(roughness_x, roughness_y));
                 sg->Nf = specular1Normal;
                 AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
                 AiReflectRay(&wi_ray, &sg->Nf, sg);
@@ -1116,7 +1168,7 @@ shader_evaluate
         {
             AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
             kti = 0.0f;
-            AiStateSetMsgFlt("alsPreviousRoughness", roughness);
+            AiStateSetMsgFlt("alsPreviousRoughness", std::max(roughness_x, roughness_y));
             sg->Nf = specular1Normal;
             while(AiSamplerGetSample(sampit, samples))
             {
@@ -1172,7 +1224,7 @@ shader_evaluate
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti2 = 0.0f;
-        AiStateSetMsgFlt("alsPreviousRoughness", roughness2);
+        AiStateSetMsgFlt("alsPreviousRoughness", std::max(roughness2_x, roughness2_y));
         sg->Nf = specular2Normal;
         while(AiSamplerGetSample(sampit, samples))
         {
