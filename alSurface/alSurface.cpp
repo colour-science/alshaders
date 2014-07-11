@@ -12,7 +12,7 @@
 #include "tea.h"
 
 #define RR_BOUNCES
-#define RR_PERMUTED
+//#define RR_PERMUTED
 #define RR_SPEC1_THRESH 0.01
 #define RR_SPEC2_THRESH 0.01
 #define RR_DIFF_THRESH 0.1
@@ -1245,6 +1245,7 @@ shader_evaluate
                         }
                     }
 #endif
+                        AiStateSetMsgRGB("als_throughput", throughput);
                         // if we're in a camera ray, pass the sample index down to the child SG
                         if (cont && AiTrace(&wi_ray, &scrs))
                         {
