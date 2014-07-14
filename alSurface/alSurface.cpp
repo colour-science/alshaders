@@ -10,6 +10,7 @@
 #include "alSurface.h"
 #include "aovs.h"
 #include "tea.h"
+#include "fresnel.h"
 
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
@@ -356,6 +357,7 @@ node_initialize
     data->refraction_sampler = NULL;
     data->backlight_sampler = NULL;
     data->perm_table = NULL;
+    data->fr1 = data->fr2 = NULL;
 };
 
 node_finish
@@ -370,6 +372,9 @@ node_finish
         AiSamplerDestroy(data->refraction_sampler);
         AiSamplerDestroy(data->backlight_sampler);
         delete[] data->perm_table;
+
+        delete data->fr1;
+        delete data->fr2;
         
         AiNodeSetLocalData(node, NULL);
         delete data;
@@ -479,6 +484,12 @@ node_update
         permute(&(data->perm_table[d*data->AA_samples]), data->AA_samples);
     }
     data->xres = AiNodeGetInt(options, "xres");
+
+    // fresnel
+    delete data->fr1;
+    data->fr1 = new FresnelDielectric(1.0f / params[p_specular1Ior].FLT);
+    delete data->fr2;
+    data->fr2 = new FresnelDielectric(1.0f / params[p_specular2Ior].FLT);
 };
 
 
@@ -902,11 +913,11 @@ shader_evaluate
     BrdfData_wrap brdfw;
     brdfw.brdf_data = mis;
     brdfw.sg = sg;
-    brdfw.eta = eta;
+    //data->fr1->_eta = eta;
+    brdfw.fr = data->fr1;
     brdfw.V = wo;
     brdfw.N = specular1Normal;
     brdfw.kr = 0.0f;
-
 
     sg->N = sg->Nf = specular2Normal;   
     void* mis2;
@@ -914,7 +925,8 @@ shader_evaluate
     BrdfData_wrap brdfw2;
     brdfw2.brdf_data = mis2;
     brdfw2.sg = sg;
-    brdfw2.eta = eta2;
+    //data->fr2->_eta = eta;
+    brdfw2.fr = data->fr2;
     brdfw2.V = wo;
     brdfw2.N = specular2Normal;
     brdfw2.kr = 0.0f;
@@ -981,7 +993,7 @@ shader_evaluate
             if (do_glossy2)
             {
                 sg->Nf = specular2Normal;
-                float r = (1.0f - brdfw.kr*maxh(specular1Color));
+                float r = (1.0f - maxh(brdfw.kr)*maxh(specular1Color));
                 Lspecular2Direct =
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
                                         * r * specular_strength;
@@ -992,7 +1004,7 @@ shader_evaluate
                 result_glossy2Direct += Lspecular2Direct;
                 sg->Nf = Nfold;
             }
-            float r = (1.0f - brdfw.kr*maxh(specular1Color)) * (1.0f - brdfw2.kr*maxh(specular2Color));
+            float r = (1.0f - maxh(brdfw.kr)*maxh(specular1Color)) * (1.0f - maxh(brdfw2.kr)*maxh(specular2Color));
             if (do_diffuse)
             {
                 LdiffuseDirect =
@@ -1134,10 +1146,11 @@ shader_evaluate
                 sg->Nf = specular1Normal;
                 AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
                 AiReflectRay(&wi_ray, &sg->Nf, sg);
+                AtRGB kr;
                 if (!rr_transmission)
                 {
-                    kr = fresnel(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)),eta);
-                    kti = kr;
+                    kr = data->fr1->kr(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)));
+                    kti = maxh(kr);
                 }
                 else
                 {
@@ -1149,7 +1162,7 @@ shader_evaluate
                 // being cast, and in reflected surfaces.
                 // Remove this for now until we can figure out exactly what's going on
                 //AiSamplerGetSample(sampit, samples);
-                if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
+                if (maxh(kr) > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                 {
                     AtRGB f =  kr * specular1Color * specular1IndirectStrength;
                     result_glossyIndirect = min(scrs.color * f, rgb(data->specular1IndirectClamp));
@@ -1171,6 +1184,7 @@ shader_evaluate
             kti = 0.0f;
             AiStateSetMsgFlt("alsPreviousRoughness", std::max(roughness_x, roughness_y));
             sg->Nf = specular1Normal;
+            AtRGB kr;
             while(AiSamplerGetSample(sampit, samples))
             {
                 wi = GlossyMISSample(mis, float(samples[0]), float(samples[1]));
@@ -1179,9 +1193,9 @@ shader_evaluate
                     // get half-angle vector for fresnel
                     wi_ray.dir = wi;
                     AiV3Normalize(H, wi+brdfw.V);
-                    kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta);
-                    kti += kr;
-                    if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+                    kr = data->fr1->kr(std::max(0.0f,AiV3Dot(H,wi)));
+                    kti += maxh(kr);
+                    if (maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                     {
                         // if we're in a camera ray, pass the sample index down to the child SG
                         if (AiTrace(&wi_ray, &scrs))

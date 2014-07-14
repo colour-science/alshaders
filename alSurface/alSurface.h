@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "fresnel.h"
+
 struct ShaderData
 {
    AtSampler* diffuse_sampler;
@@ -56,4 +58,9 @@ struct ShaderData
    // AOV names
    std::vector<std::string> aovs;
    std::vector<std::string> aovs_rgba;
+
+   // Fresnel
+   Fresnel* fr1;
+   Fresnel* fr2;
+
 };
