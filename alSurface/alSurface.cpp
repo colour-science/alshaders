@@ -1151,12 +1151,13 @@ shader_evaluate
                 //AiSamplerGetSample(sampit, samples);
                 if (kr > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
                 {
-                    result_glossyIndirect = min(scrs.color, rgb(data->specular1IndirectClamp)) * kr * specular1Color * specular1IndirectStrength;
+                    AtRGB f =  kr * specular1Color * specular1IndirectStrength;
+                    result_glossyIndirect = min(scrs.color * f, rgb(data->specular1IndirectClamp));
                     if (doDeepGroups)
                     {
                         for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                         {
-                            deepGroupsGlossy[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * kr * specular1Color * specular1IndirectStrength;
+                            deepGroupsGlossy[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
                         }
                     }
                 }
@@ -1185,16 +1186,15 @@ shader_evaluate
                         // if we're in a camera ray, pass the sample index down to the child SG
                         if (AiTrace(&wi_ray, &scrs))
                         {
-                            AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
-                            //result_glossyIndirect += min(scrs.color, data->specular1IndirectClamp) * f;
-                            result_glossyIndirect += min(scrs.color, rgb(data->specular1IndirectClamp)) * f;
+                            AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr * specular1Color * specular1IndirectStrength;
+                            result_glossyIndirect += min(scrs.color * f, rgb(data->specular1IndirectClamp));
 
                             // accumulate the lightgroup contributions calculated by the child shader
                             if (doDeepGroups)
                             {
                                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                                 {
-                                    deepGroupsGlossy[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * f;
+                                    deepGroupsGlossy[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
                                 }
                             }
                         }
@@ -1205,13 +1205,12 @@ shader_evaluate
             result_glossyIndirect *= AiSamplerGetSampleInvCount(sampit);
             kti *= AiSamplerGetSampleInvCount(sampit);
             kti = 1.0f - kti*maxh(specular1Color);
-            result_glossyIndirect *= specular1Color * specular1IndirectStrength;
 
             if (doDeepGroups)
             {
                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                 {
-                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit) * specular1Color * specular1IndirectStrength;
+                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit);
                 }
             }
         }
@@ -1239,8 +1238,8 @@ shader_evaluate
                 {
                     if (AiTrace(&wi_ray, &scrs))
                     {
-                        AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
-                        result_glossy2Indirect += min(scrs.color, rgb(data->specular2IndirectClamp)) * f;
+                        AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti * specular2Color * specular2IndirectStrength;
+                        result_glossy2Indirect += min(scrs.color * f, rgb(data->specular2IndirectClamp));
                         kti2 += kr; 
                         
                         // accumulate the lightgroup contributions calculated by the child shader
@@ -1261,13 +1260,12 @@ shader_evaluate
         result_glossy2Indirect*= AiSamplerGetSampleInvCount(sampit);
         kti2 *= AiSamplerGetSampleInvCount(sampit);
         kti2 = 1.0f - kti2*maxh(specular2Color);
-        result_glossy2Indirect *= specular2Color * specular2IndirectStrength;
 
         if (doDeepGroups)
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroupsGlossy2[i] *= AiSamplerGetSampleInvCount(sampit) * specular2Color * specular2IndirectStrength;
+                deepGroupsGlossy2[i] *= AiSamplerGetSampleInvCount(sampit);
             }
         }
     } // if (do_glossy2)
@@ -1383,13 +1381,13 @@ shader_evaluate
                         transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
                     AtRGB f = transmittance;
-                    result_transmission += min(sample.color, rgb(data->transmissionClamp)) * f;
+                    result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                     // accumulate the lightgroup contributions calculated by the child shader
                     if (doDeepGroups)
                     {
                         for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                         {
-                            deepGroupsTransmission[i] += deepGroupPtr[i] * f;
+                            deepGroupsTransmission[i] += min(deepGroupPtr[i] * f, rgb(data->transmissionClamp));
                         }
                     }
 
@@ -1410,7 +1408,7 @@ shader_evaluate
                 else // trace the background if we've hit nothing
                 {
                     AiTraceBackground(&wi_ray, &sample);
-                    result_transmission += sample.color;
+                    result_transmission += min(sample.color, rgb(data->transmissionClamp));
                 }
             }
             else //total internal reflection
@@ -1425,13 +1423,13 @@ shader_evaluate
                         transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
                         transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                     }
-                    result_transmission += min(sample.color, rgb(data->transmissionClamp)) * transmittance;
+                    result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
                     // accumulate the lightgroup contributions calculated by the child shader
                     if (doDeepGroups)
                     {
                         for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                         {
-                            deepGroupsTransmission[i] += deepGroupPtr[i] * transmittance;
+                            deepGroupsTransmission[i] += min(deepGroupPtr[i] * transmittance, rgb(data->transmissionClamp));
                         }
                     }
 
@@ -1513,13 +1511,13 @@ shader_evaluate
                             transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                         }
                         AtRGB f = brdf/pdf * transmittance;
-                        result_transmission += sample.color * f;
+                        result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
                         {
                             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                             {
-                                deepGroupsTransmission[i] += deepGroupPtr[i] * f;
+                                deepGroupsTransmission[i] += min(deepGroupPtr[i] * f, rgb(data->transmissionClamp));
                             }
                         }
 
@@ -1544,7 +1542,7 @@ shader_evaluate
                     {
                         AiTraceBackground(&wi_ray, &sample);
                         float f = brdf/pdf;
-                        result_transmission += sample.color * f;
+                        result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                     }
                 }
                 else if (AiV3IsZero(wi)) // total internal reflection
@@ -1558,13 +1556,13 @@ shader_evaluate
                             transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
                             transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                         }
-                        result_transmission += sample.color * transmittance;
+                        result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
                         {
                             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                             {
-                                deepGroupsTransmission[i] += deepGroupPtr[i] * transmittance;
+                                deepGroupsTransmission[i] += min(deepGroupPtr[i] * transmittance, rgb(data->transmissionClamp));
                             }
                         }
 
