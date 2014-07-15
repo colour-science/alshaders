@@ -84,6 +84,7 @@ set(SUBDIRECTORIES
         alJitterColor
         alCache
         alMeasured
+        alFresnel
         common
 )
 

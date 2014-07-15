@@ -1,0 +1,29 @@
+import uigen
+
+ui.shader({
+	'name':'alFresnelConductor',
+	'description':'Measured metallic fresnel',
+	'output':'rgb',
+	'maya_name':'alFresnelConductor',
+	'maya_classification':'texture',
+	'maya_id':'0x0011641A',
+	'maya_swatch':True,
+	'maya_matte':False,
+	'maya_bump':False,
+	'soft_name':'ALS_FresnelConductor',
+	'soft_classification':'texture',
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alpattern'
+	
+})
+
+ui.parameter('material', 'enum', 'aluminium', 'Material', enum_names=[
+	"aluminium",
+	"chrome",
+	"copper",
+	"gold",
+	"silver",
+	"platinum",
+	"titanium",
+	"tungsten"
+])

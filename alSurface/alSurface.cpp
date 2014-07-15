@@ -487,11 +487,42 @@ node_update
 
     // fresnel
     delete data->fr1;
-    // data->fr1 = new FresnelDielectric(1.0f / params[p_specular1Ior].FLT);
-    data->fr1 = new FresnelConductor();
+    data->fr1 = NULL;
+    if (AiNodeIsLinked(node, "specular1Ior"))
+    {
+        AtNode* cn = AiNodeGetLink(node, "specular1Ior");
+        const AtNodeEntry* cne = AiNodeGetNodeEntry(cn);
+        if (!strcmp(AiNodeEntryGetName(cne), "alFresnelConductor"))
+        {
+            AtParamValue* pv = AiNodeGetParams(cn);
+            FresnelConductor* fc = new FresnelConductor();
+            fc->setMaterial(pv[0].INT);
+            data->fr1 = fc;
+        }
+    }
+    if (!data->fr1)
+    {
+        data->fr1 = new FresnelDielectric(1.0f / params[p_specular1Ior].FLT);
+    }
+    
     delete data->fr2;
-    // data->fr2 = new FresnelDielectric(1.0f / params[p_specular2Ior].FLT);
-    data->fr2 = new FresnelConductor();
+    data->fr2 = NULL;
+    if (AiNodeIsLinked(node, "specular2Ior"))
+    {
+        AtNode* cn = AiNodeGetLink(node, "specular2Ior");
+        const AtNodeEntry* cne = AiNodeGetNodeEntry(cn);
+        if (!strcmp(AiNodeEntryGetName(cne), "alFresnelConductor"))
+        {
+            AtParamValue* pv = AiNodeGetParams(cn);
+            FresnelConductor* fc = new FresnelConductor();
+            fc->setMaterial(pv[0].INT);
+            data->fr2 = fc;
+        }
+    }
+    if (!data->fr2)
+    {
+        data->fr2 = new FresnelDielectric(1.0f / params[p_specular2Ior].FLT);
+    }
 };
 
 
@@ -686,6 +717,9 @@ shader_evaluate
     float eta = 1.0f / ior;
     float ior2 = std::max(1.001f, AiShaderEvalParamFlt(p_specular2Ior));
     float eta2 = 1.0f / ior2;
+
+    data->fr1->_eta = eta;
+    data->fr2->_eta = eta2;
 
 
     float specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
@@ -915,7 +949,6 @@ shader_evaluate
     BrdfData_wrap brdfw;
     brdfw.brdf_data = mis;
     brdfw.sg = sg;
-    //data->fr1->_eta = eta;
     brdfw.fr = data->fr1;
     brdfw.V = wo;
     brdfw.N = specular1Normal;
@@ -927,7 +960,6 @@ shader_evaluate
     BrdfData_wrap brdfw2;
     brdfw2.brdf_data = mis2;
     brdfw2.sg = sg;
-    //data->fr2->_eta = eta;
     brdfw2.fr = data->fr2;
     brdfw2.V = wo;
     brdfw2.N = specular2Normal;
