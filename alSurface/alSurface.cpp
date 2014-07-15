@@ -487,9 +487,11 @@ node_update
 
     // fresnel
     delete data->fr1;
-    data->fr1 = new FresnelDielectric(1.0f / params[p_specular1Ior].FLT);
+    // data->fr1 = new FresnelDielectric(1.0f / params[p_specular1Ior].FLT);
+    data->fr1 = new FresnelConductor();
     delete data->fr2;
-    data->fr2 = new FresnelDielectric(1.0f / params[p_specular2Ior].FLT);
+    // data->fr2 = new FresnelDielectric(1.0f / params[p_specular2Ior].FLT);
+    data->fr2 = new FresnelConductor();
 };
 
 

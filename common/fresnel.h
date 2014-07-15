@@ -21,5 +21,14 @@ public:
 	{
 		return rgb(fresnel(cos_theta, _eta));
 	}
+};
 
+#define FRCOND_STEPS 90
+class FresnelConductor : public Fresnel
+{
+public:
+	FresnelConductor(){}
+	virtual ~FresnelConductor(){}
+
+	virtual AtRGB kr(float cos_theta);
 };
