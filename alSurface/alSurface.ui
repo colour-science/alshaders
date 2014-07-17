@@ -162,7 +162,8 @@ with uigen.group(ui, 'AOVs'):
 	ui.aov('aov_shadow_group_7', 'rgba', 'Shadow group [7]')
 	ui.aov('aov_shadow_group_8', 'rgba', 'Shadow group [8]')
 
-
+with uigen.group(ui, 'Advanced'):
+	ui.parameter('rr', 'bool', True, 'RR')
 
 
 

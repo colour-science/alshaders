@@ -43,6 +43,7 @@ struct ShaderData
    int rrTransmissionDepth;
 
    // data for doing RR
+   bool do_rr;
    int AA_samples;
    float AA_samples_inv;
    int total_depth;

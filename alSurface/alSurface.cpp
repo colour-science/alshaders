@@ -12,11 +12,6 @@
 #include "tea.h"
 
 #define RR_BOUNCES
-//#define RR_PERMUTED
-#define RR_SPEC1_THRESH 0.01
-#define RR_SPEC2_THRESH 0.01
-#define RR_DIFF_THRESH 0.1
-#define RR_BACK_THRESH 0.1
 
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
@@ -190,6 +185,8 @@ enum alSurfaceParams
 
     p_opacity,
 
+    p_rr,
+
     p_bump
 };
 
@@ -329,6 +326,8 @@ node_parameters
     AiParameterInt("rrTransmissionDepth", 1);
 
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
+
+    AiParameterBool("rr", true);
 }
 
 #ifdef MSVC
@@ -470,6 +469,7 @@ node_update
     if (data->transmissionClamp == 0.0f) data->transmissionClamp = AI_INFINITE;
 
     // Set up info for RR
+    data->do_rr = params[p_rr].BOOL;
     data->AA_samples = SQR(AiNodeGetInt(options, "AA_samples"));
     data->AA_samples_inv = 1.0f / float(data->AA_samples);
 
@@ -477,13 +477,13 @@ node_update
     delete[] data->perm_table;
     data->perm_table = new int[data->AA_samples*data->total_depth];
     delete[] data->perm_table_diffuse;
-    data->perm_table_diffuse = new int[data->AA_samples*data->total_depth];
+    data->perm_table_diffuse = new int[data->AA_samples*data->GI_diffuse_samples*data->total_depth];
     delete[] data->perm_table_spec1;
-    data->perm_table_spec1 = new int[data->AA_samples*data->total_depth];
+    data->perm_table_spec1 = new int[data->AA_samples*data->GI_glossy_samples*data->total_depth];
     delete[] data->perm_table_spec2;
-    data->perm_table_spec2 = new int[data->AA_samples*data->total_depth];
+    data->perm_table_spec2 = new int[data->AA_samples*data->GI_glossy2_samples*data->total_depth];
     delete[] data->perm_table_backlight;
-    data->perm_table_backlight = new int[data->AA_samples*data->total_depth];
+    data->perm_table_backlight = new int[data->AA_samples*data->GI_diffuse_samples*data->total_depth];
     // permute uses rand() to generate the random number stream so seed it first
     // so we get a determistic sequence between renders
     srand(RAND_STREAM_ALSURFACE_RR_PERMUTE);
@@ -495,28 +495,28 @@ node_update
 
     srand(RAND_STREAM_ALSURFACE_RR_DIFF_PERMUTE);
     // generate the permutation table for rr_diffuse
-    for (int d=0; d < data->total_depth; ++d)
+    for (int d=0; d < data->total_depth*data->GI_diffuse_samples; ++d)
     {
         permute(&(data->perm_table_diffuse[d*data->AA_samples]), data->AA_samples);
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_SPEC1_PERMUTE);
     // generate the permutation table for rr_spec1
-    for (int d=0; d < data->total_depth; ++d)
+    for (int d=0; d < data->total_depth*data->GI_glossy_samples; ++d)
     {
         permute(&(data->perm_table_spec1[d*data->AA_samples]), data->AA_samples);
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_SPEC2_PERMUTE);
     // generate the permutation table for rr_spec2
-    for (int d=0; d < data->total_depth; ++d)
+    for (int d=0; d < data->total_depth*data->GI_glossy2_samples; ++d)
     {
         permute(&(data->perm_table_spec2[d*data->AA_samples]), data->AA_samples);
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_BACKLIGHT_PERMUTE);
     // generate the permutation table for rr_backlight
-    for (int d=0; d < data->total_depth; ++d)
+    for (int d=0; d < data->total_depth*data->GI_diffuse_samples; ++d)
     {
         permute(&(data->perm_table_backlight[d*data->AA_samples]), data->AA_samples);
     }
@@ -728,7 +728,7 @@ shader_evaluate
     // Grab the roughness from the previous surface and make sure we're slightly rougher than it to avoid glossy-glossy fireflies
     float alsPreviousRoughness = 0.0f;
     AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
-    if (sg->Rr > 0)
+    if (data->do_rr && sg->Rr > 0)
     {
         roughness = std::max(roughness, alsPreviousRoughness*specular1RoughnessDepthScale);
         roughness2 = std::max(roughness2, alsPreviousRoughness*specular2RoughnessDepthScale);
@@ -826,7 +826,7 @@ shader_evaluate
 
     // get path throughput so far
     AtRGB path_throughput = AI_RGB_WHITE;
-    if (sg->Rr > 0) AiStateGetMsgRGB("als_throughput", &path_throughput);
+    if (data->do_rr && sg->Rr > 0) AiStateGetMsgRGB("als_throughput", &path_throughput);
     
 
     // build a local frame for sampling
@@ -1158,20 +1158,20 @@ shader_evaluate
                 AtRGB f = kr * specular1Color * specular1IndirectStrength;
                 bool cont = true;
                 AtRGB throughput = path_throughput * f;
+                float rr_p = 1.0f;
 #ifdef RR_BOUNCES
-                float rr_p = maxh(throughput);
-                if (rr_p < 0)//roughness*0.1f)
+                rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                if (data->do_rr && sg->Rr > 0)
                 {
                     cont = false;
-#ifdef RR_PERMUTED
                     // get a permuted, stratified random number
-                    float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))*data->AA_samples_inv;
+                    float u = (float(data->perm_table_spec1[sg->Rr*data->AA_samples+sg->si]) 
+                                + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
+                                *data->AA_samples_inv;
                     // offset based on pixel
                     float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC1_OFFSET);
                     u = fmodf(u+offset, 1.0f);
-#else
-                    float u = drand48();
-#endif
+
                     if (u < rr_p)
                     {
                         cont = true;
@@ -1206,6 +1206,7 @@ shader_evaluate
             kti = 0.0f;
             AiStateSetMsgFlt("alsPreviousRoughness", roughness);
             sg->Nf = specular1Normal;
+            int ssi = 0;
             while(AiSamplerGetSample(sampit, samples))
             {
                 wi = GlossyMISSample(mis, float(samples[0]), float(samples[1]));
@@ -1222,20 +1223,21 @@ shader_evaluate
                         AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
                         AtRGB throughput = path_throughput * f * specular1Color * specular1IndirectStrength;
                         bool cont = true;
+                        float rr_p = 1.0f;
 #ifdef RR_BOUNCES
-                    float rr_p = maxh(throughput);
-                    if (rr_p < 0)//roughness*0.1f)
+                    rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                    if (data->do_rr && sg->Rr > 0)
                     {
                         cont = false;
-#ifdef RR_PERMUTED
                         // get a permuted, stratified random number
-                        float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))*data->AA_samples_inv;
+                        int idx = (ssi*data->GI_glossy_samples + sg->Rr) * data->AA_samples + sg->si;
+                        float u = (float(data->perm_table_spec1[idx]) 
+                                    + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
+                                    * data->AA_samples_inv;
                         // offset based on pixel
                         float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC1_OFFSET);
                         u = fmodf(u+offset, 1.0f);
-#else
-                        float u = drand48();
-#endif
+
                         if (u < rr_p)
                         {
                             cont = true;
@@ -1264,6 +1266,7 @@ shader_evaluate
                         }
                     }
                 }
+                ssi++;
             } // END while(samples)
             sg->Nf = Nfold;
             result_glossyIndirect *= AiSamplerGetSampleInvCount(sampit);
@@ -1275,7 +1278,8 @@ shader_evaluate
             {
                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                 {
-                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit) * specular1Color * specular1IndirectStrength;
+                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit) 
+                                            * specular1Color * specular1IndirectStrength;
                 }
             }
         }
@@ -1290,6 +1294,7 @@ shader_evaluate
         kti2 = 0.0f;
         AiStateSetMsgFlt("alsPreviousRoughness", roughness2);
         sg->Nf = specular2Normal;
+        int ssi = 0;
         while(AiSamplerGetSample(sampit, samples))
         {
             wi = GlossyMISSample(mis2, float(samples[0]), float(samples[1]));
@@ -1303,20 +1308,21 @@ shader_evaluate
                 AtRGB throughput = path_throughput * f * specular2Color * specular2IndirectStrength;
                 AiStateSetMsgRGB("als_throughput", throughput);
                 bool cont = true;
+                float rr_p = 1.0f;
 #ifdef RR_BOUNCES
-                float rr_p = maxh(throughput);
-                if (rr_p < 0)//roughness2*0.1f)
+                rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                if (data->do_rr && sg->Rr > 0)
                 {
                     cont = false;
-#ifdef RR_PERMUTED
                     // get a permuted, stratified random number
-                    float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC2_JITTER))*data->AA_samples_inv;
+                    int idx = (ssi*data->GI_glossy2_samples + sg->Rr) * data->AA_samples + sg->si;
+                    float u = (float(data->perm_table_spec2[idx]) 
+                                + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC2_JITTER))
+                                * data->AA_samples_inv;
                     // offset based on pixel
                     float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC2_OFFSET);
                     u = fmodf(u+offset, 1.0f);
-#else
-                    float u = drand48();
-#endif
+
                     if (u < rr_p)
                     {
                         cont = true;
@@ -1347,6 +1353,8 @@ shader_evaluate
 
                 
             }
+
+            ssi++;
         }
         sg->Nf = Nfold;
         result_glossy2Indirect*= AiSamplerGetSampleInvCount(sampit);
@@ -1370,6 +1378,7 @@ shader_evaluate
         float kr = kti*kti2;
         AtSamplerIterator* sampit = AiSamplerIterator(data->diffuse_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
+        int ssi = 0;
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
@@ -1388,22 +1397,23 @@ shader_evaluate
             // trace the ray
             wi_ray.dir = wi;
             AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
-            AtRGB throughput = path_throughput * f * diffuseColor;
-            float rr_p = maxh(throughput);
+            AtRGB throughput = path_throughput * f * diffuseColor * diffuseIndirectStrength;
+            float rr_p = 1.0f; 
             bool cont = true;
 #ifdef RR_BOUNCES
-            if (rr_p < RR_DIFF_THRESH)
+            if (data->do_rr && sg->Rr > 0)
             {
                 cont = false;
-#ifdef RR_PERMUTED
                 // get a permuted, stratified random number
-                float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_DIFF_JITTER))*data->AA_samples_inv;
+                int idx = (ssi*data->GI_diffuse_samples + sg->Rr) * data->AA_samples + sg->si;
+                float u = (float(data->perm_table_diffuse[idx]) 
+                            + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_DIFF_JITTER))
+                            * data->AA_samples_inv;
                 // offset based on pixel
                 float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_DIFF_OFFSET);
                 u = fmodf(u+offset, 1.0f);
-#else
-                float u = drand48();
-#endif
+
+                rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
                 if (u < rr_p)
                 {
                     cont = true;
@@ -1430,6 +1440,8 @@ shader_evaluate
                     }
                 }
             }
+
+            ssi++;
             
         }
         result_diffuseIndirectRaw *= AiSamplerGetSampleInvCount(sampit) * diffuseIndirectStrength;
@@ -1740,6 +1752,7 @@ shader_evaluate
         float kr = kti*kti2;
         AtSamplerIterator* sampit = AiSamplerIterator(data->backlight_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
+        int ssi = 0;
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
@@ -1761,20 +1774,21 @@ shader_evaluate
             AtRGB throughput = path_throughput * f;
             AiStateSetMsgRGB("als_throughput", throughput);
             bool cont = true;
+            float rr_p = 1.0f;
 #ifdef RR_BOUNCES
-                float rr_p = maxh(throughput);
-                if (rr_p < RR_BACK_THRESH)
+                rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                if (sg->Rt > 0)
                 {
                     cont = false;
-#ifdef RR_PERMUTED
                     // get a permuted, stratified random number
-                    float u = (float(data->perm_table_diffuse[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER))*data->AA_samples_inv;
+                    int idx = (ssi*data->GI_diffuse_samples + sg->Rr) * data->AA_samples + sg->si;
+                    float u = (float(data->perm_table_backlight[idx]) 
+                                + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER))
+                                * data->AA_samples_inv;
                     // offset based on pixel
                     float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_OFFSET);
                     u = fmodf(u+offset, 1.0f);
-#else
-                    float u = drand48();
-#endif
+
                     if (u < rr_p)
                     {
                         cont = true;
@@ -1797,6 +1811,8 @@ shader_evaluate
                     }
                 }
             }
+
+            ssi++;
         }
         result_backlightIndirect *= AiSamplerGetSampleInvCount(sampit) * backlightColor * backlightIndirectStrength;
 
