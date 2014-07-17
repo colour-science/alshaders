@@ -12,6 +12,8 @@
 #include "tea.h"
 #include "fresnel.h"
 
+#define RR_BOUNCES
+
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
 #define GlossyMISBRDF AiCookTorranceMISBRDF
@@ -188,6 +190,8 @@ enum alSurfaceParams
 
     p_opacity,
 
+    p_rr,
+
     p_bump
 };
 
@@ -331,6 +335,8 @@ node_parameters
     AiParameterInt("rrTransmissionDepth", 1);
 
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
+
+    AiParameterBool("rr", true);
 }
 
 #ifdef MSVC
@@ -358,6 +364,10 @@ node_initialize
     data->backlight_sampler = NULL;
     data->perm_table = NULL;
     data->fr1 = data->fr2 = NULL;
+    data->perm_table_diffuse = NULL;
+    data->perm_table_spec1 = NULL;
+    data->perm_table_spec2 = NULL;
+    data->perm_table_backlight = NULL;
 };
 
 node_finish
@@ -375,6 +385,10 @@ node_finish
 
         delete data->fr1;
         delete data->fr2;
+        delete[] data->perm_table_diffuse;
+        delete[] data->perm_table_spec1;
+        delete[] data->perm_table_spec2;
+        delete[] data->perm_table_backlight;
         
         AiNodeSetLocalData(node, NULL);
         delete data;
@@ -382,7 +396,6 @@ node_finish
 }
 
 /// Generate a randomly permted [0,n) sequence
-/// TODO: use a reproducible rng here
 inline void permute(int* perm, int n)
 {
     int i;
@@ -469,20 +482,58 @@ node_update
     if (data->transmissionClamp == 0.0f) data->transmissionClamp = AI_INFINITE;
 
     // Set up info for RR
+    data->do_rr = params[p_rr].BOOL;
     data->AA_samples = SQR(AiNodeGetInt(options, "AA_samples"));
     data->AA_samples_inv = 1.0f / float(data->AA_samples);
 
     data->total_depth = AiNodeGetInt(options, "GI_total_depth");
     delete[] data->perm_table;
     data->perm_table = new int[data->AA_samples*data->total_depth];
+    delete[] data->perm_table_diffuse;
+    data->perm_table_diffuse = new int[data->AA_samples*data->GI_diffuse_samples*data->total_depth];
+    delete[] data->perm_table_spec1;
+    data->perm_table_spec1 = new int[data->AA_samples*data->GI_glossy_samples*data->total_depth];
+    delete[] data->perm_table_spec2;
+    data->perm_table_spec2 = new int[data->AA_samples*data->GI_glossy2_samples*data->total_depth];
+    delete[] data->perm_table_backlight;
+    data->perm_table_backlight = new int[data->AA_samples*data->GI_diffuse_samples*data->total_depth];
     // permute uses rand() to generate the random number stream so seed it first
     // so we get a determistic sequence between renders
-    srand(TEA_STREAM_ALSURFACE_RR_PERMUTE);
+    srand(RAND_STREAM_ALSURFACE_RR_PERMUTE);
     // generate the permutation table for RR;
     for (int d=0; d < data->total_depth; ++d)
     {
         permute(&(data->perm_table[d*data->AA_samples]), data->AA_samples);
     }
+
+    srand(RAND_STREAM_ALSURFACE_RR_DIFF_PERMUTE);
+    // generate the permutation table for rr_diffuse
+    for (int d=0; d < data->total_depth*data->GI_diffuse_samples; ++d)
+    {
+        permute(&(data->perm_table_diffuse[d*data->AA_samples]), data->AA_samples);
+    }
+
+    srand(RAND_STREAM_ALSURFACE_RR_SPEC1_PERMUTE);
+    // generate the permutation table for rr_spec1
+    for (int d=0; d < data->total_depth*data->GI_glossy_samples; ++d)
+    {
+        permute(&(data->perm_table_spec1[d*data->AA_samples]), data->AA_samples);
+    }
+
+    srand(RAND_STREAM_ALSURFACE_RR_SPEC2_PERMUTE);
+    // generate the permutation table for rr_spec2
+    for (int d=0; d < data->total_depth*data->GI_glossy2_samples; ++d)
+    {
+        permute(&(data->perm_table_spec2[d*data->AA_samples]), data->AA_samples);
+    }
+
+    srand(RAND_STREAM_ALSURFACE_RR_BACKLIGHT_PERMUTE);
+    // generate the permutation table for rr_backlight
+    for (int d=0; d < data->total_depth*data->GI_diffuse_samples; ++d)
+    {
+        permute(&(data->perm_table_backlight[d*data->AA_samples]), data->AA_samples);
+    }
+
     data->xres = AiNodeGetInt(options, "xres");
 
     // fresnel
@@ -742,7 +793,7 @@ shader_evaluate
     // Grab the roughness from the previous surface and make sure we're slightly rougher than it to avoid glossy-glossy fireflies
     float alsPreviousRoughness = 0.0f;
     AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
-    if (sg->Rr > 0)
+    if (data->do_rr && sg->Rr > 0)
     {
         roughness_x = std::max(roughness_x, alsPreviousRoughness*specular1RoughnessDepthScale);
         roughness_y = std::max(roughness_y, alsPreviousRoughness*specular1RoughnessDepthScale);
@@ -876,7 +927,9 @@ shader_evaluate
         do_transmission = false;
     }
 
-    
+    // get path throughput so far
+    AtRGB path_throughput = AI_RGB_WHITE;
+    if (data->do_rr && sg->Rr > 0) AiStateGetMsgRGB("als_throughput", &path_throughput);
 
     // prepare temporaries for light group calculation
     AtRGB lightGroupsDirect[NUM_LIGHT_GROUPS];
@@ -1144,6 +1197,7 @@ shader_evaluate
     AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
     bool tir = (!AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg)) && inside;
     bool rr_transmission = (data->rrTransmission && (sg->Rr >= data->rrTransmissionDepth) && !tir);
+    bool rr_glossy = false;
     if (rr_transmission)
     {
         kr = fresnel(AiV3Dot(-sg->Rd, sg->Nf), eta);
@@ -1185,6 +1239,7 @@ shader_evaluate
                 {
                     kr = data->fr1->kr(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)));
                     kti = maxh(kr);
+
                 }
                 else
                 {
@@ -1196,15 +1251,46 @@ shader_evaluate
                 // being cast, and in reflected surfaces.
                 // Remove this for now until we can figure out exactly what's going on
                 //AiSamplerGetSample(sampit, samples);
-                if (maxh(kr) > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
+
+                AtRGB f = kr * specular1Color * specular1IndirectStrength;
+                bool cont = true;
+                AtRGB throughput = path_throughput * f;
+                float rr_p = 1.0f;
+#ifdef RR_BOUNCES
+                rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                if (data->do_rr && sg->Rr > 0)
                 {
-                    AtRGB f =  kr * specular1Color * specular1IndirectStrength;
-                    result_glossyIndirect = min(scrs.color * f, rgb(data->specular1IndirectClamp));
-                    if (doDeepGroups)
+                    cont = false;
+                    // get a permuted, stratified random number
+                    float u = (float(data->perm_table_spec1[sg->Rr*data->AA_samples+sg->si]) 
+                                + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
+                                *data->AA_samples_inv;
+                    // offset based on pixel
+                    float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC1_OFFSET);
+                    u = fmodf(u+offset, 1.0f);
+
+                    if (u < rr_p)
                     {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        cont = true;
+                        rr_p = 1.0f / rr_p;
+                        throughput *= rr_p;
+                        f *= rr_p;
+                    }
+                }
+#endif
+                if (cont)
+                {
+                    AiStateSetMsgRGB("als_throughput", throughput);
+                    if (maxh(kr) > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
+                    {
+                        result_glossyIndirect = min(scrs.color * f, rgb(data->specular1IndirectClamp));
+                        if (doDeepGroups)
                         {
-                            deepGroupsGlossy[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
+
+                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                            {
+                                deepGroupsGlossy[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
+                            }
                         }
                     }
                 }
@@ -1219,6 +1305,7 @@ shader_evaluate
             AiStateSetMsgFlt("alsPreviousRoughness", std::max(roughness_x, roughness_y));
             sg->Nf = specular1Normal;
             AtRGB kr;
+            int ssi = 0;
             while(AiSamplerGetSample(sampit, samples))
             {
                 wi = GlossyMISSample(mis, float(samples[0]), float(samples[1]));
@@ -1231,10 +1318,38 @@ shader_evaluate
                     kti += maxh(kr);
                     if (maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                     {
-                        // if we're in a camera ray, pass the sample index down to the child SG
-                        if (AiTrace(&wi_ray, &scrs))
+                        AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
+                        AtRGB throughput = path_throughput * f * specular1Color * specular1IndirectStrength;
+                        bool cont = true;
+                        float rr_p = 1.0f;
+#ifdef RR_BOUNCES
+                    rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                    if (data->do_rr && sg->Rr > 0)
+                    {
+                        cont = false;
+                        // get a permuted, stratified random number
+                        int idx = (ssi*data->GI_glossy_samples + sg->Rr) * data->AA_samples + sg->si;
+                        float u = (float(data->perm_table_spec1[idx]) 
+                                    + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
+                                    * data->AA_samples_inv;
+                        // offset based on pixel
+                        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC1_OFFSET);
+                        u = fmodf(u+offset, 1.0f);
+
+                        if (u < rr_p)
                         {
-                            AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr * specular1Color * specular1IndirectStrength;
+                            cont = true;
+                            rr_p = 1.0f / rr_p;
+                            throughput *= rr_p;
+                            f *= rr_p;
+                        }
+                    }
+#endif
+                        AiStateSetMsgRGB("als_throughput", throughput);
+                        // if we're in a camera ray, pass the sample index down to the child SG
+                        if (cont && AiTrace(&wi_ray, &scrs))
+                        {
+                            f *= specular1Color * specular1IndirectStrength;
                             result_glossyIndirect += min(scrs.color * f, rgb(data->specular1IndirectClamp));
 
                             // accumulate the lightgroup contributions calculated by the child shader
@@ -1248,6 +1363,7 @@ shader_evaluate
                         }
                     }
                 }
+                ssi++;
             } // END while(samples)
             sg->Nf = Nfold;
             result_glossyIndirect *= AiSamplerGetSampleInvCount(sampit);
@@ -1258,7 +1374,9 @@ shader_evaluate
             {
                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                 {
-                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit);
+
+                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit) 
+                                            * specular1Color * specular1IndirectStrength;
                 }
             }
         }
@@ -1273,6 +1391,7 @@ shader_evaluate
         kti2 = 0.0f;
         AiStateSetMsgFlt("alsPreviousRoughness", std::max(roughness2_x, roughness2_y));
         sg->Nf = specular2Normal;
+        int ssi = 0;
         while(AiSamplerGetSample(sampit, samples))
         {
             wi = GlossyMISSample(mis2, float(samples[0]), float(samples[1]));
@@ -1282,11 +1401,39 @@ shader_evaluate
                 AiV3Normalize(H, wi+brdfw2.V);
                 // add the fresnel for this layer
                 kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
-                if (kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+                AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
+                AtRGB throughput = path_throughput * f * specular2Color * specular2IndirectStrength;
+                AiStateSetMsgRGB("als_throughput", throughput);
+                bool cont = true;
+                float rr_p = 1.0f;
+#ifdef RR_BOUNCES
+                rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                if (data->do_rr && sg->Rr > 0)
+                {
+                    cont = false;
+                    // get a permuted, stratified random number
+                    int idx = (ssi*data->GI_glossy2_samples + sg->Rr) * data->AA_samples + sg->si;
+                    float u = (float(data->perm_table_spec2[idx]) 
+                                + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC2_JITTER))
+                                * data->AA_samples_inv;
+                    // offset based on pixel
+                    float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC2_OFFSET);
+                    u = fmodf(u+offset, 1.0f);
+
+                    if (u < rr_p)
+                    {
+                        cont = true;
+                        rr_p = 1.0f / rr_p;
+                        throughput *= rr_p;
+                        f *= rr_p;
+                    }
+                }
+#endif
+                if (cont && kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
                     if (AiTrace(&wi_ray, &scrs))
                     {
-                        AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti * specular2Color * specular2IndirectStrength;
+                        f *= specular2Color * specular2IndirectStrength;
                         result_glossy2Indirect += min(scrs.color * f, rgb(data->specular2IndirectClamp));
                         kti2 += kr; 
                         
@@ -1295,7 +1442,7 @@ shader_evaluate
                         {
                             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                             {
-                                deepGroupsGlossy2[i] += min(deepGroupPtr[i], rgb(data->specular1IndirectClamp)) * f;
+                                deepGroupsGlossy2[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
                             }
                         }
                     }
@@ -1303,6 +1450,8 @@ shader_evaluate
 
                 
             }
+
+            ssi++;
         }
         sg->Nf = Nfold;
         result_glossy2Indirect*= AiSamplerGetSampleInvCount(sampit);
@@ -1325,6 +1474,7 @@ shader_evaluate
         float kr = kti*kti2;
         AtSamplerIterator* sampit = AiSamplerIterator(data->diffuse_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
+        int ssi = 0;
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
@@ -1342,20 +1492,52 @@ shader_evaluate
             
             // trace the ray
             wi_ray.dir = wi;
-            if (AiTrace(&wi_ray, &scrs))
+            AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
+            AtRGB throughput = path_throughput * f * diffuseColor * diffuseIndirectStrength;
+            float rr_p = 1.0f; 
+            bool cont = true;
+#ifdef RR_BOUNCES
+            if (data->do_rr && sg->Rr > 0)
             {
-                AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
-                result_diffuseIndirectRaw += scrs.color * f;
+                cont = false;
+                // get a permuted, stratified random number
+                int idx = (ssi*data->GI_diffuse_samples + sg->Rr) * data->AA_samples + sg->si;
+                float u = (float(data->perm_table_diffuse[idx]) 
+                            + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_DIFF_JITTER))
+                            * data->AA_samples_inv;
+                // offset based on pixel
+                float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_DIFF_OFFSET);
+                u = fmodf(u+offset, 1.0f);
 
-                // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
+                rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                if (u < rr_p)
                 {
-                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    cont = true;
+                    rr_p = 1.0f / rr_p;
+                    throughput *= rr_p;
+                    f *= rr_p;
+                }
+            }
+#endif
+            if (cont)
+            {
+                AiStateSetMsgRGB("als_throughput", throughput);
+                if (AiTrace(&wi_ray, &scrs))
+                {
+                    result_diffuseIndirectRaw += scrs.color * f;
+
+                    // accumulate the lightgroup contributions calculated by the child shader
+                    if (doDeepGroups)
                     {
-                        deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
+                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        {
+                            deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
+                        }
                     }
                 }
             }
+
+            ssi++;
             
         }
         result_diffuseIndirectRaw *= AiSamplerGetSampleInvCount(sampit) * diffuseIndirectStrength;
@@ -1419,6 +1601,8 @@ shader_evaluate
             if (refraction)
             {
                 AiSamplerGetSample(sampit, samples);
+                AtRGB throughput = path_throughput * kti;
+                AiStateSetMsgRGB("als_throughput", throughput);
                 if (kt > IMPORTANCE_EPS && AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
@@ -1462,6 +1646,8 @@ shader_evaluate
             else //total internal reflection
             {
                 AiSamplerGetSample(sampit, samples);
+                AtRGB throughput = path_throughput * kti;
+                AiStateSetMsgRGB("als_throughput", throughput);
                 if (AiTrace(&wi_ray, &sample))
                 {
                     AtRGB transmittance = AI_RGB_WHITE;
@@ -1549,6 +1735,9 @@ shader_evaluate
                     // eq. 38 and eq. 17
                     float pdf = pm * (transmissionIor * transmissionIor) * fabsf(cosHI) / Ht2;
 
+                    AtRGB f = rgb(brdf/pdf);
+                    AtRGB throughput = path_throughput * kti * f;
+                    AiStateSetMsgRGB("als_throughput", throughput);
                     if (AiTrace(&wi_ray, &sample))
                     {
                         AtRGB transmittance = AI_RGB_WHITE;
@@ -1557,8 +1746,9 @@ shader_evaluate
                             transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
                             transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
                             transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
+                            f *= transmittance;
                         }
-                        AtRGB f = brdf/pdf * transmittance;
+
                         result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
@@ -1595,6 +1785,8 @@ shader_evaluate
                 }
                 else if (AiV3IsZero(wi)) // total internal reflection
                 {
+                    AtRGB throughput = path_throughput * kti;
+                    AiStateSetMsgRGB("als_throughput", throughput);
                     if (AiTrace(&wi_ray, &sample))
                     {
                         AtRGB transmittance = AI_RGB_WHITE;
@@ -1656,6 +1848,7 @@ shader_evaluate
         float kr = kti*kti2;
         AtSamplerIterator* sampit = AiSamplerIterator(data->backlight_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
+        int ssi = 0;
         while (AiSamplerGetSample(sampit, samples))
         {
             // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
@@ -1673,9 +1866,36 @@ shader_evaluate
             
             // trace the ray
             wi_ray.dir = wi;
-            if (AiTrace(&wi_ray, &scrs))
+            AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
+            AtRGB throughput = path_throughput * f;
+            AiStateSetMsgRGB("als_throughput", throughput);
+            bool cont = true;
+            float rr_p = 1.0f;
+#ifdef RR_BOUNCES
+                rr_p = std::min(1.0f, sqrtf(maxh(throughput) / maxh(path_throughput)));
+                if (sg->Rt > 0)
+                {
+                    cont = false;
+                    // get a permuted, stratified random number
+                    int idx = (ssi*data->GI_diffuse_samples + sg->Rr) * data->AA_samples + sg->si;
+                    float u = (float(data->perm_table_backlight[idx]) 
+                                + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER))
+                                * data->AA_samples_inv;
+                    // offset based on pixel
+                    float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_OFFSET);
+                    u = fmodf(u+offset, 1.0f);
+
+                    if (u < rr_p)
+                    {
+                        cont = true;
+                        rr_p = 1.0f / rr_p;
+                        throughput *= rr_p;
+                        f *= rr_p;
+                    }
+                }
+#endif
+            if (cont && AiTrace(&wi_ray, &scrs))
             {
-                AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
                 result_backlightIndirect += scrs.color * f;
 
                 // accumulate the lightgroup contributions calculated by the child shader
@@ -1687,6 +1907,8 @@ shader_evaluate
                     }
                 }
             }
+
+            ssi++;
         }
         result_backlightIndirect *= AiSamplerGetSampleInvCount(sampit) * backlightColor * backlightIndirectStrength;
 
