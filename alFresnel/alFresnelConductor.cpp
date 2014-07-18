@@ -17,7 +17,8 @@ node_loader
 
 enum alFresnelConductorParams
 {
-	p_material=0
+	p_material=0,
+	p_normalize
 };
 
 static const char* alFresnelConductorMaterialNames[] = 
@@ -36,6 +37,7 @@ static const char* alFresnelConductorMaterialNames[] =
 node_parameters
 {
 	AiParameterEnum("material", 0, alFresnelConductorMaterialNames);
+	AiParameterBool("normalize", false);
 }
 
 node_initialize

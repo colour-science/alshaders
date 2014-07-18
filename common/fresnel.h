@@ -31,6 +31,7 @@ public:
 	virtual ~FresnelConductor(){}
 	void setMaterial(int material);
 	virtual AtRGB kr(float cos_theta);
+	bool normalize;
 private:
 	float* _data;
 };

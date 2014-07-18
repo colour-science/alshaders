@@ -34,12 +34,20 @@ static float nkdata_W[270] = {0.516324, 0.496244, 0.468384, 0.516318, 0.496239, 
 FresnelConductor::FresnelConductor()
 {
 	_data = nkdata_Al;
+	normalize = false;
 }
 
 AtRGB FresnelConductor::kr(float cos_theta)
 {
 	int i = clamp(1.0f - cos_theta, 0.0f, 1.0f) * (FRCOND_STEPS-1);
-	return rgb(_data[i*3], _data[i*3+1], _data[i*3+2]);
+	AtRGB result = rgb(_data[i*3], _data[i*3+1], _data[i*3+2]);
+	if (normalize)
+	{
+		result.r /= _data[0];
+		result.g /= _data[1];
+		result.b /= _data[2];
+	}
+	return result;
 }
 
 void FresnelConductor::setMaterial(int material)

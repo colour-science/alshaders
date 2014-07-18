@@ -27,3 +27,5 @@ ui.parameter('material', 'enum', 'aluminium', 'Material', enum_names=[
 	"titanium",
 	"tungsten"
 ])
+
+ui.parameter('normalize', 'bool', False, 'Normalize')
