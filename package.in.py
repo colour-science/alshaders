@@ -40,6 +40,7 @@ subdirs = [
     'alSurface',
     'alSwitch',
     'alTriplanar',
+    'alFresnel',
     'common',
     'share'
 ] 

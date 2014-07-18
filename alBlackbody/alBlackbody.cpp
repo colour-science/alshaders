@@ -22,7 +22,7 @@ struct BlackbodySpectrum
 struct ShaderData
 {
 	BlackbodySpectrum bs;
-	AtRGB result;
+	AtRGB* result;
 };
 
 enum alBlackbodyParams
@@ -52,9 +52,18 @@ node_loader
    return true;
 }
 
+#define MAX_TEMP 15001
+
 node_initialize
 {
 	ShaderData *data = (ShaderData*) AiMalloc(sizeof(ShaderData));
+	data->result = new AtRGB[MAX_TEMP];
+	for (int i=0; i < MAX_TEMP; ++i)
+	{
+		data->bs.temp = i;
+		AtColor xyz = spectrumToXyz(data->bs);
+		data->result[i] = max(AI_RGB_BLACK, xyzToRgb(CsRec709, xyz));
+	}
 	AiNodeSetLocalData(node,data);
 }
 
@@ -63,6 +72,7 @@ node_finish
 	if (AiNodeGetLocalData(node))
 	{
 		ShaderData* data = (ShaderData*) AiNodeGetLocalData(node);
+		delete[] data->result;
 		AiFree((void*) data);
 		AiNodeSetLocalData(node, NULL);
 	}
@@ -70,14 +80,7 @@ node_finish
 
 node_update
 {
-	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
-	if (!AiNodeIsLinked(node, "temperature"))
-	{
-		// temperature parameter is not connected, precalculate spectrum
-		data->bs.temp = params[p_temperature].FLT;
-		AtColor xyz = spectrumToXyz(data->bs);
-		data->result = xyzToRgb(CsRec709, xyz);
-	}
+
 }
 
 
@@ -92,18 +95,8 @@ shader_evaluate
 	AtRGB result = AI_RGB_BLACK;
 
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
-	if (AiNodeIsLinked(node, "temperature"))
-	{
-		BlackbodySpectrum bs(temperature);
-		AtColor xyz = spectrumToXyz(bs);
-		result = xyzToRgb(CsRec709, xyz);
-	}
-	else
-	{
-		result = data->result;
-	}
 
-	result = max(AI_RGB_BLACK, result);
+	result = data->result[std::min(int(temperature), MAX_TEMP-1)];
 
 	if (physicalIntensity > 0.0f)
 	{
