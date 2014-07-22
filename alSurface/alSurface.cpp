@@ -1053,6 +1053,7 @@ shader_evaluate
     brdfw2.kr = 0.0f;
 
     sg->N = Nold;
+    sg->Nf = Nfold;
     
     void* dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
 
