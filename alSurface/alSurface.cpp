@@ -825,21 +825,53 @@ shader_evaluate
     // rotated frames for anisotropy
     AtVector U1 = U, U2 = U;
     AtVector V1 = V, V2 = V;
+
+    if (specular1Normal != sg->Nf)
+    {
+        if (!AiV3isZero(sg->dPdu))
+        {
+            // we have valid a valid dPdu derivative, construct V 
+            AtVector Utmp = AiV3Normalize(sg->dPdu);
+            V1 = AiV3Normalize(AiV3Cross(specular1Normal, Utmp));
+            U1 = AiV3Cross(V1, specular1Normal);
+        }
+        else
+        {
+            AiBuildLocalFramePolar(&U1, &V1, &specular1Normal);
+        }
+    }
+
+    if (specular2Normal != sg->Nf)
+    {
+        if (!AiV3isZero(sg->dPdu))
+        {
+            // we have valid a valid dPdu derivative, construct V 
+            AtVector Utmp = AiV3Normalize(sg->dPdu);
+            V2 = AiV3Normalize(AiV3Cross(specular2Normal, Utmp));
+            U2 = AiV3Cross(V2, specular2Normal);
+        }
+        else
+        {
+            AiBuildLocalFramePolar(&U2, &V2, &specular2Normal);
+        }
+    }
+
+
     if (specular1Anisotropy != 0.5f)
     {
         float specular1Rotation = AiShaderEvalParamFlt(p_specular1Rotation);
         const float cos_phi = cosf(specular1Rotation * AI_PI);
         const float sin_phi = sinf(specular1Rotation * AI_PI);
-        U1 = cos_phi * U - sin_phi * V;
-        V1 = cos_phi * V + sin_phi * U;
+        U1 = cos_phi * U1 - sin_phi * V1;
+        V1 = cos_phi * V1 + sin_phi * U1;
     }
     if (specular2Anisotropy != 0.5f)
     {
         float specular2Rotation = AiShaderEvalParamFlt(p_specular2Rotation);
         const float cos_phi = cosf(specular2Rotation * AI_PI);
         const float sin_phi = sinf(specular2Rotation * AI_PI);
-        U1 = cos_phi * U - sin_phi * V;
-        V1 = cos_phi * V + sin_phi * U;
+        U2 = cos_phi * U2 - sin_phi * V2;
+        V2 = cos_phi * V2 + sin_phi * U2;
     }
 
     // View direction, omega_o
