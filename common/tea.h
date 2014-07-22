@@ -19,11 +19,11 @@
  *     Second input value to be encrypted (e.g. the requested random number dimension)
  * \param rounds
  *     How many rounds should be executed? Original default was 4, but this looks bad so
- *     we'll use 5 which has nicer properties
+ *     we'll use 64 which has nicer properties
  * \return
  *     A uniformly distributed 64-bit integer
  */
-inline AtUInt64 sampleTEA(AtUInt32 v0, AtUInt32 v1, int rounds = 5) {
+inline AtUInt64 sampleTEA(AtUInt32 v0, AtUInt32 v1, int rounds = 64) {
     AtUInt32 sum = 0;
 
     for (int i=0; i<rounds; ++i)
@@ -36,7 +36,7 @@ inline AtUInt64 sampleTEA(AtUInt32 v0, AtUInt32 v1, int rounds = 5) {
     return ((AtUInt64) v1 << 32) + v0;
 }
 
-inline float sampleTEAFloat(AtUInt32 v0, AtUInt32 v1, int rounds = 5) {
+inline float sampleTEAFloat(AtUInt32 v0, AtUInt32 v1, int rounds = 64) {
     /* Trick from MTGP: generate an uniformly distributed
        single precision number in [1,2) and subtract 1. */
     union
