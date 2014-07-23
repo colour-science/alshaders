@@ -1410,8 +1410,7 @@ shader_evaluate
                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                 {
 
-                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit) 
-                                            * specular1Color * specular1IndirectStrength;
+                    deepGroupsGlossy[i] *= AiSamplerGetSampleInvCount(sampit);
                 }
             }
         }
