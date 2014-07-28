@@ -539,6 +539,7 @@ node_update
     // fresnel
     delete data->fr1;
     data->fr1 = NULL;
+    data->fr1_uniform = false;
     if (AiNodeIsLinked(node, "specular1Ior"))
     {
         AtNode* cn = AiNodeGetLink(node, "specular1Ior");
@@ -547,18 +548,17 @@ node_update
         {
             AtParamValue* pv = AiNodeGetParams(cn);
             FresnelConductor* fc = new FresnelConductor();
-            fc->setMaterial(pv[0].INT);
+            fc->setMaterial(pv[0].INT, pv[2].FLT, pv[3].FLT);
             fc->normalize = pv[1].BOOL;
             data->fr1 = fc;
+            data->fr1_uniform = true;
         }
     }
-    if (!data->fr1)
-    {
-        data->fr1 = new FresnelDielectric(1.0f / params[p_specular1Ior].FLT);
-    }
+    if (!data->fr1) data->fr1 = new FresnelDielectric();
     
     delete data->fr2;
     data->fr2 = NULL;
+    data->fr2_uniform = false;
     if (AiNodeIsLinked(node, "specular2Ior"))
     {
         AtNode* cn = AiNodeGetLink(node, "specular2Ior");
@@ -567,15 +567,13 @@ node_update
         {
             AtParamValue* pv = AiNodeGetParams(cn);
             FresnelConductor* fc = new FresnelConductor();
-            fc->setMaterial(pv[0].INT);
+            fc->setMaterial(pv[0].INT, pv[2].FLT, pv[3].FLT);
             fc->normalize = pv[1].BOOL;
             data->fr2 = fc;
+            data->fr2_uniform = true;
         }
     }
-    if (!data->fr2)
-    {
-        data->fr2 = new FresnelDielectric(1.0f / params[p_specular2Ior].FLT);
-    }
+    if (!data->fr2) data->fr2 = new FresnelDielectric();
 };
 
 
@@ -583,7 +581,23 @@ shader_evaluate
 {
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 
-    float ior = std::max(1.001f, AiShaderEvalParamFlt(p_specular1Ior));
+    float ior, ior2;
+    float eta, eta2;
+    if (!data->fr1_uniform)
+    {
+        ior = AiShaderEvalParamFlt(p_specular1Ior);
+        eta = 1.0f / ior;
+        data->fr1->_eta = eta;
+    }
+
+    // slightly wasteful doing this here, btu it keeps the code simpler
+    if (!data->fr2_uniform)
+    {
+        ior2 = AiShaderEvalParamFlt(p_specular2Ior);
+        eta2 = 1.0f / ior2;
+        data->fr2->_eta = eta2;
+    }
+
     float roughness = AiShaderEvalParamFlt( p_specular1Roughness );
     roughness *= roughness;
     float transmissionRoughness;
@@ -598,7 +612,7 @@ shader_evaluate
     {
         transmissionRoughness = AiShaderEvalParamFlt(p_transmissionRoughness);
         transmissionRoughness *= transmissionRoughness;
-        transmissionIor = std::max(1.001f, AiShaderEvalParamFlt(p_transmissionIor));
+        transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
     }
     AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
 
@@ -649,7 +663,7 @@ shader_evaluate
         {
             // check transmission through the surface
             float costheta = AiV3Dot(sg->Nf, -sg->Rd);
-            float kt = 1.0f - fresnel(costheta, 1.0f/transmissionIor);
+            float kt = maxh(1.0f - data->fr1->kr(costheta));
             if (kt >= IMPORTANCE_EPS) // else surface is fully reflective
             {
                 if (maxh(sigma_t) > 0.0f)
@@ -766,14 +780,6 @@ shader_evaluate
 
     float roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
     roughness2 *= roughness2;
-
-    float eta = 1.0f / ior;
-    float ior2 = std::max(1.001f, AiShaderEvalParamFlt(p_specular2Ior));
-    float eta2 = 1.0f / ior2;
-
-    data->fr1->_eta = eta;
-    data->fr2->_eta = eta2;
-
 
     float specular1RoughnessDepthScale = AiShaderEvalParamFlt(p_specular1RoughnessDepthScale);
     float specular2RoughnessDepthScale = AiShaderEvalParamFlt(p_specular2RoughnessDepthScale);

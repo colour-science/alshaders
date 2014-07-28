@@ -66,8 +66,9 @@ struct ShaderData
 
    // Fresnel
    Fresnel* fr1;
+   bool fr1_uniform;
    Fresnel* fr2;
-
+   bool fr2_uniform;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0
