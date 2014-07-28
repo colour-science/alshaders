@@ -18,7 +18,9 @@ node_loader
 enum alFresnelConductorParams
 {
 	p_material=0,
-	p_normalize
+	p_normalize,
+	p_n,
+	p_k
 };
 
 static const char* alFresnelConductorMaterialNames[] = 
@@ -31,6 +33,7 @@ static const char* alFresnelConductorMaterialNames[] =
 	"platinum",
 	"titanium",
 	"tungsten",
+	"custom",
 	NULL
 };
 
@@ -38,6 +41,9 @@ node_parameters
 {
 	AiParameterEnum("material", 0, alFresnelConductorMaterialNames);
 	AiParameterBool("normalize", false);
+	AiParameterFlt("n", 1.19781);
+	AiParameterFlt("k", 7.0488);
+
 }
 
 node_initialize
@@ -58,7 +64,9 @@ node_finish
 shader_evaluate
 {
 	int material = AiShaderEvalParamInt(p_material);
+	float n = AiShaderEvalParamFlt(n);
+	float k = AiShaderEvalParamFlt(k);
 	FresnelConductor fr;
-	fr.setMaterial(material);
+	fr.setMaterial(material, n, k);
 	sg->out.RGB = fr.kr(AiV3Dot(-sg->Rd, sg->Nf));
 }

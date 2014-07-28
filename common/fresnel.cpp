@@ -50,7 +50,17 @@ AtRGB FresnelConductor::kr(float cos_theta)
 	return result;
 }
 
-void FresnelConductor::setMaterial(int material)
+void FresnelConductor::generateTable(float n, float k)
+{
+	for (int i=0; i < FRCOND_STEPS; ++i)
+	{
+		float cos_theta = 1.0f - float(i) / float(FRCOND_STEPS-1);
+		float kr = frcond(cos_theta, n, k);
+		_data[i*3] = _data[i*3+1] = _data[i*3+2] = kr;
+	}
+}
+
+void FresnelConductor::setMaterial(int material, float n, float k)
 {
 	switch (material)
 	{
@@ -77,6 +87,9 @@ void FresnelConductor::setMaterial(int material)
 		break;
 	case kTungsten:
 		_data = nkdata_W;
+		break;
+	case kCustom:
+		generateTable(n, k);
 		break;
 	default:
 		_data = nkdata_Al;

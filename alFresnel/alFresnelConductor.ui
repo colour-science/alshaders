@@ -29,3 +29,5 @@ ui.parameter('material', 'enum', 'aluminium', 'Material', enum_names=[
 ])
 
 ui.parameter('normalize', 'bool', False, 'Normalize')
+ui.parameter('n', 'float', 1.19781, 'n')
+ui.parameter('k', 'float', 7.0488, 'k')
