@@ -75,15 +75,13 @@ enum alSurfaceParams
     p_sssRadiusColor3,
     p_sssDensityScale,
 
-    p_ssStrength,
-    p_ssBalance,
-    p_ssTargetColor,
+    p_ssInScatteringStrength,
+    p_ssAttenuationColor,
     p_ssSpecifyCoefficients,
     p_ssScattering,
     p_ssAbsorption,
     p_ssDensityScale,
     p_ssDirection,
-    p_ssInScattering,
 
     p_diffuseExtraSamples,
     p_diffuseEnableCaustics,
@@ -223,15 +221,13 @@ node_parameters
     AiMetaDataSetBool(mds, "sssRadiusColor3", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssDensityScale", 1.0f );
 
-    AiParameterFLT("ssStrength", 0.0f );
-    AiParameterFLT("ssBalance", 0.5f);
-    AiParameterRGB("ssTargetColor", .439f, .156f, .078f);
+    AiParameterFLT("ssInScatteringStrength", 0.0f);
+    AiParameterRGB("ssAttenuationColor", 1.0f, 1.0f, 1.0f);
     AiParameterBOOL("ssSpecifyCoefficients", false);
     AiParameterRGB("ssScattering", 1.0f, 1.0f, 1.0f);
     AiParameterRGB("ssAbsorption", 1.0f, 1.0f, 1.0f);
     AiParameterFLT("ssDensityScale", 1.0f);
     AiParameterFLT("ssDirection", 0.0f);
-    AiParameterBOOL("ssInScattering", true);
 
     AiParameterINT("diffuseExtraSamples", 0);
     AiParameterBOOL("diffuseEnableCaustics", false);
@@ -619,12 +615,10 @@ shader_evaluate
     AtRGB ssScattering = AiShaderEvalParamRGB(p_ssScattering);
     AtRGB ssAbsorption = AiShaderEvalParamRGB(p_ssAbsorption);
     float ssDensityScale = AiShaderEvalParamFlt( p_ssDensityScale );
-    float ssStrength = AiShaderEvalParamFlt( p_ssStrength );
     float ssDirection = AiShaderEvalParamFlt(p_ssDirection);
-    float ssBalance = AiShaderEvalParamFlt(p_ssBalance);
-    AtRGB ssTargetColor = AiShaderEvalParamRGB(p_ssTargetColor);
+    float ssInScatteringStrength = AiShaderEvalParamFlt(p_ssInScatteringStrength);
+    AtRGB ssAttenuationColor = AiShaderEvalParamRGB(p_ssAttenuationColor);
     bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
-    bool ssInScattering = AiShaderEvalParamBool(p_ssInScattering);
 
     AtRGB opacity = AiShaderEvalParamRGB(p_opacity);
 
@@ -632,20 +626,27 @@ shader_evaluate
     AtRGB sigma_t = AI_RGB_BLACK;
     AtRGB sigma_s = AI_RGB_BLACK;
     AtRGB sigma_a = AI_RGB_BLACK;
-    if (ssStrength > IMPORTANCE_EPS)
+    bool do_attenuation = false;
+    bool do_scattering = false;
+    if (minh(ssAttenuationColor) < 1 || ssInScatteringStrength > 0 || ssSpecifyCoefficients)
     {
         if (ssSpecifyCoefficients)
         {
             sigma_s = ssScattering * ssDensityScale;
             sigma_a = ssAbsorption * ssDensityScale;
             sigma_t = sigma_s + sigma_a;
+            if (maxh(sigma_t) > 0) do_attenuation = true;
+            if (maxh(sigma_s) > 0) do_scattering = true;
         }
         else
         {
-            sigma_s = sigma_a = AI_RGB_WHITE - ssTargetColor;
-            sigma_s *= ssBalance * ssDensityScale;
-            sigma_a *= (1.0f - ssBalance) * ssDensityScale;
+            sigma_a = (AI_RGB_WHITE - ssAttenuationColor) * ssDensityScale;
+            // if we're doing a scattering medium, then make sure absorption is not 0
+            if (ssInScatteringStrength > 0) sigma_a = max(sigma_a, rgb(0.01f));
+            sigma_s = ssAttenuationColor * ssInScatteringStrength * ssDensityScale;
             sigma_t = sigma_s + sigma_a;
+            if (maxh(sigma_a) > 0) do_attenuation = true;
+            if (maxh(sigma_s) > 0) do_scattering = true;
         }
     }
 
@@ -1672,9 +1673,9 @@ shader_evaluate
                     }
 
                     // single scattering
-                    if (ssStrength > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside && ssInScattering)
+                    if (do_attenuation && maxh(sigma_s_prime) > 0.0f && !inside && do_scattering)
                     {
-                        result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor) * ssStrength;
+                        result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor);
                     }
                 }
                 else // trace the background if we've hit nothing
@@ -1808,11 +1809,11 @@ shader_evaluate
                         }
 
                         // single scattering
-                        if (ssStrength > IMPORTANCE_EPS && maxh(sigma_s_prime) > 0.0f && !inside && ssInScattering)
+                        if (do_attenuation && maxh(sigma_s_prime) > 0.0f && !inside && do_scattering)
                         {
                             AtVector N = sg->N;
                             sg->N = m;
-                            result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor) * ssStrength;
+                            result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor);
                             sg->N = N;
                         }
                     }

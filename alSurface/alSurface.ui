@@ -84,16 +84,12 @@ with uigen.group(ui, 'Transmission'):
 	ui.parameter('transmissionRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1)
 	ui.parameter('transmissionIor', 'float', 1.4, 'IOR', mn=1)
 
-	with uigen.group(ui, 'Scattering'):
-		ui.parameter('ssStrength', 'float', 0.0, 'Strength', mn=0, mx=1)
-		ui.parameter('ssTargetColor', 'rgb', (.439, .156, .078), 'Color')
-		ui.parameter('ssDirection', 'float', 0.0, 'Direction', mn=-1, mx=1)
-		ui.parameter('ssBalance', 'float', 0.5, 'Balance', mn=0, mx=1)
-		ui.parameter('ssInScattering', 'bool', False, 'In-scattering')
+	with uigen.group(ui, 'Attenuation'):
+		ui.parameter('ssAttenuationColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
+		ui.parameter('ssInScatteringStrength', 'float', 0.0, 'Scattering', mn=0, smx=1)
 		ui.parameter('ssDensityScale', 'float', 1.0, 'Density scale')
-		ui.parameter('ssSpecifyCoefficients', 'bool', False, 'Specify coefficients')
-		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering')
-		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption')
+		ui.parameter('ssDirection', 'float', 0.0, 'Direction', mn=-1, mx=1)
+		
 
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('transmissionRoughnessDepthScale', 'float', 1.0, 'Roughness depth scale')
@@ -102,6 +98,9 @@ with uigen.group(ui, 'Transmission'):
 		ui.parameter('rrTransmission', 'bool', False, 'RR')
 		ui.parameter('rrTransmissionDepth', 'int', 1, 'RR depth')
 		ui.parameter('transmissionClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
+		ui.parameter('ssSpecifyCoefficients', 'bool', False, 'Specify attenuation coeffs.')
+		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering')
+		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption')
 # end Transmission
 
 with uigen.group(ui, 'Emission'):
