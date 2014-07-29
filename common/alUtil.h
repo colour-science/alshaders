@@ -419,6 +419,14 @@ inline AtRGB pow(AtRGB c, float e)
     return c;
 }
 
+inline AtRGB log(AtRGB c)
+{
+    c.r = logf(c.r);
+    c.g = logf(c.g);
+    c.b = logf(c.b);
+    return c;
+}
+
 inline float luminance(const AtRGB& c)
 {
     return c.r*0.212671f + c.g*0.715160f + c.b*0.072169f;
