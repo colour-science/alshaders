@@ -1430,6 +1430,7 @@ shader_evaluate
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti2 = 0.0f;
+        AtRGB kr;
         AiStateSetMsgFlt("alsPreviousRoughness", std::max(roughness2_x, roughness2_y));
         sg->Nf = specular2Normal;
         int ssi = 0;
@@ -1441,7 +1442,8 @@ shader_evaluate
                 wi_ray.dir = wi;
                 AiV3Normalize(H, wi+brdfw2.V);
                 // add the fresnel for this layer
-                kr = fresnel(std::max(0.0f,AiV3Dot(H,wi)),eta2);
+                kr = data->fr2->kr(std::max(0.0f,AiV3Dot(H,wi)));
+                kti2 += maxh(kr);
                 AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
                 AtRGB throughput = path_throughput * f * specular2Color * specular2IndirectStrength;
                 AiStateSetMsgRGB("als_throughput", throughput);
@@ -1470,13 +1472,12 @@ shader_evaluate
                     }
                 }
 #endif
-                if (cont && kr > IMPORTANCE_EPS) // only trace a ray if it's going to matter
+                if (cont && maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
                     if (AiTrace(&wi_ray, &scrs))
                     {
                         f *= specular2Color * specular2IndirectStrength;
                         result_glossy2Indirect += min(scrs.color * f, rgb(data->specular2IndirectClamp));
-                        kti2 += kr; 
                         
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
