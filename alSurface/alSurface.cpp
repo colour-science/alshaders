@@ -1642,7 +1642,8 @@ shader_evaluate
             bool refraction = AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg);
             if (refraction)
             {
-                AiSamplerGetSample(sampit, samples);
+                // commented this sampler pull out to match the spec. This will make stuff slower, but less noisy. Need more testing before we release.
+                //AiSamplerGetSample(sampit, samples);
                 AtRGB throughput = path_throughput * kti;
                 AiStateSetMsgRGB("als_throughput", throughput);
                 if (kt > IMPORTANCE_EPS && AiTrace(&wi_ray, &sample))
