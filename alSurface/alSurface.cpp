@@ -1983,8 +1983,8 @@ shader_evaluate
         else
         {
             //AtRGB r1 = sssRadius*sssRadiusColor/sssDensityScale;
-            AtRGB r2 = sssRadius2*sssRadiusColor2/sssDensityScale;
-            AtRGB r3 = sssRadius3*sssRadiusColor3/sssDensityScale;
+            AtRGB r2 = max(rgb(0.0001), sssRadius2*sssRadiusColor2/sssDensityScale);
+            AtRGB r3 = max(rgb(0.0001), sssRadius3*sssRadiusColor3/sssDensityScale);
             AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
                                 AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
                                 AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
