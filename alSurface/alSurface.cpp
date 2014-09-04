@@ -626,6 +626,8 @@ shader_evaluate
     AtRGB sigma_t = AI_RGB_BLACK;
     AtRGB sigma_s = AI_RGB_BLACK;
     AtRGB sigma_a = AI_RGB_BLACK;
+    AtRGB sigma_s_prime = AI_RGB_BLACK;
+    AtRGB sigma_t_prime = AI_RGB_BLACK;
     bool do_attenuation = false;
     bool do_scattering = false;
     if (minh(ssAttenuationColor) < 1 || ssInScatteringStrength > 0 || ssSpecifyCoefficients)
@@ -648,6 +650,8 @@ shader_evaluate
             if (maxh(sigma_a) > 0) do_attenuation = true;
             if (maxh(sigma_s) > 0) do_scattering = true;
         }
+        sigma_s_prime = sigma_s*(1.0f-ssDirection);
+        sigma_t_prime = (sigma_s_prime + sigma_a);
     }
 
     // check custom ray type
@@ -670,7 +674,7 @@ shader_evaluate
                 if (maxh(sigma_t) > 0.0f)
                 {
                     AtPoint alsPreviousIntersection;
-                    AtRGB als_sigma_t = sigma_t;
+                    AtRGB als_sigma_t = sigma_t_prime;
                     if (AiStateGetMsgPnt("alsPreviousIntersection", &alsPreviousIntersection))
                     {
                         AiStateGetMsgRGB("alsPrevious_sigma_t", &als_sigma_t);
@@ -703,7 +707,7 @@ shader_evaluate
                             outOpacity.r = fast_exp(-z * als_sigma_t.r);
                             outOpacity.g = fast_exp(-z * als_sigma_t.g);
                             outOpacity.b = fast_exp(-z * als_sigma_t.b);
-                            outOpacity = 1.0f - (outOpacity*kt);
+                            outOpacity = 1.0f - (outOpacity*kt*transmissionColor);
                         }
 
                     }
@@ -712,14 +716,14 @@ shader_evaluate
                         // first intersection
                         // tell the next shader invocation that we're now inside the surface and what our extinction
                         // coefficient is
-                        AiStateSetMsgRGB("alsPrevious_sigma_t", sigma_t);
+                        AiStateSetMsgRGB("alsPrevious_sigma_t", sigma_t_prime);
                         AiStateSetMsgBool("alsInside", true);
                     }
                 }
                 else // no extinction, shadows are fresnel only.
                 {
                     AiStateSetMsgRGB("alsPrevious_sigma_t", AI_RGB_BLACK);
-                    outOpacity = 1.0f - kt;
+                    outOpacity = 1.0f - kt*transmissionColor;
                 }
             }
         }
@@ -1611,9 +1615,6 @@ shader_evaluate
         AtVector wi, R;
         AtScrSample sample;
        
-        AtRGB sigma_t = sigma_s + sigma_a;
-        AtRGB sigma_s_prime = sigma_s*(1.0f-ssDirection);
-        AtRGB sigma_t_prime = (sigma_s_prime + sigma_a);
         AtRGB mfp = AI_RGB_WHITE / sigma_t_prime;
 
         float inv_ns = 1.0f;
