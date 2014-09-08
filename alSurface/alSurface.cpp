@@ -651,7 +651,7 @@ shader_evaluate
     }
 
     // check custom ray type
-    int als_raytype;
+    int als_raytype = ALS_RAY_UNDEFINED;
     AiStateGetMsgInt("als_raytype", &als_raytype);
 
     // if it's a shadow ray, handle shadow colouring through absorption
