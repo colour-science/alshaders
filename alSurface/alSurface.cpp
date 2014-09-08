@@ -190,6 +190,14 @@ enum alSurfaceParams
 
     p_rr,
 
+    p_trace_set_all,
+    p_trace_set_shadows,
+    p_trace_set_diffuse,
+    p_trace_set_backlight,
+    p_trace_set_specular1,
+    p_trace_set_specular2,
+    p_trace_set_transmission,
+
     p_bump
 };
 
@@ -333,6 +341,14 @@ node_parameters
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
 
     AiParameterBool("rr", true);
+
+    AiParameterSTR("traceSetAll", "");
+    AiParameterSTR("traceSetShadows", "");
+    AiParameterSTR("traceSetDiffuse", "");
+    AiParameterSTR("traceSetBacklight", "");
+    AiParameterSTR("traceSetSpecular1", "");
+    AiParameterSTR("traceSetSpecular2", "");
+    AiParameterSTR("traceSetTransmission", "");
 }
 
 #ifdef MSVC
@@ -570,6 +586,126 @@ node_update
         }
     }
     if (!data->fr2) data->fr2 = new FresnelDielectric();
+
+    // Trace sets setup
+    data->trace_set_all_enabled = false;
+    data->trace_set_shadows_enabled = false;
+    data->trace_set_diffuse_enabled = false;
+    data->trace_set_specular1_enabled = false;
+    data->trace_set_specular2_enabled = false;
+    data->trace_set_transmission_enabled = false;
+
+    if (strlen(params[p_trace_set_all].STR))
+    {
+        std::string tmp(params[p_trace_set_all].STR);
+        data->trace_set_all_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_all_inclusive = false;
+            data->trace_set_all = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_all_inclusive = true;
+            data->trace_set_all = tmp;
+        }
+    }
+
+    if (strlen(params[p_trace_set_shadows].STR))
+    {
+        std::string tmp(params[p_trace_set_shadows].STR);
+        data->trace_set_shadows_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_shadows_inclusive = false;
+            data->trace_set_shadows = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_shadows_inclusive = true;
+            data->trace_set_shadows = tmp;
+        }
+    }
+
+    if (strlen(params[p_trace_set_diffuse].STR))
+    {
+        std::string tmp(params[p_trace_set_diffuse].STR);
+        data->trace_set_diffuse_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_diffuse_inclusive = false;
+            data->trace_set_diffuse = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_diffuse_inclusive = true;
+            data->trace_set_diffuse = tmp;
+        }
+    }
+
+    if (strlen(params[p_trace_set_backlight].STR))
+    {
+        std::string tmp(params[p_trace_set_backlight].STR);
+        data->trace_set_backlight_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_backlight_inclusive = false;
+            data->trace_set_backlight = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_backlight_inclusive = true;
+            data->trace_set_backlight = tmp;
+        }
+    }
+
+    if (strlen(params[p_trace_set_specular1].STR))
+    {
+        std::string tmp(params[p_trace_set_specular1].STR);
+        data->trace_set_specular1_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_specular1_inclusive = false;
+            data->trace_set_specular1 = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_specular1_inclusive = true;
+            data->trace_set_specular1 = tmp;
+        }
+    }
+
+    if (strlen(params[p_trace_set_specular2].STR))
+    {
+        std::string tmp(params[p_trace_set_specular2].STR);
+        data->trace_set_specular2_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_specular2_inclusive = false;
+            data->trace_set_specular2 = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_specular2_inclusive = true;
+            data->trace_set_specular2 = tmp;
+        }
+    }
+
+    if (strlen(params[p_trace_set_transmission].STR))
+    {
+        std::string tmp(params[p_trace_set_transmission].STR);
+        data->trace_set_transmission_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_transmission_inclusive = false;
+            data->trace_set_transmission = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_transmission_inclusive = true;
+            data->trace_set_transmission = tmp;
+        }
+    }
 };
 
 
@@ -1077,6 +1213,19 @@ shader_evaluate
     AtRGBA shadowGroups[NUM_LIGHT_GROUPS];
     memset(shadowGroups, 0, sizeof(AtRGBA)*NUM_LIGHT_GROUPS);
 
+    // set the global trace set if it's defined
+    // this will potentially be overriden by each component as we go through the shader
+    if (data->trace_set_all_enabled)
+    {
+        AiShaderGlobalsSetTraceSet(sg, data->trace_set_all.c_str(), data->trace_set_all_inclusive);
+    }
+
+    // set the shadows trace set if it's defined
+    if (data->trace_set_shadows_enabled)
+    {
+        AiShaderGlobalsSetTraceSet(sg, data->trace_set_shadows.c_str(), data->trace_set_shadows_inclusive);
+    }
+
     // Light loop
     AiLightsPrepare(sg);
     if (doDeepGroups || (sg->Rt & AI_RAY_CAMERA)) 
@@ -1207,6 +1356,20 @@ shader_evaluate
 
     sg->fhemi = true;
 
+    // unset the shadows trace set
+    if (data->trace_set_shadows_enabled)
+    {
+        // if we defined a global trace set, re-set this, otherwise, unset
+        if (data->trace_set_all_enabled)
+        {
+            AiShaderGlobalsSetTraceSet(sg, data->trace_set_all.c_str(), data->trace_set_all_inclusive);
+        }
+        else
+        {
+            AiShaderGlobalsUnsetTraceSet(sg);
+        }
+    }
+
     // Multiply by the colors
     result_diffuseDirectRaw = result_diffuseDirect;
     result_diffuseDirect *= diffuseColor;
@@ -1270,6 +1433,12 @@ shader_evaluate
     // -----------------
     if (do_glossy && specular1IndirectStrength > 0.0f)
     {
+        // set the specular1 trace set if it's defined
+        if (data->trace_set_specular1_enabled)
+        {
+            AiShaderGlobalsSetTraceSet(sg, data->trace_set_specular1.c_str(), data->trace_set_specular1_inclusive);
+        }
+
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy_sampler, sg);
         // if we have perfect specular reflection, fall back to a single sample along the reflection direction
         if (roughness == 0.0f)
@@ -1425,12 +1594,32 @@ shader_evaluate
                 }
             }
         }
+
+        // unset the specular1 trace set
+        if (data->trace_set_specular1_enabled)
+        {
+            // if we defined a global trace set, re-set this, otherwise, unset
+            if (data->trace_set_all_enabled)
+            {
+                AiShaderGlobalsSetTraceSet(sg, data->trace_set_all.c_str(), data->trace_set_all_inclusive);
+            }
+            else
+            {
+                AiShaderGlobalsUnsetTraceSet(sg);
+            }
+        }
     } // if (do_glossy)
 
     // indirect_specular2
     // ------------------
     if (do_glossy2)
     {
+        // set the specular2 trace set if it's defined
+        if (data->trace_set_specular2_enabled)
+        {
+            AiShaderGlobalsSetTraceSet(sg, data->trace_set_specular2.c_str(), data->trace_set_specular2_inclusive);
+        }
+
         AtSamplerIterator* sampit = AiSamplerIterator(data->glossy2_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_GLOSSY, &sg->P, NULL, AI_BIG, sg);
         kti2 = 0.0f;
@@ -1511,12 +1700,33 @@ shader_evaluate
                 deepGroupsGlossy2[i] *= AiSamplerGetSampleInvCount(sampit);
             }
         }
+
+        // unset the specular2 trace set
+        if (data->trace_set_specular2_enabled)
+        {
+            // if we defined a global trace set, re-set this, otherwise, unset
+            if (data->trace_set_all_enabled)
+            {
+                AiShaderGlobalsSetTraceSet(sg, data->trace_set_all.c_str(), data->trace_set_all_inclusive);
+            }
+            else
+            {
+                AiShaderGlobalsUnsetTraceSet(sg);
+            }
+        }
+
     } // if (do_glossy2)
 
     // indirect_diffuse
     // ----------------
     if (do_diffuse && kti*kti2*maxh(diffuseColor)*diffuseIndirectStrength > IMPORTANCE_EPS)
     {
+        // set the diffuse trace set if it's defined
+        if (data->trace_set_diffuse_enabled)
+        {
+            AiShaderGlobalsSetTraceSet(sg, data->trace_set_diffuse.c_str(), data->trace_set_diffuse_inclusive);
+        }
+
         float kr = kti*kti2;
         AtSamplerIterator* sampit = AiSamplerIterator(data->diffuse_sampler, sg);
         AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
@@ -1596,6 +1806,21 @@ shader_evaluate
                 deepGroupsDiffuse[i] *= AiSamplerGetSampleInvCount(sampit) * diffuseColor * diffuseIndirectStrength;
             }
         }
+
+        // unset the diffuse trace set
+        if (data->trace_set_diffuse_enabled)
+        {
+            // if we defined a global trace set, re-set this, otherwise, unset
+            if (data->trace_set_all_enabled)
+            {
+                AiShaderGlobalsSetTraceSet(sg, data->trace_set_all.c_str(), data->trace_set_all_inclusive);
+            }
+            else
+            {
+                AiShaderGlobalsUnsetTraceSet(sg);
+            }
+        }
+
     } // if (do_diffuse)
 
     // refraction
@@ -1616,6 +1841,12 @@ shader_evaluate
         AtScrSample sample;
        
         AtRGB mfp = AI_RGB_WHITE / sigma_t_prime;
+
+        // set the transmission trace set if it's defined
+        if (data->trace_set_transmission_enabled)
+        {
+            AiShaderGlobalsSetTraceSet(sg, data->trace_set_transmission.c_str(), data->trace_set_transmission_inclusive);
+        }
 
         float inv_ns = 1.0f;
         AtSamplerIterator* sampit = AiSamplerIterator(data->refraction_sampler, sg);
@@ -1882,12 +2113,33 @@ shader_evaluate
                 childAovs[i] *= inv_ns * transmissionColor * kti * kti2;
             }
         }
+
+        // unset the transmission trace set
+        if (data->trace_set_transmission_enabled)
+        {
+            // if we defined a global trace set, re-set this, otherwise, unset
+            if (data->trace_set_all_enabled)
+            {
+                AiShaderGlobalsSetTraceSet(sg, data->trace_set_all.c_str(), data->trace_set_all_inclusive);
+            }
+            else
+            {
+                AiShaderGlobalsUnsetTraceSet(sg);
+            }
+        }
+
     } // if (do_transmission)
 
     // backlight
     // ---------
     if (do_backlight && kti*kti2*maxh(backlightColor)*backlightIndirectStrength > IMPORTANCE_EPS)
     {
+        // set the backlight trace set if it's defined
+        if (data->trace_set_backlight_enabled)
+        {
+            AiShaderGlobalsSetTraceSet(sg, data->trace_set_backlight.c_str(), data->trace_set_backlight_inclusive);
+        }
+
         flipNormals(sg);
         float kr = kti*kti2;
         AtSamplerIterator* sampit = AiSamplerIterator(data->backlight_sampler, sg);
@@ -1964,6 +2216,21 @@ shader_evaluate
             }
         }
         flipNormals(sg);
+
+        // unset the backlight trace set
+        if (data->trace_set_backlight_enabled)
+        {
+            // if we defined a global trace set, re-set this, otherwise, unset
+            if (data->trace_set_all_enabled)
+            {
+                AiShaderGlobalsSetTraceSet(sg, data->trace_set_all.c_str(), data->trace_set_all_inclusive);
+            }
+            else
+            {
+                AiShaderGlobalsUnsetTraceSet(sg);
+            }
+        }
+
     } // if (do_backlight)
 
     // Emission

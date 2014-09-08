@@ -43,6 +43,8 @@ with uigen.group(ui, 'Diffuse', False):
 		ui.parameter('diffuseExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
 		ui.parameter('diffuseEnableCaustics', 'bool', False, 'Enable caustics')
 		ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect strength')
+		ui.parameter('traceSetDiffuse', 'string', '', 'Diffuse trace set')
+		ui.parameter('traceSetBacklight', 'string', '', 'Backlight trace set')
 # end Diffuse
 
 with uigen.group(ui, 'Specular 1', False):
@@ -59,6 +61,7 @@ with uigen.group(ui, 'Specular 1', False):
 		ui.parameter('specular1Normal', 'vector', (0.0, 0.0, 0.0), 'Normal')
 		ui.parameter('specular1IndirectStrength', 'float', 1.0, 'Indirect strength')
 		ui.parameter('specular1IndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
+		ui.parameter('traceSetSpecular1', 'string', '', 'Trace set')
 # end Specular 1
 
 with uigen.group(ui, 'Specular 2'):
@@ -75,6 +78,7 @@ with uigen.group(ui, 'Specular 2'):
 		ui.parameter('specular2Normal', 'vector', (0.0, 0.0, 0.0), 'Normal')
 		ui.parameter('specular2IndirectStrength', 'float', 1.0, 'Indirect strength')
 		ui.parameter('specular2IndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
+		ui.parameter('traceSetSpecular2', 'string', '', 'Trace set')
 # end Specular 2
 
 with uigen.group(ui, 'Transmission'):
@@ -101,6 +105,7 @@ with uigen.group(ui, 'Transmission'):
 		ui.parameter('ssSpecifyCoefficients', 'bool', False, 'Specify attenuation coeffs.')
 		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering')
 		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption')
+		ui.parameter('traceSetTransmission', 'string', '', 'Trace set')
 # end Transmission
 
 with uigen.group(ui, 'Emission'):
@@ -163,6 +168,8 @@ with uigen.group(ui, 'AOVs'):
 
 with uigen.group(ui, 'Advanced'):
 	ui.parameter('rr', 'bool', True, 'RR')
+	ui.parameter('traceSetAll', 'string', '', 'Global trace set')
+	ui.parameter('traceSetShadows', 'string', '', 'Shadow trace set')
 
 
 

@@ -69,6 +69,35 @@ struct ShaderData
    bool fr1_uniform;
    Fresnel* fr2;
    bool fr2_uniform;
+
+
+   std::string trace_set_all;
+   bool trace_set_all_enabled;
+   bool trace_set_all_inclusive;
+
+   std::string trace_set_shadows;
+   bool trace_set_shadows_enabled;
+   bool trace_set_shadows_inclusive;
+
+   std::string trace_set_diffuse;
+   bool trace_set_diffuse_enabled;
+   bool trace_set_diffuse_inclusive;
+
+   std::string trace_set_backlight;
+   bool trace_set_backlight_enabled;
+   bool trace_set_backlight_inclusive;
+
+   std::string trace_set_specular1;
+   bool trace_set_specular1_enabled;
+   bool trace_set_specular1_inclusive;
+
+   std::string trace_set_specular2;
+   bool trace_set_specular2_enabled;
+   bool trace_set_specular2_inclusive;
+
+   std::string trace_set_transmission;
+   bool trace_set_transmission_enabled;
+   bool trace_set_transmission_inclusive;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0
