@@ -25,11 +25,32 @@ global proc int als_isArnoldGeometry(string $node)
 	return ($t == "mesh");
 }
 
+global proc als_setMtoaColor(string $node, string $attr, float $r, float $g, float $b)
+{
+	string $attrName = ("mtoa_constant_" + $attr);
+	als_addColorAttr($node, $attrName);
+	als_setColorAttr($node, $attrName, $r, $g, $b);
+}
+
 global proc als_setId(string $node, int $id, float $r, float $g, float $b)
 {
 	string $attrName = ("mtoa_constant_id_" + $id);
 	als_addColorAttr($node, $attrName);
 	als_setColorAttr($node, $attrName, $r, $g, $b);
+}
+
+global proc als_setMtoaColorOnSelection(string $attr, float $r, float $g, float $b)
+{
+	string $sel[] = `ls -sl`;
+	string $desc[] = `listRelatives -ad $sel`;
+
+	for ($d in $desc)
+	{
+		if (als_isArnoldGeometry($d))
+		{
+			als_setMtoaColor($d, $attr, $r, $g, $b);
+		}
+	}
 }
 
 global proc als_setIdOnSelection(int $id, float $r, float $g, float $b)

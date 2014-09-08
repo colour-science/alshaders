@@ -10,11 +10,11 @@ global proc als_idWindow()
 	if (`window -ex $g_als_idWindow`) deleteUI $g_als_idWindow;
 	if (`windowPref -exists $g_als_idWindow`) windowPref -remove $g_als_idWindow;
 
-	window -title "Object ID UI" -widthHeight 330 400 $g_als_idWindow;
+	window -title "Object ID UI" -widthHeight 340 420 $g_als_idWindow;
 
 		columnLayout -rs 5;
 
-			text -l "Use this interface to set per-object ID values that can be read by alShaders. Select the objects you want to set the ID for, then click one of the colored buttons to set the ID in that row to the button's color";
+			text -w 330 -ww true -l "Use this interface to set per-object ID values that can be read by alShaders. Select the objects you want to set the ID for, then click one of the colored buttons to set the ID in that row to the button's color";
 
 			gridLayout -nc 4 -cellWidthHeight 80 50;
 
@@ -29,4 +29,4 @@ global proc als_idWindow()
 				}
 
 	showWindow $g_als_idWindow;
-}
+} 
