@@ -87,7 +87,7 @@ THE SOFTWARE.
  * Permutation table. This is just a random jumble of all numbers 0-255,
  * repeated twice to avoid wrapping the index at 255 for each lookup.
  */
-static unsigned char perm[512] = {151,160,137,91,90,15,
+const static unsigned char perm[512] = {151,160,137,91,90,15,
   131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
   190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
   88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -119,7 +119,7 @@ static unsigned char perm[512] = {151,160,137,91,90,15,
  * Gradient tables. These could be programmed the Ken Perlin way with
  * some clever bit-twiddling, but this is more clear, and not really slower.
  */
-static float grad2[8][2] = {
+const static float grad2[8][2] = {
   { -1.0f, -1.0f }, { 1.0f, 0.0f } , { -1.0f, 0.0f } , { 1.0f, 1.0f } ,
   { -1.0f, 1.0f } , { 0.0f, -1.0f } , { 0.0f, 1.0f } , { 1.0f, -1.0f }
 };
@@ -137,7 +137,7 @@ static float grad2[8][2] = {
 /* a = sqrt(2)/sqrt(3) = 0.816496580 */
 #define a 0.81649658f
 
-static float grad3u[16][3] = {
+const static float grad3u[16][3] = {
   { 1.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 1.0f }, // 12 cube edges
   { -1.0f, 0.0f, 1.0f }, { 0.0f, -1.0f, 1.0f },
   { 1.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, -1.0f },
@@ -148,7 +148,7 @@ static float grad3u[16][3] = {
   { a, -a, -a }, { -a, a, -a }
 };
 
-static float grad3v[16][3] = {
+const static float grad3v[16][3] = {
   { -a, a, a }, { -a, -a, a },
   { a, -a, a }, { a, a, a },
   { -a, -a, -a }, { a, -a, -a },
