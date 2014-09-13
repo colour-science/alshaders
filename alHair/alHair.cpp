@@ -421,17 +421,27 @@ struct HairBsdf
         }
 
         // Get a random value per curve
-        AtUInt32 curve_id = 0;
+        AtUInt32 curve_idi = 0;
+        float curve_id = 0.0f;
         cn = 1.0f;
         AtVector cv = aivec(0.0f);
         float randomTangent = AiShaderEvalParamFlt(p_randomTangent) * 0.3f;
-        if (AiUDataGetUInt("curve_id", &curve_id))
+        if (AiUDataGetUInt("curve_id", &curve_idi))
         {
-            AtPoint2 p; p.x = float(curve_id); p.y = 0.0f;
+            AtPoint2 p; p.x = float(curve_idi); p.y = 0.0f;
             cn = AiCellNoise2(p);
 
-            AtPoint p2 = aivec(float(curve_id)+17.0f, 0.0f, 0.0f);
+            AtPoint p2 = aivec(float(curve_idi)+17.0f, 0.0f, 0.0f);
             cv = (AiVCellNoise3(p2)*2.0f - aivec(1.0f));
+        }
+        else if (AiUDataGetFlt("curve_id", &curve_id))
+        {
+            AtPoint2 p; p.x = curve_id; p.y = 0.0f;
+            cn = AiCellNoise2(p);
+
+            AtPoint p2 = aivec(curve_id+17.0f, 0.0f, 0.0f);
+            cv = (AiVCellNoise3(p2)*2.0f - aivec(1.0f));
+
         }
         else
         {
