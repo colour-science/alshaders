@@ -1878,44 +1878,58 @@ shader_evaluate
                 //AiSamplerGetSample(sampit, samples);
                 AtRGB throughput = path_throughput * kti;
                 AiStateSetMsgRGB("als_throughput", throughput);
-                if (kt > IMPORTANCE_EPS && AiTrace(&wi_ray, &sample))
+                
+                if (sg->Rr_refr < data->GI_refraction_depth)
                 {
-                    AtRGB transmittance = AI_RGB_WHITE;
-                    if (maxh(sigma_t) > 0.0f && !inside)
+                    if (kti * kti2 > IMPORTANCE_EPS)
                     {
-                        transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
-                        transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
-                        transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
-                    }
-                    AtRGB f = transmittance;
-                    result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
-                    // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
-                    {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                        AiTrace(&wi_ray, &sample);
+                        AtRGB transmittance = AI_RGB_WHITE;
+                        
+                        if (maxh(sigma_t) > 0.0f && !inside)
                         {
-                            deepGroupsTransmission[i] += min(deepGroupPtr[i] * f, rgb(data->transmissionClamp));
+                            transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
+                            transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
+                            transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                         }
-                    }
 
-                    if (transmitAovs)
-                    {
-                        for (int i=0; i < NUM_AOVs; ++i)
+                        AtRGB f = transmittance;
+                        result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
+                        // accumulate the lightgroup contributions calculated by the child shader
+                        if (doDeepGroups)
                         {
-                            childAovs[i] += transmittedAovPtr[i] * f;
+                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                            {
+                                deepGroupsTransmission[i] += min(deepGroupPtr[i] * f, rgb(data->transmissionClamp));
+                            }
                         }
-                    }
 
-                    // single scattering
-                    if (do_attenuation && maxh(sigma_s_prime) > 0.0f && !inside && do_scattering)
-                    {
-                        result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor);
+                        if (transmitAovs)
+                        {
+                            for (int i=0; i < NUM_AOVs; ++i)
+                            {
+                                childAovs[i] += transmittedAovPtr[i] * f;
+                            }
+                        }
+
+                        // single scattering
+                        if (do_attenuation && maxh(sigma_s_prime) > 0.0f && !inside && do_scattering)
+                        {
+                            result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor);
+                        }
+
+                        if (minh(sample.opacity) < 1.0f)
+                        {
+                            AiTraceBackground(&wi_ray, &sample);
+                            result_transmission += min(sample.color, rgb(data->transmissionClamp)) 
+                                                    * (AI_RGB_WHITE - sample.opacity);
+                        }
                     }
                 }
-                else // trace the background if we've hit nothing
+                else // trace the background if we've hit the refraction depth limit
                 {
                     AiTraceBackground(&wi_ray, &sample);
-                    result_transmission += min(sample.color, rgb(data->transmissionClamp));
+                            result_transmission += min(sample.color, rgb(data->transmissionClamp));
                 }
             }
             else //total internal reflection
@@ -2013,8 +2027,9 @@ shader_evaluate
                     AtRGB f = rgb(brdf/pdf);
                     AtRGB throughput = path_throughput * kti * f;
                     AiStateSetMsgRGB("als_throughput", throughput);
-                    if (AiTrace(&wi_ray, &sample))
+                    if (sg->Rr_refr < data->GI_refraction_depth)
                     {
+                        AiTrace(&wi_ray, &sample);
                         AtRGB transmittance = AI_RGB_WHITE;
                         if (maxh(sigma_t) > 0.0f && !inside)
                         {
@@ -2049,6 +2064,13 @@ shader_evaluate
                             sg->N = m;
                             result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor);
                             sg->N = N;
+                        }
+
+                        if (minh(sample.opacity) < 1.0f)
+                        {
+                            AiTraceBackground(&wi_ray, &sample);
+                            result_transmission += min(sample.color * f, rgb(data->transmissionClamp)) 
+                                                    * (AI_RGB_WHITE - sample.opacity);   
                         }
                     }
                     else // trace the background if we've hit nothing
