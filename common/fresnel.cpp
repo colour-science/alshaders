@@ -37,7 +37,7 @@ FresnelConductor::FresnelConductor()
 	normalize = false;
 }
 
-AtRGB FresnelConductor::kr(float cos_theta)
+AtRGB FresnelConductor::kr(float cos_theta, float eta)
 {
 	int i = clamp(1.0f - cos_theta, 0.0f, 1.0f) * (FRCOND_STEPS-1);
 	AtRGB result = rgb(_data[i*3], _data[i*3+1], _data[i*3+2]);

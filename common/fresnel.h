@@ -6,7 +6,7 @@ class Fresnel
 {
 public:
 	virtual ~Fresnel(){};
-	virtual AtRGB kr(float cos_theta)=0;
+	virtual AtRGB kr(float cos_theta, float eta)=0;
 
 	float _eta;
 };
@@ -18,9 +18,9 @@ public:
 	FresnelDielectric(float eta) { _eta = eta; }
 	virtual ~FresnelDielectric(){}
 
-	virtual AtRGB kr(float cos_theta)
+	virtual AtRGB kr(float cos_theta, float eta)
 	{
-		return rgb(fresnel(cos_theta, _eta));
+		return rgb(fresnel(cos_theta, eta));
 	}
 };
 
@@ -43,7 +43,7 @@ public:
 	FresnelConductor();
 	virtual ~FresnelConductor(){}
 	void setMaterial(int material, float n, float k);
-	virtual AtRGB kr(float cos_theta);
+	virtual AtRGB kr(float cos_theta, float eta);
 	bool normalize;
 private:
 	void generateTable(float n, float k);

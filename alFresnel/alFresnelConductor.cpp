@@ -68,5 +68,5 @@ shader_evaluate
 	float k = AiShaderEvalParamFlt(k);
 	FresnelConductor fr;
 	fr.setMaterial(material, n, k);
-	sg->out.RGB = fr.kr(AiV3Dot(-sg->Rd, sg->Nf));
+	sg->out.RGB = fr.kr(AiV3Dot(-sg->Rd, sg->Nf), 1.f);
 }
