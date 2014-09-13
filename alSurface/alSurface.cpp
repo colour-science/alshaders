@@ -1920,7 +1920,7 @@ shader_evaluate
             }
             else //total internal reflection
             {
-                AiSamplerGetSample(sampit, samples);
+                //AiSamplerGetSample(sampit, samples);
                 AtRGB throughput = path_throughput * kti;
                 AiStateSetMsgRGB("als_throughput", throughput);
                 if (AiTrace(&wi_ray, &sample))
