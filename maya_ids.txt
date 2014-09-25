@@ -25,3 +25,5 @@
 0x00116418 - alMeasured
 0x00116419 - alProjection
 0x0011641A - alFresnelConductor
+0x0011641B - alLayerFloat
+0x0011641C - alLayerColor
