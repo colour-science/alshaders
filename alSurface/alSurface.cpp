@@ -1194,7 +1194,7 @@ shader_evaluate
     brdfw2.brdf_data = mis2;
     brdfw2.sg = sg;
     brdfw2.fr = data->fr2;
-    brdfw2.eta = eta;
+    brdfw2.eta = eta2;
     brdfw2.V = wo;
     brdfw2.N = specular2Normal;
     brdfw2.kr = 0.0f;
