@@ -1,0 +1,34 @@
+import uigen
+
+ui.shader({
+	'name':'alLayerColor',
+	'description':'Layer multiple colors together with alpha blending',
+	'output':'rgb',
+	'maya_name':'alLayerColor',
+	'maya_classification':'shader/texture',
+	'maya_id':'0x0011641C',
+	'maya_swatch':True,
+	'maya_matte':False,
+	'maya_bump':False,
+	'soft_name':'ALS_LayerColor',
+	'soft_classification':'material',
+	'soft_version':1,
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alLayer'
+})
+
+ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1')
+ui.parameter('layer1a', 'float', 0.0, 'Layer 1 Alpha')
+ui.parameter('layer2', 'rgb', (0.0, 0.0, 0.0), 'Layer 2')
+ui.parameter('layer2a', 'float', 0.0, 'Layer 2 Alpha')
+ui.parameter('layer3', 'rgb', (0.0, 0.0, 0.0), 'Layer 3')
+ui.parameter('layer3a', 'float', 0.0, 'Layer 3 Alpha')
+ui.parameter('layer4', 'rgb', (0.0, 0.0, 0.0), 'Layer 4')
+ui.parameter('layer4a', 'float', 0.0, 'Layer 4 Alpha')
+ui.parameter('layer5', 'rgb', (0.0, 0.0, 0.0), 'Layer 5')
+ui.parameter('layer5a', 'float', 0.0, 'Layer 5 Alpha')
+ui.parameter('layer6', 'rgb', (0.0, 0.0, 0.0), 'Layer 6')
+ui.parameter('layer6a', 'float', 0.0, 'Layer 6 Alpha')
+ui.parameter('layer7', 'rgb', (0.0, 0.0, 0.0), 'Layer 7')
+ui.parameter('layer7a', 'float', 0.0, 'Layer 7 Alpha')
+ui.parameter('layer8', 'rgb', (0.0, 0.0, 0.0), 'Layer 8')
+ui.parameter('layer8a', 'float', 0.0, 'Layer 8 Alpha')

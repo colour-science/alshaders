@@ -437,7 +437,7 @@ def WriteMTD(sd, fn):
 
 	for p in sd.parameters:
 		writei(f, '[attr %s]' % p.name, 1)
-		writei(f, 'houdini.label STRING "%s"' % p.name, 2)
+		writei(f, 'houdini.label STRING "%s"' % p.label, 2)
 		WriteMTDParam(f, "min", "float", p.mn, 2)
 		WriteMTDParam(f, "max", "float", p.mx, 2)
 		WriteMTDParam(f, "softmin", "float", p.smn, 2)
@@ -447,7 +447,7 @@ def WriteMTD(sd, fn):
 
 	for a in sd.aovs:
 		writei(f, '[attr %s]' % a.name, 1)
-		writei(f, 'houdini.label STRING "%s"' % a.name, 2)
+		writei(f, 'houdini.label STRING "%s"' % a.label, 2)
 		if (a.ptype == 'rgb'):
 			writei(f, 'aov.type INT 0x05', 2)
 		elif (a.ptype == 'rgba'):
