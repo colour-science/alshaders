@@ -1079,7 +1079,8 @@ shader_evaluate
             || maxh(specular1Color) < IMPORTANCE_EPS             // disable glossy if contribution is small
             || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
             || roughness > 1.0f 
-            || als_raytype == ALS_RAY_HAIR )                               // kill glossy if roughness has been scaled up too far
+            || als_raytype == ALS_RAY_HAIR 
+            || (alsPreviousRoughness > 0.0f && roughness == 0.0f))                               // kill glossy if roughness has been scaled up too far
     {
         do_glossy = false;
     }
