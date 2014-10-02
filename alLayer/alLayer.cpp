@@ -66,7 +66,11 @@ enum alLayerParams
     p_aov_shadow_group_7,
     p_aov_shadow_group_8,
 
-    p_standardAovs
+    p_standardAovs,
+
+    p_aiEnableMatte,
+    p_aiMatteColor,
+    p_aiMatteColorA
 };
 
 enum DebugModes
@@ -136,6 +140,10 @@ node_parameters
     AiParameterStr("aov_shadow_group_8", "shadow_group_8");
 
     AiParameterBool("standardCompatibleAOVs", false);
+
+    AiParameterBOOL("aiEnableMatte", false);
+    AiParameterRGB("aiMatteColor", 0.0f, 0.0f, 0.0f);
+    AiParameterFlt("aiMatteColorA", 0.0f);
 }
 
 node_loader
