@@ -1,0 +1,34 @@
+import uigen
+
+ui.shader({
+	'name':'alSpectral',
+	'description':'General-purpose, physically plausible surface shader',
+	'output':'rgb',
+	'maya_name':'alSpectral',
+	'maya_classification':'shader/surface',
+	'maya_id':'0x0011641D',
+	'maya_swatch':True,
+	'maya_matte':True,
+	'maya_bump':True,
+	'soft_name':'ALS_Spectral',
+	'soft_classification':'material',
+	'soft_version':1
+})
+
+ui.parameter('mode', 'enum', 'diffuse', 'Mode', enum_names=[
+	"constant",
+	"diffuse"
+])
+
+ui.parameter('color', 'rgb', (0.0, 0.0, 0.0), 'color')
+
+ui.parameter('space', 'enum', 'rec709', 'Space',enum_names=[
+	"rec709",
+	"rec2020",
+	"aces",
+	"p3",
+	"xyz",
+	"rgb"
+])
+
+ui.parameter('scale', 'float', 0.0, 'scale')

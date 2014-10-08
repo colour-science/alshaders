@@ -1,0 +1,53 @@
+import uigen
+
+ui.shader({
+	'name':'alSpectralColor',
+	'description':'General-purpose, physically plausible surface shader',
+	'output':'rgb',
+	'maya_name':'alSpectralColor',
+	'maya_classification':'shader/texture',
+	'maya_id':'0x0011641E',
+	'maya_swatch':True,
+	'maya_matte':False,
+	'maya_bump':False,
+	'soft_name':'ALS_SpectralColor',
+	'soft_classification':'material',
+	'soft_version':1
+})
+
+ui.parameter('mode', 'enum', 'white_95', 'Mode',enum_names=[
+	"dark_skin",
+	"light_skin",
+	"blue_sky",
+	"foliage",
+	"blue_flower",
+	"bluish_green",
+	"orange",
+	"purplish_blue",
+	"moderate_red",
+	"purple",
+	"yellow_green",
+	"orange_yellow",
+	"blue",
+	"green",
+	"red",
+	"yellow",
+	"magenta",
+	"cyan",
+	"white_95",
+	"neutral_8",
+	"neutral_65",
+	"neutral_5",
+	"neutral_35",
+	"black_2",
+	"checker",
+])
+
+ui.parameter('space', 'enum', 'rec709', 'Space', enum_names=[
+	"rec709",
+	"rec2020",
+	"aces",
+	"aces_D65",
+	"p3",
+	"p3_D65"
+])
