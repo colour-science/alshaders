@@ -89,7 +89,7 @@ class Parameter(UiElement):
 		if ptype == 'enum':
 			self.enum_names = enum_names
 
-		if ptype == 'bool' or ptype == 'string' or ptype == 'int' or ptype == 'enum':
+		if ptype == 'bool' or ptype == 'string' or ptype == 'int':
 			self.connectible = False
 		else:
 			self.connectible = connectible
