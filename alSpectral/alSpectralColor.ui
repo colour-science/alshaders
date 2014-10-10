@@ -47,7 +47,5 @@ ui.parameter('space', 'enum', 'rec709', 'Space', enum_names=[
 	"rec709",
 	"rec2020",
 	"aces",
-	"aces_D65",
 	"p3",
-	"p3_D65"
 ])

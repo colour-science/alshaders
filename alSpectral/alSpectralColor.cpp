@@ -76,9 +76,7 @@ enum SpaceEnum
 	kRec709 = 0,
 	kRec2020,
 	kACES,
-	kACES_D65,
 	kP3,
-	kP3_D65
 };
 
 static const char* SpaceNames[] = 
@@ -86,9 +84,7 @@ static const char* SpaceNames[] =
 	"rec709",
 	"rec2020",
 	"aces",
-	"aces_D65",
 	"p3",
-	"p3_D65",
 	NULL
 };
 
@@ -159,19 +155,11 @@ shader_evaluate
 	}
 	else if (space == kACES)
 	{
-		sg->out.RGB = clamp(CsACES.xyzToRgb(spd->xyz(SPD::kD60)) * 100.0f, AI_RGB_BLACK, AI_RGB_WHITE);
-	}
-	else if (space == kACES_D65)
-	{
 		sg->out.RGB = clamp(CsACES_D65.xyzToRgb(spd->xyz(SPD::kD65)) * 100.0f, AI_RGB_BLACK, AI_RGB_WHITE);
 	}
 	else if (space == kP3)
 	{
-		sg->out.RGB = clamp(CsP3.xyzToRgb(spd->xyz(SPD::kD65)) * 100.0f, AI_RGB_BLACK, AI_RGB_WHITE);
-	}
-	else
-	{
-		sg->out.RGB = clamp(CsP3_D65.xyzToRgb(spd->xyz(SPD::kD65)) * 100.0f, AI_RGB_BLACK, AI_RGB_WHITE);	
+		sg->out.RGB = clamp(CsP3_D65.xyzToRgb(spd->xyz(SPD::kD65)) * 100.0f, AI_RGB_BLACK, AI_RGB_WHITE);
 	}
 }
 

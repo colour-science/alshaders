@@ -17,7 +17,11 @@ ui.shader({
 
 ui.parameter('mode', 'enum', 'diffuse', 'Mode', enum_names=[
 	"constant",
-	"diffuse"
+	"diffuse",
+	"gold",
+	"silver",
+	"copper",
+	"tungsten"
 ])
 
 ui.parameter('color', 'rgb', (0.0, 0.0, 0.0), 'color')
@@ -32,3 +36,13 @@ ui.parameter('space', 'enum', 'rec709', 'Space',enum_names=[
 ])
 
 ui.parameter('scale', 'float', 0.0, 'scale')
+
+ui.parameter('roughness', 'float', 0.0, 'roughness')
+
+
+ui.parameter('inputspace', 'enum', 'rec709', 'Input space',enum_names=[
+	"rec709",
+	"rec2020",
+	"aces",
+	"p3"
+])

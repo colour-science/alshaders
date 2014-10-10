@@ -45,6 +45,14 @@ public:
 		kBLACK_2
 	};
 
+	enum Nk
+	{
+		kGOLD=0,
+		kSILVER,
+		kCOPPER,
+		kTUNGSTEN
+	};
+
 	SPD();
 	SPD(int c);
 
@@ -59,7 +67,62 @@ public:
 	SPD operator *(const SPD& s) const;
 	SPD operator *(float s) const;
 
+	inline static void fresnel(float cos_theta, int nk, SPD& spd)
+	{
+		const float* nkdata = NULL;
+		switch (nk)
+		{
+		case kGOLD:
+			nkdata = SPD::_Au_nk;
+			break;
+		case kSILVER:
+			nkdata = SPD::_Ag_nk;
+			break;
+		case kCOPPER:
+			nkdata = SPD::_Cu_nk;
+			break;
+		case kTUNGSTEN:
+			nkdata = SPD::_W_nk;
+			break;
+		default:
+			break;
+		}
+
+		if (!nkdata) 
+		{
+			spd.set(kBLACK);
+			return;
+		}
+
+		float mx = 0.0f;
+		for (int i=0; i < SPD_NUM_SAMPLES; ++i)
+		{
+			spd._spd[i] = frcond(cos_theta, nkdata[i*2], nkdata[i*2+1]);
+			mx = MAX(mx, spd._spd[i]);
+		}
+
+		mx = (1.0f / mx) * 0.99f;
+
+		for (int i=0; i < SPD_NUM_SAMPLES; ++i)
+		{
+			spd._spd[i] *= mx;
+		}
+	}
+
 private:
+
+	inline static float frcond(float cosi, const float eta, const float k)
+	{
+	    float tmp = (eta*eta + k*k) * cosi*cosi;
+	    float Rparl2 = (tmp - (2.f * eta * cosi) + 1) /
+	                      (tmp + (2.f * eta * cosi) + 1);
+	    float tmp_f = eta*eta + k*k;
+	    float Rperp2 =
+	        (tmp_f - (2.f * eta * cosi) + cosi*cosi) /
+	        (tmp_f + (2.f * eta * cosi) + cosi*cosi);
+	    return (Rparl2 + Rperp2) / 2.f;
+	}
+
 	// Samples from 380nm - 780nm at 5nm increments
 	float _spd[SPD_NUM_SAMPLES];
 	const static float _cieMatch[SPD_NUM_SAMPLES][3];
@@ -91,13 +154,20 @@ private:
 	const static float _dark_skin[SPD_NUM_SAMPLES];
 	const static float _foliage[SPD_NUM_SAMPLES];
 	const static float _neutral_65[SPD_NUM_SAMPLES];
+
+	const static float _Au_nk[SPD_NUM_SAMPLES*2];
+	const static float _Cu_nk[SPD_NUM_SAMPLES*2];
+	const static float _W_nk[SPD_NUM_SAMPLES*2];
+	const static float _Ag_nk[SPD_NUM_SAMPLES*2];
 };
 
 struct ColorSpace
 {
 	ColorSpace(const std::string& name_, const AtPoint2& r, const AtPoint2& g, const AtPoint2& b, const AtPoint2& w):
-		name(name_), red(r), green(g), blue(b), white(w)
+		name(name_), red(r), green(g), blue(b), white(w), matrix(false)
 	{}
+
+	ColorSpace(float m00, float m10, float m20, float m01, float m11, float m21, float m02, float m12, float m22);
 
 	AtRGB xyzToRgb(const AtRGB& xyz);
 
@@ -106,6 +176,8 @@ struct ColorSpace
 	AtPoint2 green;		/// chromaticity of the green primary
 	AtPoint2 blue;		/// chromticity of the blue primary
 	AtPoint2 white;		/// chromaticity of the white point
+	float m[9];
+	bool matrix;
 };
 
 extern AtPoint2 xyD60;
