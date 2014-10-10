@@ -22,7 +22,9 @@ enum ModeEnum
 	kGOLD,
 	kSILVER,
 	kCOPPER,
-	kTUNGSTEN
+	kTUNGSTEN,
+	kOSMIUM,
+	kANTIMONY
 };
 
 static const char* ModeNames[] = 
@@ -33,6 +35,8 @@ static const char* ModeNames[] =
 	"silver",
 	"copper",
 	"tungsten",
+	"osmium",
+	"antimony",
 	NULL
 };
 

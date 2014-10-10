@@ -21,7 +21,9 @@ ui.parameter('mode', 'enum', 'diffuse', 'Mode', enum_names=[
 	"gold",
 	"silver",
 	"copper",
-	"tungsten"
+	"tungsten",
+	"osmium",
+	"antimony"
 ])
 
 ui.parameter('color', 'rgb', (0.0, 0.0, 0.0), 'color')

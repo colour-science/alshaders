@@ -159,6 +159,8 @@ private:
 	const static float _Cu_nk[SPD_NUM_SAMPLES*2];
 	const static float _W_nk[SPD_NUM_SAMPLES*2];
 	const static float _Ag_nk[SPD_NUM_SAMPLES*2];
+	const static float _Os_nk[SPD_NUM_SAMPLES*2];
+	const static float _Stsg0_nk[SPD_NUM_SAMPLES*2];
 };
 
 struct ColorSpace
