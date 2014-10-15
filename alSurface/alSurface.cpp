@@ -1497,8 +1497,9 @@ shader_evaluate
                 if (cont)
                 {
                     AiStateSetMsgRGB("als_throughput", throughput);
-                    if (maxh(kr) > IMPORTANCE_EPS && AiTrace(&wi_ray, &scrs))
+                    if (maxh(kr) > IMPORTANCE_EPS )
                     {
+                        AiTrace(&wi_ray, &scrs);
                         result_glossyIndirect = min(scrs.color * f, rgb(data->specular1IndirectClamp));
                         if (doDeepGroups)
                         {
@@ -1563,8 +1564,9 @@ shader_evaluate
 #endif
                         AiStateSetMsgRGB("als_throughput", throughput);
                         // if we're in a camera ray, pass the sample index down to the child SG
-                        if (cont && AiTrace(&wi_ray, &scrs))
+                        if (cont)
                         {
+                            AiTrace(&wi_ray, &scrs);
                             f *= specular1Color * specular1IndirectStrength;
                             result_glossyIndirect += min(scrs.color * f, rgb(data->specular1IndirectClamp));
 
@@ -1668,20 +1670,20 @@ shader_evaluate
 #endif
                 if (cont && maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
-                    if (AiTrace(&wi_ray, &scrs))
+                    AiTrace(&wi_ray, &scrs);
+                    
+                    f *= specular2Color * specular2IndirectStrength;
+                    result_glossy2Indirect += min(scrs.color * f, rgb(data->specular2IndirectClamp));
+                    
+                    // accumulate the lightgroup contributions calculated by the child shader
+                    if (doDeepGroups)
                     {
-                        f *= specular2Color * specular2IndirectStrength;
-                        result_glossy2Indirect += min(scrs.color * f, rgb(data->specular2IndirectClamp));
-                        
-                        // accumulate the lightgroup contributions calculated by the child shader
-                        if (doDeepGroups)
+                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                         {
-                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
-                            {
-                                deepGroupsGlossy2[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
-                            }
+                            deepGroupsGlossy2[i] += min(deepGroupPtr[i] * f, rgb(data->specular1IndirectClamp));
                         }
                     }
+                    
                 }
 
                 
@@ -1779,19 +1781,19 @@ shader_evaluate
             if (cont)
             {
                 AiStateSetMsgRGB("als_throughput", throughput);
-                if (AiTrace(&wi_ray, &scrs))
-                {
-                    result_diffuseIndirectRaw += scrs.color * f;
+                AiTrace(&wi_ray, &scrs);
+                
+                result_diffuseIndirectRaw += scrs.color * f;
 
-                    // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
+                // accumulate the lightgroup contributions calculated by the child shader
+                if (doDeepGroups)
+                {
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                     {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
-                        {
-                            deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
-                        }
+                        deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
                     }
                 }
+                
             }
 
             ssi++;
@@ -1938,33 +1940,33 @@ shader_evaluate
                 //AiSamplerGetSample(sampit, samples);
                 AtRGB throughput = path_throughput * kti;
                 AiStateSetMsgRGB("als_throughput", throughput);
-                if (AiTrace(&wi_ray, &sample))
+                AiTrace(&wi_ray, &sample);
+                
+                AtRGB transmittance = AI_RGB_WHITE;
+                if (maxh(sigma_t) > 0.0f && !inside)
                 {
-                    AtRGB transmittance = AI_RGB_WHITE;
-                    if (maxh(sigma_t) > 0.0f && !inside)
+                    transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
+                    transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
+                    transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
+                }
+                result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
+                // accumulate the lightgroup contributions calculated by the child shader
+                if (doDeepGroups)
+                {
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                     {
-                        transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
-                        transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
-                        transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
-                    }
-                    result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
-                    // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
-                    {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
-                        {
-                            deepGroupsTransmission[i] += min(deepGroupPtr[i] * transmittance, rgb(data->transmissionClamp));
-                        }
-                    }
-
-                    if (transmitAovs)
-                    {
-                        for (int i=0; i < NUM_AOVs; ++i)
-                        {
-                            childAovs[i] += transmittedAovPtr[i] * transmittance;
-                        }
+                        deepGroupsTransmission[i] += min(deepGroupPtr[i] * transmittance, rgb(data->transmissionClamp));
                     }
                 }
+
+                if (transmitAovs)
+                {
+                    for (int i=0; i < NUM_AOVs; ++i)
+                    {
+                        childAovs[i] += transmittedAovPtr[i] * transmittance;
+                    }
+                }
+                
             }
         }
         else
@@ -2085,33 +2087,33 @@ shader_evaluate
                 {
                     AtRGB throughput = path_throughput * kti;
                     AiStateSetMsgRGB("als_throughput", throughput);
-                    if (AiTrace(&wi_ray, &sample))
+                    AiTrace(&wi_ray, &sample);
+                    
+                    AtRGB transmittance = AI_RGB_WHITE;
+                    if (maxh(sigma_t) > 0.0f && !inside)
                     {
-                        AtRGB transmittance = AI_RGB_WHITE;
-                        if (maxh(sigma_t) > 0.0f && !inside)
+                        transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
+                        transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
+                        transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
+                    }
+                    result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
+                    // accumulate the lightgroup contributions calculated by the child shader
+                    if (doDeepGroups)
+                    {
+                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                         {
-                            transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
-                            transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
-                            transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
-                        }
-                        result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
-                        // accumulate the lightgroup contributions calculated by the child shader
-                        if (doDeepGroups)
-                        {
-                            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
-                            {
-                                deepGroupsTransmission[i] += min(deepGroupPtr[i] * transmittance, rgb(data->transmissionClamp));
-                            }
-                        }
-
-                        if (transmitAovs)
-                        {
-                            for (int i=0; i < NUM_AOVs; ++i)
-                            {
-                                childAovs[i] += transmittedAovPtr[i] * transmittance;
-                            }
+                            deepGroupsTransmission[i] += min(deepGroupPtr[i] * transmittance, rgb(data->transmissionClamp));
                         }
                     }
+
+                    if (transmitAovs)
+                    {
+                        for (int i=0; i < NUM_AOVs; ++i)
+                        {
+                            childAovs[i] += transmittedAovPtr[i] * transmittance;
+                        }
+                    }
+                    
                 }  
             }
 
@@ -2213,8 +2215,9 @@ shader_evaluate
                     }
                 }
 #endif
-            if (cont && AiTrace(&wi_ray, &scrs))
+            if (cont)
             {
+                AiTrace(&wi_ray, &scrs);
                 result_backlightIndirect += scrs.color * f;
 
                 // accumulate the lightgroup contributions calculated by the child shader
