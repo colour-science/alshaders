@@ -50,7 +50,9 @@ public:
 		kGOLD=0,
 		kSILVER,
 		kCOPPER,
-		kTUNGSTEN
+		kTUNGSTEN,
+		kOSMIUM,
+		kANTIMONY
 	};
 
 	SPD();
@@ -83,6 +85,12 @@ public:
 			break;
 		case kTUNGSTEN:
 			nkdata = SPD::_W_nk;
+			break;
+		case kOSMIUM:
+			nkdata = SPD::_Os_nk;
+			break;
+		case kANTIMONY:
+			nkdata = SPD::_Stsg0_nk;
 			break;
 		default:
 			break;
