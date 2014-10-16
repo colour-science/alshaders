@@ -876,7 +876,7 @@ shader_evaluate
     sg->out_opacity = opacity;
 
     // Evaluate bump;
-    AtRGB bump = AiShaderEvalParamRGB(p_bump);
+    //AtRGB bump = AiShaderEvalParamRGB(p_bump);
 
     // Initialize parameter temporaries
     // TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
@@ -1209,6 +1209,7 @@ shader_evaluate
     flipNormals(sg);
     void* bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
     flipNormals(sg);
+    sg->fhemi = true;
     // }
 
     AtRGBA shadowGroups[NUM_LIGHT_GROUPS];
@@ -1227,11 +1228,42 @@ shader_evaluate
         AiShaderGlobalsSetTraceSet(sg, data->trace_set_shadows.c_str(), data->trace_set_shadows_inclusive);
     }
 
+    
+      
+    if (do_backlight)
+    {
+        sg->fhemi = false;
+        flipNormals(sg);
+        AiLightsPrepare(sg);
+        AtRGB LbacklightDirect;
+        while(AiLightsGetSample(sg))
+        { 
+            // get the group assigned to this light from the hash table using the light's pointer
+            int lightGroup = data->lightGroups[sg->Lp];
+            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
+
+            LbacklightDirect = 
+                AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+                                    *  diffuse_strength;
+            if (doDeepGroups || sg->Rt & AI_RAY_CAMERA)
+            {
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
+                }
+            }
+            result_backlightDirect += LbacklightDirect;
+        }
+        flipNormals(sg);
+        AiLightsResetCache(sg);
+        sg->fhemi = true;
+    }
+
     // Light loop
     AiLightsPrepare(sg);
     if (doDeepGroups || (sg->Rt & AI_RAY_CAMERA)) 
     {
-        AtRGB LdiffuseDirect, LbacklightDirect, LspecularDirect, Lspecular2Direct;
+        AtRGB LdiffuseDirect, LspecularDirect, Lspecular2Direct;
         while(AiLightsGetSample(sg))
         {
             // get the group assigned to this light from the hash table using the light's pointer
@@ -1288,6 +1320,7 @@ shader_evaluate
                 sg->Nf = Nfold;
             }
             float r = (1.0f - maxh(brdfw.kr)*maxh(specular1Color)) * (1.0f - maxh(brdfw2.kr)*maxh(specular2Color));
+            kti *= r;
             if (do_diffuse)
             {
                 LdiffuseDirect =
@@ -1299,6 +1332,7 @@ shader_evaluate
                 }
                 result_diffuseDirect += LdiffuseDirect;
             }
+            /*
             if (do_backlight)
             {
                 flipNormals(sg);
@@ -1312,6 +1346,7 @@ shader_evaluate
                 result_backlightDirect += LbacklightDirect;
                 flipNormals(sg);
             }
+            */
             
         }
     }
@@ -1342,6 +1377,8 @@ shader_evaluate
                                         * (1.0f - brdfw2.kr*maxh(specular2Color))
                                         * diffuse_strength;
             }
+            kti *= (1.0f - maxh(brdfw.kr*specular1Color)) * (1.0f - maxh(brdfw2.kr*specular2Color));
+            /*
             if (do_backlight)
             {
                 flipNormals(sg);
@@ -1352,9 +1389,10 @@ shader_evaluate
                     * diffuse_strength;
                 flipNormals(sg);
             }
+            */
         }
     }
-
+    result_backlightDirect *= kti;
     sg->fhemi = true;
 
     // unset the shadows trace set
