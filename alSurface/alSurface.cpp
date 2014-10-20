@@ -2061,6 +2061,8 @@ shader_evaluate
                     float cosHO = AiV3Dot(m, wo); // m.wo
                     float Ht2 = transmissionIor * cosHI + cosHO;
                     Ht2 *= Ht2;
+                    // This can someimtes be zero, just ignore the sample if so
+                    if (Ht2 < AI_EPSILON) continue;
                     float brdf = (fabsf(cosHI * cosHO) * (transmissionIor * transmissionIor) * (G * D)) / fabsf(cosNO * Ht2);
                     // eq. 38 and eq. 17
                     float pdf = pm * (transmissionIor * transmissionIor) * fabsf(cosHI) / Ht2;
