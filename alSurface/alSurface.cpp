@@ -2014,7 +2014,7 @@ shader_evaluate
             {
                 // generate a microfacet normal, m
                 // eq. 35,36
-                float alpha2 = transmissionRoughness*transmissionRoughness;
+                float alpha2 = std::max(0.005f, transmissionRoughness*transmissionRoughness);
                 float tanThetaM = sqrtf(-alpha2 * logf(1.0f - float(samples[0])));
                 float cosThetaM = 1.0f / sqrtf(1.0f + tanThetaM * tanThetaM);
                 float sinThetaM = cosThetaM * tanThetaM;
@@ -2068,6 +2068,19 @@ shader_evaluate
                     float pdf = pm * (transmissionIor * transmissionIor) * fabsf(cosHI) / Ht2;
 
                     AtRGB f = rgb(brdf/pdf);
+
+                    // if (maxh(f) > 10.0f)
+                    // {
+                    //     std::cerr << VAR(f) << "\n";
+                    //     std::cerr << VAR(brdf) << "\n";
+                    //     std::cerr << VAR(pdf) << "\n";
+                    //     std::cerr << VAR(D) << "\n";
+                    //     std::cerr << VAR(G) << "\n";
+                    //     std::cerr << VAR(cosThetaM) << "\n";
+                    //     std::cerr << VAR(cosThetaM4) << "\n";
+                    //     std::cerr << VAR(alpha2) << "\n";
+                    // }
+
                     AtRGB throughput = path_throughput * kti * f;
                     AiStateSetMsgRGB("als_throughput", throughput);
                     if (sg->Rr_refr < data->GI_refraction_depth)
