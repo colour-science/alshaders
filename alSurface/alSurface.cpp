@@ -947,6 +947,7 @@ shader_evaluate
         roughness_y = std::max(roughness_y, alsPreviousRoughness*specular1RoughnessDepthScale);
         roughness2_x = std::max(roughness2_x, alsPreviousRoughness*specular2RoughnessDepthScale);
         roughness2_y = std::max(roughness2_y, alsPreviousRoughness*specular2RoughnessDepthScale);
+        transmissionRoughness = std::max(transmissionRoughness, alsPreviousRoughness*transmissionRoughnessDepthScale);
     }
 
     // clamp roughnesses
@@ -1042,6 +1043,7 @@ shader_evaluate
     AtRGB result_sss = AI_RGB_BLACK;
     AtRGB result_ss = AI_RGB_BLACK;
     AtColor result_transmission = AI_RGB_BLACK;
+    AtColor result_transmissionDirect = AI_RGB_BLACK;
     AtColor result_emission = AI_RGB_BLACK;
 
     // Set up flags to early out of calculations based on where we are in the ray tree
@@ -1260,6 +1262,38 @@ shader_evaluate
         sg->fhemi = true;
     }
 
+    if (do_transmission)
+    {
+        sg->fhemi = false;
+        //flipNormals(sg);
+        AiLightsPrepare(sg);
+        AtRGB LtransmissionDirect;
+        float t_eta = transmissionIor;
+        if (AiV3Dot(sg->N, sg->Rd) > 0.0f) t_eta = 1.0f / t_eta;
+        MicrofacetTransmission* mft = MicrofacetTransmission::create(sg, transmissionRoughness, transmissionRoughness, t_eta, sg->Nf, U, V);
+        while(AiLightsGetSample(sg))
+        { 
+            // get the group assigned to this light from the hash table using the light's pointer
+            int lightGroup = data->lightGroups[sg->Lp];
+            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
+
+            LtransmissionDirect = 
+                AiEvaluateLightSample(sg,mft,MicrofacetTransmission::Sample,MicrofacetTransmission::BTDF, MicrofacetTransmission::PDF)
+                                    *  transmissionColor;
+            if (doDeepGroups || sg->Rt & AI_RAY_CAMERA)
+            {
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += LtransmissionDirect * transmissionColor;
+                }
+            }
+            result_transmissionDirect += LtransmissionDirect;
+        }
+        //flipNormals(sg);
+        AiLightsResetCache(sg);
+        sg->fhemi = true;
+    }
+
     // Light loop
     AiLightsPrepare(sg);
     if (doDeepGroups || (sg->Rt & AI_RAY_CAMERA)) 
@@ -1394,6 +1428,7 @@ shader_evaluate
         }
     }
     result_backlightDirect *= kti;
+    result_transmissionDirect *= kti;
     sg->fhemi = true;
 
     // unset the shadows trace set
@@ -2026,8 +2061,8 @@ shader_evaluate
                 float pdf;
                 if (refracted)
                 {
-                    brdf = MicrofacetTransmission::BTDF(mft, &wi_ray.dir);
-                    pdf = MicrofacetTransmission::PDF(mft, &wi_ray.dir);
+                    brdf = mft->btdf(wi_ray.dir);
+                    pdf = mft->pdf(wi_ray.dir);
                 }
                 else
                 {
@@ -2504,5 +2539,6 @@ shader_evaluate
                     +result_glossy2Indirect
                     +result_ss
                     +result_transmission
+                    +result_transmissionDirect
                     +result_emission;
 }

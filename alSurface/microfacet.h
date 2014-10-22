@@ -220,19 +220,17 @@ struct MicrofacetTransmission
    }
 
    // if TIR, returned vector is zero
-   inline AtVector sample(float u1, float u2) const
+   inline bool sample(float u1, float u2, AtVector& T) const
    {
       const AtVector m = sampleMicrofacetNormal(u1, u2);
-      AtVector T;
-      refraction(sg->Rd, m, eta, T);
-      return T;
+      return refraction(sg->Rd, m, eta, T);
    }
 
    inline AtRGB btdf(const AtVector& omega_i) const
    {
       AtRGB result = AI_RGB_BLACK;
 
-      if (cos_N_o > 0 && AiV3Dot(omega_i, omega_o) <= 0.0f)
+      if (cos_N_o > 0 && AiV3Dot(omega_i, omega_o) <= 0.0f && !AiV3IsZero(omega_i))
       {
          AtVector H = -(eta * omega_i + omega_o);
          if (eta < 1.0f) H = -H;
@@ -257,6 +255,7 @@ struct MicrofacetTransmission
                // cancelling out all the like terms from the pdf in the above leaves us:
                // result = g2;
 
+               // if (maxh(result) > 100)
                // {
                //    std::cerr << "BRDF: " << VAR(result) << "\n";
                //    std::cerr << "BRDF: " << VAR(d) << "\n";
@@ -287,7 +286,7 @@ struct MicrofacetTransmission
    {
       float result = 0.0f;
 
-      if (cos_N_o > 0 && AiV3Dot(omega_i, omega_o) <= 0.0f)
+      if (cos_N_o > 0 && AiV3Dot(omega_i, omega_o) <= 0.0f && !AiV3IsZero(omega_i))
       {
          AtVector H = -(eta * omega_i + omega_o);
          if (eta < 1.0f) H = -H;
@@ -312,6 +311,8 @@ struct MicrofacetTransmission
                // cancelling out all the like terms from the btdf in the above leaves us:
                // result = g1;
 
+               // if (result < 0.0001f)
+               // {
                // std::cerr << "PDF: " << VAR(result) << "\n";
                //    std::cerr << "PDF: " << VAR(d) << "\n";
                //    std::cerr << "PDF: " << VAR(lambda_o) << "\n";
@@ -324,6 +325,7 @@ struct MicrofacetTransmission
                //    std::cerr << "PDF: " << VAR(f) << "\n";
                //    std::cerr << "PDF: " << VAR(inv_h2) << "\n";
                //    std::cerr << "PDF: " << VAR(eta) << "\n";
+               // }
             }
          // }
          // else result = 1.0f;
@@ -350,7 +352,15 @@ struct MicrofacetTransmission
    static AtVector Sample(const void* brdf_data, float u1, float u2)
    {
       const MicrofacetTransmission* mt = reinterpret_cast<const MicrofacetTransmission*>(brdf_data);
-      return mt->sample(u1, u2);
+      AtVector T;
+      if (mt->sample(u1, u2, T))
+      {
+         return T;
+      }
+      else
+      {
+         return AiVector(0.0f, 0.0f, 0.0f);
+      }
    }
 
    static AtRGB BTDF(const void* brdf_data, const AtVector* omega_i)
