@@ -3,43 +3,44 @@
 #include <ai.h>
 #include "alUtil.h"
 
-inline AtVector refraction(const AtVector& I, const AtVector& N, float eta) 
+inline bool refraction(const AtVector& I, const AtVector& N, float eta, AtVector& T) 
 {
    // compute refracted direction
    // return value will be false if TIR occurs
    // NOTE: I is the incoming ray direction (points toward the surface, normalized)
    //       N is the surface normal (points toward the incoming ray origin, normalized)
    //       T is the outgoing refracted direction (points away from the surface)
-   AtVector T;
+   //AtVector T;
    float cosi = -AiV3Dot(I, N);
    // check which side of the surface we are on
    AtVector Nn; float neta;
-   if (cosi > 0) 
-   {
+   // if (cosi > 0) 
+   // {
       // we are on the outside of the surface, going in
       neta = 1 / eta;
       Nn = N;
-   } 
-   else 
-   {
-      // we are inside the surface,
-      cosi = -cosi;
-      neta = eta;
-      Nn = -N;
-   }
+   // } 
+   // else 
+   // {
+   //    // we are inside the surface,
+   //    cosi = -cosi;
+   //    neta = eta;
+   //    Nn = -N;
+   // }
    float arg = 1.0f - (neta * neta * (1.0f - cosi * cosi));
    if (arg >= 0) 
    {
       float dnp = sqrtf(arg);
       float nK = (neta * cosi) - dnp;
       T = I * neta + Nn * nK;
+      return true;
    }
    else
    {
-      T = AiVector(0, 0, 0);
+      T = I - 2 * cosi * -N;
+      return false;
    }
    
-   return T;
 }
 
 inline float fast_pow2(float p)
@@ -109,9 +110,6 @@ inline float fast_ierf(float x)
 
 struct MicrofacetTransmission
 {
-   
-   
-
    inline AtVector2 sampleSlope(float cos_theta, float u1, float u2) const
    {
       static const float INV_SQRT_PI = 0.5641895835477563f;
@@ -225,7 +223,9 @@ struct MicrofacetTransmission
    inline AtVector sample(float u1, float u2) const
    {
       const AtVector m = sampleMicrofacetNormal(u1, u2);
-      return refraction(sg->Rd, m, eta);
+      AtVector T;
+      refraction(sg->Rd, m, eta, T);
+      return T;
    }
 
    inline AtRGB btdf(const AtVector& omega_i) const
@@ -239,10 +239,10 @@ struct MicrofacetTransmission
          const float inv_h2 = 1.0f / AiV3Dot(H, H);
          H = AiV3Normalize(H);
 
-         const float cos_H_o = AiV3Dot(H, omega_o);
+         const float cos_H_o = fabsf(AiV3Dot(H, omega_o));
          const float f = 1.0f - fresnel(cos_H_o, eta);
-         if (f > 0.0f)
-         {
+         //if (f > 0.0f)
+         //{
             const float cos_H_i = AiV3Dot(H, omega_i);
             const float cos_theta = AiV3Dot(H, N);
             if (cos_theta > 0.0f)
@@ -253,7 +253,7 @@ struct MicrofacetTransmission
                const float g2 = G2(lambda_o, lambda_i);
                const float g1 = G1(lambda_o);
 
-               result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (f * g2 * d) * inv_h2) / fabsf(cos_N_o);
+               result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g2 * d) * inv_h2) / fabsf(cos_N_o);
 
                // {
                //    std::cerr << "BRDF: " << VAR(result) << "\n";
@@ -270,7 +270,12 @@ struct MicrofacetTransmission
                //    std::cerr << "BRDF: " << VAR(eta) << "\n";
                // }
             }
-         }
+         // }
+         // else 
+         // {
+         //    std::cerr << "BRDF TIR\n";
+         //    result = AI_RGB_RED;
+         // }
       }
 
       return result;
@@ -289,8 +294,8 @@ struct MicrofacetTransmission
 
          const float cos_H_o = AiV3Dot(H, omega_o);
          const float f = 1.0f - fresnel(cos_H_o, eta);
-         if (f > 0.0f)
-         {
+         // if (f > 0.0f)
+         // {
             const float cos_H_i = AiV3Dot(H, omega_i);
             const float cos_theta = AiV3Dot(H, N);
             if (cos_theta > 0.0f)
@@ -315,7 +320,8 @@ struct MicrofacetTransmission
                //    std::cerr << "PDF: " << VAR(inv_h2) << "\n";
                //    std::cerr << "PDF: " << VAR(eta) << "\n";
             }
-         }
+         // }
+         // else result = 1.0f;
       }
 
       return result;

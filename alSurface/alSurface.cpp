@@ -2010,80 +2010,35 @@ shader_evaluate
         }
         else
         {
+            
             float t_eta = transmissionIor;
-            if (AiV3Dot(sg->Nf, sg->Rd) > 0.0f) t_eta = 1.0f / t_eta;
+
+            if (AiV3Dot(sg->N, sg->Rd) > 0.0f) t_eta = 1.0f / t_eta;
             MicrofacetTransmission* mft = MicrofacetTransmission::create(sg, transmissionRoughness, transmissionRoughness, t_eta, sg->Nf, U, V);
+            
             while (AiSamplerGetSample(sampit, samples))
             {
-                /*
-                // generate a microfacet normal, m
-                // eq. 35,36
-                float alpha2 = std::max(0.005f, transmissionRoughness*transmissionRoughness);
-                float tanThetaM = sqrtf(-alpha2 * logf(1.0f - float(samples[0])));
-                float cosThetaM = 1.0f / sqrtf(1.0f + tanThetaM * tanThetaM);
-                float sinThetaM = cosThetaM * tanThetaM;
-                float phiM = 2.0f * float(AI_PI) * float(samples[1]);
-                AtVector m = (cosf(phiM) * sinThetaM) * U +
-                             (sinf(phiM) * sinThetaM) * V +
-                                           cosThetaM  * sg->N;
-
-                // get the refracted direction given m
-                kt = 1.0f - fresnel(transmissionIor, m, wo, R, wi, inside);
-                float n1, n2;
-                if (inside)
+                //wi = MicrofacetTransmission::Sample(mft, samples[0], samples[1]);
+                //wi_ray.dir = wi;
+                AtVector m = mft->sampleMicrofacetNormal(samples[0], samples[1]);
+                bool refracted = refraction(sg->Rd, m, t_eta, wi);
+                wi_ray.dir = wi;
+                AtRGB brdf;
+                float pdf;
+                if (refracted)
                 {
-                    n1 = transmissionIor;
-                    n2 = 1.0f;
-                    if (inside) m = -m;
+                    brdf = MicrofacetTransmission::BTDF(mft, &wi_ray.dir);
+                    pdf = MicrofacetTransmission::PDF(mft, &wi_ray.dir);
                 }
                 else
                 {
-                    n1 = 1.0f;
-                    n2 = transmissionIor;
+                    brdf = AI_RGB_WHITE;
+                    pdf = 1.0f;
                 }
-                AiRefractRay(&wi_ray, &m, n1, n2, sg);
-                */
 
-                wi = MicrofacetTransmission::Sample(mft, samples[0], samples[1]);
-                wi_ray.dir = wi;
-                AtVector m = AiV3Normalize(-(t_eta * wi + wo));
-                AtRGB brdf = MicrofacetTransmission::BTDF(mft, &wi_ray.dir);
-                float pdf = MicrofacetTransmission::PDF(mft, &wi_ray.dir);
-                //if (kt > IMPORTANCE_EPS)
-                if (!AiV3isZero(wi_ray.dir) && pdf != 0.0f)
+                if (pdf > 0.0f)
                 {
-                   /*
-                    // eq. 33
-                    float cosThetaM2 = cosThetaM * cosThetaM;
-                    float tanThetaM2 = tanThetaM * tanThetaM;
-                    float cosThetaM4 = cosThetaM2 * cosThetaM2;
-                    float D = fast_exp(-tanThetaM2 / alpha2) / (float(AI_PI) * alpha2 *  cosThetaM4);
-                    // eq. 24
-                    float pm = D * cosThetaM;
-                    // eval BRDF*cosNI
-                    float cosNI = AiV3Dot(sg->N, wi); // N.wi
-                    float cosNO = AiV3Dot(sg->N, wo);
-                    // eq. 26, 27: now calculate G1(i,m) and G1(o,m)
-                    float ao = 1 / (roughness * sqrtf((1.0f - cosNO * cosNO) / (cosNO * cosNO)));
-                    float ai = 1 / (roughness * sqrtf((1.0f - cosNI * cosNI) / (cosNI * cosNI)));
-                    float G1o = ao < 1.6f ? (3.535f * ao + 2.181f * ao * ao) / (1 + 2.276f * ao + 2.577f * ao * ao) : 1.0f;
-                    float G1i = ai < 1.6f ? (3.535f * ai + 2.181f * ai * ai) / (1 + 2.276f * ai + 2.577f * ai * ai) : 1.0f;
-                    float G = G1o * G1i;
-                    // eq. 21
-                    float cosHI = AiV3Dot(m, wi); // m.wi
-                    float cosHO = AiV3Dot(m, wo); // m.wo
-                    float Ht2 = transmissionIor * cosHI + cosHO;
-                    Ht2 *= Ht2;
-                    // This can someimtes be zero, just ignore the sample if so
-                    if (Ht2 < AI_EPSILON) continue;
-                    float brdf = (fabsf(cosHI * cosHO) * (transmissionIor * transmissionIor) * (G * D)) / fabsf(cosNO * Ht2);
-                    // eq. 38 and eq. 17
-                    float pdf = pm * (transmissionIor * transmissionIor) * fabsf(cosHI) / Ht2;
-
-                    AtRGB f = rgb(brdf/pdf);
-                    */
-                    
-                    
+                     
                     AtRGB f = brdf / pdf;
                     if (!AiIsFinite(f) || maxh(f) > 100)
                     {
@@ -2091,17 +2046,6 @@ shader_evaluate
                         std::cerr << "!!!!!!!!!!!!! " << VAR(brdf) << "\n";
                         std::cerr << "!!!!!!!!!!!!! " << VAR(pdf) << "\n";
                     }
-                    // if (maxh(f) > 10.0f)
-                    // {
-                    //     std::cerr << VAR(f) << "\n";
-                    //     std::cerr << VAR(brdf) << "\n";
-                    //     std::cerr << VAR(pdf) << "\n";
-                    //     std::cerr << VAR(D) << "\n";
-                    //     std::cerr << VAR(G) << "\n";
-                    //     std::cerr << VAR(cosThetaM) << "\n";
-                    //     std::cerr << VAR(cosThetaM4) << "\n";
-                    //     std::cerr << VAR(alpha2) << "\n";
-                    // }
 
                     AtRGB throughput = path_throughput * kti * f;
                     AiStateSetMsgRGB("als_throughput", throughput);
@@ -2159,40 +2103,6 @@ shader_evaluate
                         result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                     }
                 }
-                else // total internal reflection
-                {
-                    AiReflect(&sg->Rd, &m, &wi);
-                    wi_ray.dir = wi;
-                    AtRGB throughput = path_throughput * kti;
-                    AiStateSetMsgRGB("als_throughput", throughput);
-                    AiTrace(&wi_ray, &sample);
-                    
-                    AtRGB transmittance = AI_RGB_WHITE;
-                    if (maxh(sigma_t) > 0.0f && !inside)
-                    {
-                        transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
-                        transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
-                        transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
-                    }
-                    result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
-                    // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
-                    {
-                        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
-                        {
-                            deepGroupsTransmission[i] += min(deepGroupPtr[i] * transmittance, rgb(data->transmissionClamp));
-                        }
-                    }
-
-                    if (transmitAovs)
-                    {
-                        for (int i=0; i < NUM_AOVs; ++i)
-                        {
-                            childAovs[i] += transmittedAovPtr[i] * transmittance;
-                        }
-                    }
-                    
-                }  
             }
 
             inv_ns = AiSamplerGetSampleInvCount(sampit);
