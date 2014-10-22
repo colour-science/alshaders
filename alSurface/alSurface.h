@@ -43,6 +43,7 @@ struct ShaderData
    int numLights;
    bool rrTransmission;
    int rrTransmissionDepth;
+   bool transmissionDoDirect;
 
    // data for doing RR
    bool do_rr;

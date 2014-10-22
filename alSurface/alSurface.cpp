@@ -123,6 +123,7 @@ enum alSurfaceParams
     p_transmissionEnableCaustics,
     p_transmissionExtraSamples,
     p_transmissionClamp,
+    p_transmissionDoDirect,
 
     p_lightGroupsIndirect,
 
@@ -275,6 +276,7 @@ node_parameters
     AiParameterBOOL("transmissionEnableCaustics", true);
     AiParameterINT("transmissionExtraSamples", 0);
     AiParameterFLT("transmissionClamp", 0.0f );
+    AiParameterBOOL("transmissionDoDirect", false);
 
     AiParameterBOOL("lightGroupsIndirect", false);
 
@@ -493,6 +495,8 @@ node_update
     if (data->specular2IndirectClamp == 0.0f) data->specular2IndirectClamp = AI_INFINITE;
     data->transmissionClamp = params[p_transmissionClamp].FLT;
     if (data->transmissionClamp == 0.0f) data->transmissionClamp = AI_INFINITE;
+
+    data->transmissionDoDirect = params[p_transmissionDoDirect].BOOL;
 
     // Set up info for RR
     data->do_rr = params[p_rr].BOOL;
@@ -1262,10 +1266,9 @@ shader_evaluate
         sg->fhemi = true;
     }
 
-    if (do_transmission)
+    if (do_transmission && data->transmissionDoDirect)
     {
         sg->fhemi = false;
-        //flipNormals(sg);
         AiLightsPrepare(sg);
         AtRGB LtransmissionDirect;
         float t_eta = transmissionIor;
@@ -1280,6 +1283,7 @@ shader_evaluate
             LtransmissionDirect = 
                 AiEvaluateLightSample(sg,mft,MicrofacetTransmission::Sample,MicrofacetTransmission::BTDF, MicrofacetTransmission::PDF)
                                     *  transmissionColor;
+
             if (doDeepGroups || sg->Rt & AI_RAY_CAMERA)
             {
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
@@ -1289,7 +1293,6 @@ shader_evaluate
             }
             result_transmissionDirect += LtransmissionDirect;
         }
-        //flipNormals(sg);
         AiLightsResetCache(sg);
         sg->fhemi = true;
     }
@@ -1367,21 +1370,6 @@ shader_evaluate
                 }
                 result_diffuseDirect += LdiffuseDirect;
             }
-            /*
-            if (do_backlight)
-            {
-                flipNormals(sg);
-                LbacklightDirect = 
-                    AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * r * diffuse_strength;
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-                {
-                    lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
-                }
-                result_backlightDirect += LbacklightDirect;
-                flipNormals(sg);
-            }
-            */
             
         }
     }
@@ -1413,18 +1401,7 @@ shader_evaluate
                                         * diffuse_strength;
             }
             kti *= (1.0f - maxh(brdfw.kr*specular1Color)) * (1.0f - maxh(brdfw2.kr*specular2Color));
-            /*
-            if (do_backlight)
-            {
-                flipNormals(sg);
-                result_backlightDirect +=
-                AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                    * (1.0f - brdfw.kr*maxh(specular1Color))
-                    * (1.0f - brdfw2.kr*maxh(specular2Color))
-                    * diffuse_strength;
-                flipNormals(sg);
-            }
-            */
+
         }
     }
     result_backlightDirect *= kti;
@@ -2074,12 +2051,6 @@ shader_evaluate
                 {
                      
                     AtRGB f = brdf / pdf;
-                    if (!AiIsFinite(f) || maxh(f) > 100)
-                    {
-                        std::cerr << "!!!!!!!!!!!!! " << VAR(f) << "\n";
-                        std::cerr << "!!!!!!!!!!!!! " << VAR(brdf) << "\n";
-                        std::cerr << "!!!!!!!!!!!!! " << VAR(pdf) << "\n";
-                    }
 
                     AtRGB throughput = path_throughput * kti * f;
                     AiStateSetMsgRGB("als_throughput", throughput);
@@ -2182,6 +2153,7 @@ shader_evaluate
         }
 
     } // if (do_transmission)
+    result_transmission += result_transmissionDirect;
 
     // backlight
     // ---------
@@ -2539,6 +2511,5 @@ shader_evaluate
                     +result_glossy2Indirect
                     +result_ss
                     +result_transmission
-                    +result_transmissionDirect
                     +result_emission;
 }

@@ -106,6 +106,7 @@ with uigen.group(ui, 'Transmission'):
 		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering')
 		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption')
 		ui.parameter('traceSetTransmission', 'string', '', 'Trace set')
+		ui.parameter('transmissionDoDirect', 'bool', False, "Direct lighting")
 # end Transmission
 
 with uigen.group(ui, 'Emission'):

@@ -154,6 +154,12 @@ inline std::ostream& operator<<(std::ostream& os, const AtRGB& c)
     return os;
 }
 
+inline std::ostream& operator<<(std::ostream& os, const AtVector2& c)
+{
+    os << "(" << c.x << ", " << c.y << ")";
+    return os;
+}
+
 
 // concentricSampleDisk and cosineSampleHemisphere lifted from PBRT
 /*

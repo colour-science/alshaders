@@ -43,24 +43,6 @@ inline bool refraction(const AtVector& I, const AtVector& N, float eta, AtVector
    
 }
 
-inline float fast_pow2(float p)
-{
-  float offset = (p < 0) ? 1.0f : 0.0f;
-  float clipp = (p < -126) ? -126.0f : p;
-  int w = clipp;
-  float z = clipp - w + offset;
-  union { uint32_t i; float f; } v = { uint32_t( (1 << 23) * (clipp + 121.2740575f + 27.7280233f / (4.84252568f - z) - 1.49012907f * z) ) };
-
-  return v.f;
-}
-
-inline float faster_pow2(float p)
-{
-  float clipp = (p < -126) ? -126.0f : p;
-  union { uint32_t i; float f; } v = { uint32_t( (1 << 23) * (clipp + 126.94269504f) ) };
-  return v.f;
-}
-
 inline float fast_log2(float x)
 {
   union { float f; uint32_t i; } vx = { x };
@@ -71,27 +53,6 @@ inline float fast_log2(float x)
   return y - 124.22551499f
            - 1.498030302f * mx.f 
            - 1.72587999f / (0.3520887068f + mx.f);
-}
-
-inline float fast_erfc(float x)
-{
-   static const float k = 3.3509633149424609f;
-   static const float a = 0.07219054755431126f;
-   static const float b = 15.418191568719577f;
-   static const float c = 5.609846028328545f;
-
-   union { float f; uint32_t i; } vc = { c * x };
-   float xsq = x * x;
-   float xquad = xsq * xsq;
-
-   vc.i |= 0x80000000;
-
-   return 2.0f / (1.0f + fast_pow2 (k * x)) - a * x * (b * xquad - 1.0f) * faster_pow2 (vc.f);
-}
-
-inline float fast_erf(float x)
-{
-   return 1.0f - fast_erfc(x);
 }
 
 inline float fast_ierf(float x)
@@ -108,6 +69,7 @@ inline float fast_ierf(float x)
        + x * (a - b * xsq) / (c - d * xsq);
 }
 
+
 struct MicrofacetTransmission
 {
    inline AtVector2 sampleSlope(float cos_theta, float u1, float u2) const
@@ -118,10 +80,11 @@ struct MicrofacetTransmission
       const float tan_theta = sqrtf(1.0f - cos_theta2) / cos_theta;
       const float cot_theta = 1.0f / tan_theta;
 
-      float x = fast_erf(cot_theta);
+      //float c = fast_erf(cot_theta);
+      float c = erff(cot_theta);
       float k = tan_theta * INV_SQRT_PI;
-      float y_approx = u1 * (1.0f + cos_theta + k * (1.0f - cos_theta2));
-      float y_exact  = u1 * (1.0f + cos_theta + k * fast_exp(-SQR(cot_theta)));
+      float y_approx = u1 * (1.0f + c + k * (1.0f - SQR(c)));
+      float y_exact  = u1 * (1.0f + c + k * fast_exp(-SQR(cot_theta)));
       float b = k > 0.0f ? (0.5f - sqrtf(k * (k - y_approx + 1.0f) + 0.25f)) / k : y_approx - 1.0f;
 
       float inv_erf = fast_ierf(b);
@@ -190,7 +153,7 @@ struct MicrofacetTransmission
          const float cos_theta2 = SQR(cos_theta);
          const float cos_theta4 = SQR(cos_theta2);
          const float sx = AiV3Dot(M, U) / (cos_theta * alpha_x);
-         const float sy = AiV3Dot(M, U) / (cos_theta * alpha_y);
+         const float sy = AiV3Dot(M, V) / (cos_theta * alpha_y);
          const float tan_theta2 = SQR(sx) + SQR(sy);
 
          d = fast_exp(-tan_theta2) / (AI_PI * alpha_x * alpha_y * cos_theta4);
@@ -238,45 +201,23 @@ struct MicrofacetTransmission
          H = AiV3Normalize(H);
 
          const float cos_H_o = fabsf(AiV3Dot(H, omega_o));
-         const float f = 1.0f - fresnel(cos_H_o, eta);
-         //if (f > 0.0f)
-         //{
-            const float cos_H_i = AiV3Dot(H, omega_i);
-            const float cos_theta = AiV3Dot(H, N);
-            if (cos_theta > 0.0f)
-            {
-               const float d = D(H);
-               const float lambda_o = lambda(omega_o);
-               const float lambda_i = lambda(omega_i);
-               const float g2 = G2(lambda_o, lambda_i);
-               const float g1 = G1(lambda_o);
 
-               result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g2 * d) * inv_h2) / fabsf(cos_N_o);
-               // cancelling out all the like terms from the pdf in the above leaves us:
-               // result = g2;
+         const float cos_H_i = AiV3Dot(H, omega_i);
+         const float cos_theta = AiV3Dot(H, N);
+         if (cos_theta > 0.0f)
+         {
+            const float d = D(H);
+            const float lambda_o = lambda(omega_o);
+            const float lambda_i = lambda(omega_i);
+            const float g2 = G2(lambda_o, lambda_i);
+            const float g1 = G1(lambda_o);
 
-               // if (maxh(result) > 100)
-               // {
-                  std::cerr << "BRDF: " << VAR(result) << "\n";
-                  std::cerr << "BRDF: " << VAR(d) << "\n";
-                  std::cerr << "BRDF: " << VAR(lambda_o) << "\n";
-                  std::cerr << "BRDF: " << VAR(lambda_i) << "\n";
-                  std::cerr << "BRDF: " << VAR(g2) << "\n";
-                  std::cerr << "BRDF: " << VAR(g1) << "\n";
-                  std::cerr << "BRDF: " << VAR(cos_H_i) << "\n";
-                  std::cerr << "BRDF: " << VAR(cos_H_o) << "\n";
-                  std::cerr << "BRDF: " << VAR(cos_N_o) << "\n";
-                  std::cerr << "BRDF: " << VAR(f) << "\n";
-                  std::cerr << "BRDF: " << VAR(inv_h2) << "\n";
-                  std::cerr << "BRDF: " << VAR(eta) << "\n";
-               // }
-            }
-         // }
-         // else 
-         // {
-         //    std::cerr << "BRDF TIR\n";
-         //    result = AI_RGB_RED;
-         // }
+            result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g2 * d) * inv_h2) / fabsf(cos_N_o);
+            // cancelling out all the like terms from the pdf in the above leaves us:
+            // result = g2;
+
+         }
+
       }
 
       return result;
@@ -294,41 +235,23 @@ struct MicrofacetTransmission
          H = AiV3Normalize(H);
 
          const float cos_H_o = AiV3Dot(H, omega_o);
-         const float f = 1.0f - fresnel(cos_H_o, eta);
-         // if (f > 0.0f)
-         // {
-            const float cos_H_i = AiV3Dot(H, omega_i);
-            const float cos_theta = AiV3Dot(H, N);
-            if (cos_theta > 0.0f)
-            {
-               const float d = D(H);
-               const float lambda_o = lambda(omega_o);
-               const float lambda_i = lambda(omega_i);
-               const float g2 = G2(lambda_o, lambda_i);
-               const float g1 = G1(lambda_o);
 
-               result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g1 * d) * inv_h2) / fabsf(cos_N_o);
-               // cancelling out all the like terms from the btdf in the above leaves us:
-               // result = g1;
+         const float cos_H_i = AiV3Dot(H, omega_i);
+         const float cos_theta = AiV3Dot(H, N);
+         if (cos_theta > 0.0f)
+         {
+            const float d = D(H);
+            const float lambda_o = lambda(omega_o);
+            const float lambda_i = lambda(omega_i);
+            const float g2 = G2(lambda_o, lambda_i);
+            const float g1 = G1(lambda_o);
 
-               // if (result < 0.0001f)
-               // {
-               // std::cerr << "PDF: " << VAR(result) << "\n";
-                  std::cerr << "PDF: " << VAR(d) << "\n";
-                  std::cerr << "PDF: " << VAR(lambda_o) << "\n";
-                  std::cerr << "PDF: " << VAR(lambda_i) << "\n";
-                  std::cerr << "PDF: " << VAR(g2) << "\n";
-                  std::cerr << "PDF: " << VAR(g1) << "\n";
-                  std::cerr << "PDF: " << VAR(cos_H_i) << "\n";
-                  std::cerr << "PDF: " << VAR(cos_H_o) << "\n";
-                  std::cerr << "PDF: " << VAR(cos_N_o) << "\n";
-                  std::cerr << "PDF: " << VAR(f) << "\n";
-                  std::cerr << "PDF: " << VAR(inv_h2) << "\n";
-                  std::cerr << "PDF: " << VAR(eta) << "\n";
-               // }
-            }
-         // }
-         // else result = 1.0f;
+            result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g1 * d) * inv_h2) / fabsf(cos_N_o);
+            // cancelling out all the like terms from the btdf in the above leaves us:
+            // result = g1;
+
+         }
+
       }
 
       return result;
