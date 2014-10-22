@@ -1445,7 +1445,7 @@ shader_evaluate
     }
     AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
     bool tir = (!AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg)) && inside;
-    bool rr_transmission = (data->rrTransmission && (sg->Rr >= data->rrTransmissionDepth) && !tir);
+    bool rr_transmission = (data->rrTransmission && (sg->Rr >= data->rrTransmissionDepth) && !tir && roughness == 0.0f);
     bool rr_glossy = false;
     if (rr_transmission)
     {
@@ -2040,7 +2040,7 @@ shader_evaluate
                 if (pdf > 0.0f)
                 {
                      
-                    AtRGB f = brdf / pdf * kti;
+                    AtRGB f = brdf / pdf;
                     if (!AiIsFinite(f) || maxh(f) > 100)
                     {
                         std::cerr << "!!!!!!!!!!!!! " << VAR(f) << "\n";
