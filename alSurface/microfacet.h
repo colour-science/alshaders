@@ -254,6 +254,8 @@ struct MicrofacetTransmission
                const float g1 = G1(lambda_o);
 
                result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g2 * d) * inv_h2) / fabsf(cos_N_o);
+               // cancelling out all the like terms from the pdf in the above leaves us:
+               // result = g2;
 
                // {
                //    std::cerr << "BRDF: " << VAR(result) << "\n";
@@ -307,6 +309,9 @@ struct MicrofacetTransmission
                const float g1 = G1(lambda_o);
 
                result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g1 * d) * inv_h2) / fabsf(cos_N_o);
+               // cancelling out all the like terms from the btdf in the above leaves us:
+               // result = g1;
+
                // std::cerr << "PDF: " << VAR(result) << "\n";
                //    std::cerr << "PDF: " << VAR(d) << "\n";
                //    std::cerr << "PDF: " << VAR(lambda_o) << "\n";
@@ -331,8 +336,8 @@ struct MicrofacetTransmission
    {
       MicrofacetTransmission* mt = reinterpret_cast<MicrofacetTransmission*>(AiShaderGlobalsQuickAlloc(sg, sizeof(MicrofacetTransmission)));
       mt->sg = sg;
-      mt->alpha_x = rx;
-      mt->alpha_y = ry;
+      mt->alpha_x = std::max(0.001f, rx);
+      mt->alpha_y = std::max(0.001f, ry);
       mt->eta = eta;
       mt->N = N;
       mt->U = U;

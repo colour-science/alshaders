@@ -2013,14 +2013,12 @@ shader_evaluate
         {
             
             float t_eta = transmissionIor;
-
+            tir = false;
             if (AiV3Dot(sg->N, sg->Rd) > 0.0f) t_eta = 1.0f / t_eta;
             MicrofacetTransmission* mft = MicrofacetTransmission::create(sg, transmissionRoughness, transmissionRoughness, t_eta, sg->Nf, U, V);
             
             while (AiSamplerGetSample(sampit, samples))
             {
-                //wi = MicrofacetTransmission::Sample(mft, samples[0], samples[1]);
-                //wi_ray.dir = wi;
                 AtVector m = mft->sampleMicrofacetNormal(samples[0], samples[1]);
                 bool refracted = refraction(sg->Rd, m, t_eta, wi);
                 wi_ray.dir = wi;
@@ -2081,7 +2079,7 @@ shader_evaluate
                             }
                         }
 
-                        /*
+                        
                         // single scattering
                         if (do_attenuation && maxh(sigma_s_prime) > 0.0f && !inside && do_scattering)
                         {
@@ -2090,7 +2088,7 @@ shader_evaluate
                             result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor);
                             sg->N = N;
                         }
-                        */
+                        
 
                         if (minh(sample.opacity) < 1.0f)
                         {
@@ -2108,6 +2106,11 @@ shader_evaluate
             }
 
             inv_ns = AiSamplerGetSampleInvCount(sampit);
+        }
+
+        if (rr_transmission || tir)
+        {
+            kti = kti2 = 1.0f;
         }
 
         result_transmission *= inv_ns * transmissionColor * kti * kti2;
