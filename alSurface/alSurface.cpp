@@ -1925,6 +1925,7 @@ shader_evaluate
                 {
                     if (kti * kti2 > IMPORTANCE_EPS)
                     {
+                        AiStateSetMsgFlt("alsPreviousRoughness", 0.0f);
                         AiTrace(&wi_ray, &sample);
                         AtRGB transmittance = AI_RGB_WHITE;
                         
@@ -2039,7 +2040,7 @@ shader_evaluate
                 if (pdf > 0.0f)
                 {
                      
-                    AtRGB f = brdf / pdf;
+                    AtRGB f = brdf / pdf * kti;
                     if (!AiIsFinite(f) || maxh(f) > 100)
                     {
                         std::cerr << "!!!!!!!!!!!!! " << VAR(f) << "\n";
@@ -2051,6 +2052,7 @@ shader_evaluate
                     AiStateSetMsgRGB("als_throughput", throughput);
                     if (sg->Rr_refr < data->GI_refraction_depth)
                     {
+                        AiStateSetMsgFlt("alsPreviousRoughness", transmissionRoughness);
                         AiTrace(&wi_ray, &sample);
                         AtRGB transmittance = AI_RGB_WHITE;
                         if (maxh(sigma_t) > 0.0f && !inside)
