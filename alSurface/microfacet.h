@@ -254,6 +254,21 @@ struct MicrofacetTransmission
                const float g1 = G1(lambda_o);
 
                result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (f * g2 * d) * inv_h2) / fabsf(cos_N_o);
+
+               // {
+               //    std::cerr << "BRDF: " << VAR(result) << "\n";
+               //    std::cerr << "BRDF: " << VAR(d) << "\n";
+               //    std::cerr << "BRDF: " << VAR(lambda_o) << "\n";
+               //    std::cerr << "BRDF: " << VAR(lambda_i) << "\n";
+               //    std::cerr << "BRDF: " << VAR(g2) << "\n";
+               //    std::cerr << "BRDF: " << VAR(g1) << "\n";
+               //    std::cerr << "BRDF: " << VAR(cos_H_i) << "\n";
+               //    std::cerr << "BRDF: " << VAR(cos_H_o) << "\n";
+               //    std::cerr << "BRDF: " << VAR(cos_N_o) << "\n";
+               //    std::cerr << "BRDF: " << VAR(f) << "\n";
+               //    std::cerr << "BRDF: " << VAR(inv_h2) << "\n";
+               //    std::cerr << "BRDF: " << VAR(eta) << "\n";
+               // }
             }
          }
       }
@@ -287,6 +302,18 @@ struct MicrofacetTransmission
                const float g1 = G1(lambda_o);
 
                result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g1 * d) * inv_h2) / fabsf(cos_N_o);
+               // std::cerr << "PDF: " << VAR(result) << "\n";
+               //    std::cerr << "PDF: " << VAR(d) << "\n";
+               //    std::cerr << "PDF: " << VAR(lambda_o) << "\n";
+               //    std::cerr << "PDF: " << VAR(lambda_i) << "\n";
+               //    std::cerr << "PDF: " << VAR(g2) << "\n";
+               //    std::cerr << "PDF: " << VAR(g1) << "\n";
+               //    std::cerr << "PDF: " << VAR(cos_H_i) << "\n";
+               //    std::cerr << "PDF: " << VAR(cos_H_o) << "\n";
+               //    std::cerr << "PDF: " << VAR(cos_N_o) << "\n";
+               //    std::cerr << "PDF: " << VAR(f) << "\n";
+               //    std::cerr << "PDF: " << VAR(inv_h2) << "\n";
+               //    std::cerr << "PDF: " << VAR(eta) << "\n";
             }
          }
       }

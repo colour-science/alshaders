@@ -11,6 +11,7 @@
 #include "aovs.h"
 #include "tea.h"
 #include "fresnel.h"
+#include "microfacet.h"
 
 #define RR_BOUNCES
 
@@ -2009,9 +2010,12 @@ shader_evaluate
         }
         else
         {
-            
+            float t_eta = transmissionIor;
+            if (AiV3Dot(sg->Nf, sg->Rd) > 0.0f) t_eta = 1.0f / t_eta;
+            MicrofacetTransmission* mft = MicrofacetTransmission::create(sg, transmissionRoughness, transmissionRoughness, t_eta, sg->Nf, U, V);
             while (AiSamplerGetSample(sampit, samples))
             {
+                /*
                 // generate a microfacet normal, m
                 // eq. 35,36
                 float alpha2 = std::max(0.005f, transmissionRoughness*transmissionRoughness);
@@ -2038,8 +2042,17 @@ shader_evaluate
                     n2 = transmissionIor;
                 }
                 AiRefractRay(&wi_ray, &m, n1, n2, sg);
-                if (kt > IMPORTANCE_EPS)
+                */
+
+                wi = MicrofacetTransmission::Sample(mft, samples[0], samples[1]);
+                wi_ray.dir = wi;
+                AtVector m = AiV3Normalize(-(t_eta * wi + wo));
+                AtRGB brdf = MicrofacetTransmission::BTDF(mft, &wi_ray.dir);
+                float pdf = MicrofacetTransmission::PDF(mft, &wi_ray.dir);
+                //if (kt > IMPORTANCE_EPS)
+                if (!AiV3isZero(wi_ray.dir) && pdf != 0.0f)
                 {
+                   /*
                     // eq. 33
                     float cosThetaM2 = cosThetaM * cosThetaM;
                     float tanThetaM2 = tanThetaM * tanThetaM;
@@ -2068,7 +2081,16 @@ shader_evaluate
                     float pdf = pm * (transmissionIor * transmissionIor) * fabsf(cosHI) / Ht2;
 
                     AtRGB f = rgb(brdf/pdf);
-
+                    */
+                    
+                    
+                    AtRGB f = brdf / pdf;
+                    if (!AiIsFinite(f) || maxh(f) > 100)
+                    {
+                        std::cerr << "!!!!!!!!!!!!! " << VAR(f) << "\n";
+                        std::cerr << "!!!!!!!!!!!!! " << VAR(brdf) << "\n";
+                        std::cerr << "!!!!!!!!!!!!! " << VAR(pdf) << "\n";
+                    }
                     // if (maxh(f) > 10.0f)
                     // {
                     //     std::cerr << VAR(f) << "\n";
@@ -2113,6 +2135,7 @@ shader_evaluate
                             }
                         }
 
+                        /*
                         // single scattering
                         if (do_attenuation && maxh(sigma_s_prime) > 0.0f && !inside && do_scattering)
                         {
@@ -2121,6 +2144,7 @@ shader_evaluate
                             result_ss += AiSSSTraceSingleScatter(sg,bssrdfbrdf(sigma_s_prime/sigma_t_prime),mfp,ssDirection,transmissionIor);
                             sg->N = N;
                         }
+                        */
 
                         if (minh(sample.opacity) < 1.0f)
                         {
@@ -2132,12 +2156,13 @@ shader_evaluate
                     else // trace the background if we've hit nothing
                     {
                         AiTraceBackground(&wi_ray, &sample);
-                        float f = brdf/pdf;
                         result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
                     }
                 }
-                else if (AiV3IsZero(wi)) // total internal reflection
+                else // total internal reflection
                 {
+                    AiReflect(&sg->Rd, &m, &wi);
+                    wi_ray.dir = wi;
                     AtRGB throughput = path_throughput * kti;
                     AiStateSetMsgRGB("als_throughput", throughput);
                     AiTrace(&wi_ray, &sample);
