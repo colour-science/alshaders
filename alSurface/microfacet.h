@@ -257,18 +257,18 @@ struct MicrofacetTransmission
 
                // if (maxh(result) > 100)
                // {
-               //    std::cerr << "BRDF: " << VAR(result) << "\n";
-               //    std::cerr << "BRDF: " << VAR(d) << "\n";
-               //    std::cerr << "BRDF: " << VAR(lambda_o) << "\n";
-               //    std::cerr << "BRDF: " << VAR(lambda_i) << "\n";
-               //    std::cerr << "BRDF: " << VAR(g2) << "\n";
-               //    std::cerr << "BRDF: " << VAR(g1) << "\n";
-               //    std::cerr << "BRDF: " << VAR(cos_H_i) << "\n";
-               //    std::cerr << "BRDF: " << VAR(cos_H_o) << "\n";
-               //    std::cerr << "BRDF: " << VAR(cos_N_o) << "\n";
-               //    std::cerr << "BRDF: " << VAR(f) << "\n";
-               //    std::cerr << "BRDF: " << VAR(inv_h2) << "\n";
-               //    std::cerr << "BRDF: " << VAR(eta) << "\n";
+                  std::cerr << "BRDF: " << VAR(result) << "\n";
+                  std::cerr << "BRDF: " << VAR(d) << "\n";
+                  std::cerr << "BRDF: " << VAR(lambda_o) << "\n";
+                  std::cerr << "BRDF: " << VAR(lambda_i) << "\n";
+                  std::cerr << "BRDF: " << VAR(g2) << "\n";
+                  std::cerr << "BRDF: " << VAR(g1) << "\n";
+                  std::cerr << "BRDF: " << VAR(cos_H_i) << "\n";
+                  std::cerr << "BRDF: " << VAR(cos_H_o) << "\n";
+                  std::cerr << "BRDF: " << VAR(cos_N_o) << "\n";
+                  std::cerr << "BRDF: " << VAR(f) << "\n";
+                  std::cerr << "BRDF: " << VAR(inv_h2) << "\n";
+                  std::cerr << "BRDF: " << VAR(eta) << "\n";
                // }
             }
          // }
@@ -314,17 +314,17 @@ struct MicrofacetTransmission
                // if (result < 0.0001f)
                // {
                // std::cerr << "PDF: " << VAR(result) << "\n";
-               //    std::cerr << "PDF: " << VAR(d) << "\n";
-               //    std::cerr << "PDF: " << VAR(lambda_o) << "\n";
-               //    std::cerr << "PDF: " << VAR(lambda_i) << "\n";
-               //    std::cerr << "PDF: " << VAR(g2) << "\n";
-               //    std::cerr << "PDF: " << VAR(g1) << "\n";
-               //    std::cerr << "PDF: " << VAR(cos_H_i) << "\n";
-               //    std::cerr << "PDF: " << VAR(cos_H_o) << "\n";
-               //    std::cerr << "PDF: " << VAR(cos_N_o) << "\n";
-               //    std::cerr << "PDF: " << VAR(f) << "\n";
-               //    std::cerr << "PDF: " << VAR(inv_h2) << "\n";
-               //    std::cerr << "PDF: " << VAR(eta) << "\n";
+                  std::cerr << "PDF: " << VAR(d) << "\n";
+                  std::cerr << "PDF: " << VAR(lambda_o) << "\n";
+                  std::cerr << "PDF: " << VAR(lambda_i) << "\n";
+                  std::cerr << "PDF: " << VAR(g2) << "\n";
+                  std::cerr << "PDF: " << VAR(g1) << "\n";
+                  std::cerr << "PDF: " << VAR(cos_H_i) << "\n";
+                  std::cerr << "PDF: " << VAR(cos_H_o) << "\n";
+                  std::cerr << "PDF: " << VAR(cos_N_o) << "\n";
+                  std::cerr << "PDF: " << VAR(f) << "\n";
+                  std::cerr << "PDF: " << VAR(inv_h2) << "\n";
+                  std::cerr << "PDF: " << VAR(eta) << "\n";
                // }
             }
          // }
