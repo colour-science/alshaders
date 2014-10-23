@@ -1266,7 +1266,8 @@ shader_evaluate
         sg->fhemi = true;
     }
 
-    if (do_transmission && data->transmissionDoDirect)
+    // only do direct transmission if it's enabled and the ray is leaving a volume
+    if (do_transmission && data->transmissionDoDirect && AiV3Dot(sg->Rd, sg->N) > 0.0f)
     {
         sg->fhemi = false;
         AiLightsPrepare(sg);
