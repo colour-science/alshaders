@@ -1587,7 +1587,10 @@ shader_evaluate
                     kti += maxh(kr);
                     if (maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                     {
-                        AtRGB f = GlossyMISBRDF(mis, &wi) / GlossyMISPDF(mis, &wi) * kr;
+                        AtRGB brdf = GlossyMISBRDF(mis, &wi);
+                        float pdf = GlossyMISPDF(mis, &wi);
+                        if (pdf <= 0.0f) continue;
+                        AtRGB f = brdf / pdf * kr;
                         AtRGB throughput = path_throughput * f * specular1Color * specular1IndirectStrength;
                         bool cont = true;
                         float rr_p = 1.0f;
@@ -1692,7 +1695,10 @@ shader_evaluate
                 // add the fresnel for this layer
                 kr = data->fr2->kr(std::max(0.0f,AiV3Dot(H,wi)), eta2);
                 kti2 += maxh(kr);
-                AtRGB f = GlossyMISBRDF(mis2, &wi) / GlossyMISPDF(mis2, &wi) * kr * kti;
+                AtRGB brdf = GlossyMISBRDF(mis2, &wi);
+                float pdf = GlossyMISPDF(mis2, &wi);
+                if (pdf <= 0.0f) continue;
+                AtRGB f =  brdf / pdf * kr * kti;
                 AtRGB throughput = path_throughput * f * specular2Color * specular2IndirectStrength;
                 AiStateSetMsgRGB("als_throughput", throughput);
                 bool cont = true;
