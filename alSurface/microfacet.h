@@ -2,6 +2,7 @@
 
 #include <ai.h>
 #include "alUtil.h"
+#include <stdint.h>
 
 inline bool refraction(const AtVector& I, const AtVector& N, float eta, AtVector& T) 
 {
