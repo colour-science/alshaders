@@ -872,3 +872,4 @@ inline int rand0n(int n)
 #define ALS_RAY_HAIR 3
 
 #define VAR(x) #x << ": " << x
+#define VARL(x) std::cerr << #x << ": " << x << "\n"
