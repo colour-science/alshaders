@@ -78,6 +78,7 @@ node_update
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 
+	data->max_layer = -1;
 	// check to see what the top layer should be
 	for (int i=0; i < NUM_LAYERS; ++i)
 	{
