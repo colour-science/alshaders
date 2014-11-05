@@ -1,0 +1,25 @@
+import uigen
+
+ui.shader({
+	'name':'alCel',
+	'description':'Apply a cel-shaded look to the result of an alSurface using MayaRamp nodes',
+	'output':'rgb',
+	'maya_name':'alCel',
+	'maya_classification':'shader/surface',
+	'maya_id':'0x0011641D',
+	'maya_swatch':True,
+	'maya_matte':True,
+	'maya_bump':True,
+	'soft_name':'ALS_Cel',
+	'soft_classification':'material',
+	'soft_version':1,
+	'help_url':''
+})
+
+ui.parameter('surfaceShader', 'rgb', (0.0, 0.0, 0.0), 'Surface shader')
+ui.parameter('diffuseDirectStrength', 'float', 0.75, 'Diffuse strength')
+ui.parameter('diffuseRamp', 'rgb', (0.0, 0.0, 0.0), 'Diffuse ramp')
+ui.parameter('diffuseColorRamp', 'rgb', (1.0, 1.0, 1.0), 'Diffuse color ramp')
+ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect diffuse strength')
+ui.parameter('diffuseIndirectSaturation', 'float', 1.0, 'Indirect diffuse saturation')
+ui.parameter('diffuseIndirectTint', 'rgb', (1.0, 1.0, 1.0), 'Indirect diffuse tint')

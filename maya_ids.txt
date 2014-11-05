@@ -27,3 +27,4 @@
 0x0011641A - alFresnelConductor
 0x0011641B - alLayerFloat
 0x0011641C - alLayerColor
+0x0011641D - alCel

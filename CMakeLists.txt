@@ -85,6 +85,7 @@ set(SUBDIRECTORIES
         alCache
         alMeasured
         alFresnel
+        alCel
         common
 )
 
