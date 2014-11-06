@@ -227,6 +227,18 @@ shader_evaluate
                     AiAOVSetRGB(sg, data->aovs[i].c_str(), AI_RGB_BLACK);
                 }
 
+                // RGBA AOVs
+                AtRGBA tmp_rgba[NUM_AOVs_RGBA];
+                memset(tmp_rgba, 0, sizeof(AtRGBA)*NUM_AOVs_RGBA);
+                for (size_t i=0; i < data->aovs_rgba.size(); ++i)
+                {
+                    if (!AiAOVGetRGBA(sg, data->aovs_rgba[i].c_str(), tmp_rgba[i]))
+                    {
+                        tmp_rgba[i] = AI_RGBA_BLACK;
+                    }
+                    AiAOVSetRGBA(sg, data->aovs_rgba[i].c_str(), AI_RGBA_BLACK);
+                }
+
                 AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
                 result = lerp(layer1, layer2, mix);
                 for (size_t i=0; i < data->aovs.size(); ++i)
@@ -237,18 +249,6 @@ shader_evaluate
                         tmp2 = AI_RGB_BLACK;
                     }
                     AiAOVSetRGB(sg, data->aovs[i].c_str(), lerp(tmp[i], tmp2, mix));
-                }
-
-                // RGBA AOVs
-                AtRGBA tmp_rgba[NUM_AOVs_RGBA];
-                memset(tmp_rgba, 0, sizeof(AtRGB)*NUM_AOVs_RGBA);
-                for (size_t i=0; i < data->aovs_rgba.size(); ++i)
-                {
-                    if (!AiAOVGetRGBA(sg, data->aovs_rgba[i].c_str(), tmp_rgba[i]))
-                    {
-                        tmp_rgba[i] = AI_RGBA_BLACK;
-                    }
-                    AiAOVSetRGBA(sg, data->aovs_rgba[i].c_str(), AI_RGBA_BLACK);
                 }
 
                 for (size_t i=0; i < data->aovs_rgba.size(); ++i)
