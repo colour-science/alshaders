@@ -1269,13 +1269,6 @@ shader_evaluate
             // get the group assigned to this light from the hash table using the light's pointer
             int lightGroup = data->lightGroups[sg->Lp];
 
-            // Get the shadow values for shadow AOVs
-            if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-            {
-                shadowGroups[lightGroup].rgb() += sg->Liu * sg->we * fabsf(AiV3Dot(sg->Nf, sg->Ld)) * sg->Lo;
-                shadowGroups[lightGroup].a += maxh(sg->Lo) * sg->we;
-            }
-
             // The user might have set the shadow_density value to something slightly less than 1
             // in order to get shadow AOVs from small lights to work correctly. If that's the case
             // then skip the remaining work.
@@ -1332,6 +1325,14 @@ shader_evaluate
                 }
                 result_diffuseDirect += LdiffuseDirect;
             }
+
+            // Get the shadow values for shadow AOVs
+            if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+            {
+                shadowGroups[lightGroup].rgb() += sg->Liu * sg->we * fabsf(AiV3Dot(sg->Nf, sg->Ld)) * sg->Lo * r * diffuseColor * AI_ONEOVERPI;
+                shadowGroups[lightGroup].a += maxh(sg->Lo) * sg->we;
+            }
+
             /*
             if (do_backlight)
             {
