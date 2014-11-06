@@ -8,10 +8,19 @@ enum alCelParams
     p_surfaceShader,
     p_diffuseDirectStrength,
     p_diffuseRamp,
-    p_diffuseColorRamp,
     p_diffuseIndirectStrength,
     p_diffuseIndirectSaturation,
-    p_diffuseIndirectTint
+    p_diffuseIndirectTint,
+
+    p_aov_direct_diffuse_cel,
+    p_aov_direct_diffuse_raw_cel,
+    p_aov_indirect_diffuse_cel,
+
+
+
+    p_aiEnableMatte,
+    p_aiMatteColor,
+    p_aiMatteColorA
 };
 
 node_parameters
@@ -19,10 +28,18 @@ node_parameters
     AiParameterRGB("surfaceShader", 0.0f, 0.0f, 0.0f);
     AiParameterFlt("diffuseDirectStrength", 0.75f);
     AiParameterRGB("diffuseRamp", 0.0f, 0.0f, 0.0f);
-    AiParameterRGB("diffuseColorRamp", 0.0f, 0.0f, 0.0f);
     AiParameterFlt("diffuseIndirectStrength", 1.0f);
     AiParameterFlt("diffuseIndirectSaturation", 1.0f);
     AiParameterRGB("diffuseIndirectTint", 1.0f, 1.0f, 1.0f);
+
+    AiParameterStr("aov_direct_diffuse_cel", "direct_diffuse_cel");
+    AiParameterStr("aov_direct_diffuse_raw_cel", "direct_diffuse_raw_cel");
+    AiParameterStr("aov_indirect_diffuse_cel", "indirect_diffuse_cel");
+
+
+    AiParameterBOOL("aiEnableMatte", false);
+    AiParameterRGB("aiMatteColor", 0.0f, 0.0f, 0.0f);
+    AiParameterFlt("aiMatteColorA", 0.0f);
 }
 
 enum RampInterpolationType
@@ -39,30 +56,31 @@ enum RampInterpolationType
 #define LUT_SIZE 32
 struct ShaderData
 {
+    /*
     AtRGB    diffuseLUT[LUT_SIZE];
     AtArray* diffusePositions;
     AtArray* diffuseColors;
     RampInterpolationType      diffuseInterp;
-    AtRGB    colorLUT[LUT_SIZE];
-    AtArray* colorPositions;
-    AtArray* colorColors;
-    RampInterpolationType      colorInterp;
+    */
+    std::string aov_direct_diffuse_cel;
+    std::string aov_direct_diffuse_raw_cel;
+    std::string aov_indirect_diffuse_cel;
 };
 
 node_initialize
 {
-    ShaderData* shaderData = (ShaderData*)AiMalloc(sizeof(ShaderData));
+    ShaderData* shaderData = new ShaderData;
+    /*
     shaderData->diffusePositions = NULL;
     shaderData->diffuseColors = NULL;
-    shaderData->colorPositions = NULL;
-    shaderData->colorColors = NULL;
+    */
     AiNodeSetLocalData(node, shaderData);
 }
 
 node_finish
 {
     ShaderData* shaderData = (ShaderData*)AiNodeGetLocalData(node);
-    AiFree(shaderData);
+    delete shaderData;
     AiNodeSetLocalData(node, NULL); 
 }
 
@@ -264,7 +282,7 @@ void Ramp(AtArray *p, AtArray *v, float t, RampInterpolationType it, AtRGB &out,
    RampT(p, v, t, it, out, _GetArrayRGB, shuffle);
 }
 
-void evalRamp(AtArray* positions, AtArray* colors, RampInterpolationType interp, AtRGB* lut)
+void generateRampLUT(AtArray* positions, AtArray* colors, RampInterpolationType interp, AtRGB* lut)
 {
     unsigned int* shuffle = new unsigned int[positions->nelements];
     SortFloatIndexArray(positions, shuffle);
@@ -277,7 +295,7 @@ void evalRamp(AtArray* positions, AtArray* colors, RampInterpolationType interp,
     delete[] shuffle;
 }
 
-AtRGB rampLookup(AtRGB* lut, float t)
+AtRGB rampLUTLookup(AtRGB* lut, float t)
 {
     float tt = clamp(t*(LUT_SIZE-1), 0.0f, float(LUT_SIZE-1));
     int i = int(tt);
@@ -290,10 +308,13 @@ node_update
 {
     ShaderData* shaderData = (ShaderData*)AiNodeGetLocalData(node);
 
-    AiAOVRegister("direct_diffuse_raw", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("direct_specular", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("diffuse_color", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-    AiAOVRegister("indirect_diffuse", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    shaderData->aov_direct_diffuse_cel = params[p_aov_direct_diffuse_cel].STR;
+    shaderData->aov_direct_diffuse_raw_cel = params[p_aov_direct_diffuse_raw_cel].STR;
+    shaderData->aov_indirect_diffuse_cel = params[p_aov_indirect_diffuse_cel].STR;
+
+    AiAOVRegister(shaderData->aov_direct_diffuse_cel.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(shaderData->aov_direct_diffuse_raw_cel.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister(shaderData->aov_indirect_diffuse_cel.c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 
     // get the arrays from the connected Maya Ramp node
     //getMayaRampArrays(node, "diffuseRamp", &shaderData->diffusePositions, &shaderData->diffuseColors, &shaderData->diffuseInterp);
@@ -304,7 +325,7 @@ node_update
 
 shader_evaluate
 {
-    //ShaderData* shaderData = (ShaderData*)AiNodeGetLocalData(node);
+    ShaderData* shaderData = (ShaderData*)AiNodeGetLocalData(node);
 
     sg->out_opacity = AI_RGB_WHITE;
 
@@ -319,41 +340,52 @@ shader_evaluate
         AtArray* diffusePositions = NULL;
         AtArray* diffuseColors = NULL;
         RampInterpolationType diffuseInterp;
-        AtRGB dummy = AiShaderEvalParamRGB(p_diffuseRamp);
-        // std::cerr << "1" << std::endl;
+
         getMayaRampArrays(node, "diffuseRamp", &diffusePositions, &diffuseColors, &diffuseInterp);
-        // std::cerr << "2" << std::endl;
+
         // if the diffuse array is connected
         if (diffusePositions && diffuseColors)
         {
-            // std::cerr << "3" << std::endl;
-            evalRamp(diffusePositions, diffuseColors, diffuseInterp, diffuseLUT);
-            // std::cerr << "4" << std::endl;
-            // grab the diffuse_raw AOV
+            // grab the results from the surface shader
             AtRGB direct_diffuse_raw = AI_RGB_BLACK;
-            AiAOVGetRGB(sg, "direct_diffuse_raw", direct_diffuse_raw);
+            AtRGB diffuse_color = AI_RGB_BLACK;
+            AtRGB direct_specular = AI_RGB_BLACK;
+            AtRGB indirect_diffuse = AI_RGB_BLACK;
+            //AiAOVGetRGB(sg, "direct_diffuse_raw", direct_diffuse_raw);
+            AiStateGetMsgRGB("als_diffuse_color", &diffuse_color);
+            AiStateGetMsgRGB("als_direct_diffuse_raw", &direct_diffuse_raw);
+            AiStateGetMsgRGB("als_direct_specular", &direct_specular);
+            AiStateGetMsgRGB("als_indirect_diffuse", &indirect_diffuse);
 
             // remap and clamp it
             float diffuseDirectStrength = AiShaderEvalParamFlt(p_diffuseDirectStrength);
             float diff_t = direct_diffuse_raw.r * diffuseDirectStrength;
             diff_t = clamp(diff_t, 0.0f, 1.0f);
 
-            // std::cerr << "5" << std::endl;
             // lookup the diffuse ramp
-            result = rampLookup(diffuseLUT, diff_t);
-            // result = direct_diffuse_raw;
+            unsigned int* shuffle = (unsigned int*)AiShaderGlobalsQuickAlloc(sg, sizeof(unsigned int) * diffusePositions->nelements);
+            SortFloatIndexArray(diffusePositions, shuffle);
+            Ramp(diffusePositions, diffuseColors, diff_t, diffuseInterp, direct_diffuse_raw, shuffle);
 
-            // now grab the other AOVs we need
-            AtRGB diffuse_color = AI_RGB_BLACK;
-            AtRGB direct_specular = AI_RGB_BLACK;
-            AtRGB indirect_diffuse = AI_RGB_BLACK;
-            AiAOVGetRGB(sg, "diffuse_color", diffuse_color);
-            AiAOVGetRGB(sg, "direct_specular", direct_specular);
-            AiAOVGetRGB(sg, "indirect_diffuse", indirect_diffuse);
+            AtRGB direct_diffuse = direct_diffuse_raw * diffuse_color;
 
-            result *= diffuse_color;
-            result += direct_specular;
-            result += indirect_diffuse;
+            float diffuseIndirectStrength = AiShaderEvalParamFlt(p_diffuseIndirectStrength);
+            float diffuseIndirectSaturation = AiShaderEvalParamFlt(p_diffuseIndirectSaturation);
+            AtRGB diffuseIndirectTint = AiShaderEvalParamRGB(p_diffuseIndirectTint);
+
+            if (diffuseIndirectSaturation != 1.0f)
+            {
+                float lum = luminance(indirect_diffuse);
+                indirect_diffuse = lerp(AiColor(lum), indirect_diffuse, diffuseIndirectSaturation);
+            }
+
+            indirect_diffuse *= diffuseIndirectStrength * diffuseIndirectTint;
+
+            AiAOVSetRGB(sg, shaderData->aov_direct_diffuse_cel.c_str(), direct_diffuse);
+            AiAOVSetRGB(sg, shaderData->aov_direct_diffuse_raw_cel.c_str(), direct_diffuse_raw);
+            AiAOVSetRGB(sg, shaderData->aov_indirect_diffuse_cel.c_str(), indirect_diffuse);
+
+            result = direct_diffuse + indirect_diffuse + direct_specular;
         }
 
     }
