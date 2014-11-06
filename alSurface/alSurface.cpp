@@ -706,6 +706,12 @@ node_update
             data->trace_set_transmission = tmp;
         }
     }
+
+    // check if we're connected to an alCel shader
+    // TODO: no easy way to do this... we'll want to traverse all shading nodes and
+    // see if they're alCel and their input is connected to us
+    // for now just assume we're connected
+    data->cel_connected = true;
 };
 
 
@@ -2358,6 +2364,12 @@ shader_evaluate
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)
     {   
+        // stick some AOVs in the state for an alCel to pick up
+        AiStateSetMsgRGB("als_diffuse_color", diffuseColor);
+        AiStateSetMsgRGB("als_direct_diffuse_raw", result_diffuseDirectRaw);
+        AiStateSetMsgRGB("als_direct_specular", result_glossyDirect);
+        AiStateSetMsgRGB("als_indirect_diffuse", result_diffuseIndirect);
+
         if (data->standardAovs)
         {
             AtRGB tmp;
