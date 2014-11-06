@@ -495,7 +495,7 @@ node_update
 
     // Set up info for RR
     data->do_rr = params[p_rr].BOOL;
-    data->AA_samples = SQR(AiNodeGetInt(options, "AA_samples"));
+    data->AA_samples = SQR(std::max(1,AiNodeGetInt(options, "AA_samples")));
     data->AA_samples_inv = 1.0f / float(data->AA_samples);
 
     data->total_depth = AiNodeGetInt(options, "GI_total_depth");
