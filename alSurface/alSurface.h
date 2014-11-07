@@ -98,6 +98,8 @@ struct ShaderData
    std::string trace_set_transmission;
    bool trace_set_transmission_enabled;
    bool trace_set_transmission_inclusive;
+
+   bool cel_connected;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0
