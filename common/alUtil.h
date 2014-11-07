@@ -154,6 +154,12 @@ inline std::ostream& operator<<(std::ostream& os, const AtRGB& c)
     return os;
 }
 
+inline std::ostream& operator<<(std::ostream& os, const AtVector2& c)
+{
+    os << "(" << c.x << ", " << c.y << ")";
+    return os;
+}
+
 
 // concentricSampleDisk and cosineSampleHemisphere lifted from PBRT
 /*
@@ -866,3 +872,4 @@ inline int rand0n(int n)
 #define ALS_RAY_HAIR 3
 
 #define VAR(x) #x << ": " << x
+#define VARL(x) std::cerr << #x << ": " << x << "\n"
