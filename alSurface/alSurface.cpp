@@ -1329,26 +1329,9 @@ shader_evaluate
             // Get the shadow values for shadow AOVs
             if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
             {
-                shadowGroups[lightGroup].rgb() += sg->Liu * sg->we * fabsf(AiV3Dot(sg->Nf, sg->Ld)) * sg->Lo * r * diffuseColor * AI_ONEOVERPI;
+                shadowGroups[lightGroup].rgb() += sg->Liu * sg->we * std::max(0.0f, AiV3Dot(sg->Nf, sg->Ld)) * sg->Lo * r * diffuseColor * AI_ONEOVERPI;
                 shadowGroups[lightGroup].a += maxh(sg->Lo) * sg->we;
             }
-
-            /*
-            if (do_backlight)
-            {
-                flipNormals(sg);
-                LbacklightDirect = 
-                    AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * r * diffuse_strength;
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-                {
-                    lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
-                }
-                result_backlightDirect += LbacklightDirect;
-                flipNormals(sg);
-            }
-            */
-            
         }
     }
     else
