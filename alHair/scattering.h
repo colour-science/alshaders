@@ -114,12 +114,15 @@ struct ScatteringParams
     float beta_R;       //< R width
     float beta_R2;
     float alpha_R;      //< R shift
+    float alpha_R_offset;
     float beta_TT;      //< TT width
     float beta_TT2;
     float alpha_TT;     //< TT shift
+    float alpha_TT_offset;
     float beta_TRT;     //< TRT width
     float beta_TRT2;
     float alpha_TRT;    //< TRT shift
+    float alpha_TRT_offset;
     float gamma_TT;     //< TT rolloff
     float gamma_g;      //< g rolloff
     float phi_g;        //< g separation

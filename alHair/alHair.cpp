@@ -50,6 +50,9 @@ enum alHairParams
     p_specular1WidthScale,
     p_specular2WidthScale,
     p_transmissionWidthScale,
+    p_specular1Shift,
+    p_specular2Shift,
+    p_transmissionShift,
     p_glintTexture,
     p_doMis,
     p_diffuseIndirectStrength,
@@ -186,6 +189,9 @@ node_parameters
     AiParameterFlt("specular1WidthScale", 1.0f);
     AiParameterFlt("specular2WidthScale", 1.0f);
     AiParameterFlt("transmissionWidthScale", 1.0f);
+    AiParameterFlt("specular1Shift", 1.0f);
+    AiParameterFlt("specular2Shift", 1.0f);
+    AiParameterFlt("transmissionShift", 1.0f);
     AiParameterFlt("glintTexture", 1.0f);
     AiParameterBool("MIS", true);
     AiParameterFlt("diffuseIndirectStrength", 1.0f);
@@ -464,12 +470,15 @@ struct HairBsdf
 
         sp.beta_R = data->beta_R;
         sp.alpha_R = data->alpha_R;
+        sp.alpha_R_offset = -AiShaderEvalParamFlt(p_specular1Shift);
 
         sp.beta_TT = data->beta_TT;
         sp.alpha_TT = data->alpha_TT;
+        sp.alpha_TT_offset = -AiShaderEvalParamFlt(p_transmissionShift);
 
         sp.beta_TRT = data->beta_TRT;
         sp.alpha_TRT = data->alpha_TRT;
+        sp.alpha_TRT_offset = -AiShaderEvalParamFlt(p_specular2Shift);
 
         sp.beta_R2 = data->beta_R2;
         sp.beta_TT2 = data->beta_TT2;
@@ -569,7 +578,7 @@ struct HairBsdf
 
     inline AtVector sample_R(float u1, float u2)
     {
-        float theta_i = sampleLong(u1, theta_r, sp.alpha_R, sp.beta_R*specular1WidthScale, A_R, B_R);
+        float theta_i = sampleLong(u1, theta_r, sp.alpha_R - sp.alpha_R_offset, sp.beta_R*specular1WidthScale, A_R, B_R);
         float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f));
         float phi_i = phi_r - phi;
         AtVector wi;
@@ -579,12 +588,12 @@ struct HairBsdf
 
     inline AtRGB bsdf_R(const SctGeo& geo)
     {
-        return rgb(bsdfR(sp.beta_R2*SQR(specular1WidthScale), sp.alpha_R, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        return rgb(bsdfR(sp.beta_R2*SQR(specular1WidthScale), sp.alpha_R - sp.alpha_R_offset, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
     }
 
     inline float pdf_R(const SctGeo& geo)
     {
-        float t = geo.theta_h-sp.alpha_R;
+        float t = geo.theta_h-sp.alpha_R - sp.alpha_R_offset;
         float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_R-B_R))) * (sp.beta_R*specular1WidthScale / (t*t + sp.beta_R2*SQR(specular1WidthScale)));
         float pdf_phi = geo.cosphi2*0.25f;
         return pdf_theta * pdf_phi;
@@ -592,7 +601,7 @@ struct HairBsdf
 
     inline AtVector sample_TRT(float u1, float u2)
     {
-        float theta_i = sampleLong(u1, theta_r, sp.alpha_TRT, sp.beta_TRT*specular2WidthScale, A_R, B_R);
+        float theta_i = sampleLong(u1, theta_r, sp.alpha_TRT - sp.alpha_TRT_offset, sp.beta_TRT*specular2WidthScale, A_R, B_R);
         float phi = 2.0f * asinf(clamp(2.0f*u2 - 1.0f, -1.0f, 1.0f));
         float phi_i = phi_r - phi;
         AtVector wi;
@@ -602,12 +611,12 @@ struct HairBsdf
 
     inline AtRGB bsdf_TRT(const SctGeo& geo)
     {
-        return rgb(bsdfR(sp.beta_TRT2*SQR(specular2WidthScale), sp.alpha_TRT, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        return rgb(bsdfR(sp.beta_TRT2*SQR(specular2WidthScale), sp.alpha_TRT - sp.alpha_TRT_offset, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
     }
 
     inline float pdf_TRT(const SctGeo& geo)
     {
-        float t = geo.theta_h-sp.alpha_TRT;
+        float t = geo.theta_h-sp.alpha_TRT - sp.alpha_TRT_offset;
         float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_R-B_R))) * (sp.beta_TRT*specular2WidthScale / (t*t + sp.beta_TRT2*SQR(specular2WidthScale)));
         float pdf_phi = geo.cosphi2*0.25f;
         return pdf_theta * pdf_phi;
@@ -615,7 +624,7 @@ struct HairBsdf
 
     inline AtVector sample_TRTg(float u1, float u2)
     {
-        float theta_i = sampleLong(u1, theta_r, sp.alpha_TRT, sp.beta_TRT*specular2WidthScale, A_TRT, B_TRT);
+        float theta_i = sampleLong(u1, theta_r, sp.alpha_TRT - sp.alpha_TRT_offset, sp.beta_TRT*specular2WidthScale, A_TRT, B_TRT);
         float sign;
         if (u2 < 0.5f)
         {
@@ -640,12 +649,12 @@ struct HairBsdf
 
     inline AtRGB bsdf_TRTg(const SctGeo& geo)
     {
-        return rgb(bsdfg(sp.beta_TRT2*SQR(specular2WidthScale), sp.alpha_TRT, geo.theta_h, sp.gamma_g, geo.phi, sp.phi_g)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        return rgb(bsdfg(sp.beta_TRT2*SQR(specular2WidthScale), sp.alpha_TRT - sp.alpha_TRT_offset, geo.theta_h, sp.gamma_g, geo.phi, sp.phi_g)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
     }
 
     inline float pdf_TRTg(const SctGeo& geo)
     {   
-        float t = geo.theta_h-sp.alpha_TRT;
+        float t = geo.theta_h-sp.alpha_TRT - sp.alpha_TRT_offset;
         float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_TRT-B_TRT))) * (sp.beta_TRT*specular2WidthScale / (t*t + sp.beta_TRT2*SQR(specular2WidthScale)));
         float p = fabsf(geo.phi) - sp.phi_g;
         float Cg = atanf((AI_PIOVER2 - sp.phi_g)/sp.gamma_g);
@@ -656,7 +665,7 @@ struct HairBsdf
 
     inline AtVector sample_TT(float u1, float u2)
     {
-        float theta_i = sampleLong(u1, theta_r, sp.alpha_TT, sp.beta_TT*transmissionWidthScale, A_TT, B_TT);
+        float theta_i = sampleLong(u1, theta_r, sp.alpha_TT - sp.alpha_TT_offset, sp.beta_TT*transmissionWidthScale, A_TT, B_TT);
         C_TT = 2.0f * atanf(AI_PI/sp.gamma_TT);
         float phi = sp.gamma_TT * tanf(C_TT * (u2-0.5f)) + AI_PI;
         float phi_i = phi_r - phi;
@@ -667,12 +676,12 @@ struct HairBsdf
 
     inline AtRGB bsdf_TT(const SctGeo& geo)
     {
-        return rgb(bsdfTT(sp.beta_TT2*SQR(transmissionWidthScale), sp.alpha_TT, geo.theta_h, sp.gamma_TT, geo.phi_d)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        return rgb(bsdfTT(sp.beta_TT2*SQR(transmissionWidthScale), sp.alpha_TT - sp.alpha_TT_offset, geo.theta_h, sp.gamma_TT, geo.phi_d)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
     }
 
     inline float pdf_TT(const SctGeo& geo)
     {
-        float t = geo.theta_h-sp.alpha_TT;
+        float t = geo.theta_h-sp.alpha_TT - sp.alpha_TT_offset;
         float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_TT-B_TT))) * (sp.beta_TT*transmissionWidthScale / (t*t + sp.beta_TT2*SQR(transmissionWidthScale)));
         float p = geo.phi-AI_PI;
         float C_TT = 2.0f * atanf(AI_PI/sp.gamma_TT);
