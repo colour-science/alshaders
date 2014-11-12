@@ -1,0 +1,39 @@
+shader alCombineFloat
+(
+   float input1 = 0,
+   float input2 = 1,
+   float input3 = 0,
+   int mode =0 [[
+      string widget = "mapper",
+      string options = "multiply 1*2:0|add 1+2:1|divide 1/2:2|subtract 1-2:3|mix(1, 2, 3):4"]],
+   output float result = 0
+)
+{
+   if (mode==0)
+   {
+      // multiply
+      result = input1*input2;
+   }
+   else if (mode == 1)
+   {
+      // add
+      result = input1+input2;
+   }
+   else if (mode == 2)
+   {
+      // divide
+      result = input1/input2;
+   }
+   else if (mode == 3)
+   {
+      // subtract
+      result = input1-input2;
+   }
+   else
+   {
+      // lerp
+      if (input3 <= 0) result = input1;
+      else if (input3 >= 1) result = input2;
+      else result = mix(input1, input2, input3);
+   }
+}

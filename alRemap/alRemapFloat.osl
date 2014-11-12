@@ -1,0 +1,13 @@
+#include "osl_remap.h"
+
+shader alRemapFloat
+(
+   float input = 0,
+   REMAP_FLOAT_DECLARE_PARAMS,
+
+   output float result = 0
+)
+{
+   RemapFloatParams rmp = REMAP_FLOAT_CREATE;
+   result = remap(input, rmp);
+}

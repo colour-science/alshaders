@@ -55,6 +55,7 @@ set(MTD_INSTALL_DIR ${INSTALL_DIR}/bin)
 set(AE_INSTALL_DIR ${INSTALL_DIR}/ae)
 set(SPDL_INSTALL_DIR ${INSTALL_DIR}/spdl)
 set(ARGS_INSTALL_DIR ${INSTALL_DIR}/Args)
+set(OSO_INSTALL_DIR ${INSTALL_DIR}/oso)
 
 
 message("Shader binaries will be installed to:\n\t${DSO_INSTALL_DIR}")
@@ -62,6 +63,7 @@ message("Shader MTD will be installed to: \n\t${MTD_INSTALL_DIR}")
 message("AETemplates will be installed to: \n\t${AE_INSTALL_DIR}")
 message("SPDL will be installed to: \n\t${SPDL_INSTALL_DIR}")
 message("Katana Args will be installed to: \n\t${ARGS_INSTALL_DIR}")
+message("OSO will be installed to: \n\t${OSO_INSTALL_DIR}")
 
 # Include common files
 include_directories(common)
@@ -89,6 +91,8 @@ set(SUBDIRECTORIES
         common
 )
 
+set(OSLC /Users/anders/code/arnold/contrib/OSL/bin/darwin/oslc)
+
 # define shader build function
 function(build_shader)
     foreach(SHADER ${ARGV})
@@ -98,6 +102,8 @@ function(build_shader)
         set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
         set(SPDL ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spdl)
         set(KARGS ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.args)
+        set(OSL ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.osl)
+        set(OSO ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.oso)
 
         add_library(${SHADER} SHARED ${SRC})
 
@@ -106,6 +112,15 @@ function(build_shader)
 
         add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} DEPENDS ${UI})
         add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
+
+        if(EXISTS ${OSL})
+            add_custom_command(OUTPUT ${OSO} COMMAND ${OSLC} ${OSL} -O2 -o ${OSO} DEPENDS ${OSL})
+            add_custom_target(${SHADER}OSL ALL DEPENDS ${OSO})
+            install(FILES ${OSO} DESTINATION ${OSO_INSTALL_DIR})
+            message("BUILDING OSL FOR ${SHADER}")
+        else()
+
+        endif()
 
         install(TARGETS ${SHADER} DESTINATION ${DSO_INSTALL_DIR})
         install(FILES ${MTD} DESTINATION ${MTD_INSTALL_DIR})

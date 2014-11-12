@@ -1,0 +1,55 @@
+shader alRemapColor
+(
+   color input = color(0.18, 0.18, 0.18),
+   float gamma = 1,
+   float saturation = 1,
+   float hueOffset = 0,
+   float contrastVal = 1,
+   float contrastPivot = 0.18,
+   float gain = 1,
+   float exposure = 0,
+   float mask = 1,
+   output color result = color(0,0,0)
+)
+{
+   result = input;
+
+   if (mask > 0)
+   {
+      // gamma
+      if (gamma != 1)
+      {
+         result = pow(result, 1/gamma);
+      }
+
+      // saturation
+      if (saturation != 1)
+      {
+         float l = luminance(result);
+         result = mix(color(l), result, saturation);
+      }
+
+      // hue
+      if (hueOffset != 0)
+      {
+         color hsv = transformc("hsv", result);
+         hsv[0] += hueOffset;
+         result = transformc("rgb", result);
+      }
+
+      // contrast
+      if (contrastVal != 1)
+      {
+         result = (result-color(contrastPivot))*contrastVal + color(contrastPivot);
+      }
+
+      // gain & exposure
+      result = result * gain * pow(2, exposure);
+
+      // mask
+      if (mask < 1)
+      {
+         result = mix(input, result, mask);
+      }
+   }
+}
