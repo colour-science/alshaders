@@ -189,9 +189,9 @@ node_parameters
     AiParameterFlt("specular1WidthScale", 1.0f);
     AiParameterFlt("specular2WidthScale", 1.0f);
     AiParameterFlt("transmissionWidthScale", 1.0f);
-    AiParameterFlt("specular1Shift", 0.0f);
-    AiParameterFlt("specular2Shift", 0.0f);
-    AiParameterFlt("transmissionShift", 0.0f);
+    AiParameterFlt("specular1Shift", 1.0f);
+    AiParameterFlt("specular2Shift", 1.0f);
+    AiParameterFlt("transmissionShift", 1.0f);
     AiParameterFlt("glintTexture", 1.0f);
     AiParameterBool("MIS", true);
     AiParameterFlt("diffuseIndirectStrength", 1.0f);
@@ -470,15 +470,15 @@ struct HairBsdf
 
         sp.beta_R = data->beta_R;
         sp.alpha_R = data->alpha_R;
-        sp.alpha_R_offset = -AiShaderEvalParamFlt(p_specular1Shift) * AI_DTOR;
+        sp.alpha_R_offset = -AiShaderEvalParamFlt(p_specular1Shift);
 
         sp.beta_TT = data->beta_TT;
         sp.alpha_TT = data->alpha_TT;
-        sp.alpha_TT_offset = -AiShaderEvalParamFlt(p_transmissionShift) * AI_DTOR;
+        sp.alpha_TT_offset = -AiShaderEvalParamFlt(p_transmissionShift);
 
         sp.beta_TRT = data->beta_TRT;
         sp.alpha_TRT = data->alpha_TRT;
-        sp.alpha_TRT_offset = -AiShaderEvalParamFlt(p_specular2Shift) * AI_DTOR;
+        sp.alpha_TRT_offset = -AiShaderEvalParamFlt(p_specular2Shift);
 
         sp.beta_R2 = data->beta_R2;
         sp.beta_TT2 = data->beta_TT2;
