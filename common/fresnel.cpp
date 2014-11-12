@@ -50,6 +50,7 @@ AtRGB FresnelConductor::kr(float cos_theta, float eta)
 	return result;
 }
 
+
 void FresnelConductor::generateTable(float n, float k)
 {
 	for (int i=0; i < FRCOND_STEPS; ++i)
@@ -59,6 +60,7 @@ void FresnelConductor::generateTable(float n, float k)
 		_data[i*3] = _data[i*3+1] = _data[i*3+2] = kr;
 	}
 }
+
 
 void FresnelConductor::setMaterial(int material, float n, float k)
 {
