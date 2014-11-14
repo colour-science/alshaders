@@ -74,6 +74,9 @@ AtRGB FresnelConductor::kr(float cos_theta, float eta)
 	return result;
 }
 
+/**
+ * Artist-Friendly Metallic Fresnel by Ole Gulbrandsen
+*/
 float n_min(float r)
 { 
    return (1-r)/(1+r);
@@ -138,34 +141,31 @@ void FresnelConductor::setMaterial(int material, const AtRGB& r, const AtRGB& g)
 	switch (material)
 	{
 	case kAluminium:
-		_data = nkdata_Al;
+		generateTable(Al_r, Al_g);
 		break;
 	case kChrome:
-		_data = nkdata_Cr;
+		generateTable(Cr_r, Cr_g);
 		break;
 	case kCopper:
-		_data = nkdata_Cu;
+		generateTable(Cu_r, Cu_g);
 		break;
 	case kGold:
-		_data = nkdata_Au;
+		generateTable(Au_r, Au_g);
 		break;
 	case kSilver:
-		_data = nkdata_Ag;
+		generateTable(Ag_r, Ag_g);
 		break;
 	case kPlatinum:
-		_data = nkdata_Pt;
+		generateTable(Pt_r, Pt_g);
 		break;
 	case kTitanium:
-		_data = nkdata_Ti;
+		generateTable(Ti_r, Ti_g);
 		break;
 	case kTungsten:
-		_data = nkdata_W;
-		break;
-	case kCustom:
-		generateTable(r, g);
+		generateTable(W_r, W_g);
 		break;
 	default:
-		_data = nkdata_Al;
+		generateTable(r, g);
 		break;
 	}
 }
