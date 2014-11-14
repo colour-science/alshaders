@@ -56,6 +56,32 @@ inline float fast_log2(float x)
            - 1.72587999f / (0.3520887068f + mx.f);
 }
 
+#ifdef _WIN32
+// thanks Windows!
+float erff(float x)
+{
+    // constants
+    float a1 =  0.254829592;
+    float a2 = -0.284496736;
+    float a3 =  1.421413741;
+    float a4 = -1.453152027;
+    float a5 =  1.061405429;
+    float p  =  0.3275911;
+
+    // Save the sign of x
+    int sign = 1;
+    if (x < 0)
+        sign = -1;
+    x = fabs(x);
+
+    // A&S formula 7.1.26
+    float t = 1.0/(1.0 + p*x);
+    float y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*exp(-x*x);
+
+    return sign*y;
+}
+#endif
+
 inline float fast_ierf(float x)
 {
    static const float invk = 0.30004578719350504f;
