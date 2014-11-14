@@ -42,11 +42,11 @@ class FresnelConductor : public Fresnel
 public:
 	FresnelConductor();
 	virtual ~FresnelConductor(){}
-	void setMaterial(int material, float n, float k);
+	void setMaterial(int material, const AtRGB& r, const AtRGB& g);
 	virtual AtRGB kr(float cos_theta, float eta);
 	bool normalize;
 private:
-	void generateTable(float n, float k);
+	void generateTable(const AtRGB& r, const AtRGB& g);
 	float* _data;
 };
 

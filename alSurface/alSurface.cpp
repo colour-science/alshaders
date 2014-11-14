@@ -565,7 +565,7 @@ node_update
         {
             AtParamValue* pv = AiNodeGetParams(cn);
             FresnelConductor* fc = new FresnelConductor();
-            fc->setMaterial(pv[0].INT, pv[2].FLT, pv[3].FLT);
+            fc->setMaterial(pv[0].INT, pv[2].RGB, pv[3].RGB);
             fc->normalize = pv[1].BOOL;
             data->fr1 = fc;
             data->fr1_uniform = true;
@@ -584,7 +584,7 @@ node_update
         {
             AtParamValue* pv = AiNodeGetParams(cn);
             FresnelConductor* fc = new FresnelConductor();
-            fc->setMaterial(pv[0].INT, pv[2].FLT, pv[3].FLT);
+            fc->setMaterial(pv[0].INT, pv[2].RGB, pv[3].RGB);
             fc->normalize = pv[1].BOOL;
             data->fr2 = fc;
             data->fr2_uniform = true;
