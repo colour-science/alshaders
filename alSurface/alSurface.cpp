@@ -378,7 +378,7 @@ node_initialize
     data->refraction_sampler = NULL;
     data->backlight_sampler = NULL;
     data->perm_table = NULL;
-    data->fr1 = data->fr2 = NULL;
+    data->fr1_node = data->fr2_node = NULL;
     data->perm_table_diffuse = NULL;
     data->perm_table_spec1 = NULL;
     data->perm_table_spec2 = NULL;
@@ -398,8 +398,6 @@ node_finish
         AiSamplerDestroy(data->backlight_sampler);
         delete[] data->perm_table;
 
-        delete data->fr1;
-        delete data->fr2;
         delete[] data->perm_table_diffuse;
         delete[] data->perm_table_spec1;
         delete[] data->perm_table_spec2;
@@ -554,43 +552,27 @@ node_update
     data->xres = AiNodeGetInt(options, "xres");
 
     // fresnel
-    delete data->fr1;
-    data->fr1 = NULL;
-    data->fr1_uniform = false;
+    data->fr1_node = NULL;
     if (AiNodeIsLinked(node, "specular1Ior"))
     {
         AtNode* cn = AiNodeGetLink(node, "specular1Ior");
         const AtNodeEntry* cne = AiNodeGetNodeEntry(cn);
         if (!strcmp(AiNodeEntryGetName(cne), "alFresnelConductor"))
         {
-            AtParamValue* pv = AiNodeGetParams(cn);
-            FresnelConductor* fc = new FresnelConductor();
-            fc->setMaterial(pv[0].INT, pv[2].RGB, pv[3].RGB);
-            fc->normalize = pv[1].BOOL;
-            data->fr1 = fc;
-            data->fr1_uniform = true;
+            data->fr1_node = cn;
         }
     }
-    if (!data->fr1) data->fr1 = new FresnelDielectric();
     
-    delete data->fr2;
-    data->fr2 = NULL;
-    data->fr2_uniform = false;
+    data->fr2_node = NULL;
     if (AiNodeIsLinked(node, "specular2Ior"))
     {
         AtNode* cn = AiNodeGetLink(node, "specular2Ior");
         const AtNodeEntry* cne = AiNodeGetNodeEntry(cn);
         if (!strcmp(AiNodeEntryGetName(cne), "alFresnelConductor"))
         {
-            AtParamValue* pv = AiNodeGetParams(cn);
-            FresnelConductor* fc = new FresnelConductor();
-            fc->setMaterial(pv[0].INT, pv[2].RGB, pv[3].RGB);
-            fc->normalize = pv[1].BOOL;
-            data->fr2 = fc;
-            data->fr2_uniform = true;
+            data->fr2_node = cn;
         }
     }
-    if (!data->fr2) data->fr2 = new FresnelDielectric();
 
     // Trace sets setup
     data->trace_set_all_enabled = false;
@@ -726,14 +708,14 @@ shader_evaluate
 
     float ior, ior2;
     float eta, eta2;
-    if (!data->fr1_uniform)
+    if (!data->fr1_node)
     {
         ior = AiShaderEvalParamFlt(p_specular1Ior);
         eta = 1.0f / ior;
     }
 
     // slightly wasteful doing this here, btu it keeps the code simpler
-    if (!data->fr2_uniform)
+    if (!data->fr2_node)
     {
         ior2 = AiShaderEvalParamFlt(p_specular2Ior);
         eta2 = 1.0f / ior2;
@@ -813,7 +795,12 @@ shader_evaluate
         {
             // check transmission through the surface
             float costheta = AiV3Dot(sg->Nf, -sg->Rd);
-            float kt = maxh(1.0f - data->fr1->kr(costheta, eta));
+            float kt = 0.0f;
+            if (!data->fr1_node)
+            {
+                kt = 1.0f - fresnel(costheta, eta);    
+            }
+            
             if (kt >= IMPORTANCE_EPS) // else surface is fully reflective
             {
                 if (maxh(sigma_t) > 0.0f)
@@ -1195,7 +1182,22 @@ shader_evaluate
     BrdfData_wrap brdfw;
     brdfw.brdf_data = mis;
     brdfw.sg = sg;
-    brdfw.fr = data->fr1;
+
+    if (data->fr1_node)
+    {
+        AiShaderEvalParamFlt(p_specular1Ior);
+        AtRGB r; AiStateGetMsgRGB("als_fr_r", &r);
+        AtRGB g; AiStateGetMsgRGB("als_fr_g", &g);
+        FresnelConductor* fr = (FresnelConductor*)AiShaderGlobalsQuickAlloc(sg, sizeof(FresnelConductor));
+        new (fr) FresnelConductor(kCustom, r, g);
+        brdfw.fr = fr;
+    }
+    else
+    {
+        FresnelDielectric* fr = (FresnelDielectric*)AiShaderGlobalsQuickAlloc(sg, sizeof(FresnelDielectric));
+        new (fr) FresnelDielectric(eta);
+        brdfw.fr = fr;
+    }
     brdfw.eta = eta;
     brdfw.V = wo;
     brdfw.N = specular1Normal;
@@ -1207,7 +1209,23 @@ shader_evaluate
     BrdfData_wrap brdfw2;
     brdfw2.brdf_data = mis2;
     brdfw2.sg = sg;
-    brdfw2.fr = data->fr2;
+
+    if (data->fr2_node)
+    {
+        AiShaderEvalParamFlt(p_specular2Ior);
+        AtRGB r; AiStateGetMsgRGB("als_fr_r", &r);
+        AtRGB g; AiStateGetMsgRGB("als_fr_g", &g);
+        FresnelConductor* fr = (FresnelConductor*)AiShaderGlobalsQuickAlloc(sg, sizeof(FresnelConductor));
+        new (fr) FresnelConductor(kCustom, r, g);
+        brdfw2.fr = fr;
+    }
+    else
+    {
+        FresnelDielectric* fr = (FresnelDielectric*)AiShaderGlobalsQuickAlloc(sg, sizeof(FresnelDielectric));
+        new (fr) FresnelDielectric(eta);
+        brdfw2.fr = fr;
+    }
+
     brdfw2.eta = eta2;
     brdfw2.V = wo;
     brdfw2.N = specular2Normal;
@@ -1511,7 +1529,7 @@ shader_evaluate
                 AtRGB kr;
                 if (!rr_transmission)
                 {
-                    kr = data->fr1->kr(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)), eta);
+                    kr = brdfw.fr->kr(std::max(0.0f,AiV3Dot(wi_ray.dir, sg->Nf)));
                     kti = maxh(kr);
 
                 }
@@ -1589,7 +1607,7 @@ shader_evaluate
                     // get half-angle vector for fresnel
                     wi_ray.dir = wi;
                     AiV3Normalize(H, wi+brdfw.V);
-                    kr = data->fr1->kr(std::max(0.0f,AiV3Dot(H,wi)), eta);
+                    kr = brdfw.fr->kr(std::max(0.0f,AiV3Dot(H,wi)));
                     kti += maxh(kr);
                     if (maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                     {
@@ -1699,7 +1717,7 @@ shader_evaluate
                 wi_ray.dir = wi;
                 AiV3Normalize(H, wi+brdfw2.V);
                 // add the fresnel for this layer
-                kr = data->fr2->kr(std::max(0.0f,AiV3Dot(H,wi)), eta2);
+                kr = brdfw2.fr->kr(std::max(0.0f,AiV3Dot(H,wi)));
                 kti2 += maxh(kr);
                 AtRGB brdf = GlossyMISBRDF(mis2, &wi);
                 float pdf = GlossyMISPDF(mis2, &wi);

@@ -66,11 +66,8 @@ struct ShaderData
    std::vector<std::string> aovs_rgba;
 
    // Fresnel
-   Fresnel* fr1;
-   bool fr1_uniform;
-   Fresnel* fr2;
-   bool fr2_uniform;
-
+   AtNode* fr1_node;
+   AtNode* fr2_node;
 
    std::string trace_set_all;
    bool trace_set_all_enabled;

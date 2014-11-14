@@ -67,7 +67,8 @@ shader_evaluate
 	int material = AiShaderEvalParamInt(p_material);
 	AtRGB r = AiShaderEvalParamRGB(p_reflectivity);
 	AtRGB g = AiShaderEvalParamRGB(p_edgetint);
-	FresnelConductor fr;
-	fr.setMaterial(material, r, g);
-	sg->out.RGB = fr.kr(AiV3Dot(-sg->Rd, sg->Nf), 1.f);
+    AiStateSetMsgRGB("als_fr_r", r);
+    AiStateSetMsgRGB("als_fr_g", g);
+	FresnelConductor fr(material, r, g);
+	sg->out.RGB = fr.kr(AiV3Dot(-sg->Rd, sg->Nf));
 }

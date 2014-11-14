@@ -6,7 +6,7 @@ class Fresnel
 {
 public:
 	virtual ~Fresnel(){};
-	virtual AtRGB kr(float cos_theta, float eta)=0;
+	virtual AtRGB kr(float cos_theta)=0;
 
 	float _eta;
 };
@@ -18,9 +18,9 @@ public:
 	FresnelDielectric(float eta) { _eta = eta; }
 	virtual ~FresnelDielectric(){}
 
-	virtual AtRGB kr(float cos_theta, float eta)
+	virtual AtRGB kr(float cos_theta)
 	{
-		return rgb(fresnel(cos_theta, eta));
+		return rgb(fresnel(cos_theta, _eta));
 	}
 };
 
@@ -40,14 +40,14 @@ inline float frcond(float cosi, const float eta, const float k)
 class FresnelConductor : public Fresnel
 {
 public:
-	FresnelConductor();
+   FresnelConductor(int material, const AtRGB& r, const AtRGB& g) {setMaterial(material, r, g);}
 	virtual ~FresnelConductor(){}
 	void setMaterial(int material, const AtRGB& r, const AtRGB& g);
-	virtual AtRGB kr(float cos_theta, float eta);
-	bool normalize;
+	virtual AtRGB kr(float cos_theta);
 private:
 	void generateTable(const AtRGB& r, const AtRGB& g);
-	float* _data;
+	AtRGB _r;
+   AtRGB _g;
 };
 
 enum ConductorMaterial
