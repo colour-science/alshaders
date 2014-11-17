@@ -4,11 +4,27 @@ Simply copy the files from the subdirectories to the relevant subdirectories of 
 the appropriate paths):
 
 For MtoA
-- libraries (*.dylib, *.so, *.dll) and *.mtd files go in 'shaders'
-- *.py interface templates go in 'scripts/mtoa/ui/ae'
+--------
+For Maya and MtoA, you need the ae and bin folders only. You can either install into the local MtoA installation folder or from a different folder or NFS 
+If you decided to use the local MtoA installation:
+ - Copy the content of the bin folder (libraries and metadata) into MtoA 'shaders' folder
+ - Copy the content of the ae folder (Maya UI templates) into MtoA 'scripts/mtoa/ui/ae' folder
+If you install to another folder (let's assume c:\solidangle\alShaders), you will need to setup the ARNOLD_PLUGIN_PATH and MTOA_TEMPLATES_PATH environment variables. 
+In this case they will point to
+ARNOLD_PLUGIN_PATH=C:\solidangle\alShaders\bin
+MTOA_TEMPLATES_PATH=C:\solidangle\alShaders\ae
+
 
 For SitoA
-- I have no idea :)
+---------
+Copy the content of the bin folder to  ...\Addons\SItoA\Application\Plugins\bin\nt-x86-64 in windows or ...\Addons\SItoA\Application\Plugins\bin\linux in linux
+That should be enough to at least get the shaders on the Arnold > DLL Shaders menu.
+Copy the SPDLs to
+   ...\Addons\SItoA\Application\spdl
+In Softimage, before you try to use the shaders, generate presets (in the Plug-in Tree, right-click the spdl and click Regenerate Presets)
+In the render tree, you may need to refresh the preset manager to see the shaders.
+
+If you've already created some instances of the shader and they didn't have the PPGLayout, delete the spdl xsiindex in your $XSI_USERHOME\Application folder and start Softimage again.
 
 
 SOURCE DISTRIBUTION
