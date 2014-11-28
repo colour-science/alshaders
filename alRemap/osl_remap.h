@@ -1,14 +1,14 @@
 #define REMAP_FLOAT_DECLARE_PARAMS \
 float RMPinputMin = 0         [[string label = "Input min", string page="Remap"]], \
 float RMPinputMax = 1         [[string label = "Input max", string page="Remap"]], \
-float RMPcontrastVal = 1      [[string label = "Contrast", string page="Remap/Contrast"]], \
+float RMPcontrast = 1      [[string label = "Contrast", string page="Remap/Contrast"]], \
 float RMPcontrastPivot = 0.5  [[string label = "Pivot", string page="Remap/Contrast"]], \
 float RMPbias = 0.5           [[string label = "Bias", string page="Remap/Bias and Gain"]], \
 float RMPgain = 0.5           [[string label = "Gain", string page="Remap/Bias and Gain"]], \
 float RMPoutputMin = 0        [[string label = "Output min", string page="Remap"]], \
 float RMPoutputMax = 1        [[string label = "Output max", string page="Remap"]], \
 int RMPclampEnable = 1        [[string label = "Clamp", string widget = "checkBox", string page="Remap/Clamp"]], \
-int RMPexpand = 0             [[string label = "Expand", string widget = "checkBox", string page="Remap/Clamp"]], \
+int RMPthreshold = 0             [[string label = "Expand", string widget = "checkBox", string page="Remap/Clamp"]], \
 float RMPclampMin = 0         [[string label = "Min", string page="Remap/Clamp"]], \
 float RMPclampMax = 1         [[string label = "Max", string page="Remap/Clamp"]]
 
@@ -29,7 +29,7 @@ struct RemapFloatParams
 };
 
 #define REMAP_FLOAT_CREATE \
-{RMPinputMin, RMPinputMax, RMPcontrastVal, RMPcontrastPivot, RMPbias, RMPgain, RMPoutputMin, RMPoutputMax, RMPclampEnable, RMPexpand, RMPclampMin, RMPclampMax}
+{RMPinputMin, RMPinputMax, RMPcontrast, RMPcontrastPivot, RMPbias, RMPgain, RMPoutputMin, RMPoutputMax, RMPclampEnable, RMPthreshold, RMPclampMin, RMPclampMax}
 
 
 //RemapFloatParams params = {0, 1, 1, 0.5, 0.5, 0.5, 0, 1, 1, 0, 0, 1} 
