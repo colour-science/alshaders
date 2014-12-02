@@ -2078,7 +2078,7 @@ shader_evaluate
                     pdf = 1.0f;
                 }
 
-                if (pdf > 0.0f)
+                if (AiIsFinite(wi_ray.dir) && pdf > 0.0f)
                 {
                      
                     AtRGB f = brdf / pdf;
