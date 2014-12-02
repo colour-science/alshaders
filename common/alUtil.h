@@ -858,6 +858,11 @@ inline bool AiIsFinite(const AtRGB& c)
     return AiIsFinite(c.r) && AiIsFinite(c.g) && AiIsFinite(c.b);
 }
 
+inline bool AiIsFinite(const AtVector& v)
+{
+    return AiIsFinite(v.x) && AiIsFinite(v.y) && AiIsFinite(v.z);
+}
+
 /// Generate a random integer in the range [0,n)
 // TODO: this isn't great
 inline int rand0n(int n)
