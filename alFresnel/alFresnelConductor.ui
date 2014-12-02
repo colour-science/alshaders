@@ -30,4 +30,4 @@ ui.parameter('material', 'enum', 'aluminium', 'Material', enum_names=[
 
 ui.parameter('normalize', 'bool', False, 'Normalize')
 ui.parameter('reflectivity', 'rgb', (0.99, 0.791587, 0.3465), 'Reflectivity')
-ui.parameter('edgetint', 'rgb', 0.99, 0.9801, 0.792, 'Edge tint')
+ui.parameter('edgetint', 'rgb', (0.99, 0.9801, 0.792), 'Edge tint')
