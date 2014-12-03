@@ -189,9 +189,9 @@ node_parameters
     AiParameterFlt("specular1WidthScale", 1.0f);
     AiParameterFlt("specular2WidthScale", 1.0f);
     AiParameterFlt("transmissionWidthScale", 1.0f);
-    AiParameterFlt("specular1Shift", 1.0f);
-    AiParameterFlt("specular2Shift", 1.0f);
-    AiParameterFlt("transmissionShift", 1.0f);
+    AiParameterFlt("specular1Shift", 0.0f);
+    AiParameterFlt("specular2Shift", 0.0f);
+    AiParameterFlt("transmissionShift", 0.0f);
     AiParameterFlt("glintTexture", 1.0f);
     AiParameterBool("MIS", true);
     AiParameterFlt("diffuseIndirectStrength", 1.0f);
