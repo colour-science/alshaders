@@ -500,7 +500,7 @@ struct HairBsdf
 
         float singleSaturation = AiShaderEvalParamFlt(p_singleSaturation);
         float multipleSaturation = AiShaderEvalParamFlt(p_multipleSaturation);
-        hairColor = AiShaderEvalParamRGB(p_hairColor);
+        hairColor = clamp(AiShaderEvalParamRGB(p_hairColor), AI_RGB_BLACK, AI_RGB_WHITE);
 
         float randomHue = AiShaderEvalParamFlt(p_randomHue) * 0.1f;
         float randomSaturation = AiShaderEvalParamFlt(p_randomSaturation);
