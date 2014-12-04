@@ -1222,7 +1222,7 @@ shader_evaluate
     else
     {
         FresnelDielectric* fr = (FresnelDielectric*)AiShaderGlobalsQuickAlloc(sg, sizeof(FresnelDielectric));
-        new (fr) FresnelDielectric(eta);
+        new (fr) FresnelDielectric(eta2);
         brdfw2.fr = fr;
     }
 
@@ -1466,7 +1466,7 @@ shader_evaluate
     AtScrSample scrs;
     AtVector H;
     float kr=1, kt=1;
-
+    kti = 1.0f;
     // figure out whether to choose glossy or transmission for russian roulette
     // TODO: unify all the IOR calculations
     bool inside = false;
