@@ -191,6 +191,7 @@ shader_evaluate
 	
 	float mix = AiShaderEvalParamFlt(p_mix);
 	int debug = AiShaderEvalParamEnum(p_debug);
+   
 
 	if (debug == kMixer)
 	{
@@ -263,9 +264,28 @@ shader_evaluate
             }
             else // just layer the results
             {
+                AtRGB deepGroupTmp1[NUM_LIGHT_GROUPS];
+                AtRGB deepGroupTmp2[NUM_LIGHT_GROUPS];
+                memset(deepGroupTmp1, 0, sizeof(AtRGB) * NUM_LIGHT_GROUPS);
+                memset(deepGroupTmp2, 0, sizeof(AtRGB) * NUM_LIGHT_GROUPS);
+                AtRGB* deepGroupPtr = NULL;
                 AtRGB layer1 = AiShaderEvalParamRGB(p_layer1);
+                if (AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr))
+                {
+                    memcpy(deepGroupTmp1, deepGroupPtr, sizeof(AtRGB) * NUM_LIGHT_GROUPS);
+                }
                 AtRGB layer2 = AiShaderEvalParamRGB(p_layer2);
                 result = lerp(layer1, layer2, mix);
+                if (AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr))
+                {
+                    memcpy(deepGroupTmp2, deepGroupPtr, sizeof(AtRGB) * NUM_LIGHT_GROUPS);
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    {
+                        deepGroupPtr[i] = lerp(deepGroupTmp1[i], deepGroupTmp2[i], mix);
+                    }
+                }
+                
+                
             }
 		}
 	}

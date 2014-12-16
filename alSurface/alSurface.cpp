@@ -27,8 +27,6 @@ AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
 #define GlossyMISCreateData AiCookTorranceMISCreateData
 
-#define NUM_LIGHT_GROUPS 8
-
 #define NUM_ID_AOVS 8
 static const char* id_names[NUM_ID_AOVS] =
 {
