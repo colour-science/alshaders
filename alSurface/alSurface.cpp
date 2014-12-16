@@ -848,6 +848,7 @@ shader_evaluate
                         // coefficient is
                         AiStateSetMsgRGB("alsPrevious_sigma_t", sigma_t_prime);
                         AiStateSetMsgBool("alsInside", true);
+                        outOpacity = 1.0f - kt*transmissionColor;
                     }
                 }
                 else // no extinction, shadows are fresnel only.
