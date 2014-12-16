@@ -1575,9 +1575,9 @@ shader_evaluate
                     AiStateSetMsgRGB("als_throughput", throughput);
                     if (maxh(kr) > IMPORTANCE_EPS )
                     {
-                        AiTrace(&wi_ray, &scrs);
+                        bool hit = AiTrace(&wi_ray, &scrs);
                         result_glossyIndirect = min(scrs.color * f, rgb(data->specular1IndirectClamp));
-                        if (doDeepGroups)
+                        if (doDeepGroups && hit)
                         {
 
                             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
@@ -1645,12 +1645,12 @@ shader_evaluate
                         // if we're in a camera ray, pass the sample index down to the child SG
                         if (cont)
                         {
-                            AiTrace(&wi_ray, &scrs);
+                            bool hit = AiTrace(&wi_ray, &scrs);
                             f *= specular1Color * specular1IndirectStrength;
                             result_glossyIndirect += min(scrs.color * f, rgb(data->specular1IndirectClamp));
 
                             // accumulate the lightgroup contributions calculated by the child shader
-                            if (doDeepGroups)
+                            if (doDeepGroups && hit)
                             {
                                 for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                                 {
@@ -1752,13 +1752,13 @@ shader_evaluate
 #endif
                 if (cont && maxh(kr) > IMPORTANCE_EPS) // only trace a ray if it's going to matter
                 {
-                    AiTrace(&wi_ray, &scrs);
+                    bool hit = AiTrace(&wi_ray, &scrs);
                     
                     f *= specular2Color * specular2IndirectStrength;
                     result_glossy2Indirect += min(scrs.color * f, rgb(data->specular2IndirectClamp));
                     
                     // accumulate the lightgroup contributions calculated by the child shader
-                    if (doDeepGroups)
+                    if (doDeepGroups && hit)
                     {
                         for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                         {
@@ -1863,12 +1863,12 @@ shader_evaluate
             if (cont)
             {
                 AiStateSetMsgRGB("als_throughput", throughput);
-                AiTrace(&wi_ray, &scrs);
+                bool hit = AiTrace(&wi_ray, &scrs);
                 
                 result_diffuseIndirectRaw += scrs.color * f;
 
                 // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
+                if (doDeepGroups && hit)
                 {
                     for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                     {
@@ -1881,14 +1881,15 @@ shader_evaluate
             ssi++;
             
         }
-        result_diffuseIndirectRaw *= AiSamplerGetSampleInvCount(sampit) * diffuseIndirectStrength;
+        float invns = AiSamplerGetSampleInvCount(sampit);
+        result_diffuseIndirectRaw *= invns * diffuseIndirectStrength;
         result_diffuseIndirect = result_diffuseIndirectRaw * diffuseColor;
 
         if (doDeepGroups)
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroupsDiffuse[i] *= AiSamplerGetSampleInvCount(sampit) * diffuseColor * diffuseIndirectStrength;
+                deepGroupsDiffuse[i] *= invns * diffuseColor * diffuseIndirectStrength;
             }
         }
 
@@ -2023,7 +2024,7 @@ shader_evaluate
                 //AiSamplerGetSample(sampit, samples);
                 AtRGB throughput = path_throughput * kti;
                 AiStateSetMsgRGB("als_throughput", throughput);
-                AiTrace(&wi_ray, &sample);
+                bool hit = AiTrace(&wi_ray, &sample);
                 
                 AtRGB transmittance = AI_RGB_WHITE;
                 if (maxh(sigma_t) > 0.0f && !inside)
@@ -2034,7 +2035,7 @@ shader_evaluate
                 }
                 result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
                 // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
+                if (doDeepGroups && hit)
                 {
                     for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                     {
@@ -2248,11 +2249,11 @@ shader_evaluate
 #endif
             if (cont)
             {
-                AiTrace(&wi_ray, &scrs);
+                bool hit = AiTrace(&wi_ray, &scrs);
                 result_backlightIndirect += scrs.color * f;
 
                 // accumulate the lightgroup contributions calculated by the child shader
-                if (doDeepGroups)
+                if (doDeepGroups && hit)
                 {
                     for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                     {
@@ -2319,7 +2320,7 @@ shader_evaluate
             result_sss = AiBSSRDFCubic(sg, r, weights, 9);
         }
 #else
-        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor * kti * kti2;
+        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor;
 #endif
         //result_sss += AiIndirectDiffuse(&sg->N, sg);
 
@@ -2331,7 +2332,7 @@ shader_evaluate
     result_diffuseIndirect *= (1-sssMix);
     result_backlightDirect *= (1-sssMix);
     result_backlightIndirect *= (1-sssMix);
-    result_sss *= sssMix;
+    result_sss *= sssMix;// * kti * kti2;
 
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)
