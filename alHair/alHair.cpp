@@ -1927,7 +1927,8 @@ shader_evaluate
     // early-out regardless if we're in a shadow ray, or if opacity is zero
     if (sg->Rt & AI_RAY_SHADOW || AiShaderGlobalsApplyOpacity(sg, opacity)) return; 
 
-    if (sg->Rr_gloss > data->dual_depth) 
+    // early out if we're a hair-hair glossy ray and the ray depth says we should be calculating dual scattering only
+    if (sg->Rr_gloss > data->dual_depth && als_raytype == ALS_RAY_HAIR) 
     {
         sg->out.RGB = AI_RGB_BLACK;
         sg->out_opacity = AI_RGB_WHITE;
