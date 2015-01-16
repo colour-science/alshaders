@@ -44,7 +44,7 @@ public:
 	virtual ~FresnelConductor(){}
 	void setMaterial(int material, const AtRGB& r, const AtRGB& g);
 	virtual AtRGB kr(float cos_theta);
-private:
+
 	void generateTable(const AtRGB& r, const AtRGB& g);
 	AtRGB _r;
    AtRGB _g;
