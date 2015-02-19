@@ -503,7 +503,8 @@ struct HairBsdf
         float singleSaturation = AiShaderEvalParamFlt(p_singleSaturation);
         float multipleSaturation = AiShaderEvalParamFlt(p_multipleSaturation);
         hairColor = clamp(AiShaderEvalParamRGB(p_hairColor), AI_RGB_BLACK, AI_RGB_WHITE);
-
+        
+        
         float randomHue = AiShaderEvalParamFlt(p_randomHue) * 0.1f;
         float randomSaturation = AiShaderEvalParamFlt(p_randomSaturation);
 
@@ -516,14 +517,14 @@ struct HairBsdf
             hairColor.g = clamp(0.0f, 1.0f, hairColor.g);
             hairColor = hsv2rgb(hairColor);
         }
+        
 
-        float hcmax = maxh(hairColor);
-        AtRGB scol=hairColor, mcol=hairColor;
-        scol = pow(scol, singleSaturation);
-        mcol = pow(mcol, multipleSaturation);
+        hairColor = clamp(hairColor, rgb(0.01f), rgb(0.99f));
 
-        sp.absorption = clamp(AI_RGB_WHITE - scol, rgb(0.01f), rgb(0.99f));
-        sp.dabsorption = clamp(AI_RGB_WHITE - mcol, rgb(0.01f), rgb(0.99f));
+        sp.hairColor = hairColor;
+
+        sp.absorption = singleSaturation * -log(hairColor);
+        sp.dabsorption = multipleSaturation * -log(pow(hairColor, 1.0f / 1.0f));
 
         diffuseColor = AiShaderEvalParamRGB(p_diffuseColor) * AiShaderEvalParamFlt(p_diffuseStrength);
         diffuseScatteringMix = AiShaderEvalParamFlt(p_diffuseScatteringMix);
@@ -915,82 +916,105 @@ struct HairBsdf
     /// Integrate the direct illumination for all diffuse and glossy lobes
     inline void integrateDirectMis(AtShaderGlobals* sg)
     {
-        if (sg->Rt & AI_RAY_DIFFUSE) return;
+        
         // Tell Arnold we want the full sphere for lighting.
         sg->fhemi = false;
-        //sg->skip_shadow = true;
-        AiLightsPrepare(sg);
 
-        if ((sg->Rt & AI_RAY_CAMERA) && doLightGroups)
+        if (do_glossy)
         {
-            while (AiLightsGetSample(sg))
+
+            //sg->skip_shadow = true;
+            AiLightsPrepare(sg);
+
+            if ((sg->Rt & AI_RAY_CAMERA) && doLightGroups)
             {
-                // per-light specular and diffuse strength multipliers
-                float specular_strength = AiLightGetSpecular(sg->Lp);
-                if (specular_strength < IMPORTANCE_EPS) continue;
-
-                // get the group assigned to this light from the hash table using the light's pointer
-                int lightGroup = data->lightGroups[sg->Lp];
-
-                is_bsdf_sample = false;
-                pdf_bb = 0.0f;
-                AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
-
-                float w = powerHeuristic(pdf_ll, pdf_lb);
-                L_l = L_l * w / (pdf_ll*sg->n);
-                result_R_direct += L_l * f_R_l;
-                result_TT_direct += L_l * f_TT_l;
-                result_TRT_direct += L_l * f_TRT_l;
-                result_TRTg_direct += L_l * f_TRTg_l;
-
-                if (pdf_bb != 0.0f)
+                while (AiLightsGetSample(sg))
                 {
-                    w = powerHeuristic(pdf_bb, pdf_bl);
-                    L_b = L_b * w / (pdf_bb*sg->n);
-                    result_R_direct += L_b * f_R_b;
-                    result_TT_direct += L_b * f_TT_b;
-                    result_TRT_direct += L_b * f_TRT_b;
-                    result_TRTg_direct += L_b * f_TRTg_b;
-                }
+                    // per-light specular and diffuse strength multipliers
+                    float specular_strength = AiLightGetSpecular(sg->Lp);
+                    if (specular_strength < IMPORTANCE_EPS) continue;
 
-                // if the light is assigned a valid group number, add this sample's contribution to that light group
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-                {
-                    lightGroupsDirect[lightGroup] += L_b * (f_R_b + f_TT_b + f_TRT_b + f_TRTg_b);
-                    lightGroupsDirect[lightGroup] += L_l * (f_R_l + f_TT_l + f_TRT_l + f_TRTg_l);
-                }
+                    // get the group assigned to this light from the hash table using the light's pointer
+                    int lightGroup = data->lightGroups[sg->Lp];
 
+                    is_bsdf_sample = false;
+                    pdf_bb = 0.0f;
+                    AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
+
+                    float w = powerHeuristic(pdf_ll, pdf_lb);
+                    L_l = L_l * w / (pdf_ll*sg->n);
+                    result_R_direct += L_l * f_R_l;
+                    result_TT_direct += L_l * f_TT_l;
+                    result_TRT_direct += L_l * f_TRT_l;
+                    result_TRTg_direct += L_l * f_TRTg_l;
+
+                    if (pdf_bb != 0.0f)
+                    {
+                        w = powerHeuristic(pdf_bb, pdf_bl);
+                        L_b = L_b * w / (pdf_bb*sg->n);
+                        result_R_direct += L_b * f_R_b;
+                        result_TT_direct += L_b * f_TT_b;
+                        result_TRT_direct += L_b * f_TRT_b;
+                        result_TRTg_direct += L_b * f_TRTg_b;
+                    }
+
+                    // if the light is assigned a valid group number, add this sample's contribution to that light group
+                    if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                    {
+                        lightGroupsDirect[lightGroup] += L_b * (f_R_b + f_TT_b + f_TRT_b + f_TRTg_b);
+                        lightGroupsDirect[lightGroup] += L_l * (f_R_l + f_TT_l + f_TRT_l + f_TRTg_l);
+                    }
+
+                }
             }
+            else
+            {
+                while (AiLightsGetSample(sg))
+                {
+                    // per-light specular and diffuse strength multipliers
+                    float specular_strength = AiLightGetSpecular(sg->Lp);
+                    if (specular_strength < IMPORTANCE_EPS) continue;
+
+                    is_bsdf_sample = false;
+                    pdf_bb = 0.0f;
+                    AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
+
+                    float w = powerHeuristic(pdf_ll, pdf_lb);
+                    L_l = L_l * w / (pdf_ll*sg->n);
+                    result_R_direct += L_l * f_R_l;
+                    result_TT_direct += L_l * f_TT_l;
+                    result_TRT_direct += L_l * f_TRT_l;
+                    result_TRTg_direct += L_l * f_TRTg_l;
+
+                    if (pdf_bb != 0.0f)
+                    {
+                        w = powerHeuristic(pdf_bb, pdf_bl);
+                        L_b = L_b * w / (pdf_bb*sg->n);
+                        result_R_direct += L_b * f_R_b;
+                        result_TT_direct += L_b * f_TT_b;
+                        result_TRT_direct += L_b * f_TRT_b;
+                        result_TRTg_direct += L_b * f_TRTg_b;
+                    }
+
+                }
+            }
+
         }
-        else
+
+        if (do_diffuse && diffuseScatteringMix < 1.0f)
         {
+            AiLightsPrepare(sg);
             while (AiLightsGetSample(sg))
             {
                 // per-light specular and diffuse strength multipliers
-                float specular_strength = AiLightGetSpecular(sg->Lp);
-                if (specular_strength < IMPORTANCE_EPS) continue;
+                float diffuse_strength = AiLightGetDiffuse(sg->Lp);
+                if (diffuse_strength < IMPORTANCE_EPS) continue;
 
-                is_bsdf_sample = false;
-                pdf_bb = 0.0f;
-                AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
+                float cos_theta_i = AiV3Dot(U, sg->Ld);
+                float sin_theta_i = sqrtf(MAX(1.0f - SQR(cos_theta_i), 0.0f));
 
-                float w = powerHeuristic(pdf_ll, pdf_lb);
-                L_l = L_l * w / (pdf_ll*sg->n);
-                result_R_direct += L_l * f_R_l;
-                result_TT_direct += L_l * f_TT_l;
-                result_TRT_direct += L_l * f_TRT_l;
-                result_TRTg_direct += L_l * f_TRTg_l;
-
-                if (pdf_bb != 0.0f)
-                {
-                    w = powerHeuristic(pdf_bb, pdf_bl);
-                    L_b = L_b * w / (pdf_bb*sg->n);
-                    result_R_direct += L_b * f_R_b;
-                    result_TT_direct += L_b * f_TT_b;
-                    result_TRT_direct += L_b * f_TRT_b;
-                    result_TRTg_direct += L_b * f_TRTg_b;
-                }
-
+                AtRGB L = sg->Li * sg->we * diffuse_strength * sin_theta_i;
+                result_Pl_direct += L * hairColor * (1.0f / (4*AI_PI)) * (1.0f - diffuseScatteringMix);
             }
         }
     
@@ -1685,8 +1709,8 @@ struct HairBsdf
             if ((result_Pg_indirect + result_Pl_indirect) != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_diffuse].c_str(), result_Pg_indirect + result_Pl_indirect);
             if (result_R_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_specular].c_str(), result_R_direct);
             if (result_R_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_specular].c_str(), result_R_indirect);
-            if (result_TRT_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_specular_2].c_str(), result_TRT_direct);
-            if (result_TRT_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_specular_2].c_str(), result_TRT_indirect);
+            if (result_TRT_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_specular_2].c_str(), result_TRT_direct + result_TRTg_direct);
+            if (result_TRT_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_specular_2].c_str(), result_TRT_indirect + result_TRTg_indirect);
             if (result_TRTg_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_glint].c_str(), result_TRTg_direct);
             if (result_TRTg_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_glint].c_str(), result_TRTg_indirect);
             if (result_TT_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_transmission].c_str(), result_TT_direct);

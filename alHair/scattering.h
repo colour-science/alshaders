@@ -16,8 +16,9 @@
 #define NG_NUMSTEPS 32
 #define BS_NUMSTEPS 256
 
-#define HAIR_RADIUS 2.0f
+#define HAIR_RADIUS 0.5f
 
+/*
 void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorption, AtRGB kfr[3])
 {
     float x = clamp(1.0f - cosf(theta_d), 0.f, 1.f);
@@ -31,9 +32,11 @@ void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorptio
     kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS);
     kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS * lerp(1.5f, 2.0f, x3));
 }
+*/
 
-void hairAttenuation(float ior, float theta_d, float phi, float absorption, float kfr[3])
+void hairAttenuation(float ior, float theta_d, float phi, float absorption, float& kfr0, float& kfr1, float& kfr2)
 {
+    /*
     float x = 1.0f - cosf(theta_d);
     float x3 = powf(x, 5.0f);
     float x5 = powf(x, 7.0f);
@@ -41,9 +44,27 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
     float y5 = powf(y, 5.0f);
     float cf_front = lerp(0.02f, 0.5f, x3);
     float cf_back = lerp(0.04f, 0.9f, x5);
-    kfr[0] = lerp(cf_front, cf_back, y5);
-    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * HAIR_RADIUS * 2.0f);
-    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS * lerp(1.5f, 2.0f, x3));
+    kfr0 = lerp(cf_front, cf_back, y5);
+    kfr1 = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * HAIR_RADIUS * 2.0f);
+    kfr2 = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS * lerp(1.5f, 2.0f, x3));
+    */
+    
+    kfr0 = 0.05f;
+    kfr1 = .8f * fast_exp(-absorption * HAIR_RADIUS);
+    kfr2 = .2f * fast_exp(-absorption * 2.0f * HAIR_RADIUS);
+    
+/*
+    kfr0 = 0;
+    kfr1 = fast_exp(-absorption * HAIR_RADIUS) * 0.7f;
+    kfr2 = fast_exp(-absorption * 2.0f * HAIR_RADIUS) * 0.7f;
+    */
+}
+
+void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorption, AtRGB kfr[3])
+{
+   hairAttenuation(ior, theta_d, phi, absorption.r, kfr[0].r, kfr[1].r, kfr[2].r);
+   hairAttenuation(ior, theta_d, phi, absorption.g, kfr[0].g, kfr[1].g, kfr[2].g);
+   hairAttenuation(ior, theta_d, phi, absorption.b, kfr[0].b, kfr[1].b, kfr[2].b);
 }
 
 /// Normalized gaussian with offset
@@ -126,6 +147,7 @@ struct ScatteringParams
     float gamma_TT;     //< TT rolloff
     float gamma_g;      //< g rolloff
     float phi_g;        //< g separation
+    AtRGB hairColor;
     AtRGB absorption;
     AtRGB dabsorption;
     float shape;
@@ -190,10 +212,15 @@ struct ScatteringLut
                 b_TRT[idx] = bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2)
                                 + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, 35.0f);
 
-                hairAttenuation(ior, theta_h, phi, absorption, kfr);
+                /*
+                hairAttenuation(ior, theta_h, phi, absorption, kfr[0], kfr[1], kfr[2]);
                 k_R[idx] = kfr[0];
                 k_TT[idx] = kfr[1];
                 k_TRT[idx] = kfr[2];
+                */
+                k_R[idx] = 0.05f;
+                k_TT[idx] = fast_exp(-absorption * HAIR_RADIUS) * 0.8f;
+                k_TRT[idx] = fast_exp(-absorption * 2.0f * HAIR_RADIUS) * 0.2f;
                 x++;
             }
             y++;
@@ -449,7 +476,7 @@ struct DualScattering
         }
     }
 
-    inline ScatteringLut* getLut(float a, const ScatteringParams& sp)
+    inline ScatteringLut* getLut(float a, float sigma, const ScatteringParams& sp)
     {
         _cachelookups++;
         // See if we have a dslut struct already created for this colour, if not create it.
@@ -462,7 +489,7 @@ struct DualScattering
                 {
                     float t0 = AiMsgUtilGetElapsedTime();
                     _luts[idx] = new ScatteringLut(sp.ior, sp.alpha_R, sp.alpha_TT, sp.alpha_TRT, sp.beta_R2, sp.beta_TT2,
-                                                        sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, float(idx)/float(DS_MASTER_LUT_SZ) * A_MAX, sp.shape); 
+                                                        sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, sigma, sp.shape); 
                     _lutgen_time += AiMsgUtilGetElapsedTime() - t0;
                 }
             
@@ -475,9 +502,9 @@ struct DualScattering
     {        
         AtRGB result;
         
-        ScatteringLut* lr = getLut(sp.dabsorption.r, sp);
-        ScatteringLut* lg = getLut(sp.dabsorption.g, sp);
-        ScatteringLut* lb = getLut(sp.dabsorption.b, sp);
+        ScatteringLut* lr = getLut(sp.hairColor.r, sp.dabsorption.r, sp);
+        ScatteringLut* lg = getLut(sp.hairColor.g, sp.dabsorption.g, sp);
+        ScatteringLut* lb = getLut(sp.hairColor.b, sp.dabsorption.b, sp);
         result.r = lr->get_a_bar_f(theta);
         result.g = lg->get_a_bar_f(theta);
         result.b = lb->get_a_bar_f(theta);
@@ -487,9 +514,9 @@ struct DualScattering
 
     inline AtRGB f_back_direct(const ScatteringParams& sp, const SctGeo& geo)
     {
-        ScatteringLut* lr = getLut(sp.dabsorption.r, sp);
-        ScatteringLut* lg = getLut(sp.dabsorption.g, sp);
-        ScatteringLut* lb = getLut(sp.dabsorption.b, sp);
+        ScatteringLut* lr = getLut(sp.hairColor.r, sp.dabsorption.r, sp);
+        ScatteringLut* lg = getLut(sp.hairColor.g, sp.dabsorption.g, sp);
+        ScatteringLut* lb = getLut(sp.hairColor.b, sp.dabsorption.b, sp);
 
         AtRGB result;
         float c = 2.0f * AI_ONEOVERPI * geo.inv_cos_theta_d2;
@@ -503,9 +530,9 @@ struct DualScattering
 
     inline AtRGB f_back_scatter(const ScatteringParams& sp, const SctGeo& geo, const AtRGB& sigma_f2)
     {
-        ScatteringLut* lr = getLut(sp.dabsorption.r, sp);
-        ScatteringLut* lg = getLut(sp.dabsorption.g, sp);
-        ScatteringLut* lb = getLut(sp.dabsorption.b, sp);
+        ScatteringLut* lr = getLut(sp.hairColor.r, sp.dabsorption.r, sp);
+        ScatteringLut* lg = getLut(sp.hairColor.g, sp.dabsorption.g, sp);
+        ScatteringLut* lb = getLut(sp.hairColor.b, sp.dabsorption.b, sp);
 
         AtRGB result;
         float c = 2.0f * AI_ONEOVERPI * geo.inv_cos_theta_d2;
@@ -523,9 +550,9 @@ struct DualScattering
         int ng_y = (geo.theta_d * AI_ONEOVERPI + 0.5f) * (NG_NUMSTEPS-1);
         int ng_idx = ng_y*NG_NUMSTEPS+ng_x;
 
-        ScatteringLut* lr = getLut(sp.dabsorption.r, sp);
-        ScatteringLut* lg = getLut(sp.dabsorption.g, sp);
-        ScatteringLut* lb = getLut(sp.dabsorption.b, sp);
+        ScatteringLut* lr = getLut(sp.hairColor.r, sp.dabsorption.r, sp);
+        ScatteringLut* lg = getLut(sp.hairColor.g, sp.dabsorption.g, sp);
+        ScatteringLut* lb = getLut(sp.hairColor.b, sp.dabsorption.b, sp);
 
         AtRGB result = AI_RGB_BLACK;
         result.r =  g(geo.theta_h - sp.alpha_R, sp.beta_R2 + sigma_f2.r) * lr->N_G_R[ng_idx]

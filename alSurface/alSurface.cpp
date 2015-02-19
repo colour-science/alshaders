@@ -2427,7 +2427,6 @@ shader_evaluate
                     AiAOVSetRGBA(sg, data->aovs_rgba[k_shadow_group_1+i].c_str(), shadowGroups[i]);
             }
 
-
             if (diffuseColor != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_diffuse_color].c_str(), diffuseColor);
             if (result_diffuseDirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_diffuse].c_str(), result_diffuseDirect);
             if (result_diffuseDirectRaw != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_diffuse_raw].c_str(), result_diffuseDirectRaw);
