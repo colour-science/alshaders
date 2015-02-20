@@ -25,7 +25,8 @@ AI_SHADER_NODE_EXPORT_METHODS(alHair);
 enum alHairParams
 {
     p_twist,
-    p_hairColor,
+    p_dyeColor,
+    p_melanin,
     p_specularShift,
     p_specularWidth,
     p_extraSamplesDiffuse,
@@ -62,6 +63,7 @@ enum alHairParams
     p_randomTangent,
     p_randomHue,
     p_randomSaturation,
+    p_randomMelanin,
 
     p_uparam,
     p_vparam,
@@ -165,9 +167,10 @@ static const char* id_names[NUM_ID_AOVS] =
 node_parameters
 {
     AiParameterFlt("twist", 20.0f);
-    AiParameterRGB("hairColor", 1.0f, 0.829f, 0.488f);
-    AiParameterFlt("specularShift", -5.0f);
-    AiParameterFlt("specularWidth", 5.0f);
+    AiParameterRGB("dyeColor", 1.0f, 1.0f, 1.0f);
+    AiParameterFlt("melanin", 0.15f);
+    AiParameterFlt("specularShift", 4.0f);
+    AiParameterFlt("specularWidth", 3.0f);
     AiParameterInt("extraSamplesDiffuse", 0);
     AiParameterInt("extraSamplesGlossy", 0);
     AiParameterFlt("diffuseStrength", 1.0f);
@@ -196,12 +199,13 @@ node_parameters
     AiParameterFlt("transmissionShift", 0.0f);
     AiParameterFlt("glintTexture", 1.0f);
     AiParameterBool("MIS", true);
-    AiParameterFlt("diffuseIndirectStrength", 1.0f);
-    AiParameterFlt("glossyIndirectStrength", 1.0f);
+    AiParameterFlt("diffuseIndirectStrength", 0.0f);
+    AiParameterFlt("glossyIndirectStrength", 0.0f);
 
     AiParameterFlt("randomTangent", 0.0f);
     AiParameterFlt("randomHue", 0.0f);
     AiParameterFlt("randomSaturation", 0.0f);
+    AiParameterFlt("randomMelanin", 0.08f);
 
     AiParameterStr("uparam", "uparamcoord");
     AiParameterStr("vparam", "vparamcoord");
@@ -502,11 +506,13 @@ struct HairBsdf
 
         float singleSaturation = AiShaderEvalParamFlt(p_singleSaturation);
         float multipleSaturation = AiShaderEvalParamFlt(p_multipleSaturation);
-        hairColor = clamp(AiShaderEvalParamRGB(p_hairColor), AI_RGB_BLACK, AI_RGB_WHITE);
-        
+        AtRGB dyeColor = clamp(AiShaderEvalParamRGB(p_dyeColor), AI_RGB_BLACK, AI_RGB_WHITE);
+        float melanin = AiShaderEvalParamFlt(p_melanin);
         
         float randomHue = AiShaderEvalParamFlt(p_randomHue) * 0.1f;
         float randomSaturation = AiShaderEvalParamFlt(p_randomSaturation);
+        float randomMelanin = AiShaderEvalParamFlt(p_randomMelanin);
+        melanin = CLAMP(melanin+randomMelanin*cv.z, 0.0f, 1.0f);
 
         if (randomHue != 0.0f || randomSaturation != 0.0f)
         {
@@ -518,9 +524,10 @@ struct HairBsdf
             hairColor = hsv2rgb(hairColor);
         }
         
-
-        hairColor = clamp(hairColor, rgb(0.01f), rgb(0.99f));
-
+        float m = MAX(powf(melanin, 2.0f)*50.0f, 1.0e-3f);
+        hairColor = exp(m * -rgb(0.187f, 0.4f, 1.05f));
+        hairColor *= dyeColor;
+        
         sp.hairColor = hairColor;
 
         sp.absorption = singleSaturation * -log(hairColor);

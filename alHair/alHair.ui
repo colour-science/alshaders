@@ -17,28 +17,32 @@ ui.shader({
 })
 
 with uigen.group(ui, 'Fibre properties', False):
-   ui.parameter('hairColor', 'rgb', (1.0, 0.829, 0.488), 'Color')
-   ui.parameter('specularWidth', 'float', 5.0, 'Highlight width', connectible=False)
-   ui.parameter('specularShift', 'float', -5.0, 'Highlight shift', connectible=False)
+   ui.parameter('melanin', 'float', 0.15, 'Melanin')
+   ui.parameter('dyeColor', 'rgb', (1.0, 1.0, 1.0), 'Dye color')
+   
+   ui.parameter('specularWidth', 'float', 3.0, 'Highlight width', connectible=False)
+   ui.parameter('specularShift', 'float', 4.0, 'Highlight shift', connectible=False)
    ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0))
 
    with uigen.group(ui, 'Randomize'):
       ui.parameter('randomTangent', 'float', 0.0, 'Tangent')
-      ui.parameter('randomHue', 'float', 0.0, 'Hue')
-      ui.parameter('randomSaturation', 'float', 0.0, 'Saturation')
+      ui.parameter('randomMelanin', 'float', 0.0, 'Melanin')
+      ui.parameter('randomHue', 'float', 0.0, 'Dye hue')
+      ui.parameter('randomSaturation', 'float', 0.0, 'Dye saturation')
+
 
    with uigen.group(ui, 'Advanced'):
       ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False)
       ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False)
-      ui.parameter('singleSaturation', 'float', 0.10, 'Highlight saturation')
-      ui.parameter('multipleSaturation', 'float', 0.15, 'Diffuse saturation')
+      ui.parameter('singleSaturation', 'float', 1.0, 'Highlight saturation')
+      ui.parameter('multipleSaturation', 'float', 1.0, 'Diffuse saturation')
 
 with uigen.group(ui, 'Diffuse', False):
    ui.parameter('diffuseStrength', 'float', 1.0, 'Strength')
    ui.parameter('diffuseColor', 'rgb', (1.0, 1.0, 1.0), 'Tint')
    ui.parameter('diffuseScatteringMix', 'float', 1.0, 'Scattering mix')
-   ui.parameter('diffuseForward', 'float', .7, 'Forward scattering')
-   ui.parameter('diffuseBack', 'float', .7, 'Back scattering')
+   ui.parameter('diffuseForward', 'float',1.0, 'Forward scattering')
+   ui.parameter('diffuseBack', 'float', 1.0, 'Back scattering')
       
 
 with uigen.group(ui, 'Specular 1', False):
@@ -101,9 +105,9 @@ with uigen.group(ui, 'AOVs'):
 with uigen.group(ui, 'Advanced'):
    ui.parameter('MIS', 'bool', True)
    ui.parameter('dualDepth', 'int', 0, 'Brute force bounces')
-   ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Diffuse indirect strength')
+   ui.parameter('diffuseIndirectStrength', 'float', 0.0, 'Diffuse indirect strength')
    ui.parameter('extraSamplesDiffuse', 'int', 0, 'Diffuse extra samples')
-   ui.parameter('glossyIndirectStrength', 'float', 1.0, 'Glossy indirect strength')
+   ui.parameter('glossyIndirectStrength', 'float', 0.0, 'Glossy indirect strength')
    ui.parameter('extraSamplesGlossy', 'int', 0, 'Glossy extra samples')
    ui.parameter('uparam', 'string', 'uparamcoord', 'U param')
    ui.parameter('vparam', 'string', 'vparamcoord', 'V param')

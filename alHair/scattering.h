@@ -18,46 +18,11 @@
 
 #define HAIR_RADIUS 0.5f
 
-/*
-void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorption, AtRGB kfr[3])
-{
-    float x = clamp(1.0f - cosf(theta_d), 0.f, 1.f);
-    float x3 = powf(x, 5.0f);
-    float x5 = powf(x, 7.0f);
-    float y = clamp(phi / AI_PI, 0.f, 1.f);
-    float y5 = powf(y, 5.0f);
-    float cf_front = lerp(0.02f, 0.5f, x3);
-    float cf_back = lerp(0.04f, 0.9f, x5);
-    kfr[0] = rgb(lerp(cf_front, cf_back, y5));
-    kfr[1] = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS);
-    kfr[2] = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS * lerp(1.5f, 2.0f, x3));
-}
-*/
-
 void hairAttenuation(float ior, float theta_d, float phi, float absorption, float& kfr0, float& kfr1, float& kfr2)
-{
-    /*
-    float x = 1.0f - cosf(theta_d);
-    float x3 = powf(x, 5.0f);
-    float x5 = powf(x, 7.0f);
-    float y = phi / AI_PI;
-    float y5 = powf(y, 5.0f);
-    float cf_front = lerp(0.02f, 0.5f, x3);
-    float cf_back = lerp(0.04f, 0.9f, x5);
-    kfr0 = lerp(cf_front, cf_back, y5);
-    kfr1 = lerp(0.0f, 0.9f, 1.0f - x5) * fast_exp(-absorption * HAIR_RADIUS * 2.0f);
-    kfr2 = lerp(0.1f, 0.2f, x5) * fast_exp(-absorption * 2.0f * HAIR_RADIUS * lerp(1.5f, 2.0f, x3));
-    */
-    
+{   
     kfr0 = 0.05f;
     kfr1 = .8f * fast_exp(-absorption * HAIR_RADIUS);
     kfr2 = .2f * fast_exp(-absorption * 2.0f * HAIR_RADIUS);
-    
-/*
-    kfr0 = 0;
-    kfr1 = fast_exp(-absorption * HAIR_RADIUS) * 0.7f;
-    kfr2 = fast_exp(-absorption * 2.0f * HAIR_RADIUS) * 0.7f;
-    */
 }
 
 void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorption, AtRGB kfr[3])
@@ -212,15 +177,8 @@ struct ScatteringLut
                 b_TRT[idx] = bsdfTRT(beta_TRT2, alpha_TRT, theta_h, cosphi2)
                                 + bsdfg(beta_TRT2, alpha_TRT, theta_h, gamma_g, phi, 35.0f);
 
-                /*
-                hairAttenuation(ior, theta_h, phi, absorption, kfr[0], kfr[1], kfr[2]);
-                k_R[idx] = kfr[0];
-                k_TT[idx] = kfr[1];
-                k_TRT[idx] = kfr[2];
-                */
-                k_R[idx] = 0.05f;
-                k_TT[idx] = fast_exp(-absorption * HAIR_RADIUS) * 0.8f;
-                k_TRT[idx] = fast_exp(-absorption * 2.0f * HAIR_RADIUS) * 0.2f;
+                
+                hairAttenuation(ior, theta_h, phi, absorption, k_R[idx], k_TT[idx], k_TRT[idx]);
                 x++;
             }
             y++;
