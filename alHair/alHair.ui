@@ -8,7 +8,7 @@ ui.shader({
    'maya_classification':'shader/surface',
    'maya_id':'0x00116403',
    'maya_swatch':True,
-   'maya_matte':True,
+   'maya_matte':False,
    'maya_bump':False,
    'soft_name':'ALS_Hair',
    'soft_classification':'material',
@@ -40,7 +40,7 @@ with uigen.group(ui, 'Fibre properties', False):
 with uigen.group(ui, 'Diffuse', False):
    ui.parameter('diffuseStrength', 'float', 1.0, 'Strength')
    ui.parameter('diffuseColor', 'rgb', (1.0, 1.0, 1.0), 'Tint')
-   ui.parameter('diffuseScatteringMix', 'float', 1.0, 'Scattering mix')
+   ui.parameter('diffuseScatteringMode', 'enum', 'dual-scattering', 'Scattering mode', enum_names=['kajiya-kay', 'dual-scattering'])
    ui.parameter('diffuseForward', 'float',1.0, 'Forward scattering')
    ui.parameter('diffuseBack', 'float', 1.0, 'Back scattering')
       
