@@ -489,7 +489,12 @@ struct HairBsdf
         sp.gamma_g = data->gamma_g;
         float twist = AiShaderEvalParamFlt(p_twist);
         float glintTexture = AiShaderEvalParamFlt(p_glintTexture);
-        sp.phi_g = lerp((35.0f-30*(1.0f-glintTexture))*AI_DTOR, (35.0f+50.0f*glintTexture)*AI_DTOR, fabsf(sinf(AI_PI*(cn + (cn+v)*(twist*cn)))));
+
+        float glintAngleMin = 0.0f * AI_DTOR;
+        float glintAngleMax = 360.0f * AI_DTOR;
+        float glintRotation = fabsf(sinf(AI_PI*(cn + (cn+v)*(twist*cn))));
+
+        sp.phi_g = lerp(glintAngleMin, glintAngleMax, cn);
 
         sp.ior = 1.55;
 
@@ -1450,6 +1455,7 @@ struct HairBsdf
                         AiAOVSetRGB(sg, data->aovs[k_id_1+i].c_str(), tmp);
                 }
             }
+
 
             if (doLightGroups)
             {

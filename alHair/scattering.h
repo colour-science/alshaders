@@ -22,7 +22,7 @@ void hairAttenuation(float ior, float theta_d, float phi, float absorption, floa
 {   
     kfr0 = 0.05f;
     kfr1 = .8f * fast_exp(-absorption * HAIR_RADIUS);
-    kfr2 = .2f * fast_exp(-absorption * 2.0f * HAIR_RADIUS);
+    kfr2 = .3f * fast_exp(-absorption * 2.0f * HAIR_RADIUS);
 }
 
 void hairAttenuation(float ior, float theta_d, float phi, const AtRGB& absorption, AtRGB kfr[3])
