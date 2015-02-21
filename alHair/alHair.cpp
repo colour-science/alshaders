@@ -24,7 +24,6 @@ AI_SHADER_NODE_EXPORT_METHODS(alHair);
 
 enum alHairParams
 {
-    p_twist,
     p_dyeColor,
     p_melanin,
     p_specularShift,
@@ -53,7 +52,6 @@ enum alHairParams
     p_specular1Shift,
     p_specular2Shift,
     p_transmissionShift,
-    p_glintTexture,
     p_diffuseIndirectStrength,
     p_glossyIndirectStrength,
 
@@ -172,7 +170,6 @@ const char* ScatteringModeNames[] =
 
 node_parameters
 {
-    AiParameterFlt("twist", 20.0f);
     AiParameterRGB("dyeColor", 1.0f, 1.0f, 1.0f);
     AiParameterFlt("melanin", 0.15f);
     AiParameterFlt("specularShift", 4.0f);
@@ -186,7 +183,7 @@ node_parameters
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f);
     AiParameterFlt("specular2Strength", 1.0f);
     AiParameterRGB("specular2Color",1.0f, 1.0f, 1.0f);
-    AiParameterFlt("glintStrength", 2.0f);
+    AiParameterFlt("glintStrength", 2.5f);
     AiParameterFlt("glintRolloff", 5.0f);
     AiParameterFlt("transmissionStrength", 1.0f);
     AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f);
@@ -201,7 +198,6 @@ node_parameters
     AiParameterFlt("specular1Shift", 0.0f);
     AiParameterFlt("specular2Shift", 0.0f);
     AiParameterFlt("transmissionShift", 0.0f);
-    AiParameterFlt("glintTexture", 1.0f);
     AiParameterFlt("diffuseIndirectStrength", 0.0f);
     AiParameterFlt("glossyIndirectStrength", 0.0f);
 
@@ -487,12 +483,9 @@ struct HairBsdf
 
         sp.gamma_TT = data->gamma_TT;
         sp.gamma_g = data->gamma_g;
-        float twist = AiShaderEvalParamFlt(p_twist);
-        float glintTexture = AiShaderEvalParamFlt(p_glintTexture);
 
         float glintAngleMin = 0.0f * AI_DTOR;
         float glintAngleMax = 360.0f * AI_DTOR;
-        float glintRotation = fabsf(sinf(AI_PI*(cn + (cn+v)*(twist*cn))));
 
         sp.phi_g = lerp(glintAngleMin, glintAngleMax, cn);
 
@@ -522,7 +515,7 @@ struct HairBsdf
             hairColor = hsv2rgb(hairColor);
         }
         
-        float m = MAX(powf(melanin, 2.0f)*50.0f, 1.0e-3f);
+        float m = MAX(powf(melanin, 2.0f)*33.0f, 1.0e-2f);
         hairColor = exp(m * -rgb(0.187f, 0.4f, 1.05f));
         hairColor *= dyeColor;
 

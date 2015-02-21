@@ -34,8 +34,6 @@ with uigen.group(ui, 'Fibre properties', False):
    with uigen.group(ui, 'Advanced'):
       ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False)
       ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False)
-      ui.parameter('singleSaturation', 'float', 1.0, 'Highlight saturation')
-      ui.parameter('multipleSaturation', 'float', 1.0, 'Diffuse saturation')
 
 with uigen.group(ui, 'Diffuse', False):
    ui.parameter('diffuseStrength', 'float', 1.0, 'Strength')
@@ -49,23 +47,20 @@ with uigen.group(ui, 'Specular 1', False):
    ui.parameter('specular1Strength', 'float', 1.0, 'Strength')
    ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Tint')
    ui.parameter('specular1WidthScale', 'float', 1.0, 'Width scale')
-   ui.parameter('specular1Shift', 'float', 0.0, 'Shift')
+   ui.parameter('specular1Shift', 'float', 0.0, 'Shift offset')
    
 with uigen.group(ui, 'Specular 2', False):
    ui.parameter('specular2Strength', 'float', 1.0, 'Strength')
    ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Tint')
    ui.parameter('specular2WidthScale', 'float', 1.0, 'Width scale')
-   ui.parameter('specular2Shift', 'float', 0.0, 'Shift')
-   with uigen.group(ui, 'Glints', False):
-      ui.parameter('glintStrength', 'float', 2.5, 'Strength')
-      ui.parameter('glintTexture', 'float', 1.0, 'Texture')
-      ui.parameter('twist', 'float', 20.0, 'Twist')
+   ui.parameter('specular2Shift', 'float', 0.0, 'Shift offset')
+   ui.parameter('glintStrength', 'float', 2.5, 'Glint strength')      
 
 with uigen.group(ui, 'Transmission', False):
    ui.parameter('transmissionStrength', 'float', 1.0, 'Strength')
    ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Tint')
    ui.parameter('transmissionWidthScale', 'float', 1.0, 'Width scale')
-   ui.parameter('transmissionShift', 'float', 0.0, 'Shift')
+   ui.parameter('transmissionShift', 'float', 0.0, 'Shift offset')
 
 with uigen.group(ui, 'IDs'):
    for i in range(1,9):
