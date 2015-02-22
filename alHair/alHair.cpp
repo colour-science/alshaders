@@ -1837,8 +1837,7 @@ shader_evaluate
             float theta_i = AI_PIOVER2 - sphericalTheta(sg->Rd, hb.U);
 
             AtRGB T_f = hb.data->ds->forward_attenuation(hb.sp, theta_i);
-            //T_f = AI_RGB_WHITE - ((AI_RGB_WHITE - T_f)*opacity); //< modify transmission to account for opacity
-            als_T_f *= T_f;
+            als_T_f = lerp(als_T_f, als_T_f * T_f, maxh(opacity));
             AiStateSetMsgRGB("als_T_f", als_T_f);
 
             als_sigma_bar_f += hb.sp.beta_R2 + hb.sp.beta_TRT2 + hb.sp.beta_TT2;
