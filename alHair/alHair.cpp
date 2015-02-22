@@ -554,14 +554,27 @@ struct HairBsdf
 
         hairColor *= diffuseColor;
 
-        doLightGroups = false;
-        for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+        doLightGroups = true;
+        if (sg->Rt & AI_RAY_CAMERA)
         {
-            if (AiAOVEnabled(data->aovs[k_light_group_1+i].c_str(), AI_TYPE_RGB))
-            {
-                doLightGroups = true;
-                break;
-            }
+            // if this is a camera ray allocate the group storage
+            deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+            memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+            AiStateSetMsgPtr("als_deepGroupPtr", deepGroupPtr);
+        }
+        else
+        {
+            // secondary ray hit - get the pointer from the state
+            // if the pointer hasn't been set we're being called from a BSDF that doesn't have deep group support
+            // so don't try and do it or we'll be in (crashy) trouble!
+            if (!AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr)) deepGroupPtr = NULL;
+        }
+        if (deepGroupPtr)
+        {
+            memset(deepGroupsSpecular, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+            memset(deepGroupsSpecular2, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+            memset(deepGroupsDiffuse, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+            memset(deepGroupsTransmission, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
         }
     }
 
@@ -1046,7 +1059,7 @@ struct HairBsdf
         
         AtRGB kfr[3];
 
-        if ((sg->Rt & AI_RAY_CAMERA) && doLightGroups)
+        if ((sg->Rt & AI_RAY_CAMERA))
         {
             while (AiLightsGetSample(sg))
             {
@@ -1298,14 +1311,26 @@ struct HairBsdf
                 AtScrSample scrs;
 
                 // trace our ray
-                if (AiTrace(&wi_ray, &scrs))
+                bool hit = AiTrace(&wi_ray, &scrs);
+                // calculate result
+                const float p = HairGlossyPdf(this, &wi_ray.dir);
+                const AtRGB f_R = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                const AtRGB f_TT = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                const AtRGB f_TRT = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                const AtRGB f_TRTg = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                result_R_indirect += scrs.color * f_R;
+                result_TT_indirect += scrs.color * f_TT;
+                result_TRT_indirect += scrs.color * f_TRT;
+                result_TRTg_indirect += scrs.color * f_TRTg;
+
+                if (deepGroupPtr && hit)
                 {
-                    // calculate result
-                    float p = HairGlossyPdf(this, &wi_ray.dir);
-                    result_R_indirect += scrs.color * Hair_Bsdf_R(this, &wi_ray.dir) / p;
-                    result_TT_indirect += scrs.color * Hair_Bsdf_TT(this, &wi_ray.dir) / p;
-                    result_TRT_indirect += scrs.color * Hair_Bsdf_TRT(this, &wi_ray.dir) / p;
-                    result_TRTg_indirect += scrs.color * Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    {
+                        deepGroupsSpecular[i] += deepGroupPtr[i] * f_R;
+                        deepGroupsSpecular2[i] += deepGroupPtr[i] * (f_TRT + f_TRTg);
+                        deepGroupsTransmission[i] += deepGroupPtr[i] * f_TT;
+                    }
                 }
             }
             AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
@@ -1314,11 +1339,62 @@ struct HairBsdf
             result_TT_indirect *= weight; //< TODO: factor of pi?
             result_TRT_indirect *= weight; //< TODO: factor of pi?
             result_TRTg_indirect *= weight; //< TODO: factor of pi?
+            if (deepGroupPtr)
+            {
+                for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                {
+                    deepGroupsSpecular[i] *= weight;
+                    deepGroupsSpecular2[i] *= weight;
+                    deepGroupsTransmission[i] *= weight;
+                }
+            }
         }
 
         if (diffuseIndirectStrength > 0.0f)
         {
-            result_Pl_indirect = AiIndirectDiffuse(&wo, sg) * hairColor * diffuseIndirectStrength;
+            // result_Pl_indirect = AiIndirectDiffuse(&wo, sg) * hairColor * diffuseIndirectStrength;
+            AtRay wi_ray;
+            AtVector wi;
+            AtScrSample scrs;
+            AiMakeRay(&wi_ray, AI_RAY_DIFFUSE, &sg->P, NULL, AI_BIG, sg);
+            sampit = AiSamplerIterator(data->sampler_diffuse, sg);
+            result_Pl_indirect = AI_RGB_BLACK;
+            while (AiSamplerGetSample(sampit, samples))
+            {
+                // cosine hemisphere sampling as O-N sampling does not work outside of a light loop
+                float stheta = sqrtf(float(samples[0]));
+                float phi = float(AI_PITIMES2 * samples[1]);
+                wi.x = stheta * cosf(phi);
+                wi.y = stheta * sinf(phi);
+                wi.z = sqrtf(1.0f - float(samples[0]));
+                AiV3RotateToFrame(wi, U, V, sg->Nf);
+
+                float cos_theta = AiV3Dot(wi, sg->Nf);
+                if (cos_theta <= 0.0f) continue;
+
+                // trace the ray
+                wi_ray.dir = wi;
+
+                bool hit = AiTrace(&wi_ray, &scrs);
+
+                result_Pl_indirect += scrs.color * hairColor * diffuseIndirectStrength;
+                if (deepGroupPtr && hit)
+                {
+                    for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
+                    {
+                        deepGroupsDiffuse[i] += deepGroupPtr[i] * hairColor * diffuseIndirectStrength;
+                    }
+                }
+
+            }
+            result_Pl_indirect *= AiSamplerGetSampleInvCount(sampit);
+            if (deepGroupPtr)
+            {
+                for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                {
+                    deepGroupsDiffuse[i] *= AiSamplerGetSampleInvCount(sampit);
+                }
+            }
         }
     }
 
@@ -1342,14 +1418,27 @@ struct HairBsdf
 
                 // trace our ray
                 AiStateSetMsgFlt("alsPreviousRoughness", 1.0f);
-                if (AiTrace(&wi_ray, &scrs))
+                // trace our ray
+                bool hit = AiTrace(&wi_ray, &scrs);
+                // calculate result
+                const float p = HairGlossyPdf(this, &wi_ray.dir);
+                const AtRGB f_R = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                const AtRGB f_TT = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                const AtRGB f_TRT = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                const AtRGB f_TRTg = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                result_R_indirect += scrs.color * f_R;
+                result_TT_indirect += scrs.color * f_TT;
+                result_TRT_indirect += scrs.color * f_TRT;
+                result_TRTg_indirect += scrs.color * f_TRTg;
+
+                if (deepGroupPtr && hit)
                 {
-                    // calculate result
-                    float p = HairGlossyPdf(this, &wi_ray.dir);
-                    result_R_indirect += scrs.color * Hair_Bsdf_R(this, &wi_ray.dir) / p;
-                    result_TT_indirect += scrs.color * Hair_Bsdf_TT(this, &wi_ray.dir) / p;
-                    result_TRT_indirect += scrs.color * Hair_Bsdf_TRT(this, &wi_ray.dir) / p;
-                    result_TRTg_indirect += scrs.color * Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    {
+                        deepGroupsSpecular[i] += deepGroupPtr[i] * f_R;
+                        deepGroupsSpecular2[i] += deepGroupPtr[i] * (f_TRT + f_TRTg);
+                        deepGroupsTransmission[i] += deepGroupPtr[i] * f_TT;
+                    }
                 }
             }
             AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
@@ -1358,6 +1447,15 @@ struct HairBsdf
             result_TT_indirect *= weight; //< TODO: factor of pi?
             result_TRT_indirect *= weight; //< TODO: factor of pi?
             result_TRTg_indirect *= weight; //< TODO: factor of pi?
+            if (deepGroupPtr)
+            {
+                for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                {
+                    deepGroupsSpecular[i] *= weight;
+                    deepGroupsSpecular2[i] *= weight;
+                    deepGroupsTransmission[i] *= weight;
+                }
+            }
         }
 
         if (diffuseIndirectStrength > 0.0f)
@@ -1388,7 +1486,9 @@ struct HairBsdf
                 AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
                 AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
                 AiStateSetMsgFlt("alsPreviousRoughness", 1.0f);
-                AiTrace(&wi_ray, &scrs);
+                bool als_hitHair = false;
+                AiStateSetMsgBool("als_hitHair", als_hitHair);
+                bool hit = AiTrace(&wi_ray, &scrs);
                 AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
                 AiStateGetMsgRGB("als_T_f", &T_f);
                 AiStateGetMsgRGB("als_sigma_bar_f", &sigma_f);
@@ -1400,19 +1500,47 @@ struct HairBsdf
                 AtRGB F_scatter = (1.0f-directFraction) * T_f * density_front * 
                                     (data->ds->f_s_scatter(sp, geo, sigma_f) + AI_PI * density_back * data->ds->f_back_scatter(sp, geo, sigma_f));
 
-                result_Pl_indirect += scrs.color * F_direct * geo.cos_theta_i * AI_ONEOVERPI;
-                result_Pg_indirect += scrs.color * F_scatter * geo.cos_theta_i * AI_ONEOVERPI;
+                const AtRGB f_Pl =  F_direct * geo.cos_theta_i * AI_ONEOVERPI;
+                const AtRGB f_Pg =  F_scatter * geo.cos_theta_i * AI_ONEOVERPI;
+                result_Pl_indirect += scrs.color * f_Pl;
+                result_Pg_indirect += scrs.color * f_Pg;
+
+                // only accumulate deep groups if we hit something that wasn't a hair
+                if (deepGroupPtr && (hit && !als_hitHair))
+                {
+                    for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                    {
+                        deepGroupsDiffuse[i] += deepGroupPtr[i] * (f_Pl + f_Pg);
+                    }
+                }
 
             }
             AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
             weight = AiSamplerGetSampleInvCount(sampit) * diffuseIndirectStrength;
             result_Pl_indirect *= weight * diffuseColor;
             result_Pg_indirect *= weight * diffuseColor;
+
+            if (deepGroupPtr)
+            {
+                for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+                {
+                    deepGroupsDiffuse[i] *= weight * diffuseColor;
+                }
+            }
         }
     }
 
     inline void writeResult(AtShaderGlobals* sg)
     {
+        if (deepGroupPtr)
+        {
+            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+            {
+                deepGroupPtr[i] = lightGroupsDirect[i] + deepGroupsDiffuse[i] + deepGroupsSpecular[i] 
+                                + deepGroupsSpecular2[i] + deepGroupsTransmission[i];
+            }
+        }
+
         if (sg->Rt & AI_RAY_CAMERA)
         {
             AiAOVSetRGB(sg, data->aovs[k_diffuse_color].c_str(), hairColor);
@@ -1450,14 +1578,11 @@ struct HairBsdf
             }
 
 
-            if (doLightGroups)
+            for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
-                {
-                    if (lightGroupsDirect[i] != AI_RGB_BLACK)
-                        AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), lightGroupsDirect[i]);
-                }
+                AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), deepGroupPtr[i]);
             }
+            
 
         }
 
@@ -1591,6 +1716,11 @@ struct HairBsdf
 
     bool doLightGroups;
     AtRGB lightGroupsDirect[NUM_LIGHT_GROUPS];
+    AtRGB* deepGroupPtr;
+    AtRGB deepGroupsSpecular[NUM_LIGHT_GROUPS];
+    AtRGB deepGroupsSpecular2[NUM_LIGHT_GROUPS];
+    AtRGB deepGroupsDiffuse[NUM_LIGHT_GROUPS];
+    AtRGB deepGroupsTransmission[NUM_LIGHT_GROUPS];
 };
 
 node_loader
@@ -1683,6 +1813,8 @@ shader_evaluate
     {
         opacity *= geo_opacity;
     }
+
+    AiStateSetMsgBool("als_hitHair", true);
 
     float als_hairNumIntersections = 0;
     AtRGB als_T_f = AI_RGB_BLACK;
