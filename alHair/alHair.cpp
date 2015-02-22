@@ -1044,6 +1044,7 @@ struct HairBsdf
     {
         float als_hairNumIntersections = 0;
         AtRGB T_f = AI_RGB_BLACK;
+        AtRGB als_hairOpacity = AI_RGB_WHITE;
         AtRGB sigma_f = AI_RGB_BLACK;
         bool old_hemi = sg->fhemi;
         sg->fhemi = false;
@@ -1085,15 +1086,19 @@ struct HairBsdf
                     AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
                     AiStateSetMsgFlt("als_hairNumIntersections", 0);
                     AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
+                    AiStateSetMsgRGB("als_hairOpacity", AI_RGB_WHITE);
                     AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
                     AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), &w_l, d_l, sg);
                     AiTrace(&ray, &scrs);
                     AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
                     AiStateGetMsgRGB("als_T_f", &T_f);
+                    AiStateGetMsgRGB("als_hairOpacity", &als_hairOpacity);
                     AiStateGetMsgRGB("als_sigma_bar_f", &sigma_f);
                     
                     directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
                     occlusion = AI_RGB_WHITE - scrs.opacity;
+
+                    T_f = pow(data->ds->forward_attenuation(sp, geo_l.theta_i), als_hairNumIntersections);
 
                     F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo_l); //< do f_s_direct separately for AOVs
                     F_scatter = (1.0f-directFraction) * T_f * density_front * 
@@ -1138,15 +1143,19 @@ struct HairBsdf
                         AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
                         AiStateSetMsgFlt("als_hairNumIntersections", 0);
                         AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
+                        AiStateSetMsgRGB("als_hairOpacity", AI_RGB_WHITE);
                         AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
                         AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), &w_b, d_b, sg);
                         AiTrace(&ray, &scrs);
                         AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
                         AiStateGetMsgRGB("als_T_f", &T_f);
+                        AiStateGetMsgRGB("als_hairOpacity", &als_hairOpacity);
                         AiStateGetMsgRGB("als_sigma_bar_f", &sigma_f);
                     
                         directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
                         occlusion = AI_RGB_WHITE - scrs.opacity;
+
+                        T_f = pow(data->ds->forward_attenuation(sp, geo_b.theta_i), als_hairNumIntersections);
 
                         F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo_b); //< do f_s_direct separately for AOVs
                         F_scatter = (1.0f-directFraction) * T_f * density_front * 
@@ -1207,15 +1216,19 @@ struct HairBsdf
                     AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
                     AiStateSetMsgFlt("als_hairNumIntersections", 0);
                     AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
+                    AiStateSetMsgRGB("als_hairOpacity", AI_RGB_WHITE);
                     AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
                     AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), &w_l, d_l, sg);
                     AiTrace(&ray, &scrs);
                     AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
                     AiStateGetMsgRGB("als_T_f", &T_f);
+                    AiStateGetMsgRGB("als_hairOpacity", &als_hairOpacity);
                     AiStateGetMsgRGB("als_sigma_bar_f", &sigma_f);
                     
                     directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
                     occlusion = AI_RGB_WHITE - scrs.opacity;
+
+                    T_f = pow(data->ds->forward_attenuation(sp, geo_l.theta_i), als_hairNumIntersections);
 
                     F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo_l); //< do f_s_direct separately for AOVs
                     F_scatter = (1.0f-directFraction) * T_f * density_front * 
@@ -1246,15 +1259,19 @@ struct HairBsdf
                         AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
                         AiStateSetMsgFlt("als_hairNumIntersections", 0);
                         AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
+                        AiStateSetMsgRGB("als_hairOpacity", AI_RGB_WHITE);
                         AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
                         AiMakeRay(&ray, AI_RAY_SHADOW, &(sg->P), &w_b, d_b, sg);
                         AiTrace(&ray, &scrs);
                         AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
                         AiStateGetMsgRGB("als_T_f", &T_f);
+                        AiStateGetMsgRGB("als_hairOpacity", &als_hairOpacity);
                         AiStateGetMsgRGB("als_sigma_bar_f", &sigma_f);
                     
                         directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
                         occlusion = AI_RGB_WHITE - scrs.opacity;
+
+                        T_f = pow(data->ds->forward_attenuation(sp, geo_b.theta_i), als_hairNumIntersections);
 
                         F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo_b); //< do f_s_direct separately for AOVs
                         F_scatter = (1.0f-directFraction) * T_f * density_front * 
@@ -1462,6 +1479,7 @@ struct HairBsdf
         {
             float als_hairNumIntersections = 0;
             AtRGB T_f = AI_RGB_BLACK;
+            AtRGB als_hairOpacity = AI_RGB_WHITE;
             AtRGB sigma_f = AI_RGB_BLACK;
             sampit = AiSamplerIterator(data->sampler_diffuse, sg);
             AiStateSetMsgInt("als_raytype", ALS_RAY_DUAL);
@@ -1484,6 +1502,7 @@ struct HairBsdf
 
                 AiStateSetMsgFlt("als_hairNumIntersections", 0);
                 AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
+                AiStateSetMsgRGB("als_hairOpacity", AI_RGB_WHITE);
                 AiStateSetMsgRGB("als_sigma_bar_f", AI_RGB_BLACK);
                 AiStateSetMsgFlt("alsPreviousRoughness", 1.0f);
                 bool als_hitHair = false;
@@ -1491,10 +1510,13 @@ struct HairBsdf
                 bool hit = AiTrace(&wi_ray, &scrs);
                 AiStateGetMsgFlt("als_hairNumIntersections", &als_hairNumIntersections);
                 AiStateGetMsgRGB("als_T_f", &T_f);
+                AiStateGetMsgRGB("als_hairOpacity", &als_hairOpacity);
                 AiStateGetMsgRGB("als_sigma_bar_f", &sigma_f);
 
                 float directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
                 AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
+
+                T_f = pow(data->ds->forward_attenuation(sp, geo.theta_i), als_hairNumIntersections);
 
                 AtRGB F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo); //< do f_s_direct separately for AOVs
                 AtRGB F_scatter = (1.0f-directFraction) * T_f * density_front * 
@@ -1837,7 +1859,10 @@ shader_evaluate
             float theta_i = AI_PIOVER2 - sphericalTheta(sg->Rd, hb.U);
 
             AtRGB T_f = hb.data->ds->forward_attenuation(hb.sp, theta_i);
-            //T_f = AI_RGB_WHITE - ((AI_RGB_WHITE - T_f)*opacity); //< modify transmission to account for opacity
+
+            // Simply modifying the T_f term by the opacity here results in a consistent brightness but we lose
+            // saturation. 
+            // T_f = lerp(AI_RGB_WHITE, T_f, maxh(opacity));
             als_T_f *= T_f;
             AiStateSetMsgRGB("als_T_f", als_T_f);
 
