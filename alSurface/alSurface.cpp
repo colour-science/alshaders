@@ -368,7 +368,7 @@ node_loader
 
 node_initialize
 {
-    ShaderData* data = new ShaderData;
+    ShaderData* data = new ShaderData();
     AiNodeSetLocalData(node,data);
     data->diffuse_sampler = NULL;
     data->glossy_sampler = NULL;
