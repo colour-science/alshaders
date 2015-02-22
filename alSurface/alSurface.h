@@ -37,7 +37,6 @@ struct ShaderData
    std::map<AtNode*, float> shadowDensities;
    bool specular1NormalConnected;
    bool specular2NormalConnected;
-   bool lightGroupsIndirect;
    bool standardAovs;
    bool transmitAovs;
    int numLights;

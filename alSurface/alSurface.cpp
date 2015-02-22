@@ -123,8 +123,6 @@ enum alSurfaceParams
     p_transmissionClamp,
     p_transmissionDoDirect,
 
-    p_lightGroupsIndirect,
-
     p_id1,
     p_id2,
     p_id3,
@@ -276,7 +274,6 @@ node_parameters
     AiParameterFLT("transmissionClamp", 0.0f );
     AiParameterBOOL("transmissionDoDirect", false);
 
-    AiParameterBOOL("lightGroupsIndirect", false);
 
     AiParameterRGB("id1", 0.0f, 0.0f, 0.0f);
     AiParameterRGB("id2", 0.0f, 0.0f, 0.0f);
@@ -476,7 +473,6 @@ node_update
         data->shadowDensities[light] = AiNodeGetFlt(light, "shadow_density");
     }
     AiNodeIteratorDestroy(it);
-    data->lightGroupsIndirect = params[p_lightGroupsIndirect].BOOL;
 
     // check whether the normal parameters are connected or not
     data->specular1NormalConnected = AiNodeIsLinked(node, "specular1Normal");
@@ -1121,7 +1117,7 @@ shader_evaluate
     AtRGB* deepGroupPtr = NULL;
     AtRGB result_directGroup[NUM_LIGHT_GROUPS];
     for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
-    bool doDeepGroups = data->lightGroupsIndirect && (!data->standardAovs);
+    bool doDeepGroups = !data->standardAovs;
     bool transmitAovs = data->transmitAovs && (!data->standardAovs) && (!doDeepGroups);
 
     if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
