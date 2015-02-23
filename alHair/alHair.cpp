@@ -1653,20 +1653,20 @@ struct HairBsdf
         if (sg->Rt & AI_RAY_CAMERA)
         {
             AiAOVSetRGB(sg, data->aovs[k_diffuse_color].c_str(), hairColor);
-            if ((result_Pg_direct + result_Pl_direct) != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_diffuse].c_str(), result_Pg_direct + result_Pl_direct);
-            if ((result_Pg_indirect + result_Pl_indirect) != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_diffuse].c_str(), result_Pg_indirect + result_Pl_indirect);
-            if (result_R_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_specular].c_str(), result_R_direct);
-            if (result_R_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_specular].c_str(), result_R_indirect);
-            if (result_TRT_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_specular_2].c_str(), result_TRT_direct + result_TRTg_direct);
-            if (result_TRT_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_specular_2].c_str(), result_TRT_indirect + result_TRTg_indirect);
-            if (result_TRTg_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_glint].c_str(), result_TRTg_direct);
-            if (result_TRTg_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_glint].c_str(), result_TRTg_indirect);
-            if (result_TT_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_transmission].c_str(), result_TT_direct);
-            if (result_TT_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_transmission].c_str(), result_TT_indirect);
-            if (result_Pg_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_global].c_str(), result_Pg_direct);
-            if (result_Pl_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_local].c_str(), result_Pl_direct);
-            if (result_Pg_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_global].c_str(), result_Pg_indirect);
-            if (result_Pl_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_local].c_str(), result_Pl_indirect);
+            AiAOVSetRGB(sg, data->aovs[k_direct_diffuse].c_str(), result_Pg_direct + result_Pl_direct);
+            AiAOVSetRGB(sg, data->aovs[k_indirect_diffuse].c_str(), result_Pg_indirect + result_Pl_indirect);
+            AiAOVSetRGB(sg, data->aovs[k_direct_specular].c_str(), result_R_direct);
+            AiAOVSetRGB(sg, data->aovs[k_indirect_specular].c_str(), result_R_indirect);
+            AiAOVSetRGB(sg, data->aovs[k_direct_specular_2].c_str(), result_TRT_direct + result_TRTg_direct);
+            AiAOVSetRGB(sg, data->aovs[k_indirect_specular_2].c_str(), result_TRT_indirect + result_TRTg_indirect);
+            AiAOVSetRGB(sg, data->aovs[k_direct_glint].c_str(), result_TRTg_direct);
+            AiAOVSetRGB(sg, data->aovs[k_indirect_glint].c_str(), result_TRTg_indirect);
+            AiAOVSetRGB(sg, data->aovs[k_direct_transmission].c_str(), result_TT_direct);
+            AiAOVSetRGB(sg, data->aovs[k_indirect_transmission].c_str(), result_TT_indirect);
+            AiAOVSetRGB(sg, data->aovs[k_direct_global].c_str(), result_Pg_direct);
+            AiAOVSetRGB(sg, data->aovs[k_direct_local].c_str(), result_Pl_direct);
+            AiAOVSetRGB(sg, data->aovs[k_indirect_global].c_str(), result_Pg_indirect);
+            AiAOVSetRGB(sg, data->aovs[k_indirect_local].c_str(), result_Pl_indirect);
 
             assert(isValidColor(result_Pg_direct));
             assert(isValidColor(result_Pg_indirect));
@@ -1695,8 +1695,8 @@ struct HairBsdf
                         tmp = AiNodeGetRGB(sg->Op, id_names[i]);
                     }
 
-                    if (tmp != AI_RGB_BLACK)
-                        AiAOVSetRGB(sg, data->aovs[k_id_1+i].c_str(), tmp);
+                    
+                    AiAOVSetRGB(sg, data->aovs[k_id_1+i].c_str(), tmp);
                 }
             }
 
