@@ -12,6 +12,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <cassert>
 
 //#define DEBUG_LUTS
 #ifdef DEBUG_LUTS
@@ -602,15 +603,19 @@ struct HairBsdf
 
     inline AtRGB bsdf_R(const SctGeo& geo)
     {
-        return rgb(bsdfR(sp.beta_R2*SQR(specular1WidthScale), sp.alpha_R - sp.alpha_R_offset, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        AtRGB result = rgb(bsdfR(sp.beta_R2*SQR(specular1WidthScale), sp.alpha_R - sp.alpha_R_offset, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        assert(isValidColor(result));
+        return result;
     }
 
     inline float pdf_R(const SctGeo& geo)
     {
         float t = geo.theta_h-sp.alpha_R - sp.alpha_R_offset;
-        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_R-B_R))) * (sp.beta_R*specular1WidthScale / (t*t + sp.beta_R2*SQR(specular1WidthScale)));
+        float pdf_theta = (1.0f / (2.0f*std::max(geo.cos_theta_i, 1e-7f)*(A_R-B_R))) * (sp.beta_R*specular1WidthScale / (t*t + sp.beta_R2*SQR(specular1WidthScale)));
         float pdf_phi = geo.cosphi2*0.25f;
-        return pdf_theta * pdf_phi;
+        float pdf = pdf_theta * pdf_phi; 
+        assert(isPositiveReal(pdf));
+        return pdf;
     }
 
     inline AtVector sample_TRT(float u1, float u2)
@@ -625,15 +630,19 @@ struct HairBsdf
 
     inline AtRGB bsdf_TRT(const SctGeo& geo)
     {
-        return rgb(bsdfR(sp.beta_TRT2*SQR(specular2WidthScale), sp.alpha_TRT - sp.alpha_TRT_offset, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        AtRGB result = rgb(bsdfR(sp.beta_TRT2*SQR(specular2WidthScale), sp.alpha_TRT - sp.alpha_TRT_offset, geo.theta_h, geo.cosphi2)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        assert(isValidColor(result));
+        return result;
     }
 
     inline float pdf_TRT(const SctGeo& geo)
     {
         float t = geo.theta_h-sp.alpha_TRT - sp.alpha_TRT_offset;
-        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_R-B_R))) * (sp.beta_TRT*specular2WidthScale / (t*t + sp.beta_TRT2*SQR(specular2WidthScale)));
+        float pdf_theta = (1.0f / (2.0f*std::max(geo.cos_theta_i, 1e-7f)*(A_R-B_R))) * (sp.beta_TRT*specular2WidthScale / (t*t + sp.beta_TRT2*SQR(specular2WidthScale)));
         float pdf_phi = geo.cosphi2*0.25f;
-        return pdf_theta * pdf_phi;
+        float pdf = pdf_theta * pdf_phi; 
+        assert(isPositiveReal(pdf));
+        return pdf;
     }
 
     inline AtVector sample_TRTg(float u1, float u2)
@@ -663,18 +672,22 @@ struct HairBsdf
 
     inline AtRGB bsdf_TRTg(const SctGeo& geo)
     {
-        return rgb(bsdfg(sp.beta_TRT2*SQR(specular2WidthScale), sp.alpha_TRT - sp.alpha_TRT_offset, geo.theta_h, sp.gamma_g, geo.phi, sp.phi_g)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        AtRGB result = rgb(bsdfg(sp.beta_TRT2*SQR(specular2WidthScale), sp.alpha_TRT - sp.alpha_TRT_offset, geo.theta_h, sp.gamma_g, geo.phi, sp.phi_g)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        assert(isValidColor(result));
+        return result;
     }
 
     inline float pdf_TRTg(const SctGeo& geo)
     {   
         float t = geo.theta_h-sp.alpha_TRT - sp.alpha_TRT_offset;
-        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_TRT-B_TRT))) * (sp.beta_TRT*specular2WidthScale / (t*t + sp.beta_TRT2*SQR(specular2WidthScale)));
+        float pdf_theta = (1.0f / (2.0f*std::max(geo.cos_theta_i, 1e-7f)*(A_TRT-B_TRT))) * (sp.beta_TRT*specular2WidthScale / (t*t + sp.beta_TRT2*SQR(specular2WidthScale)));
         float p = fabsf(geo.phi) - sp.phi_g;
         float Cg = atanf((AI_PIOVER2 - sp.phi_g)/sp.gamma_g);
         float Dg = atanf(-sp.phi_g/sp.gamma_g);
         float pdf_phi = (1.0f / (2.0f * (Cg-Dg))) * (sp.gamma_g / (p*p + sp.gamma_g*sp.gamma_g));
-        return pdf_theta * pdf_phi;
+        float pdf = pdf_theta * pdf_phi; 
+        assert(isPositiveReal(pdf));
+        return pdf;
     }
 
     inline AtVector sample_TT(float u1, float u2)
@@ -690,18 +703,22 @@ struct HairBsdf
 
     inline AtRGB bsdf_TT(const SctGeo& geo)
     {
-        return rgb(bsdfTT(sp.beta_TT2*SQR(transmissionWidthScale), sp.alpha_TT - sp.alpha_TT_offset, geo.theta_h, sp.gamma_TT, geo.phi_d)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        AtRGB result = rgb(bsdfTT(sp.beta_TT2*SQR(transmissionWidthScale), sp.alpha_TT - sp.alpha_TT_offset, geo.theta_h, sp.gamma_TT, geo.phi_d)) * geo.cos_theta_i * geo.inv_cos_theta_d2 * AI_ONEOVERPI;
+        assert(isValidColor(result));
+        return result;
     }
 
     inline float pdf_TT(const SctGeo& geo)
     {
         float t = geo.theta_h-sp.alpha_TT - sp.alpha_TT_offset;
-        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_TT-B_TT))) * (sp.beta_TT*transmissionWidthScale / (t*t + sp.beta_TT2*SQR(transmissionWidthScale)));
+        float pdf_theta = (1.0f / (2.0f*std::max(geo.cos_theta_i, 1e-7f)*(A_TT-B_TT))) * (sp.beta_TT*transmissionWidthScale / (t*t + sp.beta_TT2*SQR(transmissionWidthScale)));
         float p = geo.phi-AI_PI;
         float C_TT = 2.0f * atanf(AI_PI/sp.gamma_TT);
         float pdf_phi = (1.0f / C_TT) * (sp.gamma_TT / (p*p + sp.gamma_TT*sp.gamma_TT));
         
-        return pdf_theta * pdf_phi;
+        float pdf = pdf_theta * pdf_phi; 
+        assert(isPositiveReal(pdf));
+        return pdf;
     }
 
     inline AtVector sample_Sb(float u1, float u2)
@@ -717,9 +734,11 @@ struct HairBsdf
     inline float pdf_Sb(const SctGeo& geo)
     {
         float t = geo.theta_h-sp.alpha_R*B_WIDTH_SCALE;
-        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_b-B_b))) * (sp.beta_R*B_WIDTH_SCALE / (t*t + sp.beta_R2*B_WIDTH_SCALE*B_WIDTH_SCALE));
+        float pdf_theta = (1.0f / (2.0f*std::max(geo.cos_theta_i, 1e-7f)*(A_b-B_b))) * (sp.beta_R*B_WIDTH_SCALE / (t*t + sp.beta_R2*B_WIDTH_SCALE*B_WIDTH_SCALE));
         float pdf_phi = geo.cosphi2*0.25f;
-        return pdf_theta * pdf_phi;
+        float pdf = pdf_theta * pdf_phi; 
+        assert(isPositiveReal(pdf));
+        return pdf;
     }
 
     inline AtVector sample_Sf(float u1, float u2)
@@ -736,12 +755,14 @@ struct HairBsdf
     inline float pdf_Sf(const SctGeo& geo)
     {
         float t = geo.theta_h-sp.alpha_TT;
-        float pdf_theta = (1.0f / (2.0f*geo.cos_theta_i*(A_f-B_f))) * (sp.beta_TT*F_WIDTH_SCALE / (t*t + sp.beta_TT2*F_WIDTH_SCALE*F_WIDTH_SCALE));
+        float pdf_theta = (1.0f / (2.0f*std::max(geo.cos_theta_i, 1e-7f)*(A_f-B_f))) * (sp.beta_TT*F_WIDTH_SCALE / (t*t + sp.beta_TT2*F_WIDTH_SCALE*F_WIDTH_SCALE));
         float p = geo.phi-AI_PI;
         float C_TT = 2.0f * atanf(AI_PI/(sp.gamma_TT*F_WIDTH_SCALE));
         float pdf_phi = (1.0f / C_TT) * (sp.gamma_TT*F_WIDTH_SCALE / (p*p + sp.gamma_TT*sp.gamma_TT*F_WIDTH_SCALE*F_WIDTH_SCALE));
         
-        return pdf_theta * pdf_phi;
+        float pdf = pdf_theta * pdf_phi; 
+        assert(isPositiveReal(pdf));
+        return pdf;
     }
 
     static AtVector Hair_Sample_R(const void* brdf_data, float u1, float u2)
@@ -816,6 +837,11 @@ struct HairBsdf
         AtRGB f_TRT = hb->do_glossy ? hb->bsdf_TRT(geo) * kfr[2] * hb->specular2Color : AI_RGB_BLACK;
         AtRGB f_TRTg = hb->do_glossy ? hb->bsdf_TRTg(geo) * kfr[2] * hb->specular2Color * hb->glintStrength : AI_RGB_BLACK;
 
+        assert(isValidColor(f_R));
+        assert(isValidColor(f_TT));
+        assert(isValidColor(f_TRT));
+        assert(isValidColor(f_TRTg));
+
         // Store terms needed for MIS
         if (hb->is_bsdf_sample) 
         {
@@ -882,7 +908,7 @@ struct HairBsdf
         SctGeo geo(*wi, hb->theta_r, hb->phi_r, hb->U, hb->V, hb->W);
 
         float p = (hb->pdf_R(geo) + hb->pdf_TT(geo) + hb->pdf_TRT(geo) + hb->pdf_TRTg(geo))*0.25f;
-
+        assert(isPositiveReal(p));
         if (hb->is_bsdf_sample) 
         {
             hb->pdf_bb = p;
@@ -958,6 +984,11 @@ struct HairBsdf
                     result_TRT_direct += L_l * f_TRT_l;
                     result_TRTg_direct += L_l * f_TRTg_l;
 
+                    assert(isValidColor(result_R_direct));
+                    assert(isValidColor(result_TT_direct));
+                    assert(isValidColor(result_TRT_direct));
+                    assert(isValidColor(result_TRTg_direct));
+
                     if (pdf_bb != 0.0f)
                     {
                         w = powerHeuristic(pdf_bb, pdf_bl);
@@ -966,6 +997,11 @@ struct HairBsdf
                         result_TT_direct += L_b * f_TT_b;
                         result_TRT_direct += L_b * f_TRT_b;
                         result_TRTg_direct += L_b * f_TRTg_b;
+
+                        assert(isValidColor(result_R_direct));
+                        assert(isValidColor(result_TT_direct));
+                        assert(isValidColor(result_TRT_direct));
+                        assert(isValidColor(result_TRTg_direct));
                     }
 
                     // if the light is assigned a valid group number, add this sample's contribution to that light group
@@ -996,6 +1032,11 @@ struct HairBsdf
                     result_TRT_direct += L_l * f_TRT_l;
                     result_TRTg_direct += L_l * f_TRTg_l;
 
+                    assert(isValidColor(result_R_direct));
+                    assert(isValidColor(result_TT_direct));
+                    assert(isValidColor(result_TRT_direct));
+                    assert(isValidColor(result_TRTg_direct));
+
                     if (pdf_bb != 0.0f)
                     {
                         w = powerHeuristic(pdf_bb, pdf_bl);
@@ -1004,6 +1045,11 @@ struct HairBsdf
                         result_TT_direct += L_b * f_TT_b;
                         result_TRT_direct += L_b * f_TRT_b;
                         result_TRTg_direct += L_b * f_TRTg_b;
+
+                        assert(isValidColor(result_R_direct));
+                        assert(isValidColor(result_TT_direct));
+                        assert(isValidColor(result_TRT_direct));
+                        assert(isValidColor(result_TRTg_direct));
                     }
 
                 }
@@ -1027,6 +1073,7 @@ struct HairBsdf
                 float sin_theta_i = sqrtf(MAX(1.0f - SQR(cos_theta_i), 0.0f));
 
                 AtRGB L = sg->Li * sg->we * diffuse_strength * sin_theta_i * hairColor * (1.0f / (4*AI_PI));
+                assert(isValidColor(L));
                 result_Pl_direct += L;
 
                 // if the light is assigned a valid group number, add this sample's contribution to that light group
@@ -1099,10 +1146,12 @@ struct HairBsdf
                     occlusion = AI_RGB_WHITE - scrs.opacity;
 
                     T_f = pow(data->ds->forward_attenuation(sp, geo_l.theta_i), als_hairNumIntersections);
-
+                    assert(AiIsFinite(T_f));
                     F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo_l); //< do f_s_direct separately for AOVs
-                    F_scatter = (1.0f-directFraction) * T_f * density_front * 
-                                        (data->ds->f_s_scatter(sp, geo_l, sigma_f) + AI_PI * density_back * data->ds->f_back_scatter(sp, geo_l, sigma_f));  
+                    F_scatter = (1.0f-directFraction) * T_f * density_front * (data->ds->f_s_scatter(sp, geo_l, sigma_f) + AI_PI * density_back * data->ds->f_back_scatter(sp, geo_l, sigma_f));  
+                
+                    assert(isValidColor(F_direct));
+                    assert(isValidColor(F_scatter));
                 }
                 else
                 {
@@ -1126,6 +1175,13 @@ struct HairBsdf
                 result_TT_direct += f_TT;
                 result_TRT_direct += f_TRT;
                 result_TRTg_direct += f_TRTg;
+
+                assert(isValidColor(result_Pl_direct));
+                assert(isValidColor(result_Pg_direct));
+                assert(isValidColor(result_R_direct));
+                assert(isValidColor(result_TT_direct));
+                assert(isValidColor(result_TRT_direct));
+                assert(isValidColor(result_TRTg_direct));
 
                 // if the light is assigned a valid group number, add this sample's contribution to that light group
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
@@ -1156,10 +1212,13 @@ struct HairBsdf
                         occlusion = AI_RGB_WHITE - scrs.opacity;
 
                         T_f = pow(data->ds->forward_attenuation(sp, geo_b.theta_i), als_hairNumIntersections);
-
+                        assert(AiIsFinite(T_f));
                         F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo_b); //< do f_s_direct separately for AOVs
                         F_scatter = (1.0f-directFraction) * T_f * density_front * 
                                             (data->ds->f_s_scatter(sp, geo_b, sigma_f) + AI_PI * density_back * data->ds->f_back_scatter(sp, geo_b, sigma_f));
+                    
+                        assert(isValidColor(F_direct));
+                        assert(isValidColor(F_scatter));
                     }
                     else
                     {
@@ -1183,6 +1242,13 @@ struct HairBsdf
                     result_TT_direct += f_TT;
                     result_TRT_direct += f_TRT;
                     result_TRTg_direct += f_TRTg;
+
+                    assert(isValidColor(result_Pl_direct));
+                    assert(isValidColor(result_Pg_direct));
+                    assert(isValidColor(result_R_direct));
+                    assert(isValidColor(result_TT_direct));
+                    assert(isValidColor(result_TRT_direct));
+                    assert(isValidColor(result_TRTg_direct));
 
                     // if the light is assigned a valid group number, add this sample's contribution to that light group
                     if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
@@ -1229,10 +1295,13 @@ struct HairBsdf
                     occlusion = AI_RGB_WHITE - scrs.opacity;
 
                     T_f = pow(data->ds->forward_attenuation(sp, geo_l.theta_i), als_hairNumIntersections);
-
+                    assert(AiIsFinite(T_f));
                     F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo_l); //< do f_s_direct separately for AOVs
                     F_scatter = (1.0f-directFraction) * T_f * density_front * 
                                         (data->ds->f_s_scatter(sp, geo_l, sigma_f) + AI_PI * density_back * data->ds->f_back_scatter(sp, geo_l, sigma_f));  
+                
+                    assert(isValidColor(F_direct));
+                    assert(isValidColor(F_scatter));
                 }
                 else
                 {
@@ -1248,6 +1317,13 @@ struct HairBsdf
                 result_TT_direct += L * directFraction * f_TT_l;
                 result_TRT_direct += L * directFraction * f_TRT_l;
                 result_TRTg_direct += L * directFraction * f_TRTg_l;
+
+                assert(isValidColor(result_Pl_direct));
+                assert(isValidColor(result_Pg_direct));
+                assert(isValidColor(result_R_direct));
+                assert(isValidColor(result_TT_direct));
+                assert(isValidColor(result_TRT_direct));
+                assert(isValidColor(result_TRTg_direct));
 
                 if (pdf_bb != 0.0f)
                 {
@@ -1272,10 +1348,13 @@ struct HairBsdf
                         occlusion = AI_RGB_WHITE - scrs.opacity;
 
                         T_f = pow(data->ds->forward_attenuation(sp, geo_b.theta_i), als_hairNumIntersections);
-
+                        assert(AiIsFinite(T_f));
                         F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo_b); //< do f_s_direct separately for AOVs
                         F_scatter = (1.0f-directFraction) * T_f * density_front * 
                                             (data->ds->f_s_scatter(sp, geo_b, sigma_f) + AI_PI * density_back * data->ds->f_back_scatter(sp, geo_b, sigma_f));
+                    
+                        assert(isValidColor(F_direct));
+                        assert(isValidColor(F_scatter));
                     }
                     else
                     {
@@ -1292,6 +1371,13 @@ struct HairBsdf
                     result_TT_direct += L * directFraction * f_TT_b;
                     result_TRT_direct += L * directFraction * f_TRT_b;
                     result_TRTg_direct += L * directFraction * f_TRTg_b;
+
+                    assert(isValidColor(result_Pl_direct));
+                    assert(isValidColor(result_Pg_direct));
+                    assert(isValidColor(result_R_direct));
+                    assert(isValidColor(result_TT_direct));
+                    assert(isValidColor(result_TRT_direct));
+                    assert(isValidColor(result_TRTg_direct));
                 }
 
             } // END light loop
@@ -1395,6 +1481,7 @@ struct HairBsdf
                 bool hit = AiTrace(&wi_ray, &scrs);
 
                 result_Pl_indirect += scrs.color * hairColor * diffuseIndirectStrength;
+                assert(isValidColor(result_Pl_indirect));
                 if (deepGroupPtr && hit)
                 {
                     for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
@@ -1517,7 +1604,7 @@ struct HairBsdf
                 AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
 
                 T_f = pow(data->ds->forward_attenuation(sp, geo.theta_i), als_hairNumIntersections);
-
+                assert(AiIsFinite(T_f));
                 AtRGB F_direct = directFraction * density_back*data->ds->f_back_direct(sp, geo); //< do f_s_direct separately for AOVs
                 AtRGB F_scatter = (1.0f-directFraction) * T_f * density_front * 
                                     (data->ds->f_s_scatter(sp, geo, sigma_f) + AI_PI * density_back * data->ds->f_back_scatter(sp, geo, sigma_f));
@@ -1580,6 +1667,20 @@ struct HairBsdf
             if (result_Pl_direct != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_local].c_str(), result_Pl_direct);
             if (result_Pg_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_global].c_str(), result_Pg_indirect);
             if (result_Pl_indirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_indirect_local].c_str(), result_Pl_indirect);
+
+            assert(isValidColor(result_Pg_direct));
+            assert(isValidColor(result_Pg_indirect));
+            assert(isValidColor(result_Pl_direct));
+            assert(isValidColor(result_Pl_indirect));
+            assert(isValidColor(result_R_direct));
+            assert(isValidColor(result_R_indirect));
+            assert(isValidColor(result_TT_direct));
+            assert(isValidColor(result_TT_indirect));
+            assert(isValidColor(result_TRT_direct));
+            assert(isValidColor(result_TRT_indirect));
+            assert(isValidColor(result_TRTg_direct));
+            assert(isValidColor(result_TRTg_indirect));
+
             for (int i=0; i < NUM_ID_AOVS; ++i)
             {
                 AtRGB tmp;

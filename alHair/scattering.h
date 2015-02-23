@@ -4,6 +4,7 @@
 #include <sstream>
 #include <ai.h>
 #include "alUtil.h"
+#include <cassert>
 
 #define PIOVER4 0.7853981633974483f
 #define ONEOVER4PI 0.07957747154594767
@@ -124,7 +125,7 @@ struct SctGeo
     {
         wi = w;
         theta_i = (AI_PIOVER2 - sphericalTheta(wi, U));
-        cos_theta_i = cosf(theta_i);
+        cos_theta_i = std::max(cosf(theta_i), 0.0f);
         theta_h = (theta_r+theta_i)*0.5f;
         phi_i = sphericalPhi(wi, V, W);
         phi_d = phi_r - phi_i;
@@ -198,7 +199,7 @@ struct ScatteringLut
         for (float ti = 0; ti < DS_NUMSTEPS; ++ti)
         {
             float theta_i = ti * theta_i_step - AI_PIOVER2;
-            float cos_theta_i = cosf(theta_i);
+            float cos_theta_i = std::max(cosf(theta_i), 0.0f);
             for (float tr = 0; tr < DS_NUMSTEPS; ++tr)
             {
                 float theta_r = tr * theta_r_step - AI_PIOVER2;
@@ -230,6 +231,10 @@ struct ScatteringLut
                     // }
                     alpha_f[idx] += (f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT);
                     beta_f[idx] += (f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2);
+
+                    assert(AiIsFinite(a_bar_f[idx]));
+                    assert(AiIsFinite(alpha_f[idx]));
+                    assert(AiIsFinite(beta_f[idx]));
                 }
 
                 // backward scattering
@@ -253,17 +258,24 @@ struct ScatteringLut
                     // }
                     alpha_b[idx] += (f_R*alpha_R + f_TT*alpha_TT + f_TRT*alpha_TRT);
                     beta_b[idx] += (f_R*beta_R2 + f_TT*beta_TT2 + f_TRT*beta_TRT2);
+
+                    assert(AiIsFinite(a_bar_b[idx]));
+                    assert(AiIsFinite(alpha_b[idx]));
+                    assert(AiIsFinite(beta_b[idx]));
                 }
             }
 
-            alpha_f[idx] /= a_bar_f[idx];
-            alpha_b[idx] /= a_bar_b[idx];
+            if (a_bar_f[idx] != 0.0f) alpha_f[idx] /= a_bar_f[idx];
+            if (a_bar_b[idx] != 0.0f) alpha_b[idx] /= a_bar_b[idx];
 
-            beta_f[idx] /= a_bar_f[idx];
-            beta_b[idx] /= a_bar_b[idx];
+            if (a_bar_f[idx] != 0.0f) beta_f[idx] /= a_bar_f[idx];
+            if (a_bar_b[idx] != 0.0f) beta_b[idx] /= a_bar_b[idx];
 
             a_bar_f[idx] *= 2.0f * AI_ONEOVERPI * theta_r_step * phi_step;
             a_bar_b[idx] *= 2.0f * AI_ONEOVERPI * theta_r_step * phi_step;
+
+            assert(isPositiveReal(a_bar_f[idx]));
+            assert(isPositiveReal(a_bar_b[idx]));
 
             idx++;
         }
@@ -291,8 +303,13 @@ struct ScatteringLut
 
             // [2] eq. (17)
             // Average longitudinal variance for up to 3 scattering events
-            sigma_b[i] = (1.0f + 0.7f*af2) * (a_bar_b[i]*sqrtf(2.0f*beta_f[i] + beta_b[i]) + ab3*sqrtf(2.0f*beta_f[i] + 3.0f*beta_b[i])) / (a_bar_b[i] + ab3 * (2.0f*beta_f[i] + 3.0f*beta_b[i]));
+            float sigma_n = (1.0f + 0.7f*af2) * (a_bar_b[i]*sqrtf(2.0f*beta_f[i] + beta_b[i]) + ab3*sqrtf(2.0f*beta_f[i] + 3.0f*beta_b[i]));
+            float sigma_d = (a_bar_b[i] + ab3 * (2.0f*beta_f[i] + 3.0f*beta_b[i]));
+            sigma_d != 0.0f ? sigma_b[i] = sigma_n / sigma_d : sigma_b[i] = 0.0f;
             sigma_b[i] = std::min(sigma_b[i], 1.0f);
+
+            assert(AiIsFinite(delta_b[i]));
+            assert(AiIsFinite(sigma_b[i]));
         }
 
         idx = 0;
@@ -467,6 +484,7 @@ struct DualScattering
         result.g = lg->get_a_bar_f(theta);
         result.b = lb->get_a_bar_f(theta);
 
+        assert(isValidColor(result));
         return result;
     }
 
@@ -483,6 +501,7 @@ struct DualScattering
         result.g = lg->get_A_b(geo.theta_d) * g(geo.theta_h - lg->get_delta_b(geo.theta_d), lg->get_sigma_b(geo.theta_d)) * c;
         result.b = lb->get_A_b(geo.theta_d) * g(geo.theta_h - lb->get_delta_b(geo.theta_d), lb->get_sigma_b(geo.theta_d)) * c;
 
+        assert(isValidColor(result));
         return result;
     }
 
@@ -499,6 +518,7 @@ struct DualScattering
         result.g = lg->get_A_b(geo.theta_d) * g(geo.theta_h - lg->get_delta_b(geo.theta_d), lg->get_sigma_b(geo.theta_d) + sigma_f2.g) * c;
         result.b = lb->get_A_b(geo.theta_d) * g(geo.theta_h - lb->get_delta_b(geo.theta_d), lb->get_sigma_b(geo.theta_d) + sigma_f2.b) * c;
 
+        assert(isValidColor(result));
         return result;
     }
 
@@ -525,6 +545,7 @@ struct DualScattering
                     + g(geo.theta_h - sp.alpha_TT, sp.beta_TT2 + sigma_f2.b) * lr->N_G_TT[ng_idx]
                     + g(geo.theta_h - sp.alpha_TRT, sp.beta_TRT2 + sigma_f2.b) * lr->N_G_TRT[ng_idx];
 
+        assert(isValidColor(result));
         return result * geo.inv_cos_theta_d2;
     }
 
