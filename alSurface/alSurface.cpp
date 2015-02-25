@@ -955,7 +955,7 @@ shader_evaluate
 
     // build a local frame for sampling
     AtVector U, V;
-    if (!AiV3isZero(sg->dPdu))
+    if (!AiV3isZero(sg->dPdu) && AiV3Exists(sg->dPdu))
     {
         // we have valid a valid dPdu derivative, construct V 
         AtVector Utmp = AiV3Normalize(sg->dPdu);
@@ -973,7 +973,7 @@ shader_evaluate
 
     if (specular1Normal != sg->Nf)
     {
-        if (!AiV3isZero(sg->dPdu))
+        if (!AiV3isZero(sg->dPdu) && AiV3Exists(sg->dPdu))
         {
             // we have valid a valid dPdu derivative, construct V 
             AtVector Utmp = AiV3Normalize(sg->dPdu);
@@ -988,7 +988,7 @@ shader_evaluate
 
     if (specular2Normal != sg->Nf)
     {
-        if (!AiV3isZero(sg->dPdu))
+        if (!AiV3isZero(sg->dPdu) && AiV3Exists(sg->dPdu))
         {
             // we have valid a valid dPdu derivative, construct V 
             AtVector Utmp = AiV3Normalize(sg->dPdu);
