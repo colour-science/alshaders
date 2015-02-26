@@ -10,6 +10,7 @@
 struct ShaderData
 {
    AtSampler* diffuse_sampler;
+   AtSampler* sss_sampler;
    AtSampler* glossy_sampler;
    AtSampler* glossy2_sampler;
    AtSampler* refraction_sampler;

@@ -12,6 +12,7 @@
 #include "tea.h"
 #include "fresnel.h"
 #include "microfacet.h"
+#include "sss.h"
 
 #define RR_BOUNCES
 
@@ -368,6 +369,7 @@ node_initialize
     ShaderData* data = new ShaderData();
     AiNodeSetLocalData(node,data);
     data->diffuse_sampler = NULL;
+    data->sss_sampler = NULL;
     data->glossy_sampler = NULL;
     data->glossy2_sampler = NULL;
     data->refraction_sampler = NULL;
@@ -387,6 +389,7 @@ node_finish
         ShaderData* data = (ShaderData*) AiNodeGetLocalData(node);
 
         AiSamplerDestroy(data->diffuse_sampler);
+        AiSamplerDestroy(data->sss_sampler);
         AiSamplerDestroy(data->glossy_sampler);
         AiSamplerDestroy(data->glossy2_sampler);
         AiSamplerDestroy(data->refraction_sampler);
@@ -446,14 +449,17 @@ node_update
     data->diffuse_samples2 = SQR(data->GI_diffuse_samples);
     data->GI_refraction_samples = AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT;
     data->refraction_samples2 = SQR(data->GI_refraction_samples);
+    int sss_samples = AiNodeGetInt(options, "sss_bssrdf_samples");
 
     // setup samples
     AiSamplerDestroy(data->diffuse_sampler);
+    AiSamplerDestroy(data->sss_sampler);
     AiSamplerDestroy(data->glossy_sampler);
     AiSamplerDestroy(data->glossy2_sampler);
     AiSamplerDestroy(data->refraction_sampler);
     AiSamplerDestroy(data->backlight_sampler);
     data->diffuse_sampler = AiSampler(data->GI_diffuse_samples, 2);
+    data->sss_sampler = AiSampler(sss_samples, 2);
     data->glossy_sampler = AiSampler(data->GI_glossy_samples, 2);
     data->glossy2_sampler = AiSampler(data->GI_glossy_samples, 2);
     data->refraction_sampler = AiSampler(data->GI_refraction_samples, 2);
@@ -779,9 +785,20 @@ shader_evaluate
     int als_raytype = ALS_RAY_UNDEFINED;
     AiStateGetMsgInt("als_raytype", &als_raytype);
 
+    DiffusionMessageData* diffusion_msgdata = NULL; 
+
+    if (als_raytype == ALS_RAY_SSS)
+    {
+        // compute the diffusion sample
+        AiStateGetMsgPtr("als_dmd", (void**)&diffusion_msgdata);
+        if (!diffusion_msgdata) return;
+
+        alsIrradiateSample(sg, diffusion_msgdata);
+        return;
+    }
     // if it's a shadow ray, handle shadow colouring through absorption
     // algorithm based heavily on the example in Kettle
-    if (sg->Rt & AI_RAY_SHADOW)
+    else if (sg->Rt & AI_RAY_SHADOW)
     {
         // if the object is transmissive and
         AtRGB outOpacity = AI_RGB_WHITE;
@@ -859,6 +876,13 @@ shader_evaluate
         AiStateSetMsgPnt("alsPreviousIntersection", sg->P);
         sg->out_opacity = outOpacity * opacity;
         return;
+    }
+    else if (sg->Rt & AI_RAY_CAMERA)
+    {
+        // allocate diffusion sample storage
+        diffusion_msgdata = (DiffusionMessageData*)AiShaderGlobalsQuickAlloc(sg, sizeof(DiffusionMessageData));
+        memset(diffusion_msgdata, 0, sizeof(DiffusionMessageData));
+        AiStateSetMsgPtr("als_dmd", diffusion_msgdata);
     }
 
     if (maxh(opacity) < IMPORTANCE_EPS) 
@@ -2296,6 +2320,7 @@ shader_evaluate
     result_emission = emissionColor * kti * kti2;
 
     // Diffusion multiple scattering
+#if 0
     if (do_sss)
     {
         AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
@@ -2327,6 +2352,12 @@ shader_evaluate
 
         result_sss *= diffuseColor;
     }
+#else
+    if (do_sss)
+    {
+        result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssDensityScale, U, V) * diffuseColor;
+    }
+#endif
 
     // blend sss and diffuse
     result_diffuseDirect *= (1-sssMix);
