@@ -2356,7 +2356,7 @@ shader_evaluate
 #else
     if (do_sss)
     {
-        result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssDensityScale) * diffuseColor;
+        result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssRadiusColor, sssRadius, sssDensityScale) * diffuseColor;
     }
 #endif
 

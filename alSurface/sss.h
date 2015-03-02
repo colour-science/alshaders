@@ -46,12 +46,14 @@ struct ScatteringParamsDiffusion
 
 struct DiffusionSample
 {
-    AtVector P;
-    AtVector N;
-    AtVector Ng;
-    AtRGB R;
-    AtRGB L;
-
+    AtVector P;     //< sampled point
+    AtVector N;     //< normal at sample
+    AtVector Ng;    //< geometric normal at sample
+    AtRGB R;        //< diffusion result at sample
+    AtRGB E;        //< irradiance at sample
+    AtVector S;     //< vector from shading point to sample
+    float r;        //< distance from shading point to sample
+    float b;        //< bounce attenuation factor
 };
 
 struct DiffusionMessageData
@@ -129,15 +131,27 @@ void alsIrradiateSample(AtShaderGlobals* sg, DiffusionMessageData* dmd)
         // can't use MIS here because Arnold cocks up the shadowing ;__;
         // result_diffuse += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
     }
-    dmd->samples[dmd->sss_depth].L = result_diffuse;
 
-    dmd->samples[dmd->sss_depth].N = sg->N;
-    dmd->samples[dmd->sss_depth].Ng = sg->Ng;
-    dmd->samples[dmd->sss_depth].P = sg->P;
+    result_diffuse += AiIndirectDiffuse(&sg->N, sg);
+
+    DiffusionSample& samp = dmd->samples[dmd->sss_depth];
+
+    samp.E = result_diffuse;
+    samp.S = sg->P - dmd->Po;
+    samp.r = AiV3Length(samp.S);
+    if (!AiColorIsZero(result_diffuse))
+    {
+        samp.R = dipole(samp.r, dmd->No, sg->N, dmd->sp);
+        samp.b = 1.0f - (1.0f - AiV3Dot(sg->N, dmd->No) * (1.0f - AiV3Dot(dmd->No, AiV3Normalize(samp.S))))*0.25f;
+    }
+
+    samp.N = sg->N;
+    samp.Ng = sg->Ng;
+    samp.P = sg->P;
 
     dmd->sss_depth++;
 
-    dmd->maxdist -= AiV3Length(sg->P - dmd->Po);
+    dmd->maxdist -= samp.r;
 
     if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
     {
@@ -151,24 +165,28 @@ void alsIrradiateSample(AtShaderGlobals* sg, DiffusionMessageData* dmd)
     }
 }
 
-AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* sss_sampler, float sssDensityScale)
+AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* sss_sampler, 
+                     AtRGB sssRadiusColor, float sssRadius, float sssDensityScale)
 {
     AtVector U, V;
     AiBuildLocalFrameShirley(&U, &V, &sg->Ng);
 
     // Get scattering parameters from supplied scattering colour and mfp
-    // AtRGB sigma_s_prime, sigma_a;
-    // alphaInversion(sssRadiusColor, sssRadius, sigma_s_prime, sigma_a);
-    AtRGB sigma_s_prime = rgb(1.09f, 1.59f, 1.79f);
-    AtRGB sigma_a = rgb(0.013, 0.07f, 0.145f);
+    AtRGB sigma_s_prime, sigma_a;
+    alphaInversion(sssRadiusColor, sssRadius, sigma_s_prime, sigma_a);
+    // AtRGB sigma_s_prime = rgb(1.09f, 1.59f, 1.79f);
+    // AtRGB sigma_a = rgb(0.013, 0.07f, 0.145f);
 
     // The 10 / AI_PIOVER2 factor is there to roughly match the behaviour of the cubic. And if you're
     // going to use a magic number it should always involve pi somewhere...
-    sigma_s_prime *= sssDensityScale*20.0f / AI_PIOVER2;
-    sigma_a *= sssDensityScale*20.0f / AI_PIOVER2;
+    // sigma_s_prime *= sssDensityScale*20.0f / AI_PIOVER2;
+    // sigma_a *= sssDensityScale*20.0f / AI_PIOVER2;
+    sigma_s_prime *= sssDensityScale * AI_PIOVER2;
+    sigma_a *= sssDensityScale * AI_PIOVER2;
     float eta = 1.4f;
 
     ScatteringParamsDiffusion sp(sigma_s_prime, sigma_a, 0.7f, eta);
+    dmd->sp = sp;
 
     // Find the max component of the mfp
     float l = maxh(sp.zr);
@@ -306,11 +324,11 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
         if (AiTrace(&wi_ray, &scrs))
         {            
             for (int i=0; i < dmd->sss_depth; ++i)
-            {
-                AtRGB Rd;
-                
-                AtVector R = dmd->samples[i].P - sg->P;
-                float r = AiV3Length(R);
+            {                
+                if (AiColorIsZero(dmd->samples[i].E)) continue;
+
+                // AtVector R = dmd->samples[i].P - sg->P;
+                // float r = AiV3Length(R);
                 
                 float geom = fabsf(AiV3Dot(dmd->samples[i].Ng, Wsss));
                 float geom_1 = fabsf(AiV3Dot(dmd->samples[i].Ng, Usss));
@@ -319,14 +337,14 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
                 // if (data->numExtraPoles == 0) Rd = dipole(r, sg->N, dmd->samples[i].N, sp);
                 // else Rd = multipole(r, sg->N, dmd->samples[i].N, sp, .1f, data->numExtraPoles);
 
-                Rd = dipole(r, sg->N, dmd->samples[i].N, sp);
+                // AtRGB Rd = dipole(r, sg->N, dmd->samples[i].N, sp);
 
-                float r_u_1 = AiV3Dot(R, Usss_1);
-                float r_v_1 = AiV3Dot(R, Vsss_1);
+                float r_u_1 = AiV3Dot(dmd->samples[i].S, Usss_1);
+                float r_v_1 = AiV3Dot(dmd->samples[i].S, Vsss_1);
                 float r_1 = sqrtf(SQR(r_u_1)+SQR(r_v_1));
 
-                float r_u_2 = AiV3Dot(R, Usss_2);
-                float r_v_2 = AiV3Dot(R, Vsss_2);
+                float r_u_2 = AiV3Dot(dmd->samples[i].S, Usss_2);
+                float r_v_2 = AiV3Dot(dmd->samples[i].S, Vsss_2);
                 float r_2 = sqrtf(SQR(r_u_2)+SQR(r_v_2));
 
                 float pdf_disk_a0_c0 = diffusionPdf(r_disk, sigma) * geom;
@@ -352,8 +370,8 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
                     pdf_disk_a2_c1 * c_disk_1 * c_axis_2 +
                     pdf_disk_a2_c2 * c_disk_2 * c_axis_2;
 
-                result_sss += dmd->samples[i].L * Rd * r_disk / pdf_sum;
-                Rd_sum += Rd * r_disk / pdf_sum;
+                result_sss += dmd->samples[i].E * dmd->samples[i].R * dmd->samples[i].b * r_disk / pdf_sum;
+                // Rd_sum += dmd->samples[i].R * dmd->samples[i].b * r_disk / pdf_sum;
                 
             }
             
@@ -361,9 +379,9 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
     }
     float w = AiSamplerGetSampleInvCount(sampit) * 0.5f;
     result_sss *= w;
-    Rd_sum *= w;
+    // Rd_sum *= w;
 
-    // if (minh(Rd_sum) != 0.0f) result_sss *= (sp.albedo/Rd_sum); //< Peter Kutz's dark-edge normalization trick
+    // if (!AiColorIsZero(Rd_sum)) result_sss *= (sp.albedo/Rd_sum); //< Peter Kutz's dark-edge normalization trick
     result_sss /= sp.albedo;
     sg->fi = old_fi;
 
