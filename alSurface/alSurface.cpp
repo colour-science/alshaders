@@ -785,7 +785,7 @@ shader_evaluate
     int als_raytype = ALS_RAY_UNDEFINED;
     AiStateGetMsgInt("als_raytype", &als_raytype);
 
-    DiffusionMessageData* diffusion_msgdata = NULL; 
+    DirectionalMessageData* diffusion_msgdata = NULL; 
 
     if (als_raytype == ALS_RAY_SSS)
     {
@@ -881,8 +881,8 @@ shader_evaluate
     else if (sg->Rt & AI_RAY_CAMERA)
     {
         // allocate diffusion sample storage
-        diffusion_msgdata = (DiffusionMessageData*)AiShaderGlobalsQuickAlloc(sg, sizeof(DiffusionMessageData));
-        memset(diffusion_msgdata, 0, sizeof(DiffusionMessageData));
+        diffusion_msgdata = (DirectionalMessageData*)AiShaderGlobalsQuickAlloc(sg, sizeof(DirectionalMessageData));
+        memset(diffusion_msgdata, 0, sizeof(DirectionalMessageData));
         AiStateSetMsgPtr("als_dmd", diffusion_msgdata);
     }
 
@@ -2356,7 +2356,7 @@ shader_evaluate
 #else
     if (do_sss)
     {
-        result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssRadiusColor, sssRadius, sssDensityScale) * diffuseColor;
+        result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssRadiusColor, sssRadius, sssDensityScale);// * diffuseColor;
     }
 #endif
 
