@@ -794,6 +794,7 @@ shader_evaluate
         if (!diffusion_msgdata) return;
 
         alsIrradiateSample(sg, diffusion_msgdata);
+        sg->out_opacity = AI_RGB_WHITE;
         return;
     }
     // if it's a shadow ray, handle shadow colouring through absorption
@@ -2355,7 +2356,7 @@ shader_evaluate
 #else
     if (do_sss)
     {
-        result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssDensityScale, U, V) * diffuseColor;
+        result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssDensityScale) * diffuseColor;
     }
 #endif
 

@@ -2,29 +2,9 @@
 
 #include <ai.h>
 #include "alUtil.h"
+#include <cassert>
 
 #define SSS_MAX_SAMPLES 8
-
-struct DiffusionSample
-{
-    AtVector P;
-    AtVector N;
-    AtVector Ng;
-    AtRGB R;
-    AtRGB L;
-
-};
-
-struct DiffusionMessageData
-{
-    int sss_depth;
-    float maxdist;
-    AtVector Po;
-    AtVector U;
-    AtVector V;
-    AtShaderGlobals* sg;
-    DiffusionSample samples[SSS_MAX_SAMPLES];
-};
 
 struct ScatteringParamsDiffusion
 {
@@ -62,6 +42,29 @@ struct ScatteringParamsDiffusion
     AtRGB alpha_prime;
     AtRGB albedo;
     AtRGB albedo_norm;
+};
+
+struct DiffusionSample
+{
+    AtVector P;
+    AtVector N;
+    AtVector Ng;
+    AtRGB R;
+    AtRGB L;
+
+};
+
+struct DiffusionMessageData
+{
+    int sss_depth;
+    float maxdist;
+    AtVector Po;
+    AtVector No;
+    AtVector U;
+    AtVector V;
+    ScatteringParamsDiffusion sp;
+    AtShaderGlobals* sg;
+    DiffusionSample samples[SSS_MAX_SAMPLES];
 };
 
 inline float diffusionSampleDisk(float u1, float u2, float sigma, float& dx, float& dy, float& r)
@@ -114,9 +117,19 @@ inline AtRGB dipole(float r, const AtVector& N, const AtVector& Nx, const Scatte
 void alsIrradiateSample(AtShaderGlobals* sg, DiffusionMessageData* dmd)
 {
     AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
-    dmd->samples[dmd->sss_depth].L = AiDirectDiffuse(&sg->N, sg);
-    // dmd->samples[dmd->sss_depth].L = AI_RGB_WHITE;
-    // sg->out_opacity = AI_RGB_WHITE;
+
+    // void* brdf_data = AiOrenNayarMISCreateData(sg, 0.0f);
+    // sg->fhemi = false;
+    AiLightsPrepare(sg);
+    AtRGB result_diffuse = AI_RGB_BLACK;
+    AtUInt32 old_fi = sg->fi;
+    while (AiLightsGetSample(sg))
+    {
+        result_diffuse += sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
+        // can't use MIS here because Arnold cocks up the shadowing ;__;
+        // result_diffuse += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
+    }
+    dmd->samples[dmd->sss_depth].L = result_diffuse;
 
     dmd->samples[dmd->sss_depth].N = sg->N;
     dmd->samples[dmd->sss_depth].Ng = sg->Ng;
@@ -132,14 +145,15 @@ void alsIrradiateSample(AtShaderGlobals* sg, DiffusionMessageData* dmd)
         
         AtRay ray;
         AtScrSample scrs;
+        sg->Rr--;
         AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
         AiTrace(&ray, &scrs);
     }
 }
 
-AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* sss_sampler, float sssDensityScale, 
-                    AtVector U, AtVector V)
+AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* sss_sampler, float sssDensityScale)
 {
+    AtVector U, V;
     AiBuildLocalFrameShirley(&U, &V, &sg->Ng);
 
     // Get scattering parameters from supplied scattering colour and mfp
@@ -156,17 +170,6 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
 
     ScatteringParamsDiffusion sp(sigma_s_prime, sigma_a, 0.7f, eta);
 
-    /*
-    static bool first = true;
-    if (first)
-    {
-        std::cerr << sp << std::endl;
-        first = false;
-    }
-    */
-
-    
-
     // Find the max component of the mfp
     float l = maxh(sp.zr);
 
@@ -178,7 +181,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
     AtRGB result_sss = AI_RGB_BLACK;
     
     // Set our maximum sample distance to be some multiple of the mfp
-    float R_max = l * 100.0f;
+    float R_max = l * 25.0f;
     
     AtRGB Rd_sum = AI_RGB_BLACK;
     int samplesTaken = 0;
@@ -250,7 +253,6 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
         float pdf_disk_a0_c0, pdf_disk_1, pdf_disk_2;
         float r_disk;
         float c_disk = 1.0f, c_disk_1, c_disk_2;
-        //sp.albedo_norm = rgb(0.3333333f);
         float sigma, sigma_1, sigma_2;
         if (samples[1] < sp.albedo_norm.r)
         {
@@ -260,8 +262,6 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
             sigma_2 = sp.sigma_tr.b;
             pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], sigma, dx, dy, r_disk);
 
-            //pdf_disk_1 = diffusionPdf(r_disk, sp.sigma_tr.g);
-            //pdf_disk_2 = diffusionPdf(r_disk, sp.sigma_tr.b);
             c_disk = sp.albedo_norm.r;
             c_disk_1 = sp.albedo_norm.g;
             c_disk_2 = sp.albedo_norm.b;
@@ -274,8 +274,6 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
             sigma_1 = sp.sigma_tr.r;
             sigma_2 = sp.sigma_tr.b;
             pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], sp.sigma_tr.g, dx, dy, r_disk);
-            //pdf_disk_1 = diffusionPdf(r_disk, sp.sigma_tr.b);
-            //pdf_disk_2 = diffusionPdf(r_disk, sp.sigma_tr.r);
             c_disk = sp.albedo_norm.g;
             c_disk_1 = sp.albedo_norm.r;
             c_disk_2 = sp.albedo_norm.b;
@@ -288,35 +286,23 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
             sigma_1 = sp.sigma_tr.g;
             sigma_2 = sp.sigma_tr.r;
             pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], sp.sigma_tr.b, dx, dy, r_disk);   
-            //pdf_disk_1 = diffusionPdf(r_disk, sp.sigma_tr.r);
-            //pdf_disk_2 = diffusionPdf(r_disk, sp.sigma_tr.g);
             c_disk = sp.albedo_norm.b;
             c_disk_1 = sp.albedo_norm.g;
             c_disk_2 = sp.albedo_norm.r;
         }
-        //c_disk = c_disk_1 = c_disk_2 = 1.0f;
-        //c_axis = c_axis_1 = c_axis_2 = 1.0f;
-
-        //pdf_disk = diffusionSampleDisk(samples[0], samples[1], sp.sigma_tr.r, dx, dy, r_disk);
-        //c_disk = 1.0f;
-        //concentricSampleDisk(samples[0], samples[1], dx, dy);
-        //dx *= R_max;
-        //dy *= R_max;
-
-        //ci *= pdf;
 
         AtVector dir = -Wsss;
-        float dz = R_max;//safe_sqrtf(1.0f - (dx*dx+dy*dy));
-        //AtPoint origin = sg->P + Wsss*(R_max*dz) + Usss * dx * R_max + Vsss * dy * R_max;
+        float dz = R_max;
         AtPoint origin = sg->P + Wsss*(dz*0.5f) + Usss * dx + Vsss * dy;
-        float maxdist = R_max;
+        float maxdist = R_max * 2.0f;
 
-        AiMakeRay(&wi_ray, AI_RAY_SUBSURFACE, &origin, &dir, AI_BIG, sg);
+        AiMakeRay(&wi_ray, AI_RAY_SUBSURFACE, &origin, &dir, maxdist, sg);
 
         AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
         dmd->sss_depth = 0;
         dmd->maxdist = R_max;
         dmd->Po = sg->P;
+        dmd->No = sg->N;
         if (AiTrace(&wi_ray, &scrs))
         {            
             for (int i=0; i < dmd->sss_depth; ++i)
@@ -325,7 +311,6 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
                 
                 AtVector R = dmd->samples[i].P - sg->P;
                 float r = AiV3Length(R);
-                //if (0)//r > R_max || maxh(sssSamplePtr[i].L) < IMPORTANCE_EPS)
                 
                 float geom = fabsf(AiV3Dot(dmd->samples[i].Ng, Wsss));
                 float geom_1 = fabsf(AiV3Dot(dmd->samples[i].Ng, Usss));
@@ -368,10 +353,8 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
                     pdf_disk_a2_c2 * c_disk_2 * c_axis_2;
 
                 result_sss += dmd->samples[i].L * Rd * r_disk / pdf_sum;
-                // Rd_sum += Rd * r_disk / pdf_sum;
+                Rd_sum += Rd * r_disk / pdf_sum;
                 
-                // result_sss += dmd->samples[i].L;
-                // result_sss += AI_RGB_WHITE;
             }
             
         }
@@ -380,7 +363,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
     result_sss *= w;
     Rd_sum *= w;
 
-    //if (minh(Rd_sum) != 0.0f) result_sss *= (sp.albedo/Rd_sum); //< Peter Kutz's dark-edge normalization trick
+    // if (minh(Rd_sum) != 0.0f) result_sss *= (sp.albedo/Rd_sum); //< Peter Kutz's dark-edge normalization trick
     result_sss /= sp.albedo;
     sg->fi = old_fi;
 
@@ -397,4 +380,3 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
 
     return result_sss;
 }
-
