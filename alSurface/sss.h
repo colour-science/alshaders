@@ -115,21 +115,25 @@ inline AtRGB dipole(float r, const AtVector& N, const AtVector& Nx, const Scatte
     return dipoleProfileRd(r, sp.sigma_tr, sp.zr, sp.zv) * sp.alpha_prime;
 }
 
+#define SSS_IRRAD_USE_MIS
 
 void alsIrradiateSample(AtShaderGlobals* sg, DiffusionMessageData* dmd)
 {
     AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
-
-    // void* brdf_data = AiOrenNayarMISCreateData(sg, 0.0f);
+#ifdef SSS_IRRAD_USE_MIS
+    void* brdf_data = AiOrenNayarMISCreateData(sg, 0.0f);
+#endif
     // sg->fhemi = false;
     AiLightsPrepare(sg);
     AtRGB result_diffuse = AI_RGB_BLACK;
     AtUInt32 old_fi = sg->fi;
     while (AiLightsGetSample(sg))
     {
+#ifdef SSS_IRRAD_USE_MIS
+        result_diffuse += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
+#else
         result_diffuse += sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
-        // can't use MIS here because Arnold cocks up the shadowing ;__;
-        // result_diffuse += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
+#endif
     }
 
     result_diffuse += AiIndirectDiffuse(&sg->N, sg);
@@ -181,8 +185,8 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DiffusionMessageData* dmd, AtSampler* ss
     // going to use a magic number it should always involve pi somewhere...
     // sigma_s_prime *= sssDensityScale*20.0f / AI_PIOVER2;
     // sigma_a *= sssDensityScale*20.0f / AI_PIOVER2;
-    sigma_s_prime *= sssDensityScale * AI_PIOVER2;
-    sigma_a *= sssDensityScale * AI_PIOVER2;
+    sigma_s_prime *= sssDensityScale * AI_PIOVER2 * 0.5;
+    sigma_a *= sssDensityScale * AI_PIOVER2 * 0.5;
     float eta = 1.4f;
 
     ScatteringParamsDiffusion sp(sigma_s_prime, sigma_a, 0.7f, eta);
