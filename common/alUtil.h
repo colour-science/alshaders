@@ -251,6 +251,15 @@ inline AtVector uniformSampleSphere(float u1, float u2)
     return v;
 }
 
+inline AtVector uniformSampleHemisphere(float u1, float u2) {
+    float y = u1;
+    float r = sqrtf(MAX(0.f, 1.f - y*y));
+    float phi = 2 * M_PI * u2;
+    float x = r * cosf(phi);
+    float z = r * sinf(phi);
+    return AiVector(x, y, z);
+}
+
 inline float uniformConePdf(float cosThetaMax) 
 {
     return 1.f / (2.f * AI_PI * (1.f - cosThetaMax));
@@ -554,6 +563,7 @@ inline AtRGB bssrdfbrdf( const AtRGB& _alpha_prime )
 }
 
 void alphaInversion( const AtRGB& scatterColour, float scatterDist, AtRGB& sigma_s_prime_, AtRGB& sigma_a_ );
+void alphaInversion(float sc, float& sigma_s_prime_, float& sigma_a_ );
 float alpha1_3(float x);
 inline AtRGB alpha1_3(const AtRGB& c)
 {

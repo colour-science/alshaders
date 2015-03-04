@@ -64,6 +64,7 @@ enum alSurfaceParams
 
     // sss
     p_sssMix,
+    p_sssMode,
     p_sssRadius,
     p_sssWeight1,
     p_sssRadiusColor,
@@ -200,6 +201,20 @@ enum alSurfaceParams
     p_bump
 };
 
+enum SssMode
+{
+    SSSMODE_CUBIC=0,
+    SSSMODE_DIFFUSION=1,
+    SSSMODE_DIRECTIONAL
+};
+
+const char* SssModeNames[] = {
+    "cubic",
+    "diffusion",
+    "directional",
+    NULL
+};
+
 node_parameters
 {
     AiParameterFLT("diffuseStrength", 1.0f );
@@ -214,6 +229,7 @@ node_parameters
     AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
     AiParameterFLT("sssMix", 0.0f );
+    AiParameterEnum("sssMode", SSSMODE_CUBIC, SssModeNames);
     AiParameterFLT("sssRadius", 1.5f );
     AiParameterFLT("sssWeight1", 1.0f  );
     AiParameterRGB("sssRadiusColor", .439, .156, .078);
@@ -380,6 +396,7 @@ node_initialize
     data->perm_table_spec1 = NULL;
     data->perm_table_spec2 = NULL;
     data->perm_table_backlight = NULL;
+
 };
 
 node_finish
@@ -699,6 +716,8 @@ node_update
     // see if they're alCel and their input is connected to us
     // for now just assume we're connected
     data->cel_connected = true;
+
+    data->sssMode = params[p_sssMode].INT;
 };
 
 
@@ -793,7 +812,7 @@ shader_evaluate
         AiStateGetMsgPtr("als_dmd", (void**)&diffusion_msgdata);
         if (!diffusion_msgdata) return;
 
-        alsIrradiateSample(sg, diffusion_msgdata);
+        alsIrradiateSample(sg, diffusion_msgdata, data->sssMode == SSSMODE_DIRECTIONAL);
         sg->out_opacity = AI_RGB_WHITE;
         return;
     }
@@ -2321,44 +2340,46 @@ shader_evaluate
     result_emission = emissionColor * kti * kti2;
 
     // Diffusion multiple scattering
-#if 0
     if (do_sss)
     {
-        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
-#if AI_VERSION_MAJOR_NUM > 0
-        // if the user has only specified one layer (default) then just use that
-        if (sssWeight2 == 0.0f && sssWeight3 == 0.0f)
+        if (data->sssMode == SSSMODE_CUBIC)
         {
-            AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
-            float r[3] = {radius.r, radius.g, radius.b};
-            result_sss = AiBSSRDFCubic(sg, r, weights, 3);
+            AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
+#if AI_VERSION_MAJOR_NUM > 0
+            // if the user has only specified one layer (default) then just use that
+            if (sssWeight2 == 0.0f && sssWeight3 == 0.0f)
+            {
+                AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+                float r[3] = {radius.r, radius.g, radius.b};
+                result_sss = AiBSSRDFCubic(sg, r, weights, 3);
+            }
+            else
+            {
+                //AtRGB r1 = sssRadius*sssRadiusColor/sssDensityScale;
+                AtRGB r2 = max(rgb(0.0001), sssRadius2*sssRadiusColor2/sssDensityScale);
+                AtRGB r3 = max(rgb(0.0001), sssRadius3*sssRadiusColor3/sssDensityScale);
+                AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
+                                    AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
+                                    AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
+                float r[9] = {  radius.r, radius.g, radius.b,
+                                r2.r, r2.g, r2.b,
+                                r3.r, r3.g, r3.b};
+                result_sss = AiBSSRDFCubic(sg, r, weights, 9);
+            }
+#else
+            result_sss = AiSSSPointCloudLookupCubic(sg, radius);
+#endif
+            //result_sss += AiIndirectDiffuse(&sg->N, sg);
         }
         else
-        {
-            //AtRGB r1 = sssRadius*sssRadiusColor/sssDensityScale;
-            AtRGB r2 = max(rgb(0.0001), sssRadius2*sssRadiusColor2/sssDensityScale);
-            AtRGB r3 = max(rgb(0.0001), sssRadius3*sssRadiusColor3/sssDensityScale);
-            AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
-                                AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
-                                AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
-            float r[9] = {  radius.r, radius.g, radius.b,
-                            r2.r, r2.g, r2.b,
-                            r3.r, r3.g, r3.b};
-            result_sss = AiBSSRDFCubic(sg, r, weights, 9);
+        {  
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssRadiusColor, sssRadius, 
+                                      sssDensityScale, data->sssMode == SSSMODE_DIRECTIONAL);
         }
-#else
-        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor;
-#endif
-        //result_sss += AiIndirectDiffuse(&sg->N, sg);
 
         result_sss *= diffuseColor;
     }
-#else
-    if (do_sss)
-    {
-        result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssRadiusColor, sssRadius, sssDensityScale);// * diffuseColor;
-    }
-#endif
+
 
     // blend sss and diffuse
     result_diffuseDirect *= (1-sssMix);
