@@ -805,15 +805,17 @@ shader_evaluate
     AiStateGetMsgInt("als_raytype", &als_raytype);
 
     DirectionalMessageData* diffusion_msgdata = NULL; 
+    AiStateGetMsgPtr("als_dmd", (void**)&diffusion_msgdata);
 
     if (als_raytype == ALS_RAY_SSS)
     {
         // compute the diffusion sample
-        AiStateGetMsgPtr("als_dmd", (void**)&diffusion_msgdata);
-        if (!diffusion_msgdata) return;
+        assert(diffusion_msgdata);
 
         alsIrradiateSample(sg, diffusion_msgdata, data->sssMode == SSSMODE_DIRECTIONAL);
         sg->out_opacity = AI_RGB_WHITE;
+        // reset ray type just to be safe
+        AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
         return;
     }
     // if it's a shadow ray, handle shadow colouring through absorption
@@ -897,7 +899,7 @@ shader_evaluate
         sg->out_opacity = outOpacity * opacity;
         return;
     }
-    else if (sg->Rt & AI_RAY_CAMERA)
+    else if (!diffusion_msgdata)
     {
         // allocate diffusion sample storage
         diffusion_msgdata = (DirectionalMessageData*)AiShaderGlobalsQuickAlloc(sg, sizeof(DirectionalMessageData));
@@ -920,6 +922,9 @@ shader_evaluate
 #endif
     // Evaluate bump;
     //AtRGB bump = AiShaderEvalParamRGB(p_bump);
+
+    // reset ray type just to be safe
+    AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
 
     // Initialize parameter temporaries
     // TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays

@@ -99,7 +99,7 @@ struct ScatteringParamsDirectional
     AtRGB albedo;
 
     static float _albedo_lut[SSS_ALBEDO_LUT_SZ];
-    // static float _albedo_lut_d[SSS_ALBEDO_LUT_SZ];
+    static float _albedo_lut_d[SSS_ALBEDO_LUT_SZ];
 };
 
 struct DiffusionSample
@@ -294,7 +294,7 @@ inline AtRGB integrateDirectional(const ScatteringParamsDirectional& sp, float r
     return result;
 }
 
-#define SSS_INT_HEMI_SAMPLES 100
+#define SSS_INT_HEMI_SAMPLES 30
 inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, float rmax, int steps)
 {
     float rstep = 1.0f / float(steps);
@@ -320,11 +320,11 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
 
         AtPoint Pi = AiPoint(rs, 0.0f, 0.0f);
 
-        for (float u1 = hemi_step/2; u1 < 1.0f; ++u1)
+        for (float u1 = hemi_step/2; u1 < 1.0f; u1 += hemi_step)
         {
-            for (float u2 = hemi_step/2; u2 < 1.0f; ++u2)
+            for (float u2 = hemi_step/2; u2 < 1.0f; u2 += hemi_step)
             {
-                AtVector wi = uniformSampleHemisphere(u1, u2);
+                AtVector wi = cosineSampleHemisphere(u1, u2);
 
                 result += directionalDipole(Pi, up, Po, up, wi, up, sp) * rs / pdf;
 

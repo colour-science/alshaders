@@ -76,7 +76,7 @@ int main()
    }
 
    printf("};\n");
-/*
+
    printf("_albedo_lut_d[SSS_ALBEDO_LUT_SZ] = {");
    count = 0;
    for (float f=step/2; f < 1.0f; f += step)
@@ -99,7 +99,7 @@ int main()
    }
 
    printf("};\n");
-*/
+
    return 0;
 
 }
