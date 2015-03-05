@@ -181,7 +181,6 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     {
         AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
         
-        
         sg->Rr--;
         AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
         AiTrace(&ray, &scrs);
@@ -275,7 +274,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         }
 
         AtVector Pd;
-        float pdf_disk_a0_c0, pdf_disk_1, pdf_disk_2;
+        // float pdf_disk_a0_c0, pdf_disk_1, pdf_disk_2;
         float r_disk;
         float c_disk = 1.0f, c_disk_1, c_disk_2;
         float sigma, sigma_1, sigma_2;
@@ -285,7 +284,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
             sigma = dmd->sp.sigma_tr.r;
             sigma_1 = dmd->sp.sigma_tr.g;
             sigma_2 = dmd->sp.sigma_tr.b;
-            pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], sigma, dx, dy, r_disk);
+            diffusionSampleDisk(samples[0], samples[1], sigma, dx, dy, r_disk);
 
             c_disk = dmd->sp.albedo_norm.r;
             c_disk_1 = dmd->sp.albedo_norm.g;
@@ -298,7 +297,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
             sigma = dmd->sp.sigma_tr.g;
             sigma_1 = dmd->sp.sigma_tr.r;
             sigma_2 = dmd->sp.sigma_tr.b;
-            pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], dmd->sp.sigma_tr.g, dx, dy, r_disk);
+            diffusionSampleDisk(samples[0], samples[1], dmd->sp.sigma_tr.g, dx, dy, r_disk);
             c_disk = dmd->sp.albedo_norm.g;
             c_disk_1 = dmd->sp.albedo_norm.r;
             c_disk_2 = dmd->sp.albedo_norm.b;
@@ -310,7 +309,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
             sigma = dmd->sp.sigma_tr.b;
             sigma_1 = dmd->sp.sigma_tr.g;
             sigma_2 = dmd->sp.sigma_tr.r;
-            pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], dmd->sp.sigma_tr.b, dx, dy, r_disk);   
+            diffusionSampleDisk(samples[0], samples[1], dmd->sp.sigma_tr.b, dx, dy, r_disk);   
             c_disk = dmd->sp.albedo_norm.b;
             c_disk_1 = dmd->sp.albedo_norm.g;
             c_disk_2 = dmd->sp.albedo_norm.r;
