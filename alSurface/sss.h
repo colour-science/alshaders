@@ -339,6 +339,6 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
     return result;
 }
 
-void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, bool directional);
+void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, AtVector U, AtVector V, bool directional);
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
                      AtRGB sssRadiusColor, float sssRadius, float sssDensityScale, bool directional);

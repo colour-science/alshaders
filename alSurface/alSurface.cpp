@@ -804,6 +804,54 @@ shader_evaluate
     int als_raytype = ALS_RAY_UNDEFINED;
     AiStateGetMsgInt("als_raytype", &als_raytype);
 
+    // build a local frame for sampling
+    AtVector U, V;
+    if (!AiV3isZero(sg->dPdu) && AiV3Exists(sg->dPdu))
+    {
+        // we have valid a valid dPdu derivative, construct V 
+        AtVector Utmp = AiV3Normalize(sg->dPdu);
+        V = AiV3Normalize(AiV3Cross(sg->Nf, Utmp));
+        U = AiV3Cross(V, sg->Nf);
+    }
+    else
+    {
+        AiBuildLocalFramePolar(&U, &V, &sg->Nf);
+    }
+
+        // if this is a camera ray, prepare the temporary storage for deep groups
+    AtRGB* deepGroupPtr = NULL;
+    AtRGB result_directGroup[NUM_LIGHT_GROUPS];
+    for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
+    bool doDeepGroups = !data->standardAovs;
+    bool transmitAovs = data->transmitAovs && (!data->standardAovs) && (!doDeepGroups);
+
+    if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
+    {
+        // if this is a camera ray allocate the group storage
+        deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+        memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+        AiStateSetMsgPtr("als_deepGroupPtr", deepGroupPtr);
+    }
+    else if (doDeepGroups)
+    {
+        // secondary ray hit - get the pointer from the state
+        // if the pointer hasn't been set we're being called from a BSDF that doesn't have deep group support
+        // so don't try and do it or we'll be in (crashy) trouble!
+        if (!AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr)) doDeepGroups = false;
+    }
+
+    AtRGB* transmittedAovPtr = NULL;
+    if (transmitAovs && (sg->Rt & AI_RAY_CAMERA))
+    {
+        transmittedAovPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_AOVs);
+        memset(transmittedAovPtr, 0, sizeof(AtRGB)*NUM_AOVs);
+        AiStateSetMsgPtr("als_transmittedAovPtr", transmittedAovPtr);
+    }
+    else if (transmitAovs)
+    {
+        if (!AiStateGetMsgPtr("als_transmittedAovPtr", (void**)&transmittedAovPtr)) transmitAovs = false;
+    }
+
     DirectionalMessageData* diffusion_msgdata = NULL; 
     AiStateGetMsgPtr("als_dmd", (void**)&diffusion_msgdata);
 
@@ -812,7 +860,7 @@ shader_evaluate
         // compute the diffusion sample
         assert(diffusion_msgdata);
 
-        alsIrradiateSample(sg, diffusion_msgdata, data->sssMode == SSSMODE_DIRECTIONAL);
+        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->sssMode == SSSMODE_DIRECTIONAL);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
         AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
@@ -1002,20 +1050,6 @@ shader_evaluate
     roughness2 = std::max(0.000001f, roughness2);
     //transmissionRoughness = std::max(0.000001f, transmissionRoughness);
 
-    // build a local frame for sampling
-    AtVector U, V;
-    if (!AiV3isZero(sg->dPdu) && AiV3Exists(sg->dPdu))
-    {
-        // we have valid a valid dPdu derivative, construct V 
-        AtVector Utmp = AiV3Normalize(sg->dPdu);
-        V = AiV3Normalize(AiV3Cross(sg->Nf, Utmp));
-        U = AiV3Cross(V, sg->Nf);
-    }
-    else
-    {
-        AiBuildLocalFramePolar(&U, &V, &sg->Nf);
-    }
-
     // rotated frames for anisotropy
     AtVector U1 = U, U2 = U;
     AtVector V1 = V, V2 = V;
@@ -1167,40 +1201,6 @@ shader_evaluate
 
     // Decide whether to calculate shadow groups or not.
     bool doShadowGroups = (sg->Rt & AI_RAY_CAMERA);
-
-    // if this is a camera ray, prepare the temporary storage for deep groups
-    AtRGB* deepGroupPtr = NULL;
-    AtRGB result_directGroup[NUM_LIGHT_GROUPS];
-    for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
-    bool doDeepGroups = !data->standardAovs;
-    bool transmitAovs = data->transmitAovs && (!data->standardAovs) && (!doDeepGroups);
-
-    if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-    {
-        // if this is a camera ray allocate the group storage
-        deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
-        memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
-        AiStateSetMsgPtr("als_deepGroupPtr", deepGroupPtr);
-    }
-    else if (doDeepGroups)
-    {
-        // secondary ray hit - get the pointer from the state
-        // if the pointer hasn't been set we're being called from a BSDF that doesn't have deep group support
-        // so don't try and do it or we'll be in (crashy) trouble!
-        if (!AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr)) doDeepGroups = false;
-    }
-
-    AtRGB* transmittedAovPtr = NULL;
-    if (transmitAovs && (sg->Rt & AI_RAY_CAMERA))
-    {
-        transmittedAovPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_AOVs);
-        memset(transmittedAovPtr, 0, sizeof(AtRGB)*NUM_AOVs);
-        AiStateSetMsgPtr("als_transmittedAovPtr", transmittedAovPtr);
-    }
-    else if (transmitAovs)
-    {
-        if (!AiStateGetMsgPtr("als_transmittedAovPtr", (void**)&transmittedAovPtr)) transmitAovs = false;
-    }
 
     // Accumulator for transmission integrated according to the specular1 brdf. Will be used to attenuate diffuse,
     // glossy2, sss and transmission

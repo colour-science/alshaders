@@ -95,7 +95,8 @@ A(2.05736f)
     }
 }
 
-void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, bool directional)
+void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
+                        AtVector U, AtVector V, bool directional)
 {
     AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
     DiffusionSample& samp = dmd->samples[dmd->sss_depth];
@@ -123,8 +124,48 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, bool d
 
     if (!directional)
         samp.Rd += result_diffuse * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
-    
-    samp.Rd += AiIndirectDiffuse(&sg->N, sg) * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);    
+
+    // samp.Rd += AiIndirectDiffuse(&sg->N, sg) * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
+    AtRGB result_indirect = AI_RGB_BLACK;
+    AtSamplerIterator* sampit = AiSamplerIterator(diffuse_sampler, sg);
+    float samples[2];
+    AtRay ray;
+    AtScrSample scrs;
+    AiMakeRay(&ray, AI_RAY_DIFFUSE, &sg->P, &sg->N, AI_BIG, sg);
+    while (AiSamplerGetSample(sampit, samples))
+    {
+        float stheta = sqrtf(float(samples[0]));
+        float phi = float(AI_PITIMES2 * samples[1]);
+        ray.dir.x = stheta * cosf(phi);
+        ray.dir.y = stheta * sinf(phi);
+        ray.dir.z = sqrtf(1.0f - float(samples[0]));
+        AiV3RotateToFrame(ray.dir, U, V, sg->N);
+
+        bool hit = AiTrace(&ray, &scrs);
+
+        if (directional)
+        {
+            result_indirect += scrs.color * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp);
+        }
+        else
+        {
+            result_indirect += scrs.color;
+        }
+        
+    }
+
+    // TODO: this is guaranteed to be 1 in every case, right?
+    // result_indirect *= AiSamplerGetSampleInvCount(sampit);
+
+    if (directional)
+    {
+        samp.Rd += result_indirect;
+    }
+    else
+    {
+        samp.Rd += result_indirect * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
+    }
+        
 
     samp.S = sg->P - dmd->Po;
     samp.r = AiV3Length(samp.S);
@@ -140,8 +181,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, bool d
     {
         AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
         
-        AtRay ray;
-        AtScrSample scrs;
+        
         sg->Rr--;
         AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
         AiTrace(&ray, &scrs);
