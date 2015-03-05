@@ -2374,7 +2374,6 @@ shader_evaluate
 #else
             result_sss = AiSSSPointCloudLookupCubic(sg, radius);
 #endif
-            //result_sss += AiIndirectDiffuse(&sg->N, sg);
         }
         else
         {  

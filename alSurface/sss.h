@@ -209,7 +209,8 @@ inline float Sp_d(const AtVector& x, const AtVector& w, const float r, const AtV
     const float t2 = 3.0f * D[j] * s_tr_r_one * AiV3Dot(w, n);
     const float t3 = (s_tr_r_one + 3.0f * D[j] * (3.0f * s_tr_r_one + s_tr_r * s_tr_r) / r_sqr * x_dot_w) * AiV3Dot(x, n);
 
-    return t0 * (Cp * t1 - Ce * (t2 - t3));
+    const float Sp = t0 * (Cp * t1 - Ce * (t2 - t3));
+    return std::max(Sp, 0.0f);
 }
 
 inline float directionalDipoleRd(AtPoint xi, AtVector ni, AtPoint xo, AtVector no, 
@@ -243,12 +244,12 @@ inline float directionalDipoleRd(AtPoint xi, AtVector ni, AtPoint xo, AtVector n
     }
 
     AtVector xoxv = xo - (xi + ni_s * (2.0f * A * de[j]));
-    float dv = AiV3Length(xoxv);
+    const float dv = AiV3Length(xoxv);
 
-    float result = Sp_d(xoxi, wr, dr, no, sigma_tr, D, C_phi_inv, C_phi, C_E, j) 
-                 - Sp_d(xoxv, wv, dv, no, sigma_tr, D, C_phi_inv, C_phi, C_E, j);
-
-    return std::max(0.0f, result);
+    const float real = Sp_d(xoxi, wr, dr, no, sigma_tr, D, C_phi_inv, C_phi, C_E, j);
+    const float virt = Sp_d(xoxv, wv, dv, no, sigma_tr, D, C_phi_inv, C_phi, C_E, j);
+    // assert(real >= virt);
+    return std::max(0.0f, real - virt);
 }
 
 inline AtRGB directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no, AtVector wi, AtVector wo, 

@@ -21,11 +21,6 @@ A(2.05736f)
     float apsum = alpha_prime.r + alpha_prime.g + alpha_prime.b;
     albedo_norm = alpha_prime / apsum;
 
-    // AtRGB sq = sqrt(3.0f * (AI_RGB_WHITE - alpha_prime));
-    // albedo = alpha_prime * 0.5f * (AI_RGB_WHITE + fast_exp(-A*sq*4.0f/3.0f)) * fast_exp(-sq);
-
-
-
     D = (2*sigma_t_prime) / (3*SQR(sigma_t_prime));
     sigma_tr = sqrt(sigma_a / D);
     de = 2.131 * D / sqrt(alpha_prime);
@@ -61,7 +56,8 @@ A(2.05736f)
     sigma_s_prime *= scale * AI_PI * 2.5;
     sigma_a *= scale * AI_PI * 2.5;
 
-    // AtRGB sigma_s = sigma_s_prime/(1.0f-g);
+    // TODO: because of the way the scattering coefficients are derived, g has a severe effect. For now we'll just not
+    // expose it and leave it at 0, but we should probably investigate and alternative mapping that gives saner coeffs.
     AtRGB sigma_s = sigma_s_prime;
     sigma_s_prime /= (1.0f - g);
 
@@ -128,19 +124,10 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, bool d
     if (!directional)
         samp.Rd += result_diffuse * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
     
-    samp.Rd += AiIndirectDiffuse(&sg->N, sg) * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
-
-    // printf("samp.Rd: (%f, %f, %f)\n", samp.Rd.r, samp.Rd.g, samp.Rd.b);
-    
+    samp.Rd += AiIndirectDiffuse(&sg->N, sg) * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);    
 
     samp.S = sg->P - dmd->Po;
     samp.r = AiV3Length(samp.S);
-    if (!AiColorIsZero(result_diffuse))
-    {
-        // samp.R = dipole(samp.r, dmd->No, sg->N, dmd->sp);
-        samp.b = 1.0f ;//- (1.0f - AiV3Dot(sg->N, dmd->No) * (1.0f - AiV3Dot(dmd->No, AiV3Normalize(samp.S))))*0.25f;
-    }
-
     samp.N = sg->N;
     samp.Ng = sg->Ng;
     samp.P = sg->P;
@@ -167,44 +154,11 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     AtVector U, V;
     AiBuildLocalFrameShirley(&U, &V, &sg->Ng);
 
-    // Get scattering parameters from supplied scattering colour and mfp
-    // AtRGB sigma_s_prime, sigma_a;
-#if 1 
-    // alphaInversion(sssRadiusColor, sssRadius, sigma_s_prime, sigma_a);
-    // sigma_s_prime *= sssDensityScale / sssRadius * AI_PI;
-    // sigma_a *= sssDensityScale / sssRadius * AI_PI;
-#else
-    sigma_s_prime = rgb(1.09f, 1.59f, 1.79f);
-    sigma_a = rgb(0.013, 0.07f, 0.145f);
-
-    // The 10 / AI_PIOVER2 factor is there to roughly match the behaviour of the cubic. And if you're
-    // going to use a magic number it should always involve pi somewhere...
-    sigma_s_prime *= sssDensityScale*20.0f / AI_PIOVER2;
-    sigma_a *= sssDensityScale*20.0f / AI_PIOVER2;
-#endif    
-    // float eta = 1.3f;
-
-    // ScatteringParamsDirectional sp(sigma_s_prime, sigma_a, 0.0f);
-    ScatteringParamsDirectional sp(sssRadiusColor, sssDensityScale/sssRadius, 0.0f, true, directional);
-    dmd->sp = sp;
-#if 1
-    // static bool first = true;
-    // if (0)
-    // {
-    //     printf("alpha_prime: (%f, %f, %f)\n", sp.alpha_prime.r, sp.alpha_prime.g, sp.alpha_prime.b);
-    //     printf("de: (%f, %f, %f)\n", sp.de.r, sp.de.g, sp.de.b);
-    //     printf("D: (%f, %f, %f)\n", sp.D.r, sp.D.g, sp.D.b);
-    //     printf("sigma_s_prime: (%f, %f, %f)\n", sigma_s_prime.r, sigma_s_prime.g, sigma_s_prime.b);
-    //     printf("sigma_a: (%f, %f, %f)\n", sigma_a.r, sigma_a.g, sigma_a.b);
-    //     printf("sigma_t_prime: (%f, %f, %f)\n", sp.sigma_t_prime.r, sp.sigma_t_prime.g, sp.sigma_t_prime.b);
-    //     AtRGB st = exp( - sp.sigma_t_prime * .002f);
-    //     printf("st: (%f, %f, %f)\n", st.r, st.g, st.b);
-    //     first = false;
-    // }
-#endif 
+    sssRadiusColor = clamp(sssRadiusColor, rgb(0.001f), AI_RGB_WHITE);
+    dmd->sp = ScatteringParamsDirectional(sssRadiusColor, sssDensityScale/sssRadius, 0.0f, true, directional);
 
     // Find the max component of the mfp
-    float l = maxh(sp.zr);
+    float l = maxh(dmd->sp.zr);
 
     // trick Arnold into thinking we're shooting from a different face than we actually are so he doesn't ignore intersections
     AtUInt32 old_fi = sg->fi;
@@ -214,9 +168,6 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     
     // Set our maximum sample distance to be some multiple of the mfp
     float R_max = l * SSS_MAX_RADIUS;
-    // sp.albedo = integrateDirectional(sp, R_max, 50);
-    // sp.albedo = directionalNorm(sssRadiusColor);
-    // sp.albedo = AI_RGB_WHITE;
     
     AtRGB Rd_sum = AI_RGB_BLACK;
     int samplesTaken = 0;
@@ -227,8 +178,6 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     dmd->wo = -sg->Rd;
     while (AiSamplerGetSample(sampit, samples))
     {
-        // TODO: replace with a better sampling scheme
-        //wi_ray.dir = uniformSampleSphere(samples[0], samples[1]);
         float dx, dy;
 
         AtVector Wsss, Usss, Vsss, Usss_1, Vsss_1, Usss_2, Vsss_2;
@@ -290,41 +239,41 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         float r_disk;
         float c_disk = 1.0f, c_disk_1, c_disk_2;
         float sigma, sigma_1, sigma_2;
-        if (samples[1] < sp.albedo_norm.r)
+        if (samples[1] < dmd->sp.albedo_norm.r)
         {
-            samples[1] /= sp.albedo_norm.r;
-            sigma = sp.sigma_tr.r;
-            sigma_1 = sp.sigma_tr.g;
-            sigma_2 = sp.sigma_tr.b;
+            samples[1] /= dmd->sp.albedo_norm.r;
+            sigma = dmd->sp.sigma_tr.r;
+            sigma_1 = dmd->sp.sigma_tr.g;
+            sigma_2 = dmd->sp.sigma_tr.b;
             pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], sigma, dx, dy, r_disk);
 
-            c_disk = sp.albedo_norm.r;
-            c_disk_1 = sp.albedo_norm.g;
-            c_disk_2 = sp.albedo_norm.b;
+            c_disk = dmd->sp.albedo_norm.r;
+            c_disk_1 = dmd->sp.albedo_norm.g;
+            c_disk_2 = dmd->sp.albedo_norm.b;
         }
-        else if (samples[1] < (sp.albedo_norm.r + sp.albedo_norm.g))
+        else if (samples[1] < (dmd->sp.albedo_norm.r + dmd->sp.albedo_norm.g))
         {
-            samples[1] -= sp.albedo_norm.r;
-            samples[1] /= sp.albedo_norm.g;
-            sigma = sp.sigma_tr.g;
-            sigma_1 = sp.sigma_tr.r;
-            sigma_2 = sp.sigma_tr.b;
-            pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], sp.sigma_tr.g, dx, dy, r_disk);
-            c_disk = sp.albedo_norm.g;
-            c_disk_1 = sp.albedo_norm.r;
-            c_disk_2 = sp.albedo_norm.b;
+            samples[1] -= dmd->sp.albedo_norm.r;
+            samples[1] /= dmd->sp.albedo_norm.g;
+            sigma = dmd->sp.sigma_tr.g;
+            sigma_1 = dmd->sp.sigma_tr.r;
+            sigma_2 = dmd->sp.sigma_tr.b;
+            pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], dmd->sp.sigma_tr.g, dx, dy, r_disk);
+            c_disk = dmd->sp.albedo_norm.g;
+            c_disk_1 = dmd->sp.albedo_norm.r;
+            c_disk_2 = dmd->sp.albedo_norm.b;
         }
         else
         {
             samples[1] = 1.0f - samples[1];
-            samples[1] /= sp.albedo_norm.b;
-            sigma = sp.sigma_tr.b;
-            sigma_1 = sp.sigma_tr.g;
-            sigma_2 = sp.sigma_tr.r;
-            pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], sp.sigma_tr.b, dx, dy, r_disk);   
-            c_disk = sp.albedo_norm.b;
-            c_disk_1 = sp.albedo_norm.g;
-            c_disk_2 = sp.albedo_norm.r;
+            samples[1] /= dmd->sp.albedo_norm.b;
+            sigma = dmd->sp.sigma_tr.b;
+            sigma_1 = dmd->sp.sigma_tr.g;
+            sigma_2 = dmd->sp.sigma_tr.r;
+            pdf_disk_a0_c0 = diffusionSampleDisk(samples[0], samples[1], dmd->sp.sigma_tr.b, dx, dy, r_disk);   
+            c_disk = dmd->sp.albedo_norm.b;
+            c_disk_1 = dmd->sp.albedo_norm.g;
+            c_disk_2 = dmd->sp.albedo_norm.r;
         }
 
         AtVector dir = -Wsss;
@@ -380,19 +329,14 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
                     pdf_disk_a2_c1 * c_disk_1 * c_axis_2 +
                     pdf_disk_a2_c2 * c_disk_2 * c_axis_2;
 
-                // result_sss += dmd->samples[i].E * dmd->samples[i].R * dmd->samples[i].b * r_disk / pdf_sum;
-                result_sss += dmd->samples[i].Rd * r_disk / pdf_sum;
-                // Rd_sum += dmd->samples[i].R * dmd->samples[i].b * r_disk / pdf_sum;
-                
+                result_sss += dmd->samples[i].Rd * r_disk / pdf_sum;                
             }
             
         }
     }
     float w = AiSamplerGetSampleInvCount(sampit);
     result_sss *= w;
-    // Rd_sum *= w;
-    // if (!AiColorIsZero(Rd_sum)) result_sss *= (sp.albedo/Rd_sum); //< Peter Kutz's dark-edge normalization trick
-    result_sss /= sp.albedo;
+    result_sss /= dmd->sp.albedo;
     sg->fi = old_fi;
 
     // Optimization hack: do a regular indirect diffuse and colour it like the subsurface instead of allowing sss rays to
