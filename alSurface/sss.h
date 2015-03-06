@@ -107,7 +107,7 @@ struct ScatteringProfileDirectional
 {
     ScatteringProfileDirectional(){}
     ScatteringProfileDirectional(float Rd, float scale);
-    ScatteringProfileDirectional(float sigma_s, float sigma_a, float g, float scale);
+    ScatteringProfileDirectional(float sigma_s, float sigma_a, float g);
 
     const static float eta;
     const static float C_phi;

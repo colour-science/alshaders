@@ -2395,7 +2395,27 @@ shader_evaluate
             {
                 sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
             }
-            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sp, weights, data->sssMode == SSSMODE_DIRECTIONAL, nc);
+            
+            /*
+            float g = 0.0f;
+            // skin2
+            const float sigma_s_prime[3] = {1.09, 1.59, 1.79};
+            const float sigma_a[3] = {0.013, 0.07, 0.145};
+            // marble
+            const float sigma_s_prime[3] = {2.19, 2.62, 3.00};
+            const float sigma_a[3] = {0.0021, 0.0041, 0.0071};
+            // wholemilk
+            const float sigma_s_prime[3] = {2.55, 3.21, 3.77};
+            const float sigma_a[3] = {0.0011, 0.0024, 0.014};
+            // ketchup
+            const float sigma_s_prime[3] = {0.18, 0.07, 0.03};
+            const float sigma_a[3] = {0.061, 0.97, 1.45};
+            sp[0] = ScatteringProfileDirectional(sigma_s_prime[0] / (1-g) * sssDensityScale*10, sigma_a[0] * sssDensityScale*10, g);
+            sp[1] = ScatteringProfileDirectional(sigma_s_prime[1] / (1-g) * sssDensityScale*10, sigma_a[1] * sssDensityScale*10, g);
+            sp[2] = ScatteringProfileDirectional(sigma_s_prime[2] / (1-g) * sssDensityScale*10, sigma_a[2] * sssDensityScale*10, g);
+            */
+
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sp, weights, data->sssMode == SSSMODE_DIRECTIONAL, 9);
         }
         result_sss *= diffuseColor;
     }
@@ -2406,7 +2426,7 @@ shader_evaluate
     result_diffuseIndirect *= (1-sssMix);
     result_backlightDirect *= (1-sssMix);
     result_backlightIndirect *= (1-sssMix);
-    result_sss *= sssMix;// * kti * kti2;
+    result_sss *= sssMix * kti * kti2;
 
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)

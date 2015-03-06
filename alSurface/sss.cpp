@@ -144,9 +144,9 @@ ScatteringProfileDirectional::ScatteringProfileDirectional(float Rd, float scale
     albedo = _albedo_lut[idx];
 }
 
-ScatteringProfileDirectional::ScatteringProfileDirectional(float sigma_s, float sigma_a, float g, float scale)
+ScatteringProfileDirectional::ScatteringProfileDirectional(float sigma_s, float sigma_a, float g)
 {
-    float sigma_s_prime = sigma_s / (1.0f - g);
+    float sigma_s_prime = sigma_s * (1.0f - g);
     sigma_t_prime = sigma_s_prime + sigma_a;
     sigma_t = sigma_s + sigma_a;
 
