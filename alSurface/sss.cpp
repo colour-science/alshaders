@@ -36,7 +36,7 @@ _3C2(0.0611156f),
 A(2.05736f)
 {
     AtRGB c_n = c;
-    if (norm_color) c_n /= maxh(c);
+    // if (norm_color) c_n /= maxh(c);
     AtRGB ap = rgb(
         computeAlphaPrime(c_n.r * 0.439f),
         computeAlphaPrime(c_n.g * 0.439f),
@@ -95,6 +95,55 @@ A(2.05736f)
     }
 }
 
+const float ScatteringProfileDirectional::eta(1.3f);
+const float ScatteringProfileDirectional::C_phi(0.175626f);
+const float ScatteringProfileDirectional::C_phi_inv(1.03668f);
+const float ScatteringProfileDirectional::C_E(0.27735f);
+const float ScatteringProfileDirectional::_3C2(0.0611156f);
+const float ScatteringProfileDirectional::A(2.05736f);
+const float ScatteringProfileDirectional::_albedo_lut[SSS_ALBEDO_LUT_SZ] = {0.004660, 0.005024, 0.005285, 0.005503, 0.005697, 0.005875, 0.006041, 0.006197, 0.006345, 0.006488, 0.006625, 0.006758, 0.006887, 0.007013, 0.007136, 0.007256, 0.007374, 0.007490, 0.007604, 0.007716, 0.007826, 0.007935, 0.008043, 0.008149, 0.008255, 0.008358, 0.008461, 0.008564, 0.008665, 0.008765, 0.008865, 0.008964, 0.009063, 0.009160, 0.009257, 0.009354, 0.009450, 0.009546, 0.009641, 0.009735, 0.009829, 0.009923, 0.010016, 0.010110, 0.010203, 0.010295, 0.010387, 0.010479, 0.010571, 0.010662, 0.010754, 0.010845, 0.010935, 0.011026, 0.011116, 0.011207, 0.011297, 0.011387, 0.011477, 0.011566, 0.011656, 0.011746, 0.011835, 0.011925, 0.012014, 0.012103, 0.012192, 0.012281, 0.012370, 0.012459, 0.012548, 0.012637, 0.012726, 0.012815, 0.012904, 0.012993, 0.013082, 0.013171, 0.013260, 0.013349, 0.013438, 0.013527, 0.013616, 0.013705, 0.013794, 0.013883, 0.013972, 0.014061, 0.014150, 0.014240, 0.014329, 0.014418, 0.014508, 0.014597, 0.014687, 0.014777, 0.014866, 0.014956, 0.015046, 0.015136, 0.015226, 0.015317, 0.015407, 0.015497, 0.015588, 0.015678, 0.015769, 0.015860, 0.015951, 0.016042, 0.016133, 0.016224, 0.016315, 0.016407, 0.016498, 0.016590, 0.016682, 0.016774, 0.016866, 0.016958, 0.017051, 0.017143, 0.017236, 0.017329, 0.017421, 0.017514, 0.017608, 0.017701, 0.017794, 0.017888, 0.017982, 0.018076, 0.018170, 0.018264, 0.018359, 0.018453, 0.018548, 0.018643, 0.018738, 0.018833, 0.018928, 0.019024, 0.019120, 0.019215, 0.019311, 0.019408, 0.019504, 0.019601, 0.019698, 0.019795, 0.019892, 0.019990, 0.020087, 0.020185, 0.020283, 0.020381, 0.020479, 0.020577, 0.020676, 0.020774, 0.020873, 0.020973, 0.021072, 0.021172, 0.021272, 0.021372, 0.021472, 0.021573, 0.021673, 0.021774, 0.021875, 0.021976, 0.022078, 0.022180, 0.022282, 0.022383, 0.022486, 0.022588, 0.022690, 0.022794, 0.022897, 0.023001, 0.023104, 0.023208, 0.023311, 0.023417, 0.023521, 0.023626, 0.023730, 0.023837, 0.023942, 0.024047, 0.024153, 0.024260, 0.024366, 0.024472, 0.024579, 0.024687, 0.024794, 0.024901, 0.025010, 0.025118, 0.025226, 0.025335, 0.025444, 0.025554, 0.025663, 0.025773, 0.025883, 0.025992, 0.026104, 0.026214, 0.026326, 0.026436, 0.026548, 0.026661, 0.026772, 0.026886, 0.026997, 0.027111, 0.027225, 0.027338, 0.027452, 0.027567, 0.027682, 0.027795, 0.027911, 0.028027, 0.028143, 0.028259, 0.028376, 0.028491, 0.028609, 0.028726, 0.028844, 0.028962, 0.029082, 0.029201, 0.029320, 0.029439, 0.029559, 0.029678, 0.029800, 0.029921, 0.030041, 0.030164, 0.030286, 0.030409, 0.030531, 0.030655, 0.030778, 0.030903, 0.031028, 0.031151, 0.031277, 0.031403};
+
+ScatteringProfileDirectional::ScatteringProfileDirectional(float Rd, float scale)
+{
+    // get temp reduced scattering coefficients from Rd
+    const float ap = computeAlphaPrime(Rd * 0.439f);
+    const float str = 1.0f / Rd;
+    const float stp = str / sqrtf(3.0f * (1.0f - ap));
+
+    // calculate actual scattering coefficients from the temps
+    float sigma_s_prime = stp * ap;
+    float sigma_a = stp - sigma_s_prime;
+
+    // factor of 2.5 is eyeballed to roughly match the look of the cubic
+    sigma_s_prime *= scale * AI_PI * 2.5;
+    sigma_a *= scale * AI_PI * 2.5;
+
+    const float sigma_s = sigma_s_prime;
+
+    sigma_t_prime = sigma_s_prime + sigma_a;
+    sigma_t = sigma_s + sigma_a;
+
+    alpha_prime = sigma_s_prime / sigma_t_prime;
+
+    D = (2*sigma_t_prime) / (3*SQR(sigma_t_prime));
+    sigma_tr = sqrt(sigma_a / D);
+    de = 2.131 * D / sqrt(alpha_prime);
+    zr = 1.0f / sigma_t_prime;
+
+    assert(AiIsFinite(D));
+    assert(AiIsFinite(de));
+    assert(AiIsFinite(sigma_tr));
+    assert(AiIsFinite(sigma_t_prime));
+    assert(AiIsFinite(alpha_prime));
+    assert(AiIsFinite(zr));
+
+    const float maxdist = zr * SSS_MAX_RADIUS;
+
+    // grab the precalculated albedo for this Rd
+    const int idx = int(Rd * (SSS_ALBEDO_LUT_SZ-1));
+    albedo = _albedo_lut[idx];
+}
+
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
                         AtVector U, AtVector V, bool directional)
 {
@@ -112,7 +161,9 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
         // result_diffuse += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
         if (directional)
         {
-            samp.Rd += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp)
+            samp.Rd += rgb(directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[0]), 
+                           directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[1]),
+                           directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[2]))
                     * sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
         }
         else
@@ -123,7 +174,10 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     }
 
     if (!directional)
-        samp.Rd += result_diffuse * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
+        samp.Rd += result_diffuse * rgb(directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[0]),
+                                        directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[0]),
+                                        directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[0])
+                                        );
 
     // samp.Rd += AiIndirectDiffuse(&sg->N, sg) * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
     AtRGB result_indirect = AI_RGB_BLACK;
@@ -145,7 +199,9 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
         if (directional)
         {
-            result_indirect += scrs.color * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp);
+            result_indirect += scrs.color * rgb(directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp[0]), 
+                           directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp[1]),
+                           directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp[2]));
         }
         else
         {
@@ -163,7 +219,10 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     }
     else
     {
-        samp.Rd += result_indirect * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
+        samp.Rd += result_indirect * rgb(directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[0]),
+                                        directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[0]),
+                                        directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[0])
+                                        );
     }
         
 
@@ -188,25 +247,46 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 }
 
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
-                     AtRGB sssRadiusColor, float sssRadius, float sssDensityScale, bool directional)
+                   float Rd[SSS_MAX_PROFILES], float radii[SSS_MAX_PROFILES], float sssDensityScale, bool directional, int numComponents)
 {
     AtVector U, V;
     AiBuildLocalFrameShirley(&U, &V, &sg->Ng);
 
+    /*
+    AtRGB sssRadiusColor = rgb(Rd[0], Rd[1], Rd[2]);
+
     sssRadiusColor = clamp(sssRadiusColor, rgb(0.001f), AI_RGB_WHITE);
-    dmd->sp = ScatteringParamsDirectional(sssRadiusColor, sssDensityScale/sssRadius, 0.0f, true, directional);
+    dmd->sp = ScatteringParamsDirectional(sssRadiusColor, sssDensityScale/radii[0], 0.0f, true, directional);
 
     // Find the max component of the mfp
     float l = maxh(dmd->sp.zr);
+    // Set our maximum sample distance to be some multiple of the mfp
+    */
+    numComponents = std::min(numComponents, SSS_MAX_PROFILES);
+    float l = 0.0f;
+    float ap_sum = 0.0f;
+    float albedo_norm[SSS_MAX_PROFILES];
+    for (int i=0; i < numComponents; ++i)
+    {
+        dmd->sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
+        albedo_norm[i] = dmd->sp[i].alpha_prime;
+        ap_sum += dmd->sp[i].alpha_prime;
+        l = std::max(l, dmd->sp[i].zr);
+    }
+
+    ap_sum = 1.0f / ap_sum;
+    for (int i=0; i < numComponents; ++i)
+    {
+        albedo_norm[i] *= ap_sum;
+    }
+
+    const float R_max = l * SSS_MAX_RADIUS;
 
     // trick Arnold into thinking we're shooting from a different face than we actually are so he doesn't ignore intersections
     AtUInt32 old_fi = sg->fi;
     sg->fi = UINT_MAX;
 
     AtRGB result_sss = AI_RGB_BLACK;
-    
-    // Set our maximum sample distance to be some multiple of the mfp
-    float R_max = l * SSS_MAX_RADIUS;
     
     AtRGB Rd_sum = AI_RGB_BLACK;
     int samplesTaken = 0;
@@ -215,12 +295,13 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     AtScrSample scrs;
     AtSamplerIterator* sampit = AiSamplerIterator(sss_sampler, sg);
     dmd->wo = -sg->Rd;
+    AtVector axes[3] = {U, V, sg->Ng};
     while (AiSamplerGetSample(sampit, samples))
     {
         float dx, dy;
 
         AtVector Wsss, Usss, Vsss, Usss_1, Vsss_1, Usss_2, Vsss_2;
-        float c_axis = 1.0f, c_axis_1, c_axis_2;;
+        float c_axis = 1.0f, c_axis_1, c_axis_2;
         if (samples[0] < 0.5f)
         {
             samples[0] *= 2.0f;
@@ -274,45 +355,46 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         }
 
         AtVector Pd;
-        // float pdf_disk_a0_c0, pdf_disk_1, pdf_disk_2;
-        float r_disk;
-        float c_disk = 1.0f, c_disk_1, c_disk_2;
-        float sigma, sigma_1, sigma_2;
-        if (samples[1] < dmd->sp.albedo_norm.r)
+        float r_disk[3];
+        // float c_disk = 1.0f, c_disk_1, c_disk_2;
+        float c_comp[3];
+        // float sigma, sigma_1, sigma_2;
+        float sigma[3];
+        if (samples[1] < albedo_norm[0])
         {
-            samples[1] /= dmd->sp.albedo_norm.r;
-            sigma = dmd->sp.sigma_tr.r;
-            sigma_1 = dmd->sp.sigma_tr.g;
-            sigma_2 = dmd->sp.sigma_tr.b;
-            diffusionSampleDisk(samples[0], samples[1], sigma, dx, dy, r_disk);
+            samples[1] /= albedo_norm[0];
+            sigma[0] = dmd->sp[0].sigma_tr;
+            sigma[1] = dmd->sp[1].sigma_tr;
+            sigma[2] = dmd->sp[2].sigma_tr;
+            diffusionSampleDisk(samples[0], samples[1], sigma[0], dx, dy, r_disk[0]);
 
-            c_disk = dmd->sp.albedo_norm.r;
-            c_disk_1 = dmd->sp.albedo_norm.g;
-            c_disk_2 = dmd->sp.albedo_norm.b;
+            c_comp[0] = albedo_norm[0];
+            c_comp[1] = albedo_norm[1];
+            c_comp[2] = albedo_norm[2];
         }
-        else if (samples[1] < (dmd->sp.albedo_norm.r + dmd->sp.albedo_norm.g))
+        else if (samples[1] < (albedo_norm[0] + albedo_norm[1]))
         {
-            samples[1] -= dmd->sp.albedo_norm.r;
-            samples[1] /= dmd->sp.albedo_norm.g;
-            sigma = dmd->sp.sigma_tr.g;
-            sigma_1 = dmd->sp.sigma_tr.r;
-            sigma_2 = dmd->sp.sigma_tr.b;
-            diffusionSampleDisk(samples[0], samples[1], dmd->sp.sigma_tr.g, dx, dy, r_disk);
-            c_disk = dmd->sp.albedo_norm.g;
-            c_disk_1 = dmd->sp.albedo_norm.r;
-            c_disk_2 = dmd->sp.albedo_norm.b;
+            samples[1] -= albedo_norm[0];
+            samples[1] /= albedo_norm[1];
+            sigma[0] = dmd->sp[1].sigma_tr;
+            sigma[1] = dmd->sp[0].sigma_tr;
+            sigma[2] = dmd->sp[2].sigma_tr;
+            diffusionSampleDisk(samples[0], samples[1], sigma[0], dx, dy, r_disk[0]);
+            c_comp[0] = albedo_norm[1];
+            c_comp[1] = albedo_norm[0];
+            c_comp[2] = albedo_norm[2];
         }
         else
         {
             samples[1] = 1.0f - samples[1];
-            samples[1] /= dmd->sp.albedo_norm.b;
-            sigma = dmd->sp.sigma_tr.b;
-            sigma_1 = dmd->sp.sigma_tr.g;
-            sigma_2 = dmd->sp.sigma_tr.r;
-            diffusionSampleDisk(samples[0], samples[1], dmd->sp.sigma_tr.b, dx, dy, r_disk);   
-            c_disk = dmd->sp.albedo_norm.b;
-            c_disk_1 = dmd->sp.albedo_norm.g;
-            c_disk_2 = dmd->sp.albedo_norm.r;
+            samples[1] /= albedo_norm[2];
+            sigma[0] = dmd->sp[2].sigma_tr;
+            sigma[1] = dmd->sp[1].sigma_tr;
+            sigma[2] = dmd->sp[0].sigma_tr;
+            diffusionSampleDisk(samples[0], samples[1], sigma[0], dx, dy, r_disk[0]);   
+            c_comp[0] = albedo_norm[2];
+            c_comp[1] = albedo_norm[1];
+            c_comp[2] = albedo_norm[0];
         }
 
         AtVector dir = -Wsss;
@@ -327,55 +409,56 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         dmd->maxdist = R_max;
         dmd->Po = sg->P;
         dmd->No = sg->N;
+        float geom[3];
         if (AiTrace(&wi_ray, &scrs))
         {            
             for (int i=0; i < dmd->sss_depth; ++i)
             {                
                 if (AiColorIsZero(dmd->samples[i].Rd)) continue;
 
-                float geom = fabsf(AiV3Dot(dmd->samples[i].Ng, Wsss));
-                float geom_1 = fabsf(AiV3Dot(dmd->samples[i].Ng, Usss));
-                float geom_2 = fabsf(AiV3Dot(dmd->samples[i].Ng, Vsss));
+                geom[0] = fabsf(AiV3Dot(dmd->samples[i].Ng, Wsss));
+                geom[1] = fabsf(AiV3Dot(dmd->samples[i].Ng, Usss));
+                geom[2] = fabsf(AiV3Dot(dmd->samples[i].Ng, Vsss));
 
                 float r_u_1 = AiV3Dot(dmd->samples[i].S, Usss_1);
                 float r_v_1 = AiV3Dot(dmd->samples[i].S, Vsss_1);
-                float r_1 = sqrtf(SQR(r_u_1)+SQR(r_v_1));
+                r_disk[1] = sqrtf(SQR(r_u_1)+SQR(r_v_1));
 
                 float r_u_2 = AiV3Dot(dmd->samples[i].S, Usss_2);
                 float r_v_2 = AiV3Dot(dmd->samples[i].S, Vsss_2);
-                float r_2 = sqrtf(SQR(r_u_2)+SQR(r_v_2));
+                r_disk[2] = sqrtf(SQR(r_u_2)+SQR(r_v_2));
 
-                float pdf_disk_a0_c0 = diffusionPdf(r_disk, sigma) * geom;
-                float pdf_disk_a0_c1 = diffusionPdf(r_disk, sigma_1) * geom;
-                float pdf_disk_a0_c2 = diffusionPdf(r_disk, sigma_2) * geom;
+                float pdf_disk_a0_c0 = diffusionPdf(r_disk[0], sigma[0]) * geom[0];
+                float pdf_disk_a0_c1 = diffusionPdf(r_disk[0], sigma[1]) * geom[0];
+                float pdf_disk_a0_c2 = diffusionPdf(r_disk[0], sigma[2]) * geom[0];
 
-                float pdf_disk_a1_c0 = diffusionPdf(r_1, sigma) * geom_1;
-                float pdf_disk_a1_c1 = diffusionPdf(r_1, sigma_1) * geom_1;
-                float pdf_disk_a1_c2 = diffusionPdf(r_1, sigma_2) * geom_1;
+                float pdf_disk_a1_c0 = diffusionPdf(r_disk[1], sigma[0]) * geom[1];
+                float pdf_disk_a1_c1 = diffusionPdf(r_disk[1], sigma[1]) * geom[1];
+                float pdf_disk_a1_c2 = diffusionPdf(r_disk[1], sigma[2]) * geom[1];
 
-                float pdf_disk_a2_c0 = diffusionPdf(r_2, sigma) * geom_2;
-                float pdf_disk_a2_c1 = diffusionPdf(r_2, sigma_1) * geom_2;
-                float pdf_disk_a2_c2 = diffusionPdf(r_2, sigma_2) * geom_2;
+                float pdf_disk_a2_c0 = diffusionPdf(r_disk[2], sigma[0]) * geom[2];
+                float pdf_disk_a2_c1 = diffusionPdf(r_disk[2], sigma[1]) * geom[2];
+                float pdf_disk_a2_c2 = diffusionPdf(r_disk[2], sigma[2]) * geom[2];
 
                 float pdf_sum = 
-                    pdf_disk_a0_c0 * c_disk * c_axis +
-                    pdf_disk_a0_c1 * c_disk_1 * c_axis +
-                    pdf_disk_a0_c2 * c_disk_2 * c_axis +
-                    pdf_disk_a1_c0 * c_disk * c_axis_1 +
-                    pdf_disk_a1_c1 * c_disk_1 * c_axis_1 +
-                    pdf_disk_a1_c2 * c_disk_2 * c_axis_1 +
-                    pdf_disk_a2_c0 * c_disk * c_axis_2 +
-                    pdf_disk_a2_c1 * c_disk_1 * c_axis_2 +
-                    pdf_disk_a2_c2 * c_disk_2 * c_axis_2;
+                    pdf_disk_a0_c0 * c_comp[0] * c_axis +
+                    pdf_disk_a0_c1 * c_comp[1] * c_axis +
+                    pdf_disk_a0_c2 * c_comp[2] * c_axis +
+                    pdf_disk_a1_c0 * c_comp[0] * c_axis_1 +
+                    pdf_disk_a1_c1 * c_comp[1] * c_axis_1 +
+                    pdf_disk_a1_c2 * c_comp[2] * c_axis_1 +
+                    pdf_disk_a2_c0 * c_comp[0] * c_axis_2 +
+                    pdf_disk_a2_c1 * c_comp[1] * c_axis_2 +
+                    pdf_disk_a2_c2 * c_comp[2] * c_axis_2;
 
-                result_sss += dmd->samples[i].Rd * r_disk / pdf_sum;                
+                result_sss += dmd->samples[i].Rd * r_disk[0] / pdf_sum;                
             }
             
         }
     }
     float w = AiSamplerGetSampleInvCount(sampit);
     result_sss *= w;
-    result_sss /= dmd->sp.albedo;
+    result_sss /= rgb(dmd->sp[0].albedo, dmd->sp[1].albedo, dmd->sp[2].albedo);
     sg->fi = old_fi;
 
     // Optimization hack: do a regular indirect diffuse and colour it like the subsurface instead of allowing sss rays to

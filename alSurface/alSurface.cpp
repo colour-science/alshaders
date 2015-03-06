@@ -2377,8 +2377,10 @@ shader_evaluate
         }
         else
         {  
-            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssRadiusColor, sssRadius, 
-                                      sssDensityScale, data->sssMode == SSSMODE_DIRECTIONAL);
+            float Rd[9] = {sssRadiusColor.r, sssRadiusColor.g, sssRadiusColor.b};
+            float radii[9] = {sssRadius, sssRadius, sssRadius};
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, Rd, radii, 
+                                      sssDensityScale, data->sssMode == SSSMODE_DIRECTIONAL, 3);
         }
 
         result_sss *= diffuseColor;
