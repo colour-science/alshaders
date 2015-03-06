@@ -357,44 +357,25 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         AtVector Pd;
         float r_disk[3];
         // float c_disk = 1.0f, c_disk_1, c_disk_2;
-        float c_comp[3];
+        // float c_comp[3];
         // float sigma, sigma_1, sigma_2;
-        float sigma[3];
+        // float sigma[3];
         if (samples[1] < albedo_norm[0])
         {
             samples[1] /= albedo_norm[0];
-            sigma[0] = dmd->sp[0].sigma_tr;
-            sigma[1] = dmd->sp[1].sigma_tr;
-            sigma[2] = dmd->sp[2].sigma_tr;
-            diffusionSampleDisk(samples[0], samples[1], sigma[0], dx, dy, r_disk[0]);
-
-            c_comp[0] = albedo_norm[0];
-            c_comp[1] = albedo_norm[1];
-            c_comp[2] = albedo_norm[2];
+            diffusionSampleDisk(samples[0], samples[1], dmd->sp[0].sigma_tr, dx, dy, r_disk[0]);
         }
         else if (samples[1] < (albedo_norm[0] + albedo_norm[1]))
         {
             samples[1] -= albedo_norm[0];
             samples[1] /= albedo_norm[1];
-            sigma[0] = dmd->sp[1].sigma_tr;
-            sigma[1] = dmd->sp[0].sigma_tr;
-            sigma[2] = dmd->sp[2].sigma_tr;
-            diffusionSampleDisk(samples[0], samples[1], sigma[0], dx, dy, r_disk[0]);
-            c_comp[0] = albedo_norm[1];
-            c_comp[1] = albedo_norm[0];
-            c_comp[2] = albedo_norm[2];
+            diffusionSampleDisk(samples[0], samples[1], dmd->sp[1].sigma_tr, dx, dy, r_disk[0]);
         }
         else
         {
-            samples[1] = 1.0f - samples[1];
+            samples[1] -= (albedo_norm[0] + albedo_norm[1]);
             samples[1] /= albedo_norm[2];
-            sigma[0] = dmd->sp[2].sigma_tr;
-            sigma[1] = dmd->sp[1].sigma_tr;
-            sigma[2] = dmd->sp[0].sigma_tr;
-            diffusionSampleDisk(samples[0], samples[1], sigma[0], dx, dy, r_disk[0]);   
-            c_comp[0] = albedo_norm[2];
-            c_comp[1] = albedo_norm[1];
-            c_comp[2] = albedo_norm[0];
+            diffusionSampleDisk(samples[0], samples[1], dmd->sp[2].sigma_tr, dx, dy, r_disk[0]);   
         }
 
         AtVector dir = -Wsss;
@@ -428,28 +409,14 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
                 float r_v_2 = AiV3Dot(dmd->samples[i].S, Vsss_2);
                 r_disk[2] = sqrtf(SQR(r_u_2)+SQR(r_v_2));
 
-                float pdf_disk_a0_c0 = diffusionPdf(r_disk[0], sigma[0]) * geom[0];
-                float pdf_disk_a0_c1 = diffusionPdf(r_disk[0], sigma[1]) * geom[0];
-                float pdf_disk_a0_c2 = diffusionPdf(r_disk[0], sigma[2]) * geom[0];
+                float pdf_sum = 0.0f;
 
-                float pdf_disk_a1_c0 = diffusionPdf(r_disk[1], sigma[0]) * geom[1];
-                float pdf_disk_a1_c1 = diffusionPdf(r_disk[1], sigma[1]) * geom[1];
-                float pdf_disk_a1_c2 = diffusionPdf(r_disk[1], sigma[2]) * geom[1];
-
-                float pdf_disk_a2_c0 = diffusionPdf(r_disk[2], sigma[0]) * geom[2];
-                float pdf_disk_a2_c1 = diffusionPdf(r_disk[2], sigma[1]) * geom[2];
-                float pdf_disk_a2_c2 = diffusionPdf(r_disk[2], sigma[2]) * geom[2];
-
-                float pdf_sum = 
-                    pdf_disk_a0_c0 * c_comp[0] * c_axis +
-                    pdf_disk_a0_c1 * c_comp[1] * c_axis +
-                    pdf_disk_a0_c2 * c_comp[2] * c_axis +
-                    pdf_disk_a1_c0 * c_comp[0] * c_axis_1 +
-                    pdf_disk_a1_c1 * c_comp[1] * c_axis_1 +
-                    pdf_disk_a1_c2 * c_comp[2] * c_axis_1 +
-                    pdf_disk_a2_c0 * c_comp[0] * c_axis_2 +
-                    pdf_disk_a2_c1 * c_comp[1] * c_axis_2 +
-                    pdf_disk_a2_c2 * c_comp[2] * c_axis_2;
+                for (int c=0; c < numComponents; ++c)
+                {
+                    pdf_sum += diffusionPdf(r_disk[0], dmd->sp[c].sigma_tr) * albedo_norm[c] * geom[0] * c_axis;
+                    pdf_sum += diffusionPdf(r_disk[1], dmd->sp[c].sigma_tr) * albedo_norm[c] * geom[1] * c_axis_1; 
+                    pdf_sum += diffusionPdf(r_disk[2], dmd->sp[c].sigma_tr) * albedo_norm[c] * geom[2] * c_axis_2;   
+                }
 
                 result_sss += dmd->samples[i].Rd * r_disk[0] / pdf_sum;                
             }
