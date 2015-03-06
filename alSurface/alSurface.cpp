@@ -860,7 +860,7 @@ shader_evaluate
         // compute the diffusion sample
         assert(diffusion_msgdata);
 
-        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V);
+        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
         AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);

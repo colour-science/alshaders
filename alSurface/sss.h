@@ -3,6 +3,7 @@
 #include <ai.h>
 #include "alUtil.h"
 #include <cassert>
+#include <map>
 
 #define SSS_MAX_SAMPLES 8
 #define SSS_MAX_RADIUS 25.0f
@@ -458,7 +459,8 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
     return result;
 }
 
-void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, AtVector U, AtVector V);
+void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
+                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap);
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
                    ScatteringProfileDirectional* sp, AtRGB* weights, bool directional, int numComponents, 
                    AtRGB& result_direct, AtRGB& result_indirect, AtRGB* lightGroupsDirect, AtRGB* deepGroupsSss,
