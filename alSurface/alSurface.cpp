@@ -2377,10 +2377,17 @@ shader_evaluate
         }
         else
         {  
-            float Rd[9] = {sssRadiusColor.r, sssRadiusColor.g, sssRadiusColor.b};
-            float radii[9] = {sssRadius, sssRadius, sssRadius};
-            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, Rd, radii, 
-                                      sssDensityScale, data->sssMode == SSSMODE_DIRECTIONAL, 3);
+            float Rd[9] = {sssRadiusColor.r, sssRadiusColor.g, sssRadiusColor.b,
+                           sssRadiusColor2.r, sssRadiusColor2.g, sssRadiusColor2.b,
+                           sssRadiusColor3.r, sssRadiusColor3.g, sssRadiusColor3.b};
+            float radii[9] = {sssRadius, sssRadius, sssRadius,
+                              sssRadius2, sssRadius2, sssRadius2,
+                              sssRadius3, sssRadius3, sssRadius3};
+            AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
+                                AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
+                                AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, Rd, radii, weights,
+                                      sssDensityScale, data->sssMode == SSSMODE_DIRECTIONAL, 9);
         }
 
         result_sss *= diffuseColor;

@@ -152,34 +152,40 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     // void* brdf_data = AiOrenNayarMISCreateData(sg, 0.0f);
     // sg->fhemi = false;
     AiLightsPrepare(sg);
-    AtRGB result_diffuse = AI_RGB_BLACK;
+    AtRGB result_direct = AI_RGB_BLACK;
     AtUInt32 old_fi = sg->fi;
     samp.Rd = AI_RGB_BLACK;
     while (AiLightsGetSample(sg))
     {
         // can't use MIS here because Arnold cocks up the shadowing ;__;
-        // result_diffuse += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
+        // result_direct += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
         if (directional)
         {
-            samp.Rd += rgb(directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[0]), 
-                           directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[1]),
-                           directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[2]))
-                    * sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
+            AtRGB R = AI_RGB_BLACK;
+            for (int c=0; c < dmd->numComponents; ++c)
+            {
+                R += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[c]) * dmd->weights[c]; 
+            }
+            result_direct += R * sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
         }
         else
         {
-            result_diffuse += sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
+            result_direct += sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
         }
 
     }
 
     if (!directional)
-        samp.Rd += result_diffuse * rgb(directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[0]),
-                                        directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[1]),
-                                        directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[2])
-                                        );
+    {
+        AtRGB R = AI_RGB_BLACK;
+        for (int c = 0; c < dmd->numComponents; ++c)
+        {
+            R += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[c]) * dmd->weights[c];
+        }
 
-    // samp.Rd += AiIndirectDiffuse(&sg->N, sg) * directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp);
+        result_direct *= R;
+    }
+
     AtRGB result_indirect = AI_RGB_BLACK;
     AtSamplerIterator* sampit = AiSamplerIterator(diffuse_sampler, sg);
     float samples[2];
@@ -199,9 +205,12 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
         if (directional)
         {
-            result_indirect += scrs.color * rgb(directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp[0]), 
-                           directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp[1]),
-                           directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp[2]));
+            AtRGB R = AI_RGB_BLACK;
+            for (int c = 0; c < dmd->numComponents; ++c)
+            {
+                R += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, ray.dir, dmd->wo, dmd->sp[c]) * dmd->weights[c];
+            }
+            result_indirect += scrs.color * R;
         }
         else
         {
@@ -213,18 +222,18 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     // TODO: this is guaranteed to be 1 in every case, right?
     // result_indirect *= AiSamplerGetSampleInvCount(sampit);
 
-    if (directional)
+    if (!directional)
     {
-        samp.Rd += result_indirect;
+        AtRGB R = AI_RGB_BLACK;
+        for (int c = 0; c < dmd->numComponents; ++c)
+        {
+            R += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[c]) * dmd->weights[c];
+        }
+
+        result_indirect *= R;
     }
-    else
-    {
-        samp.Rd += result_indirect * rgb(directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[0]),
-                                        directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[1]),
-                                        directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[2])
-                                        );
-    }
-        
+
+    samp.Rd = result_direct + result_indirect;
 
     samp.S = sg->P - dmd->Po;
     samp.r = AiV3Length(samp.S);
@@ -247,44 +256,50 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 }
 
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
-                   float Rd[SSS_MAX_PROFILES], float radii[SSS_MAX_PROFILES], float sssDensityScale, bool directional, int numComponents)
+                   float Rd[SSS_MAX_PROFILES], float radii[SSS_MAX_PROFILES], AtRGB* weights,
+                   float sssDensityScale, bool directional, int numComponents)
 {
     AtVector U, V;
     AiBuildLocalFrameShirley(&U, &V, &sg->Ng);
 
-    /*
-    AtRGB sssRadiusColor = rgb(Rd[0], Rd[1], Rd[2]);
-
-    sssRadiusColor = clamp(sssRadiusColor, rgb(0.001f), AI_RGB_WHITE);
-    dmd->sp = ScatteringParamsDirectional(sssRadiusColor, sssDensityScale/radii[0], 0.0f, true, directional);
-
-    // Find the max component of the mfp
-    float l = maxh(dmd->sp.zr);
-    // Set our maximum sample distance to be some multiple of the mfp
-    */
     numComponents = std::min(numComponents, SSS_MAX_PROFILES);
     float l = 0.0f;
     float inv_pdf_sum = 0.0f;
     float comp_pdf[numComponents];
     float comp_cdf[numComponents+1];
     comp_cdf[0] = 0.0f;
+    int last_nonzero = numComponents;
     for (int i=0; i < numComponents; ++i)
     {
         dmd->sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
-        comp_pdf[i] = dmd->sp[i].alpha_prime;
+        float w = maxh(weights[i]);
+        float pdf = dmd->sp[i].alpha_prime;
+        comp_pdf[i] = pdf * w;
         comp_cdf[i+1] = comp_cdf[i] + comp_pdf[i];
-        inv_pdf_sum += dmd->sp[i].alpha_prime;
-        l = std::max(l, dmd->sp[i].zr);
+        inv_pdf_sum += comp_pdf[i];
+
+        if (w > 0.0f)
+        {
+            // track the last non-zero weight we encounter so that we can ignore completely missing lobes
+            last_nonzero = i+1;  
+            // track the largest mean free path so we can set that to be our maximum raytracing distance
+            l = std::max(l, dmd->sp[i].zr);
+        } 
     }
 
+    // set the number of components to be the number of non-zero-weight components
+    numComponents = std::min(numComponents, last_nonzero);
+    // set the maximum raytracing distance to be some multiple of the largest mean-free path
+    // the choice of SSS_MAX_RADIUS is a quality/speed tradeoff. The default of 25 seems to work well for most cases
+    const float R_max = l * SSS_MAX_RADIUS;
+
+    // normalize the PDF and CDF
     inv_pdf_sum = 1.0f / inv_pdf_sum;
     for (int i=0; i < numComponents; ++i)
     {
         comp_pdf[i] *= inv_pdf_sum;
         comp_cdf[i+1] *= inv_pdf_sum;
     }
-
-    const float R_max = l * SSS_MAX_RADIUS;
 
     // trick Arnold into thinking we're shooting from a different face than we actually are so he doesn't ignore intersections
     AtUInt32 old_fi = sg->fi;
@@ -299,6 +314,8 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     AtScrSample scrs;
     AtSamplerIterator* sampit = AiSamplerIterator(sss_sampler, sg);
     dmd->wo = -sg->Rd;
+    dmd->numComponents = numComponents;
+    dmd->weights = weights;
     AtVector axes[3] = {U, V, sg->Ng};
     while (AiSamplerGetSample(sampit, samples))
     {
@@ -417,7 +434,12 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     }
     float w = AiSamplerGetSampleInvCount(sampit);
     result_sss *= w;
-    result_sss /= rgb(dmd->sp[0].albedo, dmd->sp[1].albedo, dmd->sp[2].albedo);
+    AtRGB norm_factor = AI_RGB_BLACK;
+    for (int c=0; c < numComponents; ++c)
+    {
+        norm_factor += dmd->sp[c].albedo * weights[c];
+    }
+    result_sss /= norm_factor;
     sg->fi = old_fi;
 
     // Optimization hack: do a regular indirect diffuse and colour it like the subsurface instead of allowing sss rays to
