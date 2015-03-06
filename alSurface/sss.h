@@ -105,7 +105,9 @@ struct ScatteringParamsDirectional
 
 struct ScatteringProfileDirectional
 {
+    ScatteringProfileDirectional(){}
     ScatteringProfileDirectional(float Rd, float scale);
+    ScatteringProfileDirectional(float sigma_s, float sigma_a, float g, float scale);
 
     const static float eta;
     const static float C_phi;
@@ -189,9 +191,10 @@ struct DirectionalMessageData
     AtVector U;
     AtVector V;
     AtVector wo;
-    ScatteringProfileDirectional sp[SSS_MAX_PROFILES];
+    ScatteringProfileDirectional* sp;
     AtRGB* weights;
     int numComponents;
+    bool directional;
     AtShaderGlobals* sg;
     DiffusionSample samples[SSS_MAX_SAMPLES];
 };
@@ -450,7 +453,6 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
     return result;
 }
 
-void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, AtVector U, AtVector V, bool directional);
+void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, AtVector U, AtVector V);
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
-                   float Rd[SSS_MAX_PROFILES], float radii[SSS_MAX_PROFILES], AtRGB* weights,
-                   float sssDensityScale, bool directional, int numComponents);
+                   ScatteringProfileDirectional* sp, AtRGB* weights, bool directional, int numComponents);

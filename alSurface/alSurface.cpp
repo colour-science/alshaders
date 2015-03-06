@@ -860,7 +860,7 @@ shader_evaluate
         // compute the diffusion sample
         assert(diffusion_msgdata);
 
-        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->sssMode == SSSMODE_DIRECTIONAL);
+        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
         AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
@@ -2377,6 +2377,10 @@ shader_evaluate
         }
         else
         {  
+            int nc = 3;
+            if (sssWeight2 > 0.0f) nc = 6;
+            if (sssWeight3 > 0.0f) nc = 9;
+
             float Rd[9] = {sssRadiusColor.r, sssRadiusColor.g, sssRadiusColor.b,
                            sssRadiusColor2.r, sssRadiusColor2.g, sssRadiusColor2.b,
                            sssRadiusColor3.r, sssRadiusColor3.g, sssRadiusColor3.b};
@@ -2386,10 +2390,13 @@ shader_evaluate
             AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
                                 AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
                                 AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
-            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, Rd, radii, weights,
-                                      sssDensityScale, data->sssMode == SSSMODE_DIRECTIONAL, 9);
+            ScatteringProfileDirectional sp[9];
+            for (int i = 0; i < nc; ++i)
+            {
+                sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
+            }
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sp, weights, data->sssMode == SSSMODE_DIRECTIONAL, nc);
         }
-
         result_sss *= diffuseColor;
     }
 

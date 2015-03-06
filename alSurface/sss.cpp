@@ -144,8 +144,32 @@ ScatteringProfileDirectional::ScatteringProfileDirectional(float Rd, float scale
     albedo = _albedo_lut[idx];
 }
 
+ScatteringProfileDirectional::ScatteringProfileDirectional(float sigma_s, float sigma_a, float g, float scale)
+{
+    float sigma_s_prime = sigma_s / (1.0f - g);
+    sigma_t_prime = sigma_s_prime + sigma_a;
+    sigma_t = sigma_s + sigma_a;
+
+    alpha_prime = sigma_s_prime / sigma_t_prime;
+
+    D = (2*sigma_t_prime) / (3*SQR(sigma_t_prime));
+    sigma_tr = sqrt(sigma_a / D);
+    de = 2.131 * D / sqrt(alpha_prime);
+    zr = 1.0f / sigma_t_prime;
+
+    assert(AiIsFinite(D));
+    assert(AiIsFinite(de));
+    assert(AiIsFinite(sigma_tr));
+    assert(AiIsFinite(sigma_t_prime));
+    assert(AiIsFinite(alpha_prime));
+    assert(AiIsFinite(zr));
+
+    const float maxdist = zr * SSS_MAX_RADIUS;
+    albedo = 1.0f;
+}
+
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
-                        AtVector U, AtVector V, bool directional)
+                        AtVector U, AtVector V)
 {
     AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
     DiffusionSample& samp = dmd->samples[dmd->sss_depth];
@@ -159,7 +183,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     {
         // can't use MIS here because Arnold cocks up the shadowing ;__;
         // result_direct += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
-        if (directional)
+        if (dmd->directional)
         {
             AtRGB R = AI_RGB_BLACK;
             for (int c=0; c < dmd->numComponents; ++c)
@@ -175,7 +199,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
     }
 
-    if (!directional)
+    if (!dmd->directional)
     {
         AtRGB R = AI_RGB_BLACK;
         for (int c = 0; c < dmd->numComponents; ++c)
@@ -203,7 +227,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
         bool hit = AiTrace(&ray, &scrs);
 
-        if (directional)
+        if (dmd->directional)
         {
             AtRGB R = AI_RGB_BLACK;
             for (int c = 0; c < dmd->numComponents; ++c)
@@ -222,7 +246,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     // TODO: this is guaranteed to be 1 in every case, right?
     // result_indirect *= AiSamplerGetSampleInvCount(sampit);
 
-    if (!directional)
+    if (!dmd->directional)
     {
         AtRGB R = AI_RGB_BLACK;
         for (int c = 0; c < dmd->numComponents; ++c)
@@ -256,8 +280,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 }
 
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
-                   float Rd[SSS_MAX_PROFILES], float radii[SSS_MAX_PROFILES], AtRGB* weights,
-                   float sssDensityScale, bool directional, int numComponents)
+                   ScatteringProfileDirectional* sp, AtRGB* weights, bool directional, int numComponents)
 {
     AtVector U, V;
     AiBuildLocalFrameShirley(&U, &V, &sg->Ng);
@@ -269,9 +292,10 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     float comp_cdf[numComponents+1];
     comp_cdf[0] = 0.0f;
     int last_nonzero = numComponents;
+    dmd->sp = sp;
     for (int i=0; i < numComponents; ++i)
     {
-        dmd->sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
+        // dmd->sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
         float w = maxh(weights[i]);
         float pdf = dmd->sp[i].alpha_prime;
         comp_pdf[i] = pdf * w;
@@ -316,6 +340,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     dmd->wo = -sg->Rd;
     dmd->numComponents = numComponents;
     dmd->weights = weights;
+    dmd->directional = directional;
     AtVector axes[3] = {U, V, sg->Ng};
     while (AiSamplerGetSample(sampit, samples))
     {
