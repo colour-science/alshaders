@@ -1211,11 +1211,13 @@ shader_evaluate
     AtRGB deepGroupsGlossy[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsGlossy2[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsDiffuse[NUM_LIGHT_GROUPS];
+    AtRGB deepGroupsSss[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsTransmission[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsBacklight[NUM_LIGHT_GROUPS];
     memset(deepGroupsGlossy, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsGlossy2, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsDiffuse, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+    memset(deepGroupsSss, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsTransmission, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
     memset(deepGroupsBacklight, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
     int count = 0;
@@ -2414,8 +2416,12 @@ shader_evaluate
             sp[1] = ScatteringProfileDirectional(sigma_s_prime[1] / (1-g) * sssDensityScale*10, sigma_a[1] * sssDensityScale*10, g);
             sp[2] = ScatteringProfileDirectional(sigma_s_prime[2] / (1-g) * sssDensityScale*10, sigma_a[2] * sssDensityScale*10, g);
             */
-
-            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sp, weights, data->sssMode == SSSMODE_DIRECTIONAL, 9);
+            AtRGB result_sss_direct;
+            AtRGB result_sss_indirect;
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sp, weights, 
+                                      data->sssMode == SSSMODE_DIRECTIONAL, 9,
+                                      result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
+                                      deepGroupPtr);
         }
         result_sss *= diffuseColor;
     }

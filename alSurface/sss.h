@@ -197,6 +197,9 @@ struct DirectionalMessageData
     bool directional;
     AtShaderGlobals* sg;
     DiffusionSample samples[SSS_MAX_SAMPLES];
+    AtRGB* lightGroupsDirect;
+    AtRGB* lightGroupsIndirect;
+    AtRGB* deepGroupPtr;
 };
 
 inline float diffusionSampleDistance(float u1, float sigma)
@@ -268,7 +271,8 @@ inline float Sp_d(const AtVector& x, const AtVector& w, const float r, const AtV
     const float t3 = (s_tr_r_one + 3.0f * D[j] * (3.0f * s_tr_r_one + s_tr_r * s_tr_r) / r_sqr * x_dot_w) * AiV3Dot(x, n);
 
     const float Sp = t0 * (Cp * t1 - Ce * (t2 - t3));
-    return std::max(Sp, 0.0f);
+    // return std::max(Sp, 0.0f);
+    return Sp;
 }
 
 inline float Sp_d(const AtVector x, const AtVector w, const float r, const AtVector n, const float sigma_tr, const float D, const float Cp_norm, 
@@ -286,7 +290,8 @@ inline float Sp_d(const AtVector x, const AtVector w, const float r, const AtVec
     const float t3 = (s_tr_r_one + 3.0f * D * (3.0f * s_tr_r_one + s_tr_r * s_tr_r) / r_sqr * x_dot_w) * AiV3Dot(x, n);
 
     const float Sp = t0 * (Cp * t1 - Ce * (t2 - t3));
-    return std::max(Sp, 0.0f);
+    // return std::max(Sp, 0.0f);
+    return Sp;
 }
 
 inline float directionalDipoleRd(AtPoint xi, AtVector ni, AtPoint xo, AtVector no, 
@@ -371,8 +376,8 @@ inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no,
 
     const float real = Sp_d(xoxi, wr, dr, no, sp.sigma_tr, sp.D, sp.C_phi_inv, sp.C_phi, sp.C_E);
     const float virt = Sp_d(xoxv, wv, dv, no, sp.sigma_tr, sp.D, sp.C_phi_inv, sp.C_phi, sp.C_E);
-    // assert(real >= virt);
-    return std::max(0.0f, real - virt); 
+    const float result = real - virt;
+    return std::max(0.0f, result); 
 }
 
 
@@ -455,4 +460,6 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
 
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, AtVector U, AtVector V);
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
-                   ScatteringProfileDirectional* sp, AtRGB* weights, bool directional, int numComponents);
+                   ScatteringProfileDirectional* sp, AtRGB* weights, bool directional, int numComponents, 
+                   AtRGB& result_direct, AtRGB& result_indirect, AtRGB* lightGroupsDirect, AtRGB* deepGroupsSss,
+                   AtRGB* deepGroupPtr);
