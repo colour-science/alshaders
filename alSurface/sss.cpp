@@ -265,8 +265,8 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     numComponents = std::min(numComponents, SSS_MAX_PROFILES);
     float l = 0.0f;
     float inv_pdf_sum = 0.0f;
-    float comp_pdf[SSS_MAX_PROFILES];
-    float comp_cdf[SSS_MAX_PROFILES+1];
+    float comp_pdf[numComponents];
+    float comp_cdf[numComponents+1];
     comp_cdf[0] = 0.0f;
     for (int i=0; i < numComponents; ++i)
     {
@@ -358,31 +358,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
             Vsss_2 = V;
         }
 
-        AtVector Pd;
         float r_disk[3];
-        // float c_disk = 1.0f, c_disk_1, c_disk_2;
-        // float c_comp[3];
-        // float sigma, sigma_1, sigma_2;
-        // float sigma[3];
-/*
-        if (samples[1] < comp_pdf[0])
-        {
-            samples[1] /= comp_pdf[0];
-            diffusionSampleDisk(samples[0], samples[1], dmd->sp[0].sigma_tr, dx, dy, r_disk[0]);
-        }
-        else if (samples[1] < (comp_pdf[0] + comp_pdf[1]))
-        {
-            samples[1] -= comp_pdf[0];
-            samples[1] /= comp_pdf[1];
-            diffusionSampleDisk(samples[0], samples[1], dmd->sp[1].sigma_tr, dx, dy, r_disk[0]);
-        }
-        else
-        {
-            samples[1] -= (comp_pdf[0] + comp_pdf[1]);
-            samples[1] /= comp_pdf[2];
-            diffusionSampleDisk(samples[0], samples[1], dmd->sp[2].sigma_tr, dx, dy, r_disk[0]);   
-        }
-*/
         for (int i=0; i < numComponents; ++i)
         {
             if (samples[1] < comp_cdf[i+1])
