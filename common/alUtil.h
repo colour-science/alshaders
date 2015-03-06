@@ -254,7 +254,7 @@ inline AtVector uniformSampleSphere(float u1, float u2)
 inline AtVector uniformSampleHemisphere(float u1, float u2) {
     float y = u1;
     float r = sqrtf(MAX(0.f, 1.f - y*y));
-    float phi = 2 * M_PI * u2;
+    float phi = 2 * AI_PI * u2;
     float x = r * cosf(phi);
     float z = r * sinf(phi);
     return AiVector(x, y, z);
