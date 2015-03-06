@@ -264,20 +264,24 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     */
     numComponents = std::min(numComponents, SSS_MAX_PROFILES);
     float l = 0.0f;
-    float ap_sum = 0.0f;
-    float albedo_norm[SSS_MAX_PROFILES];
+    float inv_pdf_sum = 0.0f;
+    float comp_pdf[SSS_MAX_PROFILES];
+    float comp_cdf[SSS_MAX_PROFILES+1];
+    comp_cdf[0] = 0.0f;
     for (int i=0; i < numComponents; ++i)
     {
         dmd->sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
-        albedo_norm[i] = dmd->sp[i].alpha_prime;
-        ap_sum += dmd->sp[i].alpha_prime;
+        comp_pdf[i] = dmd->sp[i].alpha_prime;
+        comp_cdf[i+1] = comp_cdf[i] + comp_pdf[i];
+        inv_pdf_sum += dmd->sp[i].alpha_prime;
         l = std::max(l, dmd->sp[i].zr);
     }
 
-    ap_sum = 1.0f / ap_sum;
+    inv_pdf_sum = 1.0f / inv_pdf_sum;
     for (int i=0; i < numComponents; ++i)
     {
-        albedo_norm[i] *= ap_sum;
+        comp_pdf[i] *= inv_pdf_sum;
+        comp_cdf[i+1] *= inv_pdf_sum;
     }
 
     const float R_max = l * SSS_MAX_RADIUS;
@@ -360,22 +364,34 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         // float c_comp[3];
         // float sigma, sigma_1, sigma_2;
         // float sigma[3];
-        if (samples[1] < albedo_norm[0])
+/*
+        if (samples[1] < comp_pdf[0])
         {
-            samples[1] /= albedo_norm[0];
+            samples[1] /= comp_pdf[0];
             diffusionSampleDisk(samples[0], samples[1], dmd->sp[0].sigma_tr, dx, dy, r_disk[0]);
         }
-        else if (samples[1] < (albedo_norm[0] + albedo_norm[1]))
+        else if (samples[1] < (comp_pdf[0] + comp_pdf[1]))
         {
-            samples[1] -= albedo_norm[0];
-            samples[1] /= albedo_norm[1];
+            samples[1] -= comp_pdf[0];
+            samples[1] /= comp_pdf[1];
             diffusionSampleDisk(samples[0], samples[1], dmd->sp[1].sigma_tr, dx, dy, r_disk[0]);
         }
         else
         {
-            samples[1] -= (albedo_norm[0] + albedo_norm[1]);
-            samples[1] /= albedo_norm[2];
+            samples[1] -= (comp_pdf[0] + comp_pdf[1]);
+            samples[1] /= comp_pdf[2];
             diffusionSampleDisk(samples[0], samples[1], dmd->sp[2].sigma_tr, dx, dy, r_disk[0]);   
+        }
+*/
+        for (int i=0; i < numComponents; ++i)
+        {
+            if (samples[1] < comp_cdf[i+1])
+            {
+                samples[1] -= comp_cdf[i];
+                samples[1] /= comp_pdf[i];
+                diffusionSampleDisk(samples[0], samples[1], dmd->sp[i].sigma_tr, dx, dy, r_disk[0]);
+                break;
+            }
         }
 
         AtVector dir = -Wsss;
@@ -413,9 +429,9 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
 
                 for (int c=0; c < numComponents; ++c)
                 {
-                    pdf_sum += diffusionPdf(r_disk[0], dmd->sp[c].sigma_tr) * albedo_norm[c] * geom[0] * c_axis;
-                    pdf_sum += diffusionPdf(r_disk[1], dmd->sp[c].sigma_tr) * albedo_norm[c] * geom[1] * c_axis_1; 
-                    pdf_sum += diffusionPdf(r_disk[2], dmd->sp[c].sigma_tr) * albedo_norm[c] * geom[2] * c_axis_2;   
+                    pdf_sum += diffusionPdf(r_disk[0], dmd->sp[c].sigma_tr) * comp_pdf[c] * geom[0] * c_axis;
+                    pdf_sum += diffusionPdf(r_disk[1], dmd->sp[c].sigma_tr) * comp_pdf[c] * geom[1] * c_axis_1; 
+                    pdf_sum += diffusionPdf(r_disk[2], dmd->sp[c].sigma_tr) * comp_pdf[c] * geom[2] * c_axis_2;   
                 }
 
                 result_sss += dmd->samples[i].Rd * r_disk[0] / pdf_sum;                
