@@ -860,7 +860,7 @@ shader_evaluate
         // compute the diffusion sample
         assert(diffusion_msgdata);
 
-        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->sssMode == SSSMODE_DIRECTIONAL);
+        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
         AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
@@ -1211,11 +1211,13 @@ shader_evaluate
     AtRGB deepGroupsGlossy[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsGlossy2[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsDiffuse[NUM_LIGHT_GROUPS];
+    AtRGB deepGroupsSss[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsTransmission[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsBacklight[NUM_LIGHT_GROUPS];
     memset(deepGroupsGlossy, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsGlossy2, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsDiffuse, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+    memset(deepGroupsSss, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsTransmission, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
     memset(deepGroupsBacklight, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
     int count = 0;
@@ -2377,10 +2379,50 @@ shader_evaluate
         }
         else
         {  
-            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sssRadiusColor, sssRadius, 
-                                      sssDensityScale, data->sssMode == SSSMODE_DIRECTIONAL);
-        }
+            int nc = 3;
+            if (sssWeight2 > 0.0f) nc = 6;
+            if (sssWeight3 > 0.0f) nc = 9;
 
+            float Rd[9] = {sssRadiusColor.r, sssRadiusColor.g, sssRadiusColor.b,
+                           sssRadiusColor2.r, sssRadiusColor2.g, sssRadiusColor2.b,
+                           sssRadiusColor3.r, sssRadiusColor3.g, sssRadiusColor3.b};
+            float radii[9] = {sssRadius, sssRadius, sssRadius,
+                              sssRadius2, sssRadius2, sssRadius2,
+                              sssRadius3, sssRadius3, sssRadius3};
+            AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
+                                AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
+                                AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
+            ScatteringProfileDirectional sp[9];
+            for (int i = 0; i < nc; ++i)
+            {
+                sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
+            }
+            
+            /*
+            float g = 0.0f;
+            // skin2
+            const float sigma_s_prime[3] = {1.09, 1.59, 1.79};
+            const float sigma_a[3] = {0.013, 0.07, 0.145};
+            // marble
+            const float sigma_s_prime[3] = {2.19, 2.62, 3.00};
+            const float sigma_a[3] = {0.0021, 0.0041, 0.0071};
+            // wholemilk
+            const float sigma_s_prime[3] = {2.55, 3.21, 3.77};
+            const float sigma_a[3] = {0.0011, 0.0024, 0.014};
+            // ketchup
+            const float sigma_s_prime[3] = {0.18, 0.07, 0.03};
+            const float sigma_a[3] = {0.061, 0.97, 1.45};
+            sp[0] = ScatteringProfileDirectional(sigma_s_prime[0] / (1-g) * sssDensityScale*10, sigma_a[0] * sssDensityScale*10, g);
+            sp[1] = ScatteringProfileDirectional(sigma_s_prime[1] / (1-g) * sssDensityScale*10, sigma_a[1] * sssDensityScale*10, g);
+            sp[2] = ScatteringProfileDirectional(sigma_s_prime[2] / (1-g) * sssDensityScale*10, sigma_a[2] * sssDensityScale*10, g);
+            */
+            AtRGB result_sss_direct;
+            AtRGB result_sss_indirect;
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sp, weights, 
+                                      data->sssMode == SSSMODE_DIRECTIONAL, 9,
+                                      result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
+                                      deepGroupPtr);
+        }
         result_sss *= diffuseColor;
     }
 
@@ -2390,7 +2432,7 @@ shader_evaluate
     result_diffuseIndirect *= (1-sssMix);
     result_backlightDirect *= (1-sssMix);
     result_backlightIndirect *= (1-sssMix);
-    result_sss *= sssMix;// * kti * kti2;
+    result_sss *= sssMix * kti * kti2;
 
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)
