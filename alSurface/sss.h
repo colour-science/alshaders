@@ -156,6 +156,7 @@ struct ScatteringProfileDirectional
     float zr;
     float alpha_prime;
     float albedo;
+    float pdf;
 };
 
 struct DiffusionSample

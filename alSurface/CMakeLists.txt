@@ -21,5 +21,5 @@ install(FILES ${SPDL} DESTINATION ${SPDL_INSTALL_DIR})
 install(FILES ${KARGS} DESTINATION ${ARGS_INSTALL_DIR})
 
 #add_executable(coltable coltable.cpp ../common/alUtil.cpp)
-add_executable(ddint ddint.cpp sss.cpp ../common/alUtil.cpp)
-target_link_libraries(ddint ai)
+#add_executable(ddint ddint.cpp sss.cpp ../common/alUtil.cpp)
+#target_link_libraries(ddint ai)

@@ -254,7 +254,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
             result_indirect += scrs.color * Rnond;
         }
 
-        if (hit && !AiColorIsZero(f))
+        if (hit && !AiColorIsZero(f) && dmd->deepGroupPtr)
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
@@ -364,8 +364,11 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
 
         AtVector Wsss, Usss, Vsss, Usss_1, Vsss_1, Usss_2, Vsss_2;
         float c_axis = 1.0f, c_axis_1, c_axis_2;
+        float axes_c[3] = {0.25f, 0.25f, 0.5f};
+        int chosen_axis;
         if (samples[0] < 0.5f)
         {
+            chosen_axis = 2;
             samples[0] *= 2.0f;
             c_axis = 0.5f;
             c_axis_1 = 0.25f;
@@ -383,6 +386,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         }
         else if (samples[0] < 0.75f)
         {
+            chosen_axis = 0;
             samples[0] = (samples[0] - 0.5f) * 4.0f;
             c_axis = 0.25f;
             c_axis_1 = 0.5f;
@@ -400,6 +404,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         }
         else
         {
+            chosen_axis = 1;
             samples[0] = (1.0f-samples[0])* 4.0f;
             c_axis = 0.25f;
             c_axis_1 = 0.25f;
