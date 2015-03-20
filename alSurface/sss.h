@@ -384,12 +384,15 @@ inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no,
 
 inline AtRGB integrateDirectional(const ScatteringParamsDirectional& sp, float rmax, int steps)
 {
-    float rstep = 1.0f / float(steps);
+    
+	float rstep = 1.0f / float(steps);
 
     float ns = 0.0f;
     AtPoint Po = AiPoint(0.0f, 0.0f, 0.0f);
     AtVector up = AiVector(0.0f, 1.0f, 0.0f);
-    AtRGB result = AI_RGB_BLACK;
+    
+	AtRGB result = AI_RGB_BLACK;
+	/*
     float sigma = minh(sp.sigma_tr);
     for (float r = rstep/2; r < 1.0f; r += rstep)
     {
@@ -411,7 +414,7 @@ inline AtRGB integrateDirectional(const ScatteringParamsDirectional& sp, float r
     }
 
     result /= ns;
-
+	*/
     return result;
 }
 
@@ -424,6 +427,7 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
     AtPoint Po = AiPoint(0.0f, 0.0f, 0.0f);
     AtVector up = AiVector(0.0f, 1.0f, 0.0f);
     AtRGB result = AI_RGB_BLACK;
+	/*
     float sigma = minh(sp.sigma_tr);
     float hemi_step = 1.0f / SSS_INT_HEMI_SAMPLES;
     for (float r = rstep/2; r < 1.0f; r += rstep)
@@ -455,7 +459,7 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
     }
 
     result /= ns;
-
+	*/
     return result;
 }
 
