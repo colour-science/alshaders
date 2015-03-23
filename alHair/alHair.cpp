@@ -256,6 +256,30 @@ node_parameters
 #define B_WIDTH_SCALE 2.0f
 #define F_WIDTH_SCALE 4.0f
 
+struct LutgenThreadData
+{
+   DualScattering* ds;
+   ScatteringParams* sp;
+   int start;
+   int end;
+};
+
+unsigned int LutgenThreadFunc(void* data)
+{
+   LutgenThreadData* td = (LutgenThreadData*)data;
+   ScatteringParams& sp = *td->sp;
+
+   for (int idx=td->start; idx < td->end; ++idx)
+   {
+      float a = float(idx) / float(DS_MASTER_LUT_SZ);
+      float sigma = -logf(std::max(a, 0.0001f));
+      td->ds->_luts[idx] = new ScatteringLut(sp.ior, sp.alpha_R, sp.alpha_TT, sp.alpha_TRT, sp.beta_R2, sp.beta_TT2,
+                                               sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, sigma, sp.shape);
+   }
+
+   return 0;
+}
+
 struct HairBsdf
 {
     struct ShaderData
@@ -348,6 +372,50 @@ struct HairBsdf
 
             delete ds;
             ds = new DualScattering;
+
+            ScatteringParams sp;
+            sp.alpha_R = alpha_R;
+            sp.beta_R = beta_R;
+            sp.beta_R2 = beta_R2;
+            sp.alpha_TT = alpha_TT;
+            sp.beta_TT = beta_TT;
+            sp.beta_TT2 = beta_TT2;
+            sp.alpha_TRT = alpha_TRT;
+            sp.beta_TRT = beta_TRT;
+            sp.beta_TRT2 = beta_TRT2;
+            sp.gamma_TT = gamma_TT;
+            sp.gamma_g = gamma_g;
+            sp.ior = 1.55f;
+            sp.phi_g = 35.0f;
+            sp.shape = 0.0f;
+
+            int num_threads = AiNodeGetInt(options, "threads");
+            LutgenThreadData* thread_data = new LutgenThreadData[num_threads];
+            void** threads = new void*[num_threads];
+
+            int chunk_size = DS_MASTER_LUT_SZ / num_threads;
+            int start = 0;
+            float time = AiMsgUtilGetElapsedTime();
+            for (int i=0; i < num_threads; ++i)
+            {
+               thread_data[i].ds = ds;
+               thread_data[i].sp = &sp;
+               thread_data[i].start = start;
+               thread_data[i].end = std::min(start + chunk_size, DS_MASTER_LUT_SZ-1);
+               start += chunk_size;
+               threads[i] = AiThreadCreate(LutgenThreadFunc, &thread_data[i], AI_PRIORITY_HIGH);
+            }
+
+            for (int i=0; i < num_threads; ++i)
+            {
+               AiThreadWait(threads[i]);
+            }
+
+            delete[] thread_data;
+
+            time = AiMsgUtilGetElapsedTime() - time;
+            AiMsgInfo("[alHair] lutgen time on %d threads: %.2fs", num_threads, time/1000.0f);
+            
         }
 
         AtSampler* sampler_glossy;
