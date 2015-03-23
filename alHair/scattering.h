@@ -425,7 +425,7 @@ struct ScatteringLut
 struct DualScattering
 {
     DualScattering()
-    : _cachemisses(0.0), _cachelookups(0.0)
+    : _cachemisses(0.0), _cachelookups(0.0), _lutgen_time(0.0)
     {
         AiCritSecInit(&_cs);
         for (int i=0; i < DS_MASTER_LUT_SZ; ++i)
@@ -467,7 +467,6 @@ struct DualScattering
                                                         sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, sigma, sp.shape); 
                     _lutgen_time += AiMsgUtilGetElapsedTime() - t0;
                 }
-            
             AiCritSecLeave(&_cs);
         }
         return _luts[idx];
@@ -556,11 +555,13 @@ struct DualScattering
         {
             delete _luts[i];
         }
+        /*
         if (_cachelookups > 0.0)
         {
             AiMsgInfo("[alHair] total lutgen time: %.2fs", _lutgen_time/1000.0f);
             AiMsgInfo("[alHair] unique luts generated: %d", int(_cachemisses));
         }
+        */
     }
 
     ScatteringLut* _luts[DS_MASTER_LUT_SZ];
