@@ -974,7 +974,7 @@ struct HairBsdf
                     int lightGroup = data->lightGroups[sg->Lp];
 
                     is_bsdf_sample = false;
-                    pdf_bb = 0.0f;
+                    pdf_bb = pdf_lb = 0.0f;
                     AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
 
                     float w = powerHeuristic(pdf_ll, pdf_lb);
@@ -1022,7 +1022,7 @@ struct HairBsdf
                     if (specular_strength < IMPORTANCE_EPS) continue;
 
                     is_bsdf_sample = false;
-                    pdf_bb = 0.0f;
+                    pdf_bb = pdf_lb = 0.0f;
                     AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
 
                     float w = powerHeuristic(pdf_ll, pdf_lb);
@@ -1123,7 +1123,7 @@ struct HairBsdf
                 F_direct = F_scatter = AI_RGB_BLACK;
 
                 is_bsdf_sample = false;
-                pdf_bb = 0.0f;
+                pdf_bb = pdf_lb = 0.0f;
                 AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
                 SctGeo geo_l(w_l, theta_r, phi_r, U, V, W);
                 float w = powerHeuristic(pdf_ll, pdf_lb);
@@ -1272,7 +1272,7 @@ struct HairBsdf
                 F_direct = F_scatter = AI_RGB_BLACK;
 
                 is_bsdf_sample = false;
-                pdf_bb = 0.0f;
+                pdf_bb = pdf_lb = 0.0f;
                 AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
                 SctGeo geo_l(w_l, theta_r, phi_r, U, V, W);
                 float w = powerHeuristic(pdf_ll, pdf_lb);
