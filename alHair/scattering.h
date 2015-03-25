@@ -555,13 +555,13 @@ struct DualScattering
         {
             delete _luts[i];
         }
-        /*
+        
         if (_cachelookups > 0.0)
         {
             AiMsgInfo("[alHair] total lutgen time: %.2fs", _lutgen_time/1000.0f);
             AiMsgInfo("[alHair] unique luts generated: %d", int(_cachemisses));
         }
-        */
+        
     }
 
     ScatteringLut* _luts[DS_MASTER_LUT_SZ];
