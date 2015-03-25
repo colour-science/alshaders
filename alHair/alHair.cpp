@@ -393,7 +393,7 @@ struct HairBsdf
             LutgenThreadData* thread_data = new LutgenThreadData[num_threads];
             void** threads = new void*[num_threads];
 
-            int chunk_size = DS_MASTER_LUT_SZ / num_threads;
+            int chunk_size = (DS_MASTER_LUT_SZ / num_threads)+1;
             int start = 0;
             float time = AiMsgUtilGetElapsedTime();
             for (int i=0; i < num_threads; ++i)
@@ -401,7 +401,7 @@ struct HairBsdf
                thread_data[i].ds = ds;
                thread_data[i].sp = &sp;
                thread_data[i].start = start;
-               thread_data[i].end = std::min(start + chunk_size, DS_MASTER_LUT_SZ-1);
+               thread_data[i].end = std::min(start + chunk_size, DS_MASTER_LUT_SZ);
                start += chunk_size;
                threads[i] = AiThreadCreate(LutgenThreadFunc, &thread_data[i], AI_PRIORITY_HIGH);
             }
