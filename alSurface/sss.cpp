@@ -322,8 +322,8 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     numComponents = std::min(numComponents, SSS_MAX_PROFILES);
     float l = 0.0f;
     float inv_pdf_sum = 0.0f;
-    float comp_pdf[numComponents];
-    float comp_cdf[numComponents+1];
+    float comp_pdf[9];
+    float comp_cdf[9+1];
     comp_cdf[0] = 0.0f;
     int last_nonzero = numComponents;
     dmd->sp = sp;
