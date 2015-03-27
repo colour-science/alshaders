@@ -167,17 +167,36 @@ ScatteringProfileDirectional::ScatteringProfileDirectional(float sigma_s, float 
     albedo = 1.0f;
 }
 
+void matchNormals(const AtVector Nref, AtVector& Nmatch)
+{
+    if (AiV3Dot(Nref, Nmatch) < 0.0f)
+    {
+        Nmatch = -Nmatch;
+    }
+}
+
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
                         AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap)
 {
     AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
     DiffusionSample& samp = dmd->samples[dmd->sss_depth];
-    // void* brdf_data = AiOrenNayarMISCreateData(sg, 0.0f);
+
+    // put normals the right way round
+    AtVector Nref = sg->N;
+    // matchNormals(Nref, sg->N);
+    matchNormals(Nref, sg->Nf);
+    matchNormals(Nref, sg->Ng);
+    matchNormals(Nref, sg->Ngf);
+    matchNormals(Nref, sg->Ns);
+
+    void* brdf_data = AiOrenNayarMISCreateData(sg, 0.0f);
     // sg->fhemi = false;
     AiLightsPrepare(sg);
     AtRGB result_direct = AI_RGB_BLACK;
     AtUInt32 old_fi = sg->fi;
     samp.Rd = AI_RGB_BLACK;
+
+    
 
     AtRGB Rnond = AI_RGB_BLACK;
     if (!dmd->directional)
@@ -195,8 +214,8 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
         float diffuse_strength = AiLightGetDiffuse(sg->Lp);
 
         // can't use MIS here because Arnold cocks up the shadowing ;__;
-        // result_direct += AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
-        AtRGB L;
+        AtRGB L = AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
+        // AtRGB L;
         if (dmd->directional)
         {
             AtRGB R = AI_RGB_BLACK;
@@ -204,12 +223,14 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
             {
                 R += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[c]) * dmd->weights[c]; 
             }
-            L = R * sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
+            // L = R * sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
+            L *= R;
             result_direct += L;
         }
         else
         {
-            L = Rnond * sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
+            // L = Rnond * sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
+            L *= Rnond;
             result_direct += L;
         }
 
