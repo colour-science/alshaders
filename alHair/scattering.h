@@ -5,6 +5,7 @@
 #include <ai.h>
 #include "alUtil.h"
 #include <cassert>
+#include <vector>
 
 #define PIOVER4 0.7853981633974483f
 #define ONEOVER4PI 0.07957747154594767
@@ -466,6 +467,7 @@ struct DualScattering
                     _luts[idx] = new ScatteringLut(sp.ior, sp.alpha_R, sp.alpha_TT, sp.alpha_TRT, sp.beta_R2, sp.beta_TT2,
                                                         sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, sigma, sp.shape); 
                     _lutgen_time += AiMsgUtilGetElapsedTime() - t0;
+                    // _generated.push_back(idx);
                 }
             AiCritSecLeave(&_cs);
         }
@@ -560,8 +562,13 @@ struct DualScattering
         {
             AiMsgInfo("[alHair] total lutgen time: %.2fs", _lutgen_time/1000.0f);
             AiMsgInfo("[alHair] unique luts generated: %d", int(_cachemisses));
+            for (size_t i =0; i < _generated.size(); ++i)
+            {
+               AiMsgInfo("%d", _generated[i]);
+            }
         }
         */
+        
     }
 
     ScatteringLut* _luts[DS_MASTER_LUT_SZ];
@@ -569,4 +576,5 @@ struct DualScattering
     float _lutgen_time;
     float _norm;
     double _cachemisses, _cachelookups;
+    // std::vector<int> _generated;
 };
