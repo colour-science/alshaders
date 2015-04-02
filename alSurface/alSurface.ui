@@ -53,7 +53,12 @@ with uigen.group(ui, 'Specular 1', False):
 	ui.parameter('specular1Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
 	ui.parameter('specular1Anisotropy', 'float', 0.5, 'Anisotropy', mn=0, mx=1)
 	ui.parameter('specular1Rotation', 'float', 0.0, 'Rotation', mn=0, mx=1)
-	ui.parameter('specular1Ior', 'float', 1.4, 'IOR', mn=1)
+
+	with uigen.group(ui, 'Fresnel', False):
+		ui.parameter('specular1FresnelMode', 'enum', 'dielectric', 'Mode', enum_names=['dielectric', 'metallic'])
+		ui.parameter('specular1Ior', 'float', 1.4, 'IOR')
+		ui.parameter('specular1Reflectivity', 'rgb', (0.548, .549, .570), 'Reflectivity' )
+		ui.parameter('specular1EdgeTint', 'rgb', (0.579, .598, .620), 'Edge tint' )
 
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('specular1RoughnessDepthScale', 'float', 1.0, 'Roughness depth scale', connectible=False)
@@ -70,7 +75,12 @@ with uigen.group(ui, 'Specular 2'):
 	ui.parameter('specular2Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
 	ui.parameter('specular2Anisotropy', 'float', 0.5, 'Anisotropy', mn=0, mx=1)
 	ui.parameter('specular2Rotation', 'float', 0.0, 'Rotation', mn=0, mx=1)
-	ui.parameter('specular2Ior', 'float', 1.4, 'IOR', mn=1)
+
+	with uigen.group(ui, 'Fresnel', False):
+		ui.parameter('specular2FresnelMode', 'enum', 'dielectric', 'Mode', enum_names=['dielectric', 'metallic'])
+		ui.parameter('specular2Ior', 'float', 1.4, 'IOR')
+		ui.parameter('specular2Reflectivity', 'rgb', (0.548, .549, .570), 'Reflectivity' )
+		ui.parameter('specular2EdgeTint', 'rgb', (0.579, .598, .620), 'Edge tint' )
 
 	with uigen.group(ui, 'Advanced'):
 		ui.parameter('specular2RoughnessDepthScale', 'float', 1.0, 'Roughness depth scale', connectible=False)
