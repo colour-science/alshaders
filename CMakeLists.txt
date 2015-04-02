@@ -98,13 +98,14 @@ function(build_shader)
         set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
         set(SPDL ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spdl)
         set(KARGS ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.args)
+        set(C4DRES ${CMAKE_CURRENT_BINARY_DIR}/C4DtoA)
 
         add_library(${SHADER} SHARED ${SRC})
 
         target_link_libraries(${SHADER} ai)
         set_target_properties(${SHADER} PROPERTIES PREFIX "")
 
-        add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} DEPENDS ${UI})
+        add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} ${CMAKE_CURRENT_BINARY_DIR} DEPENDS ${UI})
         add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
 
         install(TARGETS ${SHADER} DESTINATION ${DSO_INSTALL_DIR})
@@ -112,6 +113,8 @@ function(build_shader)
         install(FILES ${AE} DESTINATION ${AE_INSTALL_DIR})
         install(FILES ${SPDL} DESTINATION ${SPDL_INSTALL_DIR})
         install(FILES ${KARGS} DESTINATION ${ARGS_INSTALL_DIR})
+        install(FILES ${KARGS} DESTINATION ${ARGS_INSTALL_DIR})
+        install(DIRECTORY ${C4DRES} DESTINATION ${INSTALL_DIR})
     endforeach()
 endfunction(build_shader)
 
