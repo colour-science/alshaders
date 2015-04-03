@@ -10,6 +10,8 @@ ui.shader({
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
 	'soft_name':'ALS_LayerFloat',
 	'soft_classification':'material',
 	'soft_version':1,

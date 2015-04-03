@@ -10,6 +10,8 @@ ui.shader({
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',    
 	'soft_name':'ALS_FresnelConductor',
 	'soft_classification':'texture',
 	'soft_version':1,
