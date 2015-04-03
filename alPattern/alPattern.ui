@@ -13,7 +13,8 @@ ui.shader({
 	'soft_name':'ALS_Pattern',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alpattern'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alpattern',
+   'houdini_icon': 'VOP_boxes'
 	
 })
 

@@ -8,12 +8,13 @@ ui.shader({
 	'maya_classification':'shader/surface',
 	'maya_id':'0x00116407',
 	'maya_swatch':True,
-	'maya_matte':True,
+	'maya_matte':False,
 	'maya_bump':False,
 	'soft_name':'ALS_Layer',
 	'soft_classification':'material',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alLayer'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alLayer',
+   'houdini_icon': 'SHOP_surface'
 })
 
 ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1')

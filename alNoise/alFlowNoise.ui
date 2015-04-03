@@ -13,7 +13,8 @@ ui.shader({
 	'soft_name':'ALS_FlowNoise',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alflownoise'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alflownoise',
+   'houdini_icon': 'VOP_turbnoise'
 })
 
 ui.parameter('space', 'enum', 'world', 'Space', enum_names=[

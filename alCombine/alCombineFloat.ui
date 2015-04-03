@@ -13,7 +13,8 @@ ui.shader({
 	'soft_name':'ALS_CombineFloat',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alCombine'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alCombine',
+   'houdini_icon': 'VOP_multiply'
 })
 
 ui.parameter('input1', 'float', 0.0)

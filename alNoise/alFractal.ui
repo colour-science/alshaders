@@ -13,7 +13,8 @@ ui.shader({
 	'soft_name':'ALS_Fractal',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alfractal'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alfractal',
+   'houdini_icon': 'VOP_turbnoise'
 })
 
 ui.parameter('mode', 'enum', 'scalar', 'Mode', enum_names=[

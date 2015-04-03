@@ -13,7 +13,8 @@ ui.shader({
 	'soft_name':'ALS_CellNoise',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alcellnoise'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alcellnoise',
+   'houdini_icon': 'VOP_cellcracks'
 })
 
 ui.parameter('space', 'enum', 'world',  'Space', enum_names=[

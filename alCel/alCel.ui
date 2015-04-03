@@ -13,7 +13,8 @@ ui.shader({
 	'soft_name':'ALS_Cel',
 	'soft_classification':'material',
 	'soft_version':1,
-	'help_url':''
+	'help_url':'',
+   'houdini_icon': 'SOP_paint'
 })
 
 with uigen.group(ui, 'Shading', False):

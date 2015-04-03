@@ -138,6 +138,7 @@ class ShaderDef:
    soft_name = None
    soft_classification = None
    help_url = None
+   houdini_icon = None
    soft_version = 1
    hierarchy_depth = 0
    root = None
@@ -221,6 +222,8 @@ class ShaderDef:
          self.help_url = d['help_url']
       else:
          self.help_url = 'https://bitbucket.org/anderslanglands/alshaders/wiki/Home'
+      if 'houdini_icon' in d.keys():
+         self.houdini_icon = d['houdini_icon']
 
 
    #all groups need unique ident in houdini
@@ -606,7 +609,82 @@ def writeParameterOrder(f, grp, first=1, orderc=1):
          f.write('"\n\thoudini.order%d STRING "' % ordercount)
       
          writeParameterOrder(f,gr, firstfolder,ordercount)  
-            
+
+class HoudiniEntry:
+   name = ''
+   etype = ''
+   def __init__(self, nm, et):
+      self.name = nm
+      self.etype = et
+
+class HoudiniFolder:
+   name = ''
+   group_list = []
+
+def WalkHoudiniHeader(grp, group_list):
+   for el in grp.children:
+      if isinstance(el, Group):
+         group_list.append(HoudiniEntry(el.name, 'group'))
+         WalkHoudiniHeader(el, group_list)
+      elif isinstance(el, Parameter):
+         group_list.append(HoudiniEntry(el.name, 'param'))
+
+def WriteHoudiniHeader(sd, f):
+   root_order_list = []
+   folder_ROOT_list = []
+   for el in sd.root.children:
+      if isinstance(el, Group):
+         new_folder = HoudiniFolder()
+         new_folder.name = el.name
+         group_list = []
+         WalkHoudiniHeader(el, group_list)
+         new_folder.group_list = group_list
+         folder_ROOT_list.append(new_folder)
+      elif isinstance(el, Parameter):
+         root_order_list.append(HoudiniEntry(el.name, 'param'))
+
+   # tell houdini how many groups we have and how big they are. in advance. because houdini can be dumb too sometimes
+   folder_ROOT_list_STR = 'houdini.parm.folder.ROOT STRING "'
+   for folder in folder_ROOT_list:
+      folder_ROOT_list_STR += '%s;%d;' % (folder.name, len(folder.group_list))
+   folder_ROOT_list_STR += '"'
+   writei(f, folder_ROOT_list_STR, 1)
+
+   # now tell houdini about all the headings we have...
+   heading_list = []
+   heading_idx = 0
+   for folder in folder_ROOT_list:
+      for el in folder.group_list:
+         if el.etype == 'group':
+            header_str = 'houdini.parm.heading.h%d STRING "%s"' % (heading_idx, el.name)
+            heading_idx += 1
+            writei(f, header_str, 1)
+
+   # write main houdini ordering
+   order = 'houdini.order STRING "'
+   for entry in root_order_list:
+      order += entry.name
+      order += ' '
+   order += ' ROOT"'
+
+   writei(f, order, 1)
+
+   # now tell houdini what's actually in the damn groups
+   order_idx = 2
+   heading_idx = 0
+   for folder in folder_ROOT_list:
+      order_str = 'houdini.order%d STRING "' % order_idx
+      for el in folder.group_list:
+         if el.etype == 'group':
+            order_str = '%s h%d' % (order_str, heading_idx)
+            heading_idx += 1
+         else:
+            order_str = '%s %s' % (order_str, el.name)
+      order_str += '"'
+      writei(f, order_str, 1)
+      order_idx += 1
+
+
 
 def WriteMDTHeader(sd, f): 
    writei(f, '[node %s]' % sd.name, 0)
@@ -618,36 +696,12 @@ def WriteMDTHeader(sd, f):
    writei(f, 'maya.classification STRING "%s"' % sd.maya_classification, 1)
    writei(f, 'maya.id INT %s' % sd.maya_id, 1)
    #writei(f, 'houdini.label STRING "%s"' % sd.name, 1)
-   #writei(f, 'houdini.icon STRING "SHOP_surface"', 1)
+   if sd.houdini_icon is not None:
+      writei(f, 'houdini.icon STRING "%s"' % sd.houdini_icon, 1)
+   writei(f, 'houdini.category STRING "alShaders"' ,1)
    writei(f, 'houdini.help_url STRING "%s"' % sd.help_url ,1)
 
-            
-   #print tabs and numchildren to folder array
-   if len(sd.tabs)>0:
-      f.write('\thoudini.parm.folder.folder1 STRING "')  
-      
-      for t in range(len(sd.tabs)):       
-         totalchildren= findTotalChildGroups(sd.tabs[t])       
-
-         if t<len(sd.tabs)-1:
-            f.write("%s;%d;" % (sd.tabs[t].name, totalchildren))
-         else: 
-            f.write("%s;%d" % (sd.tabs[t].name, totalchildren))   
-      f.write('"\n')
-
-   #print all groups
-   for g in sd.groups:
-      writei(f, 'houdini.parm.heading.%s STRING "%s"' % (g.ident, g.name),1)
-   
-
-   #print parameter order
-   f.write('\thoudini.order STRING "')
-   writeParameterOrder(f,sd.root,1,1)
-
-   for av in sd.aovs:
-      f.write('%s ' % av.name)
-
-   f.write('"\n') 
+   WriteHoudiniHeader(sd, f)
 
    
 def WriteMTDParam(f, name, ptype, value, d):

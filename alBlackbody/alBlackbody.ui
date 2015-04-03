@@ -13,7 +13,8 @@ ui.shader({
 	'soft_name':'ALS_Blackbody',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alBlackbody'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alBlackbody',
+   'houdini_icon':'SHELF_fire'
 })
 
 ui.parameter('temperature', 'float', 1000.0, mn=273, mx=16000)

@@ -13,7 +13,8 @@ ui.shader({
    'soft_name':'ALS_Hair',
    'soft_classification':'material',
    'soft_version':1,
-   'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alHair'
+   'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alHair',
+   'houdini_icon': 'SHELF_hair'
 })
 
 with uigen.group(ui, 'Fibre properties', False):
