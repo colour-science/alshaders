@@ -2056,6 +2056,8 @@ shader_evaluate
             float t_eta = transmissionIor;
             tir = false;
             if (AiV3Dot(sg->N, sg->Rd) > 0.0f) t_eta = 1.0f / t_eta;
+            AtVector U, V;
+            AiBuildLocalFramePolar(&U, &V, &sg->N);
             MicrofacetTransmission* mft = MicrofacetTransmission::create(sg, transmissionRoughness, transmissionRoughness, t_eta, sg->Nf, U, V);
             
             while (AiSamplerGetSample(sampit, samples))
