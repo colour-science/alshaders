@@ -1736,6 +1736,10 @@ struct HairBsdf
             AiAOVSetRGB(sg, data->aovs[k_indirect_global].c_str(), result_Pg_indirect);
             AiAOVSetRGB(sg, data->aovs[k_indirect_local].c_str(), result_Pl_indirect);
 
+            // write depth AOV
+            AtRGB depth = AiColorCreate(float(sg->Rl), AiV3Dot(sg->Nf, wo), sg->P.y);
+            AiAOVSetRGB(sg, data->aovs[k_depth].c_str(), depth);
+
             assert(isValidColor(result_Pg_direct));
             assert(isValidColor(result_Pg_indirect));
             assert(isValidColor(result_Pl_direct));
