@@ -10,10 +10,14 @@ ui.shader({
    'maya_swatch':True,
    'maya_matte':False,
    'maya_bump':False,
+   'c4d_classification':'surface',
+   'c4d_menu':'surface', 
+   'c4d_command_id':'1034646',   
    'soft_name':'ALS_Hair',
    'soft_classification':'material',
    'soft_version':1,
-   'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alHair'
+   'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alHair',
+   'houdini_icon': 'SHELF_hair'
 })
 
 with uigen.group(ui, 'Fibre properties', False):

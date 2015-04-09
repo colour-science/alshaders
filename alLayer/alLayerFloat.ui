@@ -10,10 +10,13 @@ ui.shader({
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
 	'soft_name':'ALS_LayerFloat',
 	'soft_classification':'material',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alLayer'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alLayer',
+   'houdini_icon': 'COP2_composite'
 })
 
 ui.parameter('layer1', 'float', 0.0, 'Layer 1')

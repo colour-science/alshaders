@@ -47,6 +47,18 @@ inline void flipNormals(AtShaderGlobals* sg)
     sg->Ngf = -sg->Ngf;
 }
 
+static const char* fresnel_mode_names[] = {
+    "dielectric",
+    "metallic",
+    NULL
+};
+
+enum FresnelModes
+{
+    FM_DIELECTRIC = 0,
+    FM_METALLIC
+};
+
 enum alSurfaceParams
 {
     // diffuse
@@ -94,7 +106,10 @@ enum alSurfaceParams
     p_specular1Roughness,
     p_specular1Anisotropy,
     p_specular1Rotation,
+    p_specular1FresnelMode,
     p_specular1Ior,
+    p_specular1Reflectivity,
+    p_specular1EdgeTint,
     p_specular1RoughnessDepthScale,
     p_specular1ExtraSamples,
     p_specular1Normal,
@@ -106,7 +121,10 @@ enum alSurfaceParams
     p_specular2Roughness,
     p_specular2Anisotropy,
     p_specular2Rotation,
+    p_specular2FresnelMode,
     p_specular2Ior,
+    p_specular2Reflectivity,
+    p_specular2EdgeTint,
     p_specular2RoughnessDepthScale,
     p_specular2ExtraSamples,
     p_specular2Normal,
@@ -261,7 +279,10 @@ node_parameters
     AiParameterFLT("specular1Roughness", 0.3f );
     AiParameterFLT("specular1Anisotropy", 0.5f );
     AiParameterFLT("specular1Rotation", 0.0f );
+    AiParameterENUM("specular1FresnelMode", FM_DIELECTRIC, fresnel_mode_names);
     AiParameterFLT("specular1Ior", 1.4f );
+    AiParameterRGB("specular1Reflectivity", 0.548, .549, .570);
+    AiParameterRGB("specular1EdgeTint", 0.579, .598, .620);
     AiParameterFLT("specular1RoughnessDepthScale", 1.0f);
     AiParameterINT("specular1ExtraSamples", 0);
     AiParameterVec("specular1Normal", 0, 0, 0);
@@ -273,7 +294,10 @@ node_parameters
     AiParameterFLT("specular2Roughness", 0.3f );
     AiParameterFLT("specular2Anisotropy", 0.5f );
     AiParameterFLT("specular2Rotation", 0.0f );
+    AiParameterENUM("specular2FresnelMode", FM_DIELECTRIC, fresnel_mode_names);
     AiParameterFLT("specular2Ior", 1.4f );
+    AiParameterRGB("specular2Reflectivity", 0.548, .549, .570);
+    AiParameterRGB("specular2EdgeTint", 0.579, .598, .620);
     AiParameterFLT("specular2RoughnessDepthScale", 1.0f);
     AiParameterINT("specular2ExtraSamples", 0);
     AiParameterVec("specular2Normal", 0, 0, 0);
@@ -391,7 +415,6 @@ node_initialize
     data->refraction_sampler = NULL;
     data->backlight_sampler = NULL;
     data->perm_table = NULL;
-    data->fr1_node = data->fr2_node = NULL;
     data->perm_table_diffuse = NULL;
     data->perm_table_spec1 = NULL;
     data->perm_table_spec2 = NULL;
@@ -569,27 +592,8 @@ node_update
     data->xres = AiNodeGetInt(options, "xres");
 
     // fresnel
-    data->fr1_node = NULL;
-    if (AiNodeIsLinked(node, "specular1Ior"))
-    {
-        AtNode* cn = AiNodeGetLink(node, "specular1Ior");
-        const AtNodeEntry* cne = AiNodeGetNodeEntry(cn);
-        if (!strcmp(AiNodeEntryGetName(cne), "alFresnelConductor"))
-        {
-            data->fr1_node = cn;
-        }
-    }
-    
-    data->fr2_node = NULL;
-    if (AiNodeIsLinked(node, "specular2Ior"))
-    {
-        AtNode* cn = AiNodeGetLink(node, "specular2Ior");
-        const AtNodeEntry* cne = AiNodeGetNodeEntry(cn);
-        if (!strcmp(AiNodeEntryGetName(cne), "alFresnelConductor"))
-        {
-            data->fr2_node = cn;
-        }
-    }
+    data->specular1FresnelMode = params[p_specular1FresnelMode].INT;
+    data->specular2FresnelMode = params[p_specular2FresnelMode].INT;
 
     // Trace sets setup
     data->trace_set_all_enabled = false;
@@ -727,18 +731,12 @@ shader_evaluate
 
     float ior, ior2;
     float eta, eta2;
-    if (!data->fr1_node)
-    {
-        ior = AiShaderEvalParamFlt(p_specular1Ior);
-        eta = 1.0f / ior;
-    }
+    ior = AiShaderEvalParamFlt(p_specular1Ior);
+    eta = 1.0f / ior;
 
     // slightly wasteful doing this here, btu it keeps the code simpler
-    if (!data->fr2_node)
-    {
-        ior2 = AiShaderEvalParamFlt(p_specular2Ior);
-        eta2 = 1.0f / ior2;
-    }
+    ior2 = AiShaderEvalParamFlt(p_specular2Ior);
+    eta2 = 1.0f / ior2;
 
     float roughness = AiShaderEvalParamFlt( p_specular1Roughness );
     roughness *= roughness;
@@ -876,7 +874,7 @@ shader_evaluate
             // check transmission through the surface
             float costheta = AiV3Dot(sg->Nf, -sg->Rd);
             float kt = 0.0f;
-            if (!data->fr1_node)
+            if (!data->specular1FresnelMode)
             {
                 kt = 1.0f - fresnel(costheta, eta);    
             }
@@ -1235,11 +1233,10 @@ shader_evaluate
     brdfw.brdf_data = mis;
     brdfw.sg = sg;
 
-    if (data->fr1_node)
+    if (data->specular1FresnelMode == FM_METALLIC)
     {
-        AiShaderEvalParamFlt(p_specular1Ior);
-        AtRGB r; AiStateGetMsgRGB("als_fr_r", &r);
-        AtRGB g; AiStateGetMsgRGB("als_fr_g", &g);
+        AtRGB r = AiShaderEvalParamRGB(p_specular1Reflectivity); 
+        AtRGB g = AiShaderEvalParamRGB(p_specular1EdgeTint);
         FresnelConductor* fr = (FresnelConductor*)AiShaderGlobalsQuickAlloc(sg, sizeof(FresnelConductor));
         new (fr) FresnelConductor(kCustom, r, g);
         brdfw.fr = fr;
@@ -1262,11 +1259,10 @@ shader_evaluate
     brdfw2.brdf_data = mis2;
     brdfw2.sg = sg;
 
-    if (data->fr2_node)
+    if (data->specular2FresnelMode == FM_METALLIC)
     {
-        AiShaderEvalParamFlt(p_specular2Ior);
-        AtRGB r; AiStateGetMsgRGB("als_fr_r", &r);
-        AtRGB g; AiStateGetMsgRGB("als_fr_g", &g);
+        AtRGB r = AiShaderEvalParamRGB(p_specular2Reflectivity); 
+        AtRGB g = AiShaderEvalParamRGB(p_specular2EdgeTint);
         FresnelConductor* fr = (FresnelConductor*)AiShaderGlobalsQuickAlloc(sg, sizeof(FresnelConductor));
         new (fr) FresnelConductor(kCustom, r, g);
         brdfw2.fr = fr;
@@ -2111,6 +2107,8 @@ shader_evaluate
             float t_eta = transmissionIor;
             tir = false;
             if (AiV3Dot(sg->N, sg->Rd) > 0.0f) t_eta = 1.0f / t_eta;
+            AtVector U, V;
+            AiBuildLocalFramePolar(&U, &V, &sg->N);
             MicrofacetTransmission* mft = MicrofacetTransmission::create(sg, transmissionRoughness, transmissionRoughness, t_eta, sg->Nf, U, V);
             
             while (AiSamplerGetSample(sampit, samples))

@@ -10,9 +10,12 @@ ui.shader({
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
         'soft_name':'ALS_SwitchColor',
 	'soft_classification':'texture',
-	'soft_version':1
+	'soft_version':1,
+   'houdini_icon': 'VOP_switch'
 })
 
 ui.parameter('inputA', 'rgb', (0.0, 0.0, 0.0), 'Input 0')

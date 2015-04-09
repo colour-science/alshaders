@@ -10,9 +10,12 @@ ui.shader({
         'maya_swatch':True,
         'maya_matte':False,
         'maya_bump':False,
+        'c4d_classification':'texture',
+        'c4d_menu':'texture',    
         'soft_name':'ALS_JitterColor',
         'soft_classification':'texture',
-        'soft_version':1
+        'soft_version':1,
+        'houdini_icon': 'SHELF_temperature_from_texture'
 })
 
 ui.parameter('input', 'rgb', (1,1,1), 'Input')
