@@ -859,7 +859,6 @@ shader_evaluate
     {
         // compute the diffusion sample
         assert(diffusion_msgdata);
-
         alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
@@ -951,6 +950,7 @@ shader_evaluate
     {
         // allocate diffusion sample storage
         diffusion_msgdata = (DirectionalMessageData*)AiShaderGlobalsQuickAlloc(sg, sizeof(DirectionalMessageData));
+        // printf("dmd: %p\n", diffusion_msgdata);
         memset(diffusion_msgdata, 0, sizeof(DirectionalMessageData));
         AiStateSetMsgPtr("als_dmd", diffusion_msgdata);
     }
@@ -2392,12 +2392,12 @@ shader_evaluate
             AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
                                 AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
                                 AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
-            ScatteringProfileDirectional sp[9];
+            memcpy(diffusion_msgdata->weights, weights, sizeof(AtRGB)*nc);
             for (int i = 0; i < nc; ++i)
             {
-                sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
+               diffusion_msgdata->sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
             }
-            
+
             /*
             float g = 0.0f;
             // skin2
@@ -2418,8 +2418,8 @@ shader_evaluate
             */
             AtRGB result_sss_direct;
             AtRGB result_sss_indirect;
-            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, sp, weights, 
-                                      data->sssMode == SSSMODE_DIRECTIONAL, 9,
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, 
+                                      data->sssMode == SSSMODE_DIRECTIONAL, nc,
                                       result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
                                       deepGroupPtr);
         }
@@ -2649,4 +2649,6 @@ shader_evaluate
                     +result_ss
                     +result_transmission
                     +result_emission;
+
+   assert(AiIsFinite(sg->out.RGB));
 }

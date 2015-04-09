@@ -9,7 +9,7 @@
 #define SSS_MAX_RADIUS 25.0f
 #define SSS_ALBEDO_LUT_SZ 256
 #define SSS_MAX_PROFILES 9
-
+/*
 struct ScatteringParamsDipole
 {
     ScatteringParamsDipole(const AtRGB& _sigma_s_prime, const AtRGB& _sigma_a, float _g, float _eta)
@@ -103,6 +103,7 @@ struct ScatteringParamsDirectional
     static float _albedo_lut[SSS_ALBEDO_LUT_SZ];
     static float _albedo_lut_d[SSS_ALBEDO_LUT_SZ];
 };
+*/
 
 struct ScatteringProfileDirectional
 {
@@ -170,7 +171,7 @@ struct DiffusionSample
     float r;        //< distance from shading point to sample
     float b;        //< bounce attenuation factor
 };
-
+/*
 struct DiffusionMessageData
 {
     int sss_depth;
@@ -179,10 +180,11 @@ struct DiffusionMessageData
     AtVector No;
     AtVector U;
     AtVector V;
-    ScatteringParamsDipole sp;
+    ScatteringParamsDipole sp[9];
     AtShaderGlobals* sg;
     DiffusionSample samples[SSS_MAX_SAMPLES];
 };
+*/
 
 struct DirectionalMessageData
 {
@@ -193,8 +195,8 @@ struct DirectionalMessageData
     AtVector U;
     AtVector V;
     AtVector wo;
-    ScatteringProfileDirectional* sp;
-    AtRGB* weights;
+    ScatteringProfileDirectional sp[9];
+    AtRGB weights[9];
     int numComponents;
     bool directional;
     AtShaderGlobals* sg;
@@ -250,33 +252,16 @@ inline AtRGB dipoleProfileRd(float r, const AtRGB& sigma_tr, const AtRGB& zr, co
     );
 }
 
+/*
 inline AtRGB dipole(float r, const AtVector& N, const AtVector& Nx, const ScatteringParamsDipole& sp)
 {
     return dipoleProfileRd(r, sp.sigma_tr, sp.zr, sp.zv) * sp.alpha_prime;
 }
+*/
 
 // Directional dipole profile evaluation
 // see: http://www.ci.i.u-tokyo.ac.jp/~hachisuka/dirpole.pdf
 // and: http://www.ci.i.u-tokyo.ac.jp/~hachisuka/dirpole.cpp
-inline float Sp_d(const AtVector& x, const AtVector& w, const float r, const AtVector& n, const AtRGB& sigma_tr, const AtRGB& D, const float Cp_norm, 
-                    const float Cp, const float Ce, const int j) 
-{
-    // evaluate the profile
-    const float s_tr_r = sigma_tr[j] * r;
-    const float s_tr_r_one = 1.0f + s_tr_r;
-    const float x_dot_w = AiV3Dot(x, w);
-    const float r_sqr = r * r;
-
-    const float t0 = Cp_norm * (1.0f / (4.0f * AI_PI * AI_PI)) * expf(-s_tr_r) / (r * r_sqr);
-    const float t1 = r_sqr / D[j] + 3.0f * s_tr_r_one * x_dot_w;
-    const float t2 = 3.0f * D[j] * s_tr_r_one * AiV3Dot(w, n);
-    const float t3 = (s_tr_r_one + 3.0f * D[j] * (3.0f * s_tr_r_one + s_tr_r * s_tr_r) / r_sqr * x_dot_w) * AiV3Dot(x, n);
-
-    const float Sp = t0 * (Cp * t1 - Ce * (t2 - t3));
-    // return std::max(Sp, 0.0f);
-    return Sp;
-}
-
 inline float Sp_d(const AtVector x, const AtVector w, const float r, const AtVector n, const float sigma_tr, const float D, const float Cp_norm, 
                     const float Cp, const float Ce) 
 {
@@ -292,61 +277,15 @@ inline float Sp_d(const AtVector x, const AtVector w, const float r, const AtVec
     const float t3 = (s_tr_r_one + 3.0f * D * (3.0f * s_tr_r_one + s_tr_r * s_tr_r) / r_sqr * x_dot_w) * AiV3Dot(x, n);
 
     const float Sp = t0 * (Cp * t1 - Ce * (t2 - t3));
+    assert(AiIsFinite(Sp));
     // return std::max(Sp, 0.0f);
     return Sp;
 }
 
-inline float directionalDipoleRd(AtPoint xi, AtVector ni, AtPoint xo, AtVector no, 
-                          AtVector wi, AtVector wo, float eta, AtRGB de, AtRGB D, AtRGB sigma_t, AtRGB sigma_tr, 
-                          float A, float C_phi, float C_phi_inv, float C_E, unsigned int j)
+
+inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no, AtVector wi, AtVector wo, ScatteringProfileDirectional& sp)
 {
-    // distance
-    AtVector xoxi = xo - xi;
-    float r = AiV3Length(xoxi);
-
-    // modified normal
-    AtVector ni_s = AiV3Cross(AiV3Normalize(xoxi), AiV3Normalize(AiV3Cross(ni, xoxi)));
-
-    // directions of ray sources
-    float nnt = 1.0f / eta;
-    float ddn = -AiV3Dot(wi, ni);
-    AtVector wr = AiV3Normalize(wi * -nnt - ni * (ddn * nnt + sqrtf(1.0f - nnt*nnt * (1.0f - ddn*ddn))));
-    AtVector wv = wr - ni_s * (2.0f * AiV3Dot(wr, ni_s));
-
-    // distance to real sources
-    const float cos_beta = -sqrtf((r * r - AiV3Dot(xoxi, wr) * AiV3Dot(xoxi, wr)) / (r * r + de[j] * de[j]));
-    float dr;
-    const float mu0 = -AiV3Dot(no, wr);
-    if (mu0 > 0.0) 
-    {
-        dr = sqrtf((D[j] * mu0) * ((D[j] * mu0) - de[j] * cos_beta * 2.0) + r * r);
-    } 
-    else 
-    {
-        dr = sqrtf(1.0f / (3.0f * sigma_t[j] * 3.0f * sigma_t[j]) + r * r);
-    }
-
-    AtVector xoxv = xo - (xi + ni_s * (2.0f * A * de[j]));
-    const float dv = AiV3Length(xoxv);
-
-    const float real = Sp_d(xoxi, wr, dr, no, sigma_tr, D, C_phi_inv, C_phi, C_E, j);
-    const float virt = Sp_d(xoxv, wv, dv, no, sigma_tr, D, C_phi_inv, C_phi, C_E, j);
-    // assert(real >= virt);
-    return std::max(0.0f, real - virt);
-}
-
-inline AtRGB directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no, AtVector wi, AtVector wo, 
-                        const ScatteringParamsDirectional& sp)
-{
-    return rgb(
-        directionalDipoleRd(xi, ni, xo, no, wi, wo, sp.eta, sp.de, sp.D, sp.sigma_t, sp.sigma_tr, sp.A, sp.C_phi, sp.C_phi_inv, sp.C_E, 0),
-        directionalDipoleRd(xi, ni, xo, no, wi, wo, sp.eta, sp.de, sp.D, sp.sigma_t, sp.sigma_tr, sp.A, sp.C_phi, sp.C_phi_inv, sp.C_E, 1),
-        directionalDipoleRd(xi, ni, xo, no, wi, wo, sp.eta, sp.de, sp.D, sp.sigma_t, sp.sigma_tr, sp.A, sp.C_phi, sp.C_phi_inv, sp.C_E, 2)
-    );
-}
-
-inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no, AtVector wi, AtVector wo, ScatteringProfileDirectional sp)
-{
+    assert(sp.D > 0.0f);
     // distance
     AtVector xoxi = xo - xi;
     float r = AiV3Length(xoxi);
@@ -375,14 +314,17 @@ inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no,
 
     AtVector xoxv = xo - (xi + ni_s * (2.0f * sp.A * sp.de));
     const float dv = AiV3Length(xoxv);
+    assert(dr > 1e-7f);
+    assert(dv > 1e-7f);
 
     const float real = Sp_d(xoxi, wr, dr, no, sp.sigma_tr, sp.D, sp.C_phi_inv, sp.C_phi, sp.C_E);
     const float virt = Sp_d(xoxv, wv, dv, no, sp.sigma_tr, sp.D, sp.C_phi_inv, sp.C_phi, sp.C_E);
     const float result = real - virt;
+    assert(AiIsFinite(result));
     return std::max(0.0f, result); 
 }
 
-
+#if 0
 inline AtRGB integrateDirectional(const ScatteringParamsDirectional& sp, float rmax, int steps)
 {
     
@@ -463,10 +405,11 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
 	*/
     return result;
 }
+#endif
 
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
                         AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap);
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
-                   ScatteringProfileDirectional* sp, AtRGB* weights, bool directional, int numComponents, 
+                   bool directional, int numComponents, 
                    AtRGB& result_direct, AtRGB& result_indirect, AtRGB* lightGroupsDirect, AtRGB* deepGroupsSss,
                    AtRGB* deepGroupPtr);
