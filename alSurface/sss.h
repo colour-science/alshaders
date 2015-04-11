@@ -150,6 +150,7 @@ struct ScatteringProfileDirectional
     // }
 
     float de;
+    float safe_radius;
     float sigma_t;
     float sigma_t_prime;
     float sigma_tr;
@@ -258,7 +259,8 @@ inline AtRGB dipole(float r, const AtVector& N, const AtVector& Nx, const Scatte
     return dipoleProfileRd(r, sp.sigma_tr, sp.zr, sp.zv) * sp.alpha_prime;
 }
 */
-
+#define DD_SINGLE_PRECISION 
+#ifdef DD_SINGLE_PRECISION
 // Directional dipole profile evaluation
 // see: http://www.ci.i.u-tokyo.ac.jp/~hachisuka/dirpole.pdf
 // and: http://www.ci.i.u-tokyo.ac.jp/~hachisuka/dirpole.cpp
@@ -281,6 +283,27 @@ inline float Sp_d(const AtVector x, const AtVector w, const float r, const AtVec
     // return std::max(Sp, 0.0f);
     return Sp;
 }
+#else
+inline double Sp_d(const AtVector x, const AtVector w, const double r, const AtVector n, const double sigma_tr, const double D, const double Cp_norm, 
+                    const double Cp, const double Ce) 
+{
+    // evaluate the profile
+    const double s_tr_r = sigma_tr * r;
+    const double s_tr_r_one = 1.0 + s_tr_r;
+    const double x_dot_w = AiV3Dot(x, w);
+    const double r_sqr = r * r;
+    // if (r_sqr < 1.e-5) return 1.0;
+
+    const double t0 = Cp_norm * (1.0 / (4.0 * AI_PI * AI_PI)) * exp(-s_tr_r) / (r * r_sqr);
+    const double t1 = r_sqr / D + 3.0 * s_tr_r_one * x_dot_w;
+    const double t2 = 3.0 * D * s_tr_r_one * AiV3Dot(w, n);
+    const double t3 = (s_tr_r_one + 3.0 * D * (3.0 * s_tr_r_one + s_tr_r * s_tr_r) / r_sqr * x_dot_w) * AiV3Dot(x, n);
+
+    const double Sp = t0 * (Cp * t1 - Ce * (t2 - t3));
+    assert(AiIsFinite(Sp));
+    return Sp;
+}
+#endif
 
 
 inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no, AtVector wi, AtVector wo, ScatteringProfileDirectional& sp)
@@ -302,7 +325,7 @@ inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no,
     // distance to real sources
     const float cos_beta = -sqrtf((r * r - AiV3Dot(xoxi, wr) * AiV3Dot(xoxi, wr)) / (r * r + sp.de * sp.de));
     float dr;
-    const float mu0 = -AiV3Dot(no, wr);
+    const float mu0 = -AiV3Dot(ni, wr);
     if (mu0 > 0.0) 
     {
         dr = sqrtf((sp.D * mu0) * ((sp.D * mu0) - sp.de * cos_beta * 2.0) + r * r);
@@ -314,8 +337,6 @@ inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no,
 
     AtVector xoxv = xo - (xi + ni_s * (2.0f * sp.A * sp.de));
     const float dv = AiV3Length(xoxv);
-    assert(dr > 1e-7f);
-    assert(dv > 1e-7f);
 
     const float real = Sp_d(xoxi, wr, dr, no, sp.sigma_tr, sp.D, sp.C_phi_inv, sp.C_phi, sp.C_E);
     const float virt = Sp_d(xoxv, wv, dv, no, sp.sigma_tr, sp.D, sp.C_phi_inv, sp.C_phi, sp.C_E);

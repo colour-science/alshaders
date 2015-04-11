@@ -118,6 +118,8 @@ ScatteringProfileDirectional::ScatteringProfileDirectional(float Rd, float scale
     sigma_a *= scale * AI_PI * 1.25;
 
     const float sigma_s = sigma_s_prime;
+    // safe_radius = 0.5f / sigma_s;
+    safe_radius = 0.0f;
 
     sigma_t_prime = sigma_s_prime + sigma_a;
     sigma_t = sigma_s + sigma_a;
@@ -152,6 +154,8 @@ ScatteringProfileDirectional::ScatteringProfileDirectional(float sigma_s, float 
     float sigma_s_prime = sigma_s * (1.0f - g);
     sigma_t_prime = sigma_s_prime + sigma_a;
     sigma_t = sigma_s + sigma_a;
+
+    safe_radius = 0.5f / sigma_s;
 
     alpha_prime = sigma_s_prime / sigma_t_prime;
 
@@ -188,7 +192,6 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     // assert(sg->P != dmd->Po);
     // put normals the right way round
     AtVector Nref = sg->N;
-    // matchNormals(Nref, sg->N);
     matchNormals(Nref, sg->Nf);
     matchNormals(Nref, sg->Ng);
     matchNormals(Nref, sg->Ngf);
@@ -207,23 +210,12 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
     AtRGB Rnond = AI_RGB_BLACK;
     bool directional = dmd->directional;
-    if (samp.r <= 1e-7f) directional = false;
     
     if (!directional)
     {
-        if (samp.r > 1e-7f)
+        for (int c = 0; c < dmd->numComponents; ++c)
         {
-            for (int c = 0; c < dmd->numComponents; ++c)
-            {
-                Rnond += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[c]) * dmd->weights[c];
-            }
-        }
-        else
-        {
-            for (int c = 0; c < dmd->numComponents; ++c)
-            {
-                Rnond += dmd->sp[c].albedo * dmd->weights[c];
-            }   
+            Rnond += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[c]) * dmd->weights[c];
         }
     }
 
@@ -241,7 +233,10 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
             AtRGB R = AI_RGB_BLACK;
             for (int c=0; c < dmd->numComponents; ++c)
             {
-                R += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[c]) * dmd->weights[c]; 
+                if (samp.r < dmd->sp[c].safe_radius)
+                    R += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->N, dmd->No, dmd->sp[c]) * dmd->weights[c];
+                else
+                    R += directionalDipole(sg->P, sg->N, dmd->Po, dmd->No, sg->Ld, dmd->wo, dmd->sp[c]) * dmd->weights[c]; 
             }
             // L = R * sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
             L *= R;
