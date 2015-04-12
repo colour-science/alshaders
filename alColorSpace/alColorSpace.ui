@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alColorSpace',
-	'description':'Converts a color to linear rec709 from a given color space',
+   'intro':'Simple color-space transforms.',
+	'description':'Converts a color to linear Rec.709 from a given color space.',
 	'output':'rgb',
 	'maya_name':'alColorSpace',
 	'maya_classification':'texture',
@@ -15,9 +16,9 @@ ui.shader({
 	'soft_name':'ALS_ColorSpace',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alColorSpace',
+	'help_url':'http://www.anderslanglands.com/alshaders/alColorSpace.html',
    'houdini_icon': 'COP2_lookup'
 })
 
-ui.parameter('input', 'rgb', (0.0, 0.0, 0.0))
-ui.parameter('sourceSpace', 'enum', 'sRGB', 'Source space', enum_names=['sRGB', 'Cineon', 'LogC'])
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), description='Color to be transformed.')
+ui.parameter('sourceSpace', 'enum', 'sRGB', 'Source space', enum_names=['sRGB', 'Cineon', 'LogC'], description='Source color space. The input will be transformed from this space to linear Rec.709.')

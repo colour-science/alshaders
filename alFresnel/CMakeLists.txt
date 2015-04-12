@@ -6,13 +6,14 @@ set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
 set(SPDL ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spdl)
 set(KARGS ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.args)
 set(C4DRES ${CMAKE_CURRENT_BINARY_DIR}/C4DtoA)
+set(HTML ${CMAKE_SOURCE_DIR}/docs/${SHADER}.html)
 
 add_library(${SHADER} SHARED ${SRC})
 
 target_link_libraries(${SHADER} ai)
 set_target_properties(${SHADER} PROPERTIES PREFIX "")
 
-add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} ${CMAKE_CURRENT_BINARY_DIR}  DEPENDS ${UI})
+add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} ${CMAKE_CURRENT_BINARY_DIR} ${HTML}  DEPENDS ${UI})
 add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
 
 install(TARGETS ${SHADER} DESTINATION ${DSO_INSTALL_DIR})

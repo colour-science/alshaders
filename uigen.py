@@ -4,6 +4,7 @@
 import os
 import sys
 import uuid
+from math import pow
 from string import maketrans
 
 def enum(*sequential, **named):
@@ -79,6 +80,7 @@ class Parameter(UiElement):
    def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
       self.name = name
       self.ptype = ptype
+      self.default = default
       self.description = description      
       if not label:
          label = name   
@@ -124,6 +126,7 @@ class AOV(Parameter):
 
 class ShaderDef:
    name = None
+   intro = None
    description = None
    output = None
    c4d_classification = None
@@ -204,6 +207,7 @@ class ShaderDef:
 
    def shader(self, d):
       self.name = d['name']
+      self.intro = d['intro']
       self.description = d['description']
       self.output = d['output']
       self.c4d_classification = d.get('c4d_classification')
@@ -986,31 +990,129 @@ def WriteSPDL(sd, fn):
 
    f.close()
 
+def WalkHTML(f, el, d):
+   if isinstance(el, Group):
+      writei(f, "<h3 class='section'><span>%s</span></h3>" % el.name, d)
+      writei(f, "<div class='section-desc'>%s</div>" % el.description, d)
+      if el.children:
+         for e in el.children:
+            WalkHTML(f, e, d+1)
+
+   elif isinstance(el, Parameter):
+      el_link="link='false'"
+      if el.connectible:
+         el_link=''
+      el_range=''
+      if el.mn != None and el.mx != None:
+         el_range="range='[%s, %s]'" % (str(el.mn), str(el.mx))
+      el_default="default='%s'" % str(el.default)
+      if el.ptype == 'rgb' and not isinstance(el, AOV):
+         el_default="default='rgb(%d, %d, %d)'" % (int(pow(el.default[0],1/2.2) * 255), int(pow(el.default[1],1/2.2) * 255), int(pow(el.default[2],1/2.2) * 255))
+      writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s></div>"
+               % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link), d)
+
+def WalkHTMLRoot(f, el, d):
+   if isinstance(el, Group):
+      expand_class='expander-trigger'
+      if el.collapse:
+         expand_class='expander-trigger expander-hidden'
+      writei(f, "<div class='expander'>", d)
+      writei(f, "<div class='%s'>%s</div>" % (expand_class, el.name), d)
+      writei(f, "<div class='expander-content'>", d)
+      writei(f, "<div class='section-desc'>%s</div>" % el.description, d)
+
+      if el.children:
+         for e in el.children:
+            WalkHTML(f, e, d+1)
+
+      writei(f, "</div> <!-- end expander-content %s -->" % el.name, d)
+      writei(f, "</div> <!-- end expander %s -->" % el.name, d)
+
+   elif isinstance(el, Parameter):
+      writei(f, "<div class='param' name='%s' label='%s' type='%s' default='%s' desc='%s'></div>"
+               % (el.name, el.label, el.ptype, el.default, el.description), d)
+
+def WriteHTML(sd, fn):
+   f = open(fn, 'w')
+
+   f.write(
+      """
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset='utf-8'>
+   <title>%s Reference Guide</title>
+   <link rel="stylesheet" href="../css/app.css">
+   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+   <script src="../js/navbar.js"></script>
+   <script src="../js/tabs.js"></script>
+   <script src="../js/param.js"></script>
+   <script src="../js/parallax.js"></script>
+   <script type="text/javascript">
+      $(function(){
+         $("#header").load("./header.html");
+      });
+   </script>
+</head>
+
+<div id='header'></div>
+
+<body>
+   <div class='shader-content'>
+      <div class='article-block'>
+         <article class='type-system-sans'>
+            <p class='type'>%s</p>
+            <h2>%s</h2>
+            <p>%s This document is a reference guide to the parameters.</p>
+         </article>
+      </div> <!-- end article-block -->
+   
+      <div class='parameter-block'>
+      <div class='parameter-content'>
+"""
+   % (sd.name, sd.name, sd.intro, sd.description)
+   )
+
+   # parameters
+   for el in sd.root.children:
+      WalkHTMLRoot(f, el, 2)
+
+   f.write(
+"""
+      </div> <!-- end parameter-content -->
+      </div> <!-- end parameter-block -->
+   </div> <!-- end shader-content -->
+</body>
+"""
+)
+
+   f.close()
+
 def remapControls(sd):
-   with group(sd, 'Remap', collapse=True):
-      sd.parameter('RMPinputMin', 'float', 0.0, label='Input min')
-      sd.parameter('RMPinputMax', 'float', 1.0, label='Input max')
+   with group(sd, 'Remap', collapse=True, description='These controls allow you to remap the shader result.'):
+      sd.parameter('RMPinputMin', 'float', 0.0, label='Input min', description='Sets the minimum input value. Use this to pull values outside of 0-1 into a 0-1 range.')
+      sd.parameter('RMPinputMax', 'float', 1.0, label='Input max', description='Sets the maximum input value. Use this to pull values outside of 0-1 into a 0-1 range.')
 
       with group(sd, 'Contrast', collapse=False):
-         sd.parameter('RMPcontrast', 'float', 1.0, label='Contrast')
-         sd.parameter('RMPcontrastPivot', 'float', 0.18, label='Pivot')
+         sd.parameter('RMPcontrast', 'float', 1.0, label='Contrast', description='Scales the contrast of the input signal.')
+         sd.parameter('RMPcontrastPivot', 'float', 0.18, label='Pivot', description='Sets the pivot point around which the input signal is contrasted.')
 
       with group(sd, 'Bias and gain', collapse=False):
-         sd.parameter('RMPbias', 'float', 0.5, label='Bias')
-         sd.parameter('RMPgain', 'float', 0.5, label='Gain')
+         sd.parameter('RMPbias', 'float', 0.5, label='Bias', description='Bias the signal higher or lower. Values less than 0.5 push the average lower, values higher than 0.5 push it higher.')
+         sd.parameter('RMPgain', 'float', 0.5, label='Gain', description='Adds gain to the signal, in effect a different form of contrast. Values less than 0.5 increase the gain, values greater than 0.5 decrease it.')
 
-      sd.parameter('RMPoutputMin', 'float', 0.0, label='Output min')
-      sd.parameter('RMPoutputMax', 'float', 1.0, label='Output max')
+      sd.parameter('RMPoutputMin', 'float', 0.0, label='Output min', description='Sets the minimum value of the output. Use this to scale a 0-1 signal to a new range.')
+      sd.parameter('RMPoutputMax', 'float', 1.0, label='Output max', description='Sets the maximum value of the output. Use this to scale a 0-1 signal to a new range.')
 
       with group(sd, 'Clamp', collapse=False):
-         sd.parameter('RMPclampEnable', 'bool', False, label='Enable')
-         sd.parameter('RMPthreshold', 'bool', False, label='Expand')
-         sd.parameter('RMPclampMin', 'float', 0.0, label='Min')
-         sd.parameter('RMPclampMax', 'float', 1.0, label='Max')
+         sd.parameter('RMPclampEnable', 'bool', False, label='Enable', description='When enabled, will clamp the output to Min-Max.')
+         sd.parameter('RMPthreshold', 'bool', False, label='Expand', description='When enabled, will expand the clamped range to 0-1 after clamping.')
+         sd.parameter('RMPclampMin', 'float', 0.0, label='Min', description='Minimum value to clamp to.')
+         sd.parameter('RMPclampMax', 'float', 1.0, label='Max', description='Maximum value to clamp to.')
 
 # Main. Load the UI file and build UI templates from the returned structure
 if __name__ == '__main__':
-   if len(sys.argv) < 6:
+   if len(sys.argv) < 7:
       print 'ERROR: must supply exactly ui source input and mtd, ae, spdl and args outputs'
       sys.exit(1)
 
@@ -1031,4 +1133,7 @@ if __name__ == '__main__':
    name = os.path.basename(os.path.splitext(sys.argv[1])[0])
    build_dir = sys.argv[6] if len(sys.argv) > 6 else os.path.abspath("")
    WriteC4DtoAResourceFiles(ui, name, build_dir)
+
+   # HTML
+   WriteHTML(ui, sys.argv[7])
 

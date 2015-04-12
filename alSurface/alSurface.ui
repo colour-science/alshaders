@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alSurface',
-	'description':'General-purpose, physically plausible surface shader',
+	'intro':'alSurface is a physically plausible, energy-conserving, general-purpose surface shader.',
+	'description':'Suitable for any dielectric or metallic material including skin, plastic, wood, metal, glass, etc.',
 	'output':'rgb',
 	'maya_name':'alSurface',
 	'maya_classification':'shader/surface',
@@ -16,175 +17,174 @@ ui.shader({
 	'soft_name':'ALS_Surface',
 	'soft_classification':'material',
 	'soft_version':1,
+	'help_url':'http://www.anderslanglands.com/alshaders/alSurface.html',
    'houdini_icon':'SHOP_surface'
 })
 
-with uigen.group(ui, 'Diffuse', False):
-	ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the diffuse result')
-	ui.parameter('diffuseColor', 'rgb', (0.5, 0.5, 0.5), 'Color')
-	ui.parameter('diffuseRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1)
+with uigen.group(ui, 'Diffuse', False, description='The diffuse layer sits underneath both specular layers and so its intensity is scaled according to the Fresnel transmission of both the specular lobes.'):
+	ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the diffuse reflection.')
+	ui.parameter('diffuseColor', 'rgb', (0.5, 0.5, 0.5), 'Color', description='Color of the diffuse reflection.')
+	ui.parameter('diffuseRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1, description='Roughness of the diffuse reflection. Higher values cause the surface to appear flatter and darker.')
 
-	with uigen.group(ui, 'Backlight'):
-		ui.parameter('backlightStrength', 'float', 0.0, 'Strength', mn=0, mx=1)
-		ui.parameter('backlightColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
-		ui.parameter('backlightIndirectStrength', 'float', 1.0, 'Indirect strength')
+	with uigen.group(ui, 'Backlight', description='The backlight layer represents light that is diffusely transmitted from the reverse side of the object and it useful as a cheap subsurface effect for thin ojects such as cloth, paper and leaves. It sits underneath both specular layers and so its intensity is scaled according to the Fresnel transmission of both the specular lobes.'):
+		ui.parameter('backlightStrength', 'float', 0.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the backlight transmission.')
+		ui.parameter('backlightColor', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color of the backlight transmission.')
+		ui.parameter('backlightIndirectStrength', 'float', 1.0, 'Indirect strength', mn=0, mx=1, description='Multiplier on the amount of indirect light transmitted by the backlight lobe.')
 
-	with uigen.group(ui, 'SSS'):
-		ui.parameter('sssMix', 'float', 0.0, 'Mix', mn=0, mx=1)
-		ui.parameter('sssMode', 'enum', 'cubic', 'Mode', enum_names=['cubic', 'diffusion', 'directional'])
-		ui.parameter('sssDensityScale', 'float', 1.0, 'Density scale', mn=0)
-		ui.parameter('sssRadius', 'float', 1.5, 'Distance 1', mn=0)
-		ui.parameter('sssWeight1', 'float', 1.0, 'Weight 1', mn=0)
-		ui.parameter('sssRadiusColor', 'rgb', (.439, .156, .078), 'Color 1')
-		ui.parameter('sssRadius2', 'float', 4.0, 'Distance 2', mn=0)
-		ui.parameter('sssWeight2', 'float', 0.0, 'Weight 2', mn=0)
-		ui.parameter('sssRadiusColor2', 'rgb', (.439, .08, .018), 'Color 2')
-		ui.parameter('sssRadius3', 'float', 1.0, 'Distance 3', mn=0)
-		ui.parameter('sssWeight3', 'float', 0.0, 'Weight 3', mn=0)
-		ui.parameter('sssRadiusColor3', 'rgb', (.523, .637, .667), 'Color 3')
+	with uigen.group(ui, 'SSS', description='The Subsurface scattering layer represents light that has entered the material and been scattered and absorbed such that it diffuses through the material. The SSS lobe has 3 "layers" that can be used to define a more complex shape to the scattering falloff, and can be thought of like layers within a more complex scattering material such as skin. The weights of the individual layers are normalized before use, and the order of them does not matter. The SSS lobe underneath both specular layers and so its intensity is scaled according to the Fresnel transmission of both the specular lobes.'):
+		ui.parameter('sssMix', 'float', 0.0, 'Mix', mn=0, mx=1, description='How much to mix SSS in with the diffuse. 0 means no SSS, full diffuse. 1 means full SSS no diffuse.')
+		ui.parameter('sssMode', 'enum', 'cubic', 'Mode', enum_names=['cubic', 'diffusion', 'directional'], description='Algorithm to use for SSS calculation. "cubic" is the standard Arnold SSS. The "diffusion" and "directional" modes both take longer to calculate but preserve detail much better than the cubic and are slightly cleaner than "cubic" for the same number of samples. "directional" also includes a single-scattering approximation for a more realistic result with even more detail.')
+		ui.parameter('sssDensityScale', 'float', 1.0, 'Density scale', description='A multiplier on the scale of the object. This simply multiplies down the Distance values below, but can be used to adapt materials from scenes of one scale to another without changing the look. Higher values mean a larger, or "less scattery" object. Lower values mean smaller or "more scattery" object.')
+		ui.parameter('sssRadius', 'float', 1.5, 'Distance 1', description='The scatter distance of the first layer. Higher values mean the light travels further through the object, lower values mean it travels a shorter distance.')
+		ui.parameter('sssWeight1', 'float', 1.0, 'Weight 1', mn=0, mx=1, description='The weight of the first layer. Larger values relative to the other layers will cause more of this layer to be present in the result.')
+		ui.parameter('sssRadiusColor', 'rgb', (.439, .156, .078), 'Color 1', description='The scatter color of the first layer. This is the color the light will tend to the further it travels through the material, e.g. reddish for skin.')
+		ui.parameter('sssRadius2', 'float', 4.0, 'Distance 2', description='The scatter distance of the second layer. Higher values mean the light travels further through the object, lower values mean it travels a shorter distance.')
+		ui.parameter('sssWeight2', 'float', 0.0, 'Weight 2', mn=0, mx=1, description='The weight of the second layer. Larger values relative to the other layers will cause more of this layer to be present in the result.')
+		ui.parameter('sssRadiusColor2', 'rgb', (.439, .08, .018), 'Color 2', description='The scatter color of the second layer. This is the color the light will tend to the further it travels through the material, e.g. reddish for skin.')
+		ui.parameter('sssRadius3', 'float', 1.0, 'Distance 3', description='The scatter distance of the third layer. Higher values mean the light travels further through the object, lower values mean it travels a shorter distance.')
+		ui.parameter('sssWeight3', 'float', 0.0, 'Weight 3', mn=0, mx=1, description='The weight of the third layer. Larger values relative to the other layers will cause more of this layer to be present in the result.')
+		ui.parameter('sssRadiusColor3', 'rgb', (.523, .637, .667), 'Color 3', description='The scatter color of the third layer. This is the color the light will tend to the further it travels through the material, e.g. reddish for skin.')
 		
 
-	with uigen.group(ui, 'Advanced'):
-		ui.parameter('diffuseExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
-		ui.parameter('diffuseEnableCaustics', 'bool', False, 'Enable caustics')
-		ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect strength')
-		ui.parameter('traceSetDiffuse', 'string', '', 'Diffuse trace set')
-		ui.parameter('traceSetBacklight', 'string', '', 'Backlight trace set')
+	with uigen.group(ui, 'Advanced', description='The Advanced section contains controls that allow you to fine-tune the behavior of the shader. You should not need to touch these under normal circumstances.'):
+		ui.parameter('diffuseExtraSamples', 'int', 0, 'Extra samples', connectible=False, description='Add or subtract samples for this lobe from the global sampling rate.')
+		ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect strength', mn=0, mx=1, description='Multiplier on the amount of indirect light transmitted by this lobe.')
+		ui.parameter('traceSetDiffuse', 'string', '', 'Diffuse trace set', connectible=False, description='Enter the name of a trace set here to restrict the diffuse lobe to trace only against that set.')
+		ui.parameter('traceSetBacklight', 'string', '', 'Backlight trace set', connectible=False, description='Enter the name of a trace set here to restrict the backlight lobe to trace only against that set.')
 # end Diffuse
 
-with uigen.group(ui, 'Specular 1', False):
-	ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1)
-	ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Color')
-	ui.parameter('specular1Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
-	ui.parameter('specular1Anisotropy', 'float', 0.5, 'Anisotropy', mn=0, mx=1)
-	ui.parameter('specular1Rotation', 'float', 0.0, 'Rotation', mn=0, mx=1)
+with uigen.group(ui, 'Specular 1', False, description='Specular (glossy) layers represent light that is reflected immediately at the boundary of the surface. The specular 1 lobe sits on top of all the others and so both receives all the light and attenuates the light reaching all other lobes. It can be used either as the primary specular for the material, or as a clear coat layer on top.'):
+	ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the specular reflection.')
+	ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the specular reflection.')
+	ui.parameter('specular1Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1, description='The roughness of the specular reflection. Lower numbers produce sharper reflections, higher numbers produce blurrier reflections.')
+	ui.parameter('specular1Anisotropy', 'float', 0.5, 'Anisotropy', mn=0, mx=1, description='Controls how much the specular highlight is compressed along its axis. The default value of 0 produces a round highlight. Higher values will compress the highlight along the V axis. The axis of the highlight is controlled by the UVs of the object. For best results, give your object a single UV shell with as few seams as possible.')
+	ui.parameter('specular1Rotation', 'float', 0.0, 'Rotation', mn=0, mx=1, description='Rotates the axis of specular anisotropy around the surface normal. 0 gives no rotation, 0.5 gives 90 degree rotation, 1 gives 180 degree rotation.')
 
-	with uigen.group(ui, 'Fresnel', False):
-		ui.parameter('specular1FresnelMode', 'enum', 'dielectric', 'Mode', enum_names=['dielectric', 'metallic'])
-		ui.parameter('specular1Ior', 'float', 1.4, 'IOR')
-		ui.parameter('specular1Reflectivity', 'rgb', (0.548, .549, .570), 'Reflectivity' )
-		ui.parameter('specular1EdgeTint', 'rgb', (0.579, .598, .620), 'Edge tint' )
+	with uigen.group(ui, 'Fresnel', False, description='Fresnel controls how much light is reflected the the specular lobe (and at what wavelengths) depending on the angle at which the light hits the surface.'):
+		ui.parameter('specular1FresnelMode', 'enum', 'dielectric', 'Mode', enum_names=['dielectric', 'metallic'], description='Selects which mode to use for the fresnel. Dielectric is appropriate for non-conductive materials such as most organics, plastic, glass and water etc. and gives dark reflections at normal incidence and bright reflections at glancing angles. Metallic is appropriate for metals and gives colored reflections that vary less strongly with angle.')
+		ui.parameter('specular1Ior', 'float', 1.4, 'IOR', description='The index of refraction for the dielectric fresnel mode.')
+		ui.parameter('specular1Reflectivity', 'rgb', (0.548, .549, .570), 'Reflectivity', description='Selects the color of the reflection at normal incidence for the metallic fresnel mode.')
+		ui.parameter('specular1EdgeTint', 'rgb', (0.579, .598, .620), 'Edge tint', description='Selects the color of the reflection at glancing angles for the metallic fresnel mode.')
 
-	with uigen.group(ui, 'Advanced'):
-		ui.parameter('specular1RoughnessDepthScale', 'float', 1.0, 'Roughness depth scale', connectible=False)
-		ui.parameter('specular1ExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
-		ui.parameter('specular1Normal', 'vector', (0.0, 0.0, 0.0), 'Normal')
-		ui.parameter('specular1IndirectStrength', 'float', 1.0, 'Indirect strength')
-		ui.parameter('specular1IndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
-		ui.parameter('traceSetSpecular1', 'string', '', 'Trace set')
+	with uigen.group(ui, 'Advanced', description='The Advanced section contains controls that allow you to fine-tune the behavior of the shader. You should not need to touch these under normal circumstances.'):
+		ui.parameter('specular1RoughnessDepthScale', 'float', 1.0, 'Roughness depth scale', connectible=False, description='Controls how much the specular roughness is scaled with each increasing bounce as a noise-reduction technique.')
+		ui.parameter('specular1ExtraSamples', 'int', 0, 'Extra samples', connectible=False, description='Add or subtract samples for this lobe from the global sampling rate.')
+		ui.parameter('specular1Normal', 'vector', (0.0, 0.0, 0.0), 'Normal', description='Override the normal used for this lobe.')
+		ui.parameter('specular1IndirectStrength', 'float', 1.0, 'Indirect strength', mn=0, mx=1, description='Multiplier on the amount of indirect light reflected by this lobe.')
+		ui.parameter('specular1IndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False, description='Clamp the brightness of indirect samples for this lobe. This can effectively reduce fireflies but makes the shader less accurate. The default value of 0 means no clamping. Sensible values are normally in the range of 10-20.')
+		ui.parameter('traceSetSpecular1', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict this lobe to trace only against that set.')
 # end Specular 1
 
-with uigen.group(ui, 'Specular 2'):
-	ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1)
-	ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Color')
-	ui.parameter('specular2Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1)
-	ui.parameter('specular2Anisotropy', 'float', 0.5, 'Anisotropy', mn=0, mx=1)
-	ui.parameter('specular2Rotation', 'float', 0.0, 'Rotation', mn=0, mx=1)
+with uigen.group(ui, 'Specular 2', description='Specular (glossy) layers represent light that is reflected immediately at the boundary of the surface. The specular 2 lobe sits underneath the specular 1 lobe and so is attenuated by it and attenuates the light reaching all other lobes. It can be used either as the primary specular for the material, or as a clear coat layer on top.'):
+	ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the specular reflection.')
+	ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the specular reflection.')
+	ui.parameter('specular2Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1, description='The roughness of the specular reflection. Lower numbers produce sharper reflections, higher numbers produce blurrier reflections.')
+	ui.parameter('specular2Anisotropy', 'float', 0.5, 'Anisotropy', mn=0, mx=1, description='Controls how much the specular highlight is compressed along its axis. The default value of 0 produces a round highlight. Higher values will compress the highlight along the V axis. The axis of the highlight is controlled by the UVs of the object. For best results, give your object a single UV shell with as few seams as possible.')
+	ui.parameter('specular2Rotation', 'float', 0.0, 'Rotation', mn=0, mx=1, description='Rotates the axis of specular anisotropy around the surface normal. 0 gives no rotation, 0.5 gives 90 degree rotation, 1 gives 180 degree rotation.')
 
-	with uigen.group(ui, 'Fresnel', False):
-		ui.parameter('specular2FresnelMode', 'enum', 'dielectric', 'Mode', enum_names=['dielectric', 'metallic'])
-		ui.parameter('specular2Ior', 'float', 1.4, 'IOR')
-		ui.parameter('specular2Reflectivity', 'rgb', (0.548, .549, .570), 'Reflectivity' )
-		ui.parameter('specular2EdgeTint', 'rgb', (0.579, .598, .620), 'Edge tint' )
+	with uigen.group(ui, 'Fresnel', False, description='Fresnel controls how much light is reflected the the specular lobe (and at what wavelengths) depending on the angle at which the light hits the surface.'):
+		ui.parameter('specular2FresnelMode', 'enum', 'dielectric', 'Mode', enum_names=['dielectric', 'metallic'], description='Selects which mode to use for the fresnel. Dielectric is appropriate for non-conductive materials such as most organics, plastic, glass and water etc. and gives dark reflections at normal incidence and bright reflections at glancing angles. Metallic is appropriate for metals and gives colored reflections that vary less strongly with angle.')
+		ui.parameter('specular2Ior', 'float', 1.4, 'IOR', description='The index of refraction for the dielectric fresnel mode.')
+		ui.parameter('specular2Reflectivity', 'rgb', (0.548, .549, .570), 'Reflectivity', description='Selects the color of the reflection at normal incidence for the metallic fresnel mode.')
+		ui.parameter('specular2EdgeTint', 'rgb', (0.579, .598, .620), 'Edge tint', description='Selects the color of the reflection at glancing angles for the metallic fresnel mode.')
 
-	with uigen.group(ui, 'Advanced'):
-		ui.parameter('specular2RoughnessDepthScale', 'float', 1.0, 'Roughness depth scale', connectible=False)
-		ui.parameter('specular2ExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
-		ui.parameter('specular2Normal', 'vector', (0.0, 0.0, 0.0), 'Normal')
-		ui.parameter('specular2IndirectStrength', 'float', 1.0, 'Indirect strength')
-		ui.parameter('specular2IndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
-		ui.parameter('traceSetSpecular2', 'string', '', 'Trace set')
+	with uigen.group(ui, 'Advanced', description='The Advanced section contains controls that allow you to fine-tune the behavior of the shader. You should not need to touch these under normal circumstances.'):
+		ui.parameter('specular2RoughnessDepthScale', 'float', 1.0, 'Roughness depth scale', connectible=False, description='Controls how much the specular roughness is scaled with each increasing bounce as a noise-reduction technique.')
+		ui.parameter('specular2ExtraSamples', 'int', 0, 'Extra samples', connectible=False, description='Add or subtract samples for this lobe from the global sampling rate.')
+		ui.parameter('specular2Normal', 'vector', (0.0, 0.0, 0.0), 'Normal', description='Override the normal used for this lobe.')
+		ui.parameter('specular2IndirectStrength', 'float', 1.0, 'Indirect strength', mn=0, mx=1, description='Multiplier on the amount of indirect light reflected by this lobe.')
+		ui.parameter('specular2IndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False, description='Clamp the brightness of indirect samples for this lobe. This can effectively reduce fireflies but makes the shader less accurate. The default value of 0 means no clamping. Sensible values are normally in the range of 10-20.')
+		ui.parameter('traceSetSpecular2', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict this lobe to trace only against that set.')
 # end Specular 2
 
-with uigen.group(ui, 'Transmission'):
-	ui.parameter('transmissionStrength', 'float', 0.0, 'Strength', mn=0, mx=1)
-	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
-	ui.parameter('transmissionLinkToSpecular1', 'bool', True, 'Link to specular 1')
-	ui.parameter('transmissionRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1)
-	ui.parameter('transmissionIor', 'float', 1.4, 'IOR', mn=1)
+with uigen.group(ui, 'Transmission', description='The transmission lobe describes light that is refracted through the surface. It allows you to create materials such as water and glass.The transmission lobe sits underneath the two specular layers and is attenuated by both. Any changes that affect the color of the transmission lobe, such as Color or the Attenuation controls, will also color the object\'s shadows.'):
+	ui.parameter('transmissionStrength', 'float', 0.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the transmission.')
+	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Multiplier on the intensity of the transmission.')
+	ui.parameter('transmissionLinkToSpecular1', 'bool', True, 'Link to specular 1', description='When this is enabled, the transmission lobe will copy its Roughness and IOR values from the Specular 1 lobe. This is generally what you want for most materials.')
+	ui.parameter('transmissionRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1, description='The roughness of the transmission. 0 creates a perfect refracted image like water or highly polished glass. Higher values will give results like frosted glass.')
+	ui.parameter('transmissionIor', 'float', 1.4, 'IOR', description='The index of refraction of the transmission lobe. Higher values cause a more distorted refracted image.')
+	ui.parameter('rrTransmission', 'bool', False, 'RR', connectible=False, description='Turn this on to enable the Russian roulette optimization for transmissive materials such as glass. This makes renders with many glossy and refraction bounces much faster at the cost of a little additional noise. Note that this only works when transmission roughness is zero.')
 
-	with uigen.group(ui, 'Attenuation'):
-		ui.parameter('ssAttenuationColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
-		ui.parameter('ssInScatteringStrength', 'float', 0.0, 'Scattering', mn=0, smx=1)
-		ui.parameter('ssDensityScale', 'float', 1.0, 'Density scale')
-		ui.parameter('ssDirection', 'float', 0.0, 'Direction', mn=-1, mx=1)
-		
+	with uigen.group(ui, 'Attenuation', description='The attenution parameters allow you to control how light is absorbed and scattered as it travels through the inside volume of your surface in order to simulate effects such as smoked glass, absorption through water etc. By default, only absorption is calculated, while setting Scattering to some value greater than 0 will calculate (single) in-scattering as well.'):
+		ui.parameter('ssAttenuationColor', 'rgb', (1.0, 1.0, 1.0), 'Color', description='This is the color light tends towards the further it travels through the material.')
+		ui.parameter('ssInScatteringStrength', 'float', 0.0, 'Scattering', description='How much in-scattering takes place along the transmitted ray. The default of 0 means no in-scattering. Higher values add more in-scattering at the cost of additional render time. Use this to make your materials feel "thicker" or "cloudier".')
+		ui.parameter('ssDensityScale', 'float', 1.0, 'Density scale', description='A scale factor on the attenuation and scattering effects. Scaller values make the object feel smaller, larger values make the object feel larger.')
+		ui.parameter('ssDirection', 'float', 0.0, 'Direction', mn=-0.99, mx=0.99, description='The direction, or anisotropy, or the scattering. Values greater than zero means light tends to travel through the material from one side to the other, while values less than zero mean light tends to bounce back in the direction it came from.')
 
 	with uigen.group(ui, 'Advanced'):
-		ui.parameter('transmissionRoughnessDepthScale', 'float', 1.0, 'Roughness depth scale')
-		ui.parameter('transmissionExtraSamples', 'int', 0, 'Extra samples', smn=-5, smx=5)
-		ui.parameter('transmissionEnableCaustics', 'bool', True, 'Enable internal reflections')
-		ui.parameter('rrTransmission', 'bool', False, 'RR')
-		ui.parameter('rrTransmissionDepth', 'int', 1, 'RR depth')
-		ui.parameter('transmissionClamp', 'float', 0.0, 'Indirect clamp', connectible=False)
-		ui.parameter('ssSpecifyCoefficients', 'bool', False, 'Specify attenuation coeffs.')
-		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering')
-		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption')
-		ui.parameter('traceSetTransmission', 'string', '', 'Trace set')
-		ui.parameter('transmissionDoDirect', 'bool', False, "Direct lighting")
+		ui.parameter('transmissionRoughnessDepthScale', 'float', 1.0, 'Roughness depth scale', description='Controls how much the roughness is scaled with each increasing bounce as a noise-reduction technique.')
+		ui.parameter('transmissionExtraSamples', 'int', 0, 'Extra samples', description='Add or subtract samples for this lobe from the global sampling rate.')
+		ui.parameter('transmissionEnableCaustics', 'bool', True, 'Enable internal reflections', connectible=False, description='Enables internal reflection bounces. This should generally always be on, but if you don\'t care about realism you can make materials with rough transmission and reflection render significantly faster by disabling this.')
+		ui.parameter('rrTransmissionDepth', 'int', 1, 'RR depth', connectible=False, description='Controls the depth at which the Russian roulette optimization kicks in. If you find your renders are too noisy with RR on try raising this to 2.')
+		ui.parameter('transmissionClamp', 'float', 0.0, 'Indirect clamp', connectible=False, description='Clamp the brightness of indirect samples for this lobe. This can effectively reduce fireflies but makes the shader less accurate. The default value of 0 means no clamping. Sensible values are normally in the range of 10-20.')
+		ui.parameter('ssSpecifyCoefficients', 'bool', False, 'Specify attenuation coeffs.', connectible=False, description='Enable this to directly specify the scattering and absorption parameters rather than use the Color and Scattering controls in the attenutaion section above. This can be useful for inputting measured data.')
+		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering', description='Scattering coefficient')
+		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption', description='Absorption coefficient')
+		ui.parameter('traceSetTransmission', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict this lobe to trace only against that set.')
+		ui.parameter('transmissionDoDirect', 'bool', False, "Direct lighting", connectible=False, description='Enable this to have the transmission lobe calculate direct lighting when leaving a closed volume. This allos you to, for instance, put a glass lens in front of a light source and see the image of the light source in the lens.')
 # end Transmission
 
-with uigen.group(ui, 'Emission'):
-	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', mn=0)
-	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color')
+with uigen.group(ui, 'Emission', description='The emission lobe represents light that is emitted from the surface itself. It sits beneath the two specular lobes and so is attenuated by both of them.'):
+	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', description='Multiplier on the intensity of the emitted light.')
+	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the emitted light.')
 # end Emission
 
-ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity')
+ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity', description='Opacity of the material. In the vast majority of cases, if you want to see through your material you should be using transmission. Opacity can be useful for doing "cut out" effects such as a leaf texture on a card.')
 
-with uigen.group(ui, 'IDs'):
+with uigen.group(ui, 'IDs', description='Whatever you plug in or set in the ID parameters in this section is written straight out to the corresponding id_X AOV. This is exteremely useful for creating mattes, or for outputting textures or other sub-network results to be used in comp.'):
 	for i in range(1,9):
-		ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0))
+		ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0), description='Color to be output in id_%d AOV.' % i)
 # end IDs
 
-with uigen.group(ui, 'AOVs'):
-	ui.parameter('standardCompatibleAOVs', 'bool', False, 'Write standard AOVs only')
-	ui.parameter('transmitAovs', 'bool', False, 'Transmit AOVs')
-	ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color')
-	ui.aov('aov_direct_diffuse', 'rgb', 'Direct diffuse')
-	ui.aov('aov_direct_diffuse_raw', 'rgb', 'Direct diffuse (raw)')
-	ui.aov('aov_indirect_diffuse', 'rgb', 'Indirect diffuse')
-	ui.aov('aov_indirect_diffuse_raw', 'rgb', 'Indirect diffuse (raw)')
-	ui.aov('aov_direct_backlight', 'rgb', 'Direct backlight')
-	ui.aov('aov_indirect_backlight', 'rgb', 'Indirect backlight')
-	ui.aov('aov_direct_specular', 'rgb', 'Direct specular')
-	ui.aov('aov_indirect_specular', 'rgb', 'Indirect specular')
-	ui.aov('aov_direct_specular_2', 'rgb', 'Direct specular 2')
-	ui.aov('aov_indirect_specular_2', 'rgb', 'Indirect specular 2')
-	ui.aov('aov_single_scatter', 'rgb', 'Single scatter')
-	ui.aov('aov_sss', 'rgb', 'SSS')
-	ui.aov('aov_refraction', 'rgb', 'Refraction')
-	ui.aov('aov_emission', 'rgb', 'Emission')
-	ui.aov('aov_uv', 'rgb', 'UV')
-	ui.aov('aov_depth', 'rgb', 'Depth')
-	ui.aov('aov_light_group_1', 'rgb', 'Light group [1]')
-	ui.aov('aov_light_group_2', 'rgb', 'Light group [2]')
-	ui.aov('aov_light_group_3', 'rgb', 'Light group [3]')
-	ui.aov('aov_light_group_4', 'rgb', 'Light group [4]')
-	ui.aov('aov_light_group_5', 'rgb', 'Light group [5]')
-	ui.aov('aov_light_group_6', 'rgb', 'Light group [6]')
-	ui.aov('aov_light_group_7', 'rgb', 'Light group [7]')
-	ui.aov('aov_light_group_8', 'rgb', 'Light group [8]')
-	ui.aov('aov_id_1', 'rgb', 'ID [1]')
-	ui.aov('aov_id_2', 'rgb', 'ID [2]')
-	ui.aov('aov_id_3', 'rgb', 'ID [3]')
-	ui.aov('aov_id_4', 'rgb', 'ID [4]')
-	ui.aov('aov_id_5', 'rgb', 'ID [5]')
-	ui.aov('aov_id_6', 'rgb', 'ID [6]')
-	ui.aov('aov_id_7', 'rgb', 'ID [7]')
-	ui.aov('aov_id_8', 'rgb', 'ID [8]')
-	ui.aov('aov_shadow_group_1', 'rgba', 'Shadow group [1]')
-	ui.aov('aov_shadow_group_2', 'rgba', 'Shadow group [2]')
-	ui.aov('aov_shadow_group_3', 'rgba', 'Shadow group [3]')
-	ui.aov('aov_shadow_group_4', 'rgba', 'Shadow group [4]')
-	ui.aov('aov_shadow_group_5', 'rgba', 'Shadow group [5]')
-	ui.aov('aov_shadow_group_6', 'rgba', 'Shadow group [6]')
-	ui.aov('aov_shadow_group_7', 'rgba', 'Shadow group [7]')
-	ui.aov('aov_shadow_group_8', 'rgba', 'Shadow group [8]')
+with uigen.group(ui, 'AOVs', description='Use these parameters to change the name of the AOVs that the shader writes'):
+	ui.parameter('standardCompatibleAOVs', 'bool', False, 'Write standard AOVs only', description='Enable this to combine the AOVs into only the set that the standard shader outputs.')
+	ui.parameter('transmitAovs', 'bool', False, 'Transmit AOVs', description='When enabled on all surfaces in the scene, this will pull the AOVs through transmissive objects, so glass objects etc. will get the diffuse AOV of the objects they refract.')
+	ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color', description='Set the name of the AOV that contains the final diffuse color of the surface.')
+	ui.aov('aov_direct_diffuse', 'rgb', 'Direct diffuse', description='Set the name of the AOV that contains the final direct diffuse illumination.')
+	ui.aov('aov_direct_diffuse_raw', 'rgb', 'Direct diffuse (raw)', description='Set the name of the AOV that contains the final direct diffuse illumination, before multiplication by the diffuse color.')
+	ui.aov('aov_indirect_diffuse', 'rgb', 'Indirect diffuse', description='Set the name of the AOV that contains the final indirect diffuse illumination.')
+	ui.aov('aov_indirect_diffuse_raw', 'rgb', 'Indirect diffuse (raw)', description='Set the name of the AOV that contains the final indirect diffuse illumination, before multiplication by the diffuse color.')
+	ui.aov('aov_direct_backlight', 'rgb', 'Direct backlight', description='Set the name of the AOV that contains the final direct backlight illumination.')
+	ui.aov('aov_indirect_backlight', 'rgb', 'Indirect backlight', description='Set the name of the AOV that contains the final indirect backlight illumination.')
+	ui.aov('aov_direct_specular', 'rgb', 'Direct specular', description='Set the name of the AOV that contains the final direct specular illumination from the first specular lobe.')
+	ui.aov('aov_indirect_specular', 'rgb', 'Indirect specular', description='Set the name of the AOV that contains the final indirect specular illumination from the first specular lobe.')
+	ui.aov('aov_direct_specular_2', 'rgb', 'Direct specular 2', description='Set the name of the AOV that contains the final direct specular illumination from the second specular lobe.')
+	ui.aov('aov_indirect_specular_2', 'rgb', 'Indirect specular 2', description='Set the name of the AOV that contains the final direct inspecular illumination from the second specular lobe.')
+	ui.aov('aov_single_scatter', 'rgb', 'Single scatter', description='Set the name of the AOV that contains the single-scattered illumination, i.e. the contribution controlled by the Attenuation Scattering parameter.')
+	ui.aov('aov_sss', 'rgb', 'SSS', description='Set the name of the AOV that contains the final SSS contribution.')
+	ui.aov('aov_refraction', 'rgb', 'Refraction', description='Set the name of the AOV that contains the transmitted illumination.')
+	ui.aov('aov_emission', 'rgb', 'Emission', description='Set the name of the AOV that contains the emitted illumination.')
+	ui.aov('aov_uv', 'rgb', 'UV', description='Set the name of the AOV that contains the UV coordinates of the surface.')
+	ui.aov('aov_depth', 'rgb', 'Depth', description='Set the name of the AOV that contains the depth in the red channel, facing ratio in the green channel, and y-height in the blue channel.')
+	ui.aov('aov_light_group_1', 'rgb', 'Light group [1]', description='Set the name of the AOV that contains the lighting contribution from light group 1.')
+	ui.aov('aov_light_group_2', 'rgb', 'Light group [2]', description='Set the name of the AOV that contains the lighting contribution from light group 2.')
+	ui.aov('aov_light_group_3', 'rgb', 'Light group [3]', description='Set the name of the AOV that contains the lighting contribution from light group 3.')
+	ui.aov('aov_light_group_4', 'rgb', 'Light group [4]', description='Set the name of the AOV that contains the lighting contribution from light group 4.')
+	ui.aov('aov_light_group_5', 'rgb', 'Light group [5]', description='Set the name of the AOV that contains the lighting contribution from light group 5.')
+	ui.aov('aov_light_group_6', 'rgb', 'Light group [6]', description='Set the name of the AOV that contains the lighting contribution from light group 6.')
+	ui.aov('aov_light_group_7', 'rgb', 'Light group [7]', description='Set the name of the AOV that contains the lighting contribution from light group 7.')
+	ui.aov('aov_light_group_8', 'rgb', 'Light group [8]', description='Set the name of the AOV that contains the lighting contribution from light group 8.')
+	ui.aov('aov_id_1', 'rgb', 'ID [1]', description='Set the name of the AOV that contains ID 1.')
+	ui.aov('aov_id_2', 'rgb', 'ID [2]', description='Set the name of the AOV that contains ID 2.')
+	ui.aov('aov_id_3', 'rgb', 'ID [3]', description='Set the name of the AOV that contains ID 3.')
+	ui.aov('aov_id_4', 'rgb', 'ID [4]', description='Set the name of the AOV that contains ID 4.')
+	ui.aov('aov_id_5', 'rgb', 'ID [5]', description='Set the name of the AOV that contains ID 5.')
+	ui.aov('aov_id_6', 'rgb', 'ID [6]', description='Set the name of the AOV that contains ID 6.')
+	ui.aov('aov_id_7', 'rgb', 'ID [7]', description='Set the name of the AOV that contains ID 7.')
+	ui.aov('aov_id_8', 'rgb', 'ID [8]', description='Set the name of the AOV that contains ID 8.')
+	ui.aov('aov_shadow_group_1', 'rgba', 'Shadow group [1]', description='Set the name of the AOV that contains the shadowing contribution from light group 1.')
+	ui.aov('aov_shadow_group_2', 'rgba', 'Shadow group [2]', description='Set the name of the AOV that contains the shadowing contribution from light group 2.')
+	ui.aov('aov_shadow_group_3', 'rgba', 'Shadow group [3]', description='Set the name of the AOV that contains the shadowing contribution from light group 3.')
+	ui.aov('aov_shadow_group_4', 'rgba', 'Shadow group [4]', description='Set the name of the AOV that contains the shadowing contribution from light group 4.')
+	ui.aov('aov_shadow_group_5', 'rgba', 'Shadow group [5]', description='Set the name of the AOV that contains the shadowing contribution from light group 5.')
+	ui.aov('aov_shadow_group_6', 'rgba', 'Shadow group [6]', description='Set the name of the AOV that contains the shadowing contribution from light group 6.')
+	ui.aov('aov_shadow_group_7', 'rgba', 'Shadow group [7]', description='Set the name of the AOV that contains the shadowing contribution from light group 7.')
+	ui.aov('aov_shadow_group_8', 'rgba', 'Shadow group [8]', description='Set the name of the AOV that contains the shadowing contribution from light group 8.')
 
-with uigen.group(ui, 'Advanced'):
-	ui.parameter('rr', 'bool', True, 'RR')
-	ui.parameter('traceSetAll', 'string', '', 'Global trace set')
-	ui.parameter('traceSetShadows', 'string', '', 'Shadow trace set')
+with uigen.group(ui, 'Advanced', description='The Advanced section contains controls that allow you to fine-tune the behavior of the shader. You should not need to touch these under normal circumstances.'):
+	ui.parameter('rr', 'bool', True, 'RR', description='When this is enabled the shader will automatically stop tracing indirect bounces when the final contribution for continuing would be insignificant. This allows you to go to very high ray depths without a significant render time hit. You generally always want this on.')
+	ui.parameter('traceSetAll', 'string', '', 'Global trace set', description='Enter the name of a trace set here to restrict the shader to trace only against that set. Entering a different trace set in the individual lobes\' Trace set parameters will override the one set here.')
+	ui.parameter('traceSetShadows', 'string', '', 'Shadow trace set', description='Enter the name of a trace set here to restrict the shader to trace only against that set for shadows.')
 
 
 
