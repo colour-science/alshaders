@@ -29,16 +29,16 @@ with uigen.group(ui, 'Fibre properties', False, description='The base properties
    ui.parameter('specularShift', 'float', 4.0, 'Highlight shift', connectible=False, description='How much the highlights are shifted along the hair by the cuticles on the hair fibre. Generally this wants to be 1 to 1.5 times the value of the Width parameter.')
    ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity', description='Opacity of the hair fibre. Setting this to anything other than white can make the shader very slow. If you want to get a softer look and resolve fine hair better, it is often a better idea to raise your AA samples instead.')
 
-   with uigen.group(ui, 'Randomize', description='Add randomization to each hair fibre to create a more natural feel. In order for these controls to work correctly, an int or float user data named "curve_id" must be applied to the hair geometry with a unique value per hair.'):
+   with uigen.group(ui, 'Randomize', description='Add randomization to each hair fibre to create a more natural feel. In order for these controls to work correctly, an int or float user data named curve_id must be applied to the hair geometry with a unique value per hair.'):
       ui.parameter('randomTangent', 'float', 0.0, 'Tangent', description='Adds a random offset to the hair tangent which can be useful for breaking up uniform-looking grooms.')
       ui.parameter('randomMelanin', 'float', 0.15, 'Melanin', description='Adds a random offset to the melanin content of the hair. Values from 0.05 to 0.2 give a very natural color variation.')
       ui.parameter('randomHue', 'float', 0.0, 'Dye hue', description='Add a random offest to the hue of the Dye color.')
       ui.parameter('randomSaturation', 'float', 0.0, 'Dye saturation', description='Add a random offest to the saturation of the Dye color.')
 
 
-   with uigen.group(ui, 'Advanced', description='These parameters controls the "rolloff" of the highlights, which is a measure of how quickly the highlights appear as the light moves around the longitudinal axis of the hair.'):
-      ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False, description='Controls the rolloff of the caustic glints in the hair. Lower values make the glints more "pingy", higher values make them softer and less apparent.')
-      ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False, description='Controls the rolloff of the transmission highlight. Essentially, if you want the transmission highlight to only appear when the light is directly behind the hair, set this value to 10 or lower. If you want to increase the amount the highlight "spreads" as the light comes around from behind, set this value higher than 10.')
+   with uigen.group(ui, 'Advanced', description='These parameters controls the rolloff of the highlights, which is a measure of how quickly the highlights appear as the light moves around the longitudinal axis of the hair.'):
+      ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False, description='Controls the rolloff of the caustic glints in the hair. Lower values make the glints more pingy, higher values make them softer and less apparent.')
+      ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False, description='Controls the rolloff of the transmission highlight. Essentially, if you want the transmission highlight to only appear when the light is directly behind the hair, set this value to 10 or lower. If you want to increase the amount the highlight spreads as the light comes around from behind, set this value higher than 10.')
 
 with uigen.group(ui, 'Diffuse', False, description='The diffuse lobe represents light that has scattered multiple times between hair fibres and so become soft and diffuse. This is especially important for lighter hair colors, whereas dark brown and black hair have little to no diffuse component.'):
    ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of the diffuse illumination.')
@@ -48,7 +48,7 @@ with uigen.group(ui, 'Diffuse', False, description='The diffuse lobe represents 
    ui.parameter('diffuseBack', 'float', 0.7, 'Back scattering', mn=0, mx=1, description='Controls the amount of light kicked back from the hair in dual-scattering mode.')
       
 
-with uigen.group(ui, 'Specular 1', False, description='The direct-reflected, primary "white" highlight on the hair.'):
+with uigen.group(ui, 'Specular 1', False, description='The direct-reflected, primary white highlight on the hair.'):
    ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe')
    ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.')
    ui.parameter('specular1WidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.')

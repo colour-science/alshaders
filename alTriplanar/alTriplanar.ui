@@ -3,7 +3,7 @@ import uigen
 ui.shader({
     'name':'alTriplanar',
     'intro':'Projects a texture orthographically in three axes.',
-    'description':'Useful for quickly adding "bombing patterns" of texture to objects to add variation and breakup.',
+    'description':'Useful for quickly adding bombing patterns of texture to objects to add variation and breakup.',
     'output':'rgb',
     'maya_name':'alTriplanar',
     'maya_classification':'texture',

@@ -22,7 +22,7 @@ ui.shader({
 
 ui.parameter('input1', 'rgb', (0.0, 0.0, 0.0), description='The first input to combine')
 ui.parameter('input2', 'rgb', (0.0, 0.0, 0.0), description='The second input to combine')
-ui.parameter('input3', 'rgb', (0.0, 0.0, 0.0), description='The third input: used as a mix value when "lerp" mode is selected.')
+ui.parameter('input3', 'rgb', (0.0, 0.0, 0.0), description='The third input: used as a mix value when lerp mode is selected.')
 ui.parameter('combineOp', 'enum',  'multiply 1*2', 'Combine Op', enum_names=["multiply 1*2",
 	"add 1+2",
 	"divide 1/2",

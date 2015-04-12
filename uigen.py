@@ -723,7 +723,7 @@ def WriteMTDParam(f, name, ptype, value, d):
    elif ptype == 'float':
       writei(f, '%s FLOAT %r' % (name, value), d)
    elif ptype == 'string':
-      writei(f, '%s STRING "%r"' % (name, value), d)
+      writei(f, '%s STRING "%s"' % (name, value), d)
 
 def WriteMTD(sd, fn):      
    

@@ -31,7 +31,7 @@ ui.parameter('octaves', 'int', 4, 'Octaves', connectible=False, description='Num
 ui.parameter('lacunarity', 'float', 2.172, 'Lacunarity', description='How much the frequency is increased with each octave.')
 ui.parameter('gain', 'float', 0.5, 'Gain', description='How much the intensity of the noise is scaled with each object.')
 ui.parameter('angle', 'float', 0.0, 'Angle', description='Animate this to control the rolling motion of the noise.')
-ui.parameter('advection', 'float', 0.25, 'Advection', description='Controls how much the smaller noise features are "swept along" with the larger ones.')
+ui.parameter('advection', 'float', 0.25, 'Advection', description='Controls how much the smaller noise features are swept along with the larger ones.')
 ui.parameter('turbulent', 'bool', False, 'Turbulent', connectible=False, description='Enable this to switch from fBM to Turbulent noise.')
 
 uigen.remapControls(ui)

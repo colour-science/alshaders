@@ -36,7 +36,7 @@ ui.parameter('input', 'enum', 'P', 'Input', enum_names=[
 	"uv",
 	"User",
 	"Custom"
-], description='The vector from the shader globals to output. When "User" is selected, the user data vector named in the "User name" parameter will be output. When "Custom" is selected, the vector specified by the "Custom" parameter will be output.')
+], description='The vector from the shader globals to output. When User is selected, the user data vector named in the User name parameter will be output. When Custom is selected, the vector specified by the Custom parameter will be output.')
 
 ui.parameter('userName', 'string', '', 'User name', description='Enter the name of a user data vector to output.')
 ui.parameter('vector', 'vector', (0.0, 0.0, 0.0), 'Custom', description='A manually-specified vector to output.')
