@@ -10,6 +10,7 @@
 struct ShaderData
 {
    AtSampler* diffuse_sampler;
+   AtSampler* sss_sampler;
    AtSampler* glossy_sampler;
    AtSampler* glossy2_sampler;
    AtSampler* refraction_sampler;
@@ -97,6 +98,8 @@ struct ShaderData
    bool trace_set_transmission_inclusive;
 
    bool cel_connected;
+
+   int sssMode;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0

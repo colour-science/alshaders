@@ -12,6 +12,7 @@
 #include "tea.h"
 #include "fresnel.h"
 #include "microfacet.h"
+#include "sss.h"
 
 #define RR_BOUNCES
 
@@ -75,6 +76,7 @@ enum alSurfaceParams
 
     // sss
     p_sssMix,
+    p_sssMode,
     p_sssRadius,
     p_sssWeight1,
     p_sssRadiusColor,
@@ -217,6 +219,20 @@ enum alSurfaceParams
     p_bump
 };
 
+enum SssMode
+{
+    SSSMODE_CUBIC=0,
+    SSSMODE_DIFFUSION=1,
+    SSSMODE_DIRECTIONAL
+};
+
+const char* SssModeNames[] = {
+    "cubic",
+    "diffusion",
+    "directional",
+    NULL
+};
+
 node_parameters
 {
     AiParameterFLT("diffuseStrength", 1.0f );
@@ -231,6 +247,7 @@ node_parameters
     AiParameterRGB("emissionColor", 1.0f, 1.0f, 1.0f);
 
     AiParameterFLT("sssMix", 0.0f );
+    AiParameterEnum("sssMode", SSSMODE_CUBIC, SssModeNames);
     AiParameterFLT("sssRadius", 1.5f );
     AiParameterFLT("sssWeight1", 1.0f  );
     AiParameterRGB("sssRadiusColor", .439, .156, .078);
@@ -392,6 +409,7 @@ node_initialize
     ShaderData* data = new ShaderData();
     AiNodeSetLocalData(node,data);
     data->diffuse_sampler = NULL;
+    data->sss_sampler = NULL;
     data->glossy_sampler = NULL;
     data->glossy2_sampler = NULL;
     data->refraction_sampler = NULL;
@@ -401,6 +419,7 @@ node_initialize
     data->perm_table_spec1 = NULL;
     data->perm_table_spec2 = NULL;
     data->perm_table_backlight = NULL;
+
 };
 
 node_finish
@@ -410,6 +429,7 @@ node_finish
         ShaderData* data = (ShaderData*) AiNodeGetLocalData(node);
 
         AiSamplerDestroy(data->diffuse_sampler);
+        AiSamplerDestroy(data->sss_sampler);
         AiSamplerDestroy(data->glossy_sampler);
         AiSamplerDestroy(data->glossy2_sampler);
         AiSamplerDestroy(data->refraction_sampler);
@@ -469,14 +489,17 @@ node_update
     data->diffuse_samples2 = SQR(data->GI_diffuse_samples);
     data->GI_refraction_samples = AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT;
     data->refraction_samples2 = SQR(data->GI_refraction_samples);
+    int sss_samples = AiNodeGetInt(options, "sss_bssrdf_samples");
 
     // setup samples
     AiSamplerDestroy(data->diffuse_sampler);
+    AiSamplerDestroy(data->sss_sampler);
     AiSamplerDestroy(data->glossy_sampler);
     AiSamplerDestroy(data->glossy2_sampler);
     AiSamplerDestroy(data->refraction_sampler);
     AiSamplerDestroy(data->backlight_sampler);
     data->diffuse_sampler = AiSampler(data->GI_diffuse_samples, 2);
+    data->sss_sampler = AiSampler(sss_samples, 2);
     data->glossy_sampler = AiSampler(data->GI_glossy_samples, 2);
     data->glossy2_sampler = AiSampler(data->GI_glossy_samples, 2);
     data->refraction_sampler = AiSampler(data->GI_refraction_samples, 2);
@@ -697,6 +720,8 @@ node_update
     // see if they're alCel and their input is connected to us
     // for now just assume we're connected
     data->cel_connected = true;
+
+    data->sssMode = params[p_sssMode].INT;
 };
 
 
@@ -777,9 +802,70 @@ shader_evaluate
     int als_raytype = ALS_RAY_UNDEFINED;
     AiStateGetMsgInt("als_raytype", &als_raytype);
 
+    // build a local frame for sampling
+    AtVector U, V;
+    if (!AiV3isZero(sg->dPdu) && AiV3Exists(sg->dPdu))
+    {
+        // we have valid a valid dPdu derivative, construct V 
+        AtVector Utmp = AiV3Normalize(sg->dPdu);
+        V = AiV3Normalize(AiV3Cross(sg->Nf, Utmp));
+        U = AiV3Cross(V, sg->Nf);
+    }
+    else
+    {
+        AiBuildLocalFramePolar(&U, &V, &sg->Nf);
+    }
+
+        // if this is a camera ray, prepare the temporary storage for deep groups
+    AtRGB* deepGroupPtr = NULL;
+    AtRGB result_directGroup[NUM_LIGHT_GROUPS];
+    for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
+    bool doDeepGroups = !data->standardAovs;
+    bool transmitAovs = data->transmitAovs && (!data->standardAovs) && (!doDeepGroups);
+
+    if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
+    {
+        // if this is a camera ray allocate the group storage
+        deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+        memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+        AiStateSetMsgPtr("als_deepGroupPtr", deepGroupPtr);
+    }
+    else if (doDeepGroups)
+    {
+        // secondary ray hit - get the pointer from the state
+        // if the pointer hasn't been set we're being called from a BSDF that doesn't have deep group support
+        // so don't try and do it or we'll be in (crashy) trouble!
+        if (!AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr)) doDeepGroups = false;
+    }
+
+    AtRGB* transmittedAovPtr = NULL;
+    if (transmitAovs && (sg->Rt & AI_RAY_CAMERA))
+    {
+        transmittedAovPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_AOVs);
+        memset(transmittedAovPtr, 0, sizeof(AtRGB)*NUM_AOVs);
+        AiStateSetMsgPtr("als_transmittedAovPtr", transmittedAovPtr);
+    }
+    else if (transmitAovs)
+    {
+        if (!AiStateGetMsgPtr("als_transmittedAovPtr", (void**)&transmittedAovPtr)) transmitAovs = false;
+    }
+
+    DirectionalMessageData* diffusion_msgdata = NULL; 
+    AiStateGetMsgPtr("als_dmd", (void**)&diffusion_msgdata);
+
+    if (als_raytype == ALS_RAY_SSS)
+    {
+        // compute the diffusion sample
+        assert(diffusion_msgdata);
+        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups);
+        sg->out_opacity = AI_RGB_WHITE;
+        // reset ray type just to be safe
+        AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
+        return;
+    }
     // if it's a shadow ray, handle shadow colouring through absorption
     // algorithm based heavily on the example in Kettle
-    if (sg->Rt & AI_RAY_SHADOW)
+    else if (sg->Rt & AI_RAY_SHADOW)
     {
         // if the object is transmissive and
         AtRGB outOpacity = AI_RGB_WHITE;
@@ -858,6 +944,14 @@ shader_evaluate
         sg->out_opacity = outOpacity * opacity;
         return;
     }
+    else if (!diffusion_msgdata)
+    {
+        // allocate diffusion sample storage
+        diffusion_msgdata = (DirectionalMessageData*)AiShaderGlobalsQuickAlloc(sg, sizeof(DirectionalMessageData));
+        // printf("dmd: %p\n", diffusion_msgdata);
+        memset(diffusion_msgdata, 0, sizeof(DirectionalMessageData));
+        AiStateSetMsgPtr("als_dmd", diffusion_msgdata);
+    }
 
     if (maxh(opacity) < IMPORTANCE_EPS) 
     {
@@ -874,6 +968,9 @@ shader_evaluate
 #endif
     // Evaluate bump;
     //AtRGB bump = AiShaderEvalParamRGB(p_bump);
+
+    // reset ray type just to be safe
+    AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
 
     // Initialize parameter temporaries
     // TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
@@ -950,20 +1047,6 @@ shader_evaluate
     //roughness = std::max(0.000001f, roughness);
     roughness2 = std::max(0.000001f, roughness2);
     //transmissionRoughness = std::max(0.000001f, transmissionRoughness);
-
-    // build a local frame for sampling
-    AtVector U, V;
-    if (!AiV3isZero(sg->dPdu) && AiV3Exists(sg->dPdu))
-    {
-        // we have valid a valid dPdu derivative, construct V 
-        AtVector Utmp = AiV3Normalize(sg->dPdu);
-        V = AiV3Normalize(AiV3Cross(sg->Nf, Utmp));
-        U = AiV3Cross(V, sg->Nf);
-    }
-    else
-    {
-        AiBuildLocalFramePolar(&U, &V, &sg->Nf);
-    }
 
     // rotated frames for anisotropy
     AtVector U1 = U, U2 = U;
@@ -1117,40 +1200,6 @@ shader_evaluate
     // Decide whether to calculate shadow groups or not.
     bool doShadowGroups = (sg->Rt & AI_RAY_CAMERA);
 
-    // if this is a camera ray, prepare the temporary storage for deep groups
-    AtRGB* deepGroupPtr = NULL;
-    AtRGB result_directGroup[NUM_LIGHT_GROUPS];
-    for (int i=0; i < NUM_LIGHT_GROUPS; ++i) result_directGroup[i] = AI_RGB_BLACK;
-    bool doDeepGroups = !data->standardAovs;
-    bool transmitAovs = data->transmitAovs && (!data->standardAovs) && (!doDeepGroups);
-
-    if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
-    {
-        // if this is a camera ray allocate the group storage
-        deepGroupPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
-        memset(deepGroupPtr, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
-        AiStateSetMsgPtr("als_deepGroupPtr", deepGroupPtr);
-    }
-    else if (doDeepGroups)
-    {
-        // secondary ray hit - get the pointer from the state
-        // if the pointer hasn't been set we're being called from a BSDF that doesn't have deep group support
-        // so don't try and do it or we'll be in (crashy) trouble!
-        if (!AiStateGetMsgPtr("als_deepGroupPtr", (void**)&deepGroupPtr)) doDeepGroups = false;
-    }
-
-    AtRGB* transmittedAovPtr = NULL;
-    if (transmitAovs && (sg->Rt & AI_RAY_CAMERA))
-    {
-        transmittedAovPtr = (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB)*NUM_AOVs);
-        memset(transmittedAovPtr, 0, sizeof(AtRGB)*NUM_AOVs);
-        AiStateSetMsgPtr("als_transmittedAovPtr", transmittedAovPtr);
-    }
-    else if (transmitAovs)
-    {
-        if (!AiStateGetMsgPtr("als_transmittedAovPtr", (void**)&transmittedAovPtr)) transmitAovs = false;
-    }
-
     // Accumulator for transmission integrated according to the specular1 brdf. Will be used to attenuate diffuse,
     // glossy2, sss and transmission
     float kti = 1.0f;
@@ -1160,11 +1209,13 @@ shader_evaluate
     AtRGB deepGroupsGlossy[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsGlossy2[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsDiffuse[NUM_LIGHT_GROUPS];
+    AtRGB deepGroupsSss[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsTransmission[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsBacklight[NUM_LIGHT_GROUPS];
     memset(deepGroupsGlossy, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsGlossy2, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsDiffuse, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
+    memset(deepGroupsSss, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
     memset(deepGroupsTransmission, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
     memset(deepGroupsBacklight, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
     int count = 0;
@@ -2296,42 +2347,90 @@ shader_evaluate
     // Diffusion multiple scattering
     if (do_sss)
     {
-        AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
-#if AI_VERSION_MAJOR_NUM > 0
-        // if the user has only specified one layer (default) then just use that
-        if (sssWeight2 == 0.0f && sssWeight3 == 0.0f)
+        if (data->sssMode == SSSMODE_CUBIC)
         {
-            AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
-            float r[3] = {radius.r, radius.g, radius.b};
-            result_sss = AiBSSRDFCubic(sg, r, weights, 3);
+            AtRGB radius = max(rgb(0.0001), sssRadius*sssRadiusColor/sssDensityScale);
+#if AI_VERSION_MAJOR_NUM > 0
+            // if the user has only specified one layer (default) then just use that
+            if (sssWeight2 == 0.0f && sssWeight3 == 0.0f)
+            {
+                AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+                float r[3] = {radius.r, radius.g, radius.b};
+                result_sss = AiBSSRDFCubic(sg, r, weights, 3);
+            }
+            else
+            {
+                //AtRGB r1 = sssRadius*sssRadiusColor/sssDensityScale;
+                AtRGB r2 = max(rgb(0.0001), sssRadius2*sssRadiusColor2/sssDensityScale);
+                AtRGB r3 = max(rgb(0.0001), sssRadius3*sssRadiusColor3/sssDensityScale);
+                AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
+                                    AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
+                                    AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
+                float r[9] = {  radius.r, radius.g, radius.b,
+                                r2.r, r2.g, r2.b,
+                                r3.r, r3.g, r3.b};
+                result_sss = AiBSSRDFCubic(sg, r, weights, 9);
+            }
+#else
+            result_sss = AiSSSPointCloudLookupCubic(sg, radius);
+#endif
         }
         else
-        {
-            //AtRGB r1 = sssRadius*sssRadiusColor/sssDensityScale;
-            AtRGB r2 = max(rgb(0.0001), sssRadius2*sssRadiusColor2/sssDensityScale);
-            AtRGB r3 = max(rgb(0.0001), sssRadius3*sssRadiusColor3/sssDensityScale);
+        {  
+            int nc = 3;
+            if (sssWeight2 > 0.0f) nc = 6;
+            if (sssWeight3 > 0.0f) nc = 9;
+
+            float Rd[9] = {sssRadiusColor.r, sssRadiusColor.g, sssRadiusColor.b,
+                           sssRadiusColor2.r, sssRadiusColor2.g, sssRadiusColor2.b,
+                           sssRadiusColor3.r, sssRadiusColor3.g, sssRadiusColor3.b};
+            float radii[9] = {sssRadius, sssRadius, sssRadius,
+                              sssRadius2, sssRadius2, sssRadius2,
+                              sssRadius3, sssRadius3, sssRadius3};
             AtRGB weights[9] = {AI_RGB_RED*sssWeight1, AI_RGB_GREEN*sssWeight1, AI_RGB_BLUE*sssWeight1,
                                 AI_RGB_RED*sssWeight2, AI_RGB_GREEN*sssWeight2, AI_RGB_BLUE*sssWeight2,
                                 AI_RGB_RED*sssWeight3, AI_RGB_GREEN*sssWeight3, AI_RGB_BLUE*sssWeight3};
-            float r[9] = {  radius.r, radius.g, radius.b,
-                            r2.r, r2.g, r2.b,
-                            r3.r, r3.g, r3.b};
-            result_sss = AiBSSRDFCubic(sg, r, weights, 9);
-        }
-#else
-        result_sss = AiSSSPointCloudLookupCubic(sg, radius) * diffuseColor;
-#endif
-        //result_sss += AiIndirectDiffuse(&sg->N, sg);
+            memcpy(diffusion_msgdata->weights, weights, sizeof(AtRGB)*nc);
+            for (int i = 0; i < nc; ++i)
+            {
+               diffusion_msgdata->sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
+            }
 
+            /*
+            float g = 0.0f;
+            // skin2
+            const float sigma_s_prime[3] = {1.09, 1.59, 1.79};
+            const float sigma_a[3] = {0.013, 0.07, 0.145};
+            // marble
+            const float sigma_s_prime[3] = {2.19, 2.62, 3.00};
+            const float sigma_a[3] = {0.0021, 0.0041, 0.0071};
+            // wholemilk
+            const float sigma_s_prime[3] = {2.55, 3.21, 3.77};
+            const float sigma_a[3] = {0.0011, 0.0024, 0.014};
+            // ketchup
+            const float sigma_s_prime[3] = {0.18, 0.07, 0.03};
+            const float sigma_a[3] = {0.061, 0.97, 1.45};
+            sp[0] = ScatteringProfileDirectional(sigma_s_prime[0] / (1-g) * sssDensityScale*10, sigma_a[0] * sssDensityScale*10, g);
+            sp[1] = ScatteringProfileDirectional(sigma_s_prime[1] / (1-g) * sssDensityScale*10, sigma_a[1] * sssDensityScale*10, g);
+            sp[2] = ScatteringProfileDirectional(sigma_s_prime[2] / (1-g) * sssDensityScale*10, sigma_a[2] * sssDensityScale*10, g);
+            */
+            AtRGB result_sss_direct;
+            AtRGB result_sss_indirect;
+            result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, 
+                                      data->sssMode == SSSMODE_DIRECTIONAL, nc,
+                                      result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
+                                      deepGroupPtr);
+        }
         result_sss *= diffuseColor;
     }
+
 
     // blend sss and diffuse
     result_diffuseDirect *= (1-sssMix);
     result_diffuseIndirect *= (1-sssMix);
     result_backlightDirect *= (1-sssMix);
     result_backlightIndirect *= (1-sssMix);
-    result_sss *= sssMix;// * kti * kti2;
+    result_sss *= sssMix * kti * kti2;
 
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)
@@ -2548,4 +2647,6 @@ shader_evaluate
                     +result_ss
                     +result_transmission
                     +result_emission;
+
+   assert(AiIsFinite(sg->out.RGB));
 }
