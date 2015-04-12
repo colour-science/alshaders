@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alFractal',
-	'description':'Fractal noise pattern generator',
+	'intro':'Fractal noise pattern generator',
+   'description':'The classic shading artist\'s best friend with support for both fractal Brownian motion and turbulent noise types.',
 	'output':'rgb',
 	'maya_name':'alFractal',
 	'maya_classification':'texture',
@@ -15,34 +16,34 @@ ui.shader({
 	'soft_name':'ALS_Fractal',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alfractal',
+	'help_url':'http://www.anderslanglands.com/alshaders/alFractal.html',
    'houdini_icon': 'VOP_turbnoise'
 })
 
 ui.parameter('mode', 'enum', 'scalar', 'Mode', enum_names=[
 	"scalar",
 	"vector"
-])
+], description='Scalar outputs a black and white pattern, Vector outputs random colors.')
 ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
 	"world",
 	"object",
 	"Pref",
 	"UV"
-])
-ui.parameter('scale', 'vector', (1.0, 1.0, 1.0), 'Vector')
-ui.parameter('frequency', 'float', 1.0, 'Frequency')
-ui.parameter('time', 'float', 0.0, 'Time')
-ui.parameter('octaves', 'int', 8, 'Octaves', connectible=False)
-ui.parameter('distortion', 'float', 0.0, 'Distortion')
-ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity')
-ui.parameter('gain', 'float', 0.5, 'Gain')
-ui.parameter('turbulent', 'bool', False, 'Turbulent')
-ui.parameter('ridged', 'bool', False, 'Ridged')
-ui.parameter('ridgeOffset', 'float', 0.0, 'Ridge offset')
+], description='Space in which to calculate the noise pattern.')
+ui.parameter('scale', 'vector', (1.0, 1.0, 1.0), 'Vector', description='Scale values of the noise space for each axis. Use this to stretch the noise along a certain direction.')
+ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.')
+ui.parameter('time', 'float', 0.0, 'Time', description='4th dimension of the noise. Connect this to a time value to animate the noise.')
+ui.parameter('octaves', 'int', 8, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.')
+ui.parameter('distortion', 'float', 0.0, 'Distortion', description='Apply a random warp to the noise space.')
+ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.')
+ui.parameter('gain', 'float', 0.5, 'Gain', description='How much the intensity of the noise is scaled with each object.')
+ui.parameter('turbulent', 'bool', False, 'Turbulent', description='Enable this to switch from fBM to Turbulent noise.')
+ui.parameter('ridged', 'bool', False, 'Ridged', description='Ridged mode combines with turbulent to create a look more suitable for landscapes.')
+ui.parameter('ridgeOffset', 'float', 0.0, 'Ridge offset', description='Offset of the ridge features.')
 
 uigen.remapControls(ui)
 
-ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1')
-ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2')
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.')
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.')
 
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.')

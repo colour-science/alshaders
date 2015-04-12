@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alCurvature',
-	'description':'Provides a measure of the surface curvature',
+   'intro':'Measure the local curvature of the surface.',
+	'description':'Can be used to create effects such as stretch maps and dirt maps.',
 	'output':'rgb',
 	'maya_name':'alCurvature',
 	'maya_classification':'texture',
@@ -14,14 +15,15 @@ ui.shader({
    'c4d_menu':'texture',    
 	'soft_name':'ALS_Curvature',
 	'soft_classification':'texture',
-	'soft_version':1
+	'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alCurvature.html'
 })
 
-ui.parameter('samples', 'int', 2)
-ui.parameter('sampleOffset', 'float', 1.0)
-ui.parameter('sampleRadius', 'float', 1.0)
+ui.parameter('samples', 'int', 2, description='The sampling rate for the curvature calculation.')
+ui.parameter('sampleOffset', 'float', 1.0, description='How far to offset the source pont of the curvature estimation from the surface.')
+ui.parameter('sampleRadius', 'float', 1.0, description='The radius to consider when estimating the curvature.')
 
 uigen.remapControls(ui)
 
-ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0))
-ui.parameter('color2', 'rgb', (1.0, 1.0, 1.0))
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), description='The color to output when the curvature is 0.')
+ui.parameter('color2', 'rgb', (1.0, 1.0, 1.0), description='The color to output when the curvature is 1.')

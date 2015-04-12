@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
         'name':'alCache',
-        'description':'Caches the input value for optimization of multple shader calls.',
+        'intro':'Caches the input value for optimization of multple shader calls.',
+        'description':'Useful for optimizing complex networks where you know that multiple evaluations of a particular subnet are slowing your render down.',
         'output':'rgb',
         'maya_name':'alCache',
         'maya_classification':'texture',
@@ -15,8 +16,9 @@ ui.shader({
         'soft_name':'ALS_Cache',
         'soft_classification':'texture',
         'soft_version':1,
+        'help_url':'http://www.anderslanglands.com/alshaders/alCache.html',
         'houdini_icon': 'SOP_subnet'
 })
 
-ui.parameter('input', 'rgb', (0.0, 0.0, 0.0))
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), description='The network you plug in here will be evaluated once and then have its result cached if it is reused in multiple outputs.')
 

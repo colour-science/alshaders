@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alFlowNoise',
-	'description':'Flow noise pattern generator',
+	'intro':'Flow noise pattern generator',
+   'description':'Useful for creating noise patterns that feel similar to fluid flows.',
 	'output':'rgb',
 	'maya_name':'alFlowNoise',
 	'maya_classification':'texture',
@@ -15,7 +16,7 @@ ui.shader({
 	'soft_name':'ALS_FlowNoise',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alflownoise',
+	'help_url':'http://www.anderslanglands.com/alshaders/alFlowNoise.html',
    'houdini_icon': 'VOP_turbnoise'
 })
 
@@ -24,18 +25,18 @@ ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
 	"object",
 	"Pref",
 	"UV"
-])
-ui.parameter('frequency', 'float', 1.0, 'Frequency')
-ui.parameter('octaves', 'int', 4, 'Octaves', connectible=False)
-ui.parameter('lacunarity', 'float', 2.172, 'Lacunarity')
-ui.parameter('gain', 'float', 0.5, 'Gain')
-ui.parameter('angle', 'float', 0.0, 'Angle')
-ui.parameter('advection', 'float', 0.25, 'Advection')
-ui.parameter('turbulent', 'bool', False, 'Turbulent', connectible=False)
+], description='Space in which to calculate the noise pattern. For best results, use UV.')
+ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.')
+ui.parameter('octaves', 'int', 4, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.')
+ui.parameter('lacunarity', 'float', 2.172, 'Lacunarity', description='How much the frequency is increased with each octave.')
+ui.parameter('gain', 'float', 0.5, 'Gain', description='How much the intensity of the noise is scaled with each object.')
+ui.parameter('angle', 'float', 0.0, 'Angle', description='Animate this to control the rolling motion of the noise.')
+ui.parameter('advection', 'float', 0.25, 'Advection', description='Controls how much the smaller noise features are "swept along" with the larger ones.')
+ui.parameter('turbulent', 'bool', False, 'Turbulent', connectible=False, description='Enable this to switch from fBM to Turbulent noise.')
 
 uigen.remapControls(ui)
 
-ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1')
-ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2')
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.')
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.')
 
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.')

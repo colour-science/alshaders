@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alCellNoise',
-	'description':'Cell noise pattern generator',
+	'intro':'Cell noise pattern generator.',
+   'description':'Fractal cell noise with support for both distance-based effects and chips can be useful for a variety of procedural effects.',
 	'output':'rgb',
 	'maya_name':'alCellNoise',
 	'maya_classification':'texture',
@@ -15,7 +16,7 @@ ui.shader({
 	'soft_name':'ALS_CellNoise',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alcellnoise',
+	'help_url':'http://www.anderslanglands.com/alshaders/alCellNoise.html',
    'houdini_icon': 'VOP_cellcracks'
 })
 
@@ -24,17 +25,17 @@ ui.parameter('space', 'enum', 'world',  'Space', enum_names=[
 	"object",
 	"Pref",
 	"UV"
-])
-ui.parameter('frequency', 'float', 1.0 ,'Frequency')
+], description='Space in which to calculate the noise pattern.')
+ui.parameter('frequency', 'float', 1.0 ,'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.')
 ui.parameter('mode', 'enum', 'features', 'Mode', enum_names=[
 	"features",
 	"chips"
-])
+], description='Features allows you to measure the distance to features to create veiny textures, chips simply puts a random color in each block.')
 
 with uigen.group(ui, 'Features', False, None):
-	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False)
-	ui.parameter('lacunarity', 'int', 2.121, 'Lacunarity')
-	ui.parameter('randomness', 'int', 1.0, 'Randomness')
+	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.')
+	ui.parameter('lacunarity', 'int', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.')
+	ui.parameter('randomness', 'int', 1.0, 'Randomness', description='How much randomness is added to the cel positions.')
 
 	with uigen.group(ui, 'Feature weights', False):
 		ui.parameter('f1w', 'float', -1.0, 'F1')
@@ -45,8 +46,8 @@ with uigen.group(ui, 'Features', False, None):
 
 		uigen.remapControls(ui)
 
-		ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1')
-		ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2')
+		ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.')
+		ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.')
 
 with uigen.group(ui,'Chips', False):
 	ui.parameter('smoothChips', 'bool', False, 'Smooth chips')
@@ -61,4 +62,4 @@ with uigen.group(ui,'Chips', False):
 	ui.parameter('chipColor5', 'rgb', (.593, .472, .248), 'Chip color 5')
 	ui.parameter('chipProb5', 'float', 1.0, 'Chip probability 5')
 
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.')

@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alInputVector',
-	'description':'Grab useful vectors from the shader state and use them in a network',
+	'intro':'Grab useful vectors from the shader state and use them in a network.',
+   'description':'Combining these vectors can be useful as building blocks for more complex effects.',
 	'output':'vector',
 	'maya_name':'alInputVector',
 	'maya_classification':'texture',
@@ -15,6 +16,7 @@ ui.shader({
 	'soft_name':'ALS_InputVector',
 	'soft_classification':'texture',
 	'soft_version':1,
+	'help_url':'http://www.anderslanglands.com/alshaders/alInputVector.html',
    'houdini_icon': 'VOP_global'
 
 })
@@ -34,19 +36,19 @@ ui.parameter('input', 'enum', 'P', 'Input', enum_names=[
 	"uv",
 	"User",
 	"Custom"
-])
+], description='The vector from the shader globals to output. When "User" is selected, the user data vector named in the "User name" parameter will be output. When "Custom" is selected, the vector specified by the "Custom" parameter will be output.')
 
-ui.parameter('userName', 'string', '', 'User name')
-ui.parameter('vector', 'vector', (0.0, 0.0, 0.0), 'Custom')
+ui.parameter('userName', 'string', '', 'User name', description='Enter the name of a user data vector to output.')
+ui.parameter('vector', 'vector', (0.0, 0.0, 0.0), 'Custom', description='A manually-specified vector to output.')
 ui.parameter('type', 'enum', 'Point', 'Type', enum_names=[
 	"Point",
 	"Vector"
-])
+], description='How to treat the vector when transorming it.')
 
 with uigen.group(ui, 'Transform'):
-	ui.parameter('matrix', 'matrix', None, 'Matrix')
+	ui.parameter('matrix', 'matrix', None, 'Matrix', description='A transformation matrix to apply to the vector. This can be useful for animating the position or scale of a point to drive a fractal.')
 	ui.parameter('coordinates', 'enum', 'cartesian', 'Coordinates', enum_names=[
 		"cartesian",
 		"spherical",
 		"normalized spherical"
-	])
+	], description='Coordinate system to interpret the vector as being in (result will be transformed to cartesian before being output).')

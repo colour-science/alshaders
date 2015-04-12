@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alRemapColor',
-	'description':'Controls to adjust a color value',
+	'intro':'Controls to adjust a color value.',
+   'description':'Use controls such as gamma, saturation and contrast to tweak the color values in your network. Operations are applied in the order they appear in the shader.',
 	'output':'rgb',
 	'maya_name':'alRemapColor',
 	'maya_classification':'texture',
@@ -15,18 +16,19 @@ ui.shader({
 	'soft_name':'ALS_RemapColor',
 	'soft_classification':'texture',
 	'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alRemapColor.html',
    'houdini_icon': 'COP2_colorcorrect'
 })
 
-ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Input')
-ui.parameter('gamma', 'float', 1.0, 'Gamma')
-ui.parameter('saturation', 'float', 1.0, 'Saturation')
-ui.parameter('hueOffset', 'float', 0.0, 'Hue offset')
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Input', description='Input color to remap.')
+ui.parameter('gamma', 'float', 1.0, 'Gamma', description='Gamma value to apply to input.')
+ui.parameter('saturation', 'float', 1.0, 'Saturation', description='Saturation to apply to the input.')
+ui.parameter('hueOffset', 'float', 0.0, 'Hue offset', description='Hue offset to apply to the input.')
 
-with uigen.group(ui, 'Contrast'):
-	ui.parameter('contrast', 'float', 1.0, 'Contrast')
-	ui.parameter('contrastPivot', 'float', 0.18, 'Pivot')
+with uigen.group(ui, 'Contrast', description='Scales the contrast of the input signal.'):
+	ui.parameter('contrast', 'float', 1.0, 'Contrast', description='Contrast value to apply.')
+	ui.parameter('contrastPivot', 'float', 0.18, 'Pivot', description='Value around which to pivot the contrast adjustment.')
 
-ui.parameter('gain', 'float', 1.0, 'Gain')
-ui.parameter('exposure', 'float', 0.0, 'Exposure')
-ui.parameter('mask', 'float', 1.0, 'Mask')
+ui.parameter('gain', 'float', 1.0, 'Gain', description='Gain multiplier to apply to the input.')
+ui.parameter('exposure', 'float', 0.0, 'Exposure', description='Exposure adjustment to apply to the input, i.e. input * 2^exposure.')
+ui.parameter('mask', 'float', 1.0, 'Mask', description='Use this to mask off the adjustment. This can be useful for only adjusting a certain region of a texture for instance.')

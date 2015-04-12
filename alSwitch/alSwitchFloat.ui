@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
         'name':'alSwitchFloat',
-        'description':'Eight-way switch between inputs',
+        'intro':'Eight-way switch between inputs.',
+        'description':'Use this to select between multiple float values based on the value of a float input.',
         'output':'rgb',
         'maya_name':'alSwitchFloat',
 	'maya_classification':'texture',
@@ -15,16 +16,17 @@ ui.shader({
         'soft_name':'ALS_SwitchFloat',
 	'soft_classification':'texture',
 	'soft_version':1,
+  'help_url':'http://www.anderslanglands.com/alshaders/alSwitchFloat.html',
    'houdini_icon': 'VOP_switch'
 })
 
-ui.parameter('inputA', 'float', 0.0, 'InputA')
-ui.parameter('inputB', 'float', 1.0, 'InputB')
-ui.parameter('inputC', 'float', .15, 'InputC')
-ui.parameter('inputD', 'float', .30, 'InputD')
-ui.parameter('inputE', 'float', .45, 'InputE')
-ui.parameter('inputF', 'float', .60, 'InputF')
-ui.parameter('inputG', 'float', .75, 'InputG')
-ui.parameter('inputH', 'float', .90, 'InputH')
-ui.parameter('mix', 'float', 1.0, 'mix')
-ui.parameter('threshold', 'float', 0.5, 'threshold')
+ui.parameter('inputA', 'float', 0.0, 'InputA', description='Connect a value here to have it selected by the mix value')
+ui.parameter('inputB', 'float', 1.0, 'InputB', description='Connect a value here to have it selected by the mix value')
+ui.parameter('inputC', 'float', .15, 'InputC', description='Connect a value here to have it selected by the mix value')
+ui.parameter('inputD', 'float', .30, 'InputD', description='Connect a value here to have it selected by the mix value')
+ui.parameter('inputE', 'float', .45, 'InputE', description='Connect a value here to have it selected by the mix value')
+ui.parameter('inputF', 'float', .60, 'InputF', description='Connect a value here to have it selected by the mix value')
+ui.parameter('inputG', 'float', .75, 'InputG', description='Connect a value here to have it selected by the mix value')
+ui.parameter('inputH', 'float', .90, 'InputH', description='Connect a value here to have it selected by the mix value')
+ui.parameter('mix', 'float', 1.0, 'mix', description='Signal that selects from one of the 8 inputs.')
+ui.parameter('threshold', 'float', 0.5, 'threshold', description='Partial threshold at which the signal transitions from one input to the next.')

@@ -2,7 +2,8 @@ import uigen
 
 ui.shader({
 	'name':'alRemapFloat',
-	'description':'Controls to adjust a float value',
+	'intro':'Controls to adjust a float value',
+   'description':'Essential for tuning just about any float value in your network.',
 	'output':'rgb',
 	'maya_name':'alRemapFloat',
 	'maya_classification':'texture',
@@ -15,9 +16,10 @@ ui.shader({
 	'soft_name':'ALS_RemapColor',
 	'soft_classification':'texture',
 	'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alRemapFloat.html',
    'houdini_icon': 'VOP_fit'
 })
 
-ui.parameter('input', 'float', 0.0, 'Input')
+ui.parameter('input', 'float', 0.0, 'Input', description='Input value to remap.')
 
 uigen.remapControls(ui)

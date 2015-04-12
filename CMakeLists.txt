@@ -56,6 +56,7 @@ set(AE_INSTALL_DIR ${INSTALL_DIR}/ae)
 set(SPDL_INSTALL_DIR ${INSTALL_DIR}/spdl)
 set(ARGS_INSTALL_DIR ${INSTALL_DIR}/Args)
 
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/docs)
 
 message("Shader binaries will be installed to:\n\t${DSO_INSTALL_DIR}")
 message("Shader MTD will be installed to: \n\t${MTD_INSTALL_DIR}")
@@ -83,8 +84,6 @@ set(SUBDIRECTORIES
         alSwitch
         alJitterColor
         alCache
-        alMeasured
-        alFresnel
         alCel
         common
 )
@@ -99,13 +98,14 @@ function(build_shader)
         set(SPDL ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spdl)
         set(KARGS ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.args)
         set(C4DRES ${CMAKE_CURRENT_BINARY_DIR}/C4DtoA)
+        set(HTML ${CMAKE_SOURCE_DIR}/docs/${SHADER}.html)
 
         add_library(${SHADER} SHARED ${SRC})
 
         target_link_libraries(${SHADER} ai)
         set_target_properties(${SHADER} PROPERTIES PREFIX "")
 
-        add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} ${CMAKE_CURRENT_BINARY_DIR} DEPENDS ${UI})
+        add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} ${CMAKE_CURRENT_BINARY_DIR} ${HTML} DEPENDS ${UI})
         add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
 
         install(TARGETS ${SHADER} DESTINATION ${DSO_INSTALL_DIR})
