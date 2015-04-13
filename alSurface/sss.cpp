@@ -92,10 +92,9 @@ void matchNormals(const AtVector Nref, AtVector& Nmatch)
 }
 
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
-                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, const char* trace_set, 
-                        bool trace_set_enabled, bool trace_set_inclusive)
+                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput)
 {
-    AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
+    
     DiffusionSample& samp = dmd->samples[dmd->sss_depth];
     void* orig_op;
     AiStateGetMsgPtr("als_sss_op", &orig_op);
@@ -110,11 +109,12 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     {
         if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
         {
-            AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
+            #if 0
             if (trace_set_enabled)
             {
                 AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
             }
+            #endif
 
             AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
             AiTrace(&ray, &scrs);
@@ -122,6 +122,8 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
         return;
     }
     #endif
+
+    AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
     
     // assert(sg->P != dmd->Po);
     // put normals the right way round
@@ -243,16 +245,15 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
     dmd->sss_depth++;
 
-    // dmd->maxdist -= samp.r;
-
     if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
     {
         AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
-        
+        #if 0
         if (trace_set_enabled)
         {
             AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
         }
+        #endif
         AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
         AiTrace(&ray, &scrs);
     }
@@ -261,7 +262,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
                    bool directional, int numComponents,
                    AtRGB& result_direct, AtRGB& result_indirect, AtRGB* lightGroupsDirect, AtRGB* lightGroupsIndirect,
-                   AtRGB* deepGroupPtr, Range& sss_samples_taken)
+                   AtRGB* deepGroupPtr)
 
 {
     AtVector U, V;
@@ -401,6 +402,9 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
             }
         }
 
+        // if the sampled distance is greater than we'll consider anyway, don't bother tracing at all.
+        if (r_disk[0] > R_max) continue;
+
         AtVector dir = -Wsss;
         float dz = R_max;
         AtPoint origin = sg->P + Wsss*(dz*0.5f) + Usss * dx + Vsss * dy;
@@ -450,12 +454,10 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
                 float f = r_disk[0] / pdf_sum;
                 result_sss += dmd->samples[i].Rd * f;
                 assert(AiIsFinite(result_sss));
-                sss_samples_c++;
             }
             
         }
     }
-    sss_samples_taken.addSample(sss_samples_c);
     assert(AiIsFinite(result_sss));
     float w = AiSamplerGetSampleInvCount(sampit);
     result_sss *= w;
