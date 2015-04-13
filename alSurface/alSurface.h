@@ -6,9 +6,15 @@
 #include <vector>
 
 #include "fresnel.h"
+#include "stats.h"
 
 struct ShaderData
 {
+   ShaderData()
+   : sss_samples_taken("sss_samples")
+   {
+
+   }
    AtSampler* diffuse_sampler;
    AtSampler* sss_sampler;
    AtSampler* glossy_sampler;
@@ -97,9 +103,14 @@ struct ShaderData
    bool trace_set_transmission_enabled;
    bool trace_set_transmission_inclusive;
 
+   std::string trace_set_sss;
+   bool trace_set_sss_enabled;
+   bool trace_set_sss_inclusive;
+
    bool cel_connected;
 
    int sssMode;
+   Range sss_samples_taken;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0

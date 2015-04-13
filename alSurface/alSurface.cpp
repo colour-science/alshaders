@@ -87,6 +87,7 @@ enum alSurfaceParams
     p_sssWeight3,
     p_sssRadiusColor3,
     p_sssDensityScale,
+    p_sssTraceSet,
 
     p_ssInScatteringStrength,
     p_ssAttenuationColor,
@@ -261,6 +262,7 @@ node_parameters
     AiParameterRGB("sssRadiusColor3", .523, .637, .667 );
     AiMetaDataSetBool(mds, "sssRadiusColor3", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssDensityScale", 1.0f );
+    AiParameterSTR("sssTraceSet", "");
 
     AiParameterFLT("ssInScatteringStrength", 0.0f);
     AiParameterRGB("ssAttenuationColor", 1.0f, 1.0f, 1.0f);
@@ -419,7 +421,6 @@ node_initialize
     data->perm_table_spec1 = NULL;
     data->perm_table_spec2 = NULL;
     data->perm_table_backlight = NULL;
-
 };
 
 node_finish
@@ -427,7 +428,7 @@ node_finish
     if (AiNodeGetLocalData(node))
     {
         ShaderData* data = (ShaderData*) AiNodeGetLocalData(node);
-
+        data->sss_samples_taken.report(std::cout);
         AiSamplerDestroy(data->diffuse_sampler);
         AiSamplerDestroy(data->sss_sampler);
         AiSamplerDestroy(data->glossy_sampler);
@@ -715,6 +716,22 @@ node_update
         }
     }
 
+    if (strlen(params[p_sssTraceSet].STR))
+    {
+        std::string tmp(params[p_sssTraceSet].STR);
+        data->trace_set_sss_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_sss_inclusive = false;
+            data->trace_set_sss = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_sss_inclusive = true;
+            data->trace_set_sss = tmp;
+        }
+    }
+
     // check if we're connected to an alCel shader
     // TODO: no easy way to do this... we'll want to traverse all shading nodes and
     // see if they're alCel and their input is connected to us
@@ -857,7 +874,8 @@ shader_evaluate
     {
         // compute the diffusion sample
         assert(diffusion_msgdata);
-        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups);
+        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups, data->trace_set_sss.c_str(),
+                            data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
         AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
@@ -2416,10 +2434,18 @@ shader_evaluate
             */
             AtRGB result_sss_direct;
             AtRGB result_sss_indirect;
+            if (data->trace_set_sss_enabled)
+            {
+                AiShaderGlobalsSetTraceSet(sg, data->trace_set_sss.c_str(), data->trace_set_sss_inclusive);
+            }
             result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, 
                                       data->sssMode == SSSMODE_DIRECTIONAL, nc,
                                       result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
-                                      deepGroupPtr);
+                                      deepGroupPtr, data->sss_samples_taken);
+            if (data->trace_set_sss_enabled)
+            {
+                AiShaderGlobalsUnsetTraceSet(sg);
+            }
         }
         result_sss *= diffuseColor;
     }
