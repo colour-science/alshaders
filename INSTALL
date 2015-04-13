@@ -23,6 +23,9 @@ For Katana
 - Libraries and MTD files found in the 'bin' directory go somewhere in your ARNOLD_PLUGIN_PATH
 - Copy the Args directory to the same place as you copy the binaries
 
+For HtoA
+- Copy the libraries and .mtd files in the 'bin' directory to HtoA/arnold/plugins or anywhere else in your ARNOLD_PLUGIN_PATH
+
 SOURCE DISTRIBUTION
 -------------------
 This project uses CMake >= 2.8 to build. It has been tested on Mac OS X >=10.7, Windows 7 with MSVC++2010 and Centos6.5 with gcc4.2.1
