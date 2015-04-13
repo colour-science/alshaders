@@ -105,7 +105,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     samp.r = AiV3Length(samp.S);
     dmd->maxdist -= samp.r;
     samp.Rd = AI_RGB_BLACK;
-    #if 0
+    #if 1
     if (orig_op != sg->Op)
     {
         if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
