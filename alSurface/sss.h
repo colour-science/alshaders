@@ -4,106 +4,12 @@
 #include "alUtil.h"
 #include <cassert>
 #include <map>
+#include "stats.h"
 
 #define SSS_MAX_SAMPLES 8
 #define SSS_MAX_RADIUS 25.0f
 #define SSS_ALBEDO_LUT_SZ 256
 #define SSS_MAX_PROFILES 9
-/*
-struct ScatteringParamsDipole
-{
-    ScatteringParamsDipole(const AtRGB& _sigma_s_prime, const AtRGB& _sigma_a, float _g, float _eta)
-    : sigma_s_prime(_sigma_s_prime), sigma_a(_sigma_a), g(_g), eta(_eta)
-    {
-        Fdr = -1.44f/(eta*eta) + 0.71f/eta + 0.668f + 0.0636f*eta;
-        float A = (1.0f + Fdr)/(1.0f - Fdr);
-        sigma_t_prime = sigma_s_prime + sigma_a;
-        alpha_prime = sigma_s_prime / sigma_t_prime;
-        AtRGB l = AI_RGB_WHITE / sigma_t_prime;
-        AtRGB D = l / 3.0f;
-
-        sigma_tr = sqrt(3.0f*sigma_a*sigma_t_prime);
-        zb = 2.0f * A * D;
-        zr = AI_RGB_WHITE / sigma_t_prime;
-        zv = zr + (2.0f*zb);
-
-        AtRGB sq = sqrt(3.0f * (AI_RGB_WHITE - alpha_prime));
-        albedo = alpha_prime * 0.5f * (AI_RGB_WHITE + fast_exp(-A*sq*4.0f/3.0f)) * fast_exp(-sq);
-        float total = albedo.r + albedo.g + albedo.b;
-        albedo_norm = albedo / total;
-    }
-
-    AtRGB sigma_s_prime;
-    AtRGB sigma_t_prime;
-    AtRGB sigma_a;
-    float g;
-    float eta;
-    float Fdr;
-    AtRGB sigma_tr;
-    AtRGB zr;
-    AtRGB zv;
-    AtRGB zb;
-    AtRGB alpha_prime;
-    AtRGB albedo;
-    AtRGB albedo_norm;
-};
-
-struct ScatteringParamsDirectional
-{
-    ScatteringParamsDirectional(AtRGB sigma_s_prime, AtRGB sigma_a, float g);
-    ScatteringParamsDirectional(AtRGB c, float scale, float g, bool norm_color, bool directional);
-
-    // numerically calculate Rd from alpha_prime according to the better dipole model.
-    // see http://graphics.pixar.com/library/TexturingBetterDipole/paper.pdf
-    // {
-    float computeRd(float alpha_prime_c)
-    {
-       float _4A = (1.0f + _3C2) / C_phi;
-       float sigma_tr_D = sqrtf((1.0f-alpha_prime_c) * (2.0f-alpha_prime_c) / 3.0f);
-       float ex = expf(-_4A * sigma_tr_D);
-       return 0.5f * SQR(alpha_prime_c)
-                   * expf(-sqrtf(3.0f*(1.0f - alpha_prime_c)/(2.0f-alpha_prime_c))) 
-                   * (C_E * (1.0f+ex) + C_phi/sigma_tr_D * (1.0f-ex));
-    }
-
-    float computeAlphaPrime(float rd)
-    {
-       int i, niter = 50;
-       float x0 = 0, x1 = 1;
-       float xmid, fmid;
-
-       for (i=0; i < niter; ++i)
-       {
-          xmid = 0.5f * (x0+x1);
-          fmid = computeRd(xmid);
-          fmid < rd ? x0 = xmid : x1 = xmid;
-       }
-
-       return xmid;
-    }
-    // }
-
-    float g;
-    float eta;
-    float C_phi;
-    float C_phi_inv;
-    float C_E;
-    float _3C2;
-    float A;
-    AtRGB de;
-    AtRGB sigma_t;
-    AtRGB sigma_t_prime;
-    AtRGB sigma_tr;
-    AtRGB D;
-    AtRGB zr;
-    AtRGB alpha_prime;
-    AtRGB albedo_norm;
-    AtRGB albedo;
-
-    static float _albedo_lut[SSS_ALBEDO_LUT_SZ];
-    static float _albedo_lut_d[SSS_ALBEDO_LUT_SZ];
-};
-*/
 
 struct ScatteringProfileDirectional
 {
@@ -172,20 +78,6 @@ struct DiffusionSample
     float r;        //< distance from shading point to sample
     float b;        //< bounce attenuation factor
 };
-/*
-struct DiffusionMessageData
-{
-    int sss_depth;
-    float maxdist;
-    AtVector Po;
-    AtVector No;
-    AtVector U;
-    AtVector V;
-    ScatteringParamsDipole sp[9];
-    AtShaderGlobals* sg;
-    DiffusionSample samples[SSS_MAX_SAMPLES];
-};
-*/
 
 struct DirectionalMessageData
 {
@@ -253,12 +145,6 @@ inline AtRGB dipoleProfileRd(float r, const AtRGB& sigma_tr, const AtRGB& zr, co
     );
 }
 
-/*
-inline AtRGB dipole(float r, const AtVector& N, const AtVector& Nx, const ScatteringParamsDipole& sp)
-{
-    return dipoleProfileRd(r, sp.sigma_tr, sp.zr, sp.zv) * sp.alpha_prime;
-}
-*/
 #define DD_SINGLE_PRECISION 
 #ifdef DD_SINGLE_PRECISION
 // Directional dipole profile evaluation
@@ -429,7 +315,7 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
 #endif
 
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
-                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap);
+                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput);
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
                    bool directional, int numComponents, 
                    AtRGB& result_direct, AtRGB& result_indirect, AtRGB* lightGroupsDirect, AtRGB* deepGroupsSss,

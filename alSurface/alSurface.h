@@ -6,9 +6,15 @@
 #include <vector>
 
 #include "fresnel.h"
+#include "stats.h"
 
 struct ShaderData
 {
+   ShaderData()
+   : sss_samples_taken("sss_samples")
+   {
+
+   }
    AtSampler* diffuse_sampler;
    AtSampler* sss_sampler;
    AtSampler* glossy_sampler;
@@ -33,6 +39,7 @@ struct ShaderData
    int refraction_sample_offset;
    int backlight_sample_offset;
    int total_samples;
+   int sss_bssrdf_samples;
    AtCritSec cs;
    std::map<AtNode*, int> lightGroups;
    std::map<AtNode*, float> shadowDensities;
@@ -55,6 +62,7 @@ struct ShaderData
    int* perm_table_spec1;
    int* perm_table_spec2;
    int* perm_table_backlight;
+   int* perm_table_sss;
    int xres;
 
    float specular1IndirectClamp;
@@ -97,9 +105,14 @@ struct ShaderData
    bool trace_set_transmission_enabled;
    bool trace_set_transmission_inclusive;
 
+   std::string trace_set_sss;
+   bool trace_set_sss_enabled;
+   bool trace_set_sss_inclusive;
+
    bool cel_connected;
 
    int sssMode;
+   Range sss_samples_taken;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0
@@ -107,6 +120,7 @@ struct ShaderData
 #define RAND_STREAM_ALSURFACE_RR_SPEC1_PERMUTE 20000
 #define RAND_STREAM_ALSURFACE_RR_SPEC2_PERMUTE 30000
 #define RAND_STREAM_ALSURFACE_RR_BACKLIGHT_PERMUTE 40000
+#define RAND_STREAM_ALSURFACE_RR_SSS_PERMUTE 50000
 
 
 #define TEA_STREAM_ALSURFACE_RR_OFFSET 0
@@ -123,3 +137,6 @@ struct ShaderData
 
 #define TEA_STREAM_ALSURFACE_RR_BACKLIGHT_OFFSET 8
 #define TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER 9
+
+#define TEA_STREAM_ALSURFACE_RR_SSS_OFFSET 10
+#define TEA_STREAM_ALSURFACE_RR_SSS_JITTER 11

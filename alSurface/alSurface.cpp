@@ -87,6 +87,7 @@ enum alSurfaceParams
     p_sssWeight3,
     p_sssRadiusColor3,
     p_sssDensityScale,
+    p_sssTraceSet,
 
     p_ssInScatteringStrength,
     p_ssAttenuationColor,
@@ -261,6 +262,7 @@ node_parameters
     AiParameterRGB("sssRadiusColor3", .523, .637, .667 );
     AiMetaDataSetBool(mds, "sssRadiusColor3", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssDensityScale", 1.0f );
+    AiParameterSTR("sssTraceSet", "");
 
     AiParameterFLT("ssInScatteringStrength", 0.0f);
     AiParameterRGB("ssAttenuationColor", 1.0f, 1.0f, 1.0f);
@@ -419,7 +421,7 @@ node_initialize
     data->perm_table_spec1 = NULL;
     data->perm_table_spec2 = NULL;
     data->perm_table_backlight = NULL;
-
+    data->perm_table_sss = NULL;
 };
 
 node_finish
@@ -427,7 +429,6 @@ node_finish
     if (AiNodeGetLocalData(node))
     {
         ShaderData* data = (ShaderData*) AiNodeGetLocalData(node);
-
         AiSamplerDestroy(data->diffuse_sampler);
         AiSamplerDestroy(data->sss_sampler);
         AiSamplerDestroy(data->glossy_sampler);
@@ -440,6 +441,7 @@ node_finish
         delete[] data->perm_table_spec1;
         delete[] data->perm_table_spec2;
         delete[] data->perm_table_backlight;
+        delete[] data->perm_table_sss;
         
         AiNodeSetLocalData(node, NULL);
         delete data;
@@ -489,7 +491,7 @@ node_update
     data->diffuse_samples2 = SQR(data->GI_diffuse_samples);
     data->GI_refraction_samples = AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT;
     data->refraction_samples2 = SQR(data->GI_refraction_samples);
-    int sss_samples = AiNodeGetInt(options, "sss_bssrdf_samples");
+    data->sss_bssrdf_samples = AiNodeGetInt(options, "sss_bssrdf_samples");
 
     // setup samples
     AiSamplerDestroy(data->diffuse_sampler);
@@ -499,7 +501,7 @@ node_update
     AiSamplerDestroy(data->refraction_sampler);
     AiSamplerDestroy(data->backlight_sampler);
     data->diffuse_sampler = AiSampler(data->GI_diffuse_samples, 2);
-    data->sss_sampler = AiSampler(sss_samples, 2);
+    data->sss_sampler = AiSampler(data->sss_bssrdf_samples, 2);
     data->glossy_sampler = AiSampler(data->GI_glossy_samples, 2);
     data->glossy2_sampler = AiSampler(data->GI_glossy_samples, 2);
     data->refraction_sampler = AiSampler(data->GI_refraction_samples, 2);
@@ -552,6 +554,8 @@ node_update
     data->perm_table_spec2 = new int[data->AA_samples*data->GI_glossy2_samples*data->total_depth];
     delete[] data->perm_table_backlight;
     data->perm_table_backlight = new int[data->AA_samples*data->GI_diffuse_samples*data->total_depth];
+    delete[] data->perm_table_sss;
+    data->perm_table_sss = new int[data->AA_samples*data->sss_bssrdf_samples*data->total_depth];
     // permute uses rand() to generate the random number stream so seed it first
     // so we get a determistic sequence between renders
     srand(RAND_STREAM_ALSURFACE_RR_PERMUTE);
@@ -587,6 +591,13 @@ node_update
     for (int d=0; d < data->total_depth*data->GI_diffuse_samples; ++d)
     {
         permute(&(data->perm_table_backlight[d*data->AA_samples]), data->AA_samples);
+    }
+
+    srand(RAND_STREAM_ALSURFACE_RR_SSS_PERMUTE);
+    // generate the permutation table for rr_backlight
+    for (int d=0; d < data->total_depth*data->sss_bssrdf_samples; ++d)
+    {
+        permute(&(data->perm_table_sss[d*data->AA_samples]), data->AA_samples);
     }
 
     data->xres = AiNodeGetInt(options, "xres");
@@ -714,6 +725,24 @@ node_update
             data->trace_set_transmission = tmp;
         }
     }
+
+    #if 0
+    if (strlen(params[p_sssTraceSet].STR))
+    {
+        std::string tmp(params[p_sssTraceSet].STR);
+        data->trace_set_sss_enabled = true;
+        if (tmp[0] == '-')
+        {
+            data->trace_set_sss_inclusive = false;
+            data->trace_set_sss = tmp.substr(1);
+        }
+        else
+        {
+            data->trace_set_sss_inclusive = true;
+            data->trace_set_sss = tmp;
+        }
+    }
+    #endif
 
     // check if we're connected to an alCel shader
     // TODO: no easy way to do this... we'll want to traverse all shading nodes and
@@ -850,6 +879,10 @@ shader_evaluate
         if (!AiStateGetMsgPtr("als_transmittedAovPtr", (void**)&transmittedAovPtr)) transmitAovs = false;
     }
 
+    // get path throughput so far
+    AtRGB path_throughput = AI_RGB_WHITE;
+    if (data->do_rr && sg->Rr > 0) AiStateGetMsgRGB("als_throughput", &path_throughput);
+
     DirectionalMessageData* diffusion_msgdata = NULL; 
     AiStateGetMsgPtr("als_dmd", (void**)&diffusion_msgdata);
 
@@ -857,7 +890,7 @@ shader_evaluate
     {
         // compute the diffusion sample
         assert(diffusion_msgdata);
-        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups);
+        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups, path_throughput);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
         AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
@@ -1189,9 +1222,6 @@ shader_evaluate
         do_transmission = false;
     }
 
-    // get path throughput so far
-    AtRGB path_throughput = AI_RGB_WHITE;
-    if (data->do_rr && sg->Rr > 0) AiStateGetMsgRGB("als_throughput", &path_throughput);
 
     // prepare temporaries for light group calculation
     AtRGB lightGroupsDirect[NUM_LIGHT_GROUPS];
@@ -2416,10 +2446,20 @@ shader_evaluate
             */
             AtRGB result_sss_direct;
             AtRGB result_sss_indirect;
+            #if 0
+            if (data->trace_set_sss_enabled)
+            {
+                AiShaderGlobalsSetTraceSet(sg, data->trace_set_sss.c_str(), data->trace_set_sss_inclusive);
+            }
+            #endif
             result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, 
                                       data->sssMode == SSSMODE_DIRECTIONAL, nc,
                                       result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
                                       deepGroupPtr);
+            if (data->trace_set_sss_enabled)
+            {
+                AiShaderGlobalsUnsetTraceSet(sg);
+            }
         }
         result_sss *= diffuseColor;
     }
