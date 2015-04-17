@@ -6,7 +6,7 @@
 #include <map>
 #include "stats.h"
 
-#define SSS_MAX_SAMPLES 8
+#define SSS_MAX_SAMPLES 128
 #define SSS_MAX_RADIUS 25.0f
 #define SSS_ALBEDO_LUT_SZ 256
 #define SSS_MAX_PROFILES 9
@@ -166,7 +166,7 @@ inline float Sp_d(const AtVector x, const AtVector w, const float r, const AtVec
 
     const float Sp = t0 * (Cp * t1 - Ce * (t2 - t3));
     assert(AiIsFinite(Sp));
-    // return std::max(Sp, 0.0f);
+    return std::max(Sp, 0.0f);
     return Sp;
 }
 #else
@@ -187,6 +187,7 @@ inline double Sp_d(const AtVector x, const AtVector w, const double r, const AtV
 
     const double Sp = t0 * (Cp * t1 - Ce * (t2 - t3));
     assert(AiIsFinite(Sp));
+    return std::max(Sp, 0.0);
     return Sp;
 }
 #endif

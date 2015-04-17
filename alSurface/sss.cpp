@@ -115,7 +115,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
                 AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
             }
             #endif
-
+            
             AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
             AiTrace(&ray, &scrs);
         }
@@ -230,6 +230,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
             }
         }
     }
+    
 
     // TODO: this is guaranteed to be 1 in every case, right?
     // result_indirect *= AiSamplerGetSampleInvCount(sampit);
@@ -254,6 +255,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
             AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
         }
         #endif
+        // sg->Rr--;
         AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
         AiTrace(&ray, &scrs);
     }
