@@ -409,8 +409,8 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
 
         AtVector dir = -Wsss;
         float dz = R_max;
-        AtPoint origin = sg->P + Wsss*(dz*0.5f) + Usss * dx + Vsss * dy;
-        float maxdist = R_max * 2.0f;
+        AtPoint origin = sg->P + Wsss*(dz*.25) + Usss * dx + Vsss * dy;
+        float maxdist = R_max ;//* 2.0f;
 
         AiMakeRay(&wi_ray, AI_RAY_SUBSURFACE, &origin, &dir, maxdist, sg);
 
