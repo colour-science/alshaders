@@ -726,7 +726,6 @@ node_update
         }
     }
 
-    #if 0
     if (strlen(params[p_sssTraceSet].STR))
     {
         std::string tmp(params[p_sssTraceSet].STR);
@@ -742,7 +741,6 @@ node_update
             data->trace_set_sss = tmp;
         }
     }
-    #endif
 
     // check if we're connected to an alCel shader
     // TODO: no easy way to do this... we'll want to traverse all shading nodes and
@@ -890,7 +888,8 @@ shader_evaluate
     {
         // compute the diffusion sample
         assert(diffusion_msgdata);
-        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups, path_throughput);
+        alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups, path_throughput,
+                           data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
         AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
@@ -2455,7 +2454,8 @@ shader_evaluate
             result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, 
                                       data->sssMode == SSSMODE_DIRECTIONAL, nc,
                                       result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
-                                      deepGroupPtr);
+                                      deepGroupPtr,
+                                      data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
             if (data->trace_set_sss_enabled)
             {
                 AiShaderGlobalsUnsetTraceSet(sg);

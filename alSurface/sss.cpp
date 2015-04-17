@@ -92,7 +92,8 @@ void matchNormals(const AtVector Nref, AtVector& Nmatch)
 }
 
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
-                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput)
+                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput,
+                        const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive)
 {
     
     DiffusionSample& samp = dmd->samples[dmd->sss_depth];
@@ -104,24 +105,16 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     samp.r = AiV3Length(samp.S);
     dmd->maxdist -= samp.r;
     samp.Rd = AI_RGB_BLACK;
-    #if 1
-    if (orig_op != sg->Op)
+    if (!trace_set_enabled && orig_op != sg->Op)
     {
         if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
         {
-            #if 0
-            if (trace_set_enabled)
-            {
-                AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
-            }
-            #endif
             
             AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
             AiTrace(&ray, &scrs);
         }
         return;
     }
-    #endif
 
     AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
     
@@ -249,13 +242,11 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
     {
         AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
-        #if 0
         if (trace_set_enabled)
         {
             AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
         }
-        #endif
-        // sg->Rr--;
+        sg->Rr--;
         AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
         AiTrace(&ray, &scrs);
     }
@@ -264,7 +255,8 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
                    bool directional, int numComponents,
                    AtRGB& result_direct, AtRGB& result_indirect, AtRGB* lightGroupsDirect, AtRGB* lightGroupsIndirect,
-                   AtRGB* deepGroupPtr)
+                   AtRGB* deepGroupPtr,
+                   const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive)
 
 {
     AtVector U, V;
@@ -329,6 +321,10 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     dmd->deepGroupPtr = deepGroupPtr;
     AtVector axes[3] = {U, V, sg->Ng};
     double sss_samples_c  = 0;
+    if (trace_set_enabled)
+    {
+        AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
+    }
     while (AiSamplerGetSample(sampit, samples))
     {
         float dx, dy;

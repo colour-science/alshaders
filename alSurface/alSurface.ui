@@ -44,7 +44,7 @@ with uigen.group(ui, 'Diffuse', False, description='The diffuse layer sits under
 		ui.parameter('sssRadius3', 'float', 1.0, 'Distance 3', description='The scatter distance of the third layer. Higher values mean the light travels further through the object, lower values mean it travels a shorter distance.')
 		ui.parameter('sssWeight3', 'float', 0.0, 'Weight 3', mn=0, mx=1, description='The weight of the third layer. Larger values relative to the other layers will cause more of this layer to be present in the result.')
 		ui.parameter('sssRadiusColor3', 'rgb', (.523, .637, .667), 'Color 3', description='The scatter color of the third layer. This is the color the light will tend to the further it travels through the material, e.g. reddish for skin.')
-		#ui.parameter('sssTraceSet', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict the sss to trace only against that set.')
+		ui.parameter('sssTraceSet', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict the sss to trace only against that set.')
 
 	with uigen.group(ui, 'Advanced', description='The Advanced section contains controls that allow you to fine-tune the behavior of the shader. You should not need to touch these under normal circumstances.'):
 		ui.parameter('diffuseExtraSamples', 'int', 0, 'Extra samples', connectible=False, description='Add or subtract samples for this lobe from the global sampling rate.')

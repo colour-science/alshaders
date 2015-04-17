@@ -316,8 +316,10 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
 #endif
 
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
-                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput);
+                        AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput,
+                        const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive);
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
                    bool directional, int numComponents, 
                    AtRGB& result_direct, AtRGB& result_indirect, AtRGB* lightGroupsDirect, AtRGB* deepGroupsSss,
-                   AtRGB* deepGroupPtr);
+                   AtRGB* deepGroupPtr,
+                   const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive);
