@@ -478,7 +478,7 @@ node_update
     AiSamplerDestroy(data->backlight_sampler);
     data->diffuse_sampler = AiSampler(data->GI_diffuse_samples, 2);
     data->glossy_sampler = AiSampler(data->GI_glossy_samples, 2);
-    data->glossy2_sampler = AiSampler(data->GI_glossy_samples, 2);
+    data->glossy2_sampler = AiSampler(data->GI_glossy2_samples, 2);
     data->refraction_sampler = AiSampler(data->GI_refraction_samples, 2);
     data->backlight_sampler = AiSampler(data->GI_diffuse_samples, 2);
 
