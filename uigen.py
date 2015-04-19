@@ -1047,15 +1047,55 @@ def WriteHTML(sd, fn):
    <script src="../js/navbar.js"></script>
    <script src="../js/tabs.js"></script>
    <script src="../js/param.js"></script>
-   <script src="../js/parallax.js"></script>
-   <script type="text/javascript">
-      $(function(){
-         $("#header").load("./header.html");
-      });
-   </script>
 </head>
 
-<div id='header'></div>
+<header class="navigation" role="banner">
+  <div class="navigation-wrapper">
+    <a href="index.html" class="logo">
+      <img src="img/als.png" alt="Logo Image">
+    </a>
+    <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu"><i class="fa fa-bars fa-2x"></i></a>
+    <nav role="navigation">
+      <ul id="js-navigation-menu" class="navigation-menu show">
+        <li class="nav-link"><a href="index.html">Home</a></li>
+            <li class="nav-link"><a href="javascript:void(0)">Tutorials</a></li>
+            <li class="nav-link more"><a href="javascript:void(0)">Surfaces</a>
+            <ul class="submenu">
+               <li><a href="alSurface.html">alSurface</a></li>
+               <li><a href="alLayer.html">alLayer</a></li>
+               <li><a href="alHair.html">alHair</a></li>
+               <li><a href="alCel.html">alCel</a></li>
+            </ul>
+            </li>
+            <li class="nav-link more"><a href="javascript:void(0)">Textures</a>
+            <ul class="submenu">
+               <li><a href="alFractal.html">alFractal</a></li>
+               <li><a href="alCellNoise.html">alCellNoise</a></li>
+               <li><a href="alGaborNoise.html">alGaborNoise</a></li>
+               <li><a href="alFlowNoise.html">alFlowNoise</a></li>
+               <li><a href="alPattern.html">alPattern</a></li>
+               <li><a href="alTriplanar.html">alTriplanar</a></li>
+               <li><a href="alBlackbody.html">alBlackbody</a></li>
+            </ul>
+            </li>
+            <li class="nav-link more"><a href="javascript:void(0)">Utilities</a>
+            <ul class="submenu">
+               <li><a href="alCombineFloat.html">alCombineFloat</a></li>
+               <li><a href="alCombineColor.html">alCombineColor</a></li>
+               <li><a href="alRemapFloat.html">alRemapFloat</a></li>
+               <li><a href="alRemapColor.html">alRemapColor</a></li>
+               <li><a href="alLayerFloat.html">alLayerFloat</a></li>
+               <li><a href="alLayerColor.html">alLayerColor</a></li>
+               <li><a href="alSwitchFloat.html">alSwitchFloat</a></li>
+               <li><a href="alSwitchColor.html">alSwitchColor</a></li>
+               <li><a href="alCache.html">alCache</a></li>
+               <li><a href="alInputVector.html">alInputVector</a></li>
+               <li><a href="alJitterColor.html">alJitterColor</a></li>
+      </ul>
+    </nav>
+    
+  </div>
+</header>
 
 <body>
    <div class='shader-content'>
