@@ -1052,7 +1052,7 @@ def WriteHTML(sd, fn):
 <header class="navigation" role="banner">
   <div class="navigation-wrapper">
     <a href="index.html" class="logo">
-      <img src="img/als.png" alt="Logo Image">
+      <img src="img/als-logo-white.svg" alt="Logo Image">
     </a>
     <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu"><i class="fa fa-bars fa-2x"></i></a>
     <nav role="navigation">
