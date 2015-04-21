@@ -293,10 +293,10 @@ node_parameters
 
     AiParameterFLT("specular2Strength", 0.0f );
     AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
-    AiParameterFLT("specular2Roughness", 0.3f );
+    AiParameterFLT("specular2Roughness", 0.5f );
     AiParameterFLT("specular2Anisotropy", 0.5f );
     AiParameterFLT("specular2Rotation", 0.0f );
-    AiParameterENUM("specular2FresnelMode", FM_DIELECTRIC, fresnel_mode_names);
+    AiParameterENUM("specular2FresnelMode", FM_METALLIC, fresnel_mode_names);
     AiParameterFLT("specular2Ior", 1.4f );
     AiParameterRGB("specular2Reflectivity", 0.548, .549, .570);
     AiParameterRGB("specular2EdgeTint", 0.579, .598, .620);
@@ -1055,14 +1055,23 @@ shader_evaluate
 
     // adapt the roughness values for anisotropy
     float specular1Anisotropy = CLAMP(AiShaderEvalParamFlt(p_specular1Anisotropy), 0.0f, 1.0f);
-    float aniso_t = sqrtf(fabsf(2.0f * specular1Anisotropy - 1.0f));
-    float roughness_x = (specular1Anisotropy >= 0.5f) ? roughness : LERP(aniso_t, roughness, 0.00001f);
-    float roughness_y = (specular1Anisotropy <= 0.5f) ? roughness : LERP(aniso_t, roughness, 0.00001f);
+    float roughness_x = roughness;
+    float roughness_y = roughness;
+    if ( specular1Anisotropy != 0.5f)
+    {
+        float aniso_t = SQR(fabsf(2.0f * specular1Anisotropy - 1.0f));
+        roughness_x = (specular1Anisotropy >= 0.5f) ? roughness : LERP(aniso_t, MAX(roughness, 0.0025f), 1.0f);
+        roughness_y = (specular1Anisotropy <= 0.5f) ? roughness : LERP(aniso_t, MAX(roughness, 0.0025f), 1.0f);
+    }
     float specular2Anisotropy = CLAMP(AiShaderEvalParamFlt(p_specular2Anisotropy), 0.0f, 1.0f);
-    aniso_t = sqrtf(fabsf(2.0f * specular2Anisotropy - 1.0f));
-    float roughness2_x = (specular2Anisotropy >= 0.5f) ? roughness2 : LERP(aniso_t, roughness2, 0.00001f);
-    float roughness2_y = (specular2Anisotropy <= 0.5f) ? roughness2 : LERP(aniso_t, roughness2, 0.00001f);
-
+    float roughness2_x = roughness2;
+    float roughness2_y = roughness2;
+    if (specular2Anisotropy != 0.5f)
+    {
+        float aniso_t = SQR(fabsf(2.0f * specular2Anisotropy - 1.0f));
+        roughness2_x = (specular2Anisotropy >= 0.5f) ? roughness2 : LERP(aniso_t, MAX(roughness2, 0.0025f), 1.0f);
+        roughness2_y = (specular2Anisotropy <= 0.5f) ? roughness2 : LERP(aniso_t, MAX(roughness2, 0.0025f), 1.0f);
+    }
     // Grab the roughness from the previous surface and make sure we're slightly rougher than it to avoid glossy-glossy fireflies
     float alsPreviousRoughness = 0.0f;
     AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);

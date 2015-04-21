@@ -76,8 +76,10 @@ class Parameter(UiElement):
    connectible = True
    enum_names = None
    default = None
+   fig = None
+   figc = None
 
-   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
+   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None):
       self.name = name
       self.ptype = ptype
       self.default = default
@@ -89,6 +91,8 @@ class Parameter(UiElement):
       self.mx = mx
       self.smn = smn
       self.smx = smx
+      self.fig = fig
+      self.figc = figc
 
       if ptype not in ('bool', 'int', 'float', 'rgb', 'vector', 'string', 'enum', 'matrix'):
          raise ValueError('parameter %s has unrecognized ptype %r' % (name, ptype))
@@ -182,8 +186,8 @@ class ShaderDef:
    def endGroup(self):
       self.current_parent = self.current_parent.parent
 
-   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None):
-      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names)
+   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None):
+      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc)
       if not self.current_parent.children:
          self.current_parent.children = [p]
       else:
@@ -1008,8 +1012,11 @@ def WalkHTML(f, el, d):
       el_default="default='%s'" % str(el.default)
       if el.ptype == 'rgb' and not isinstance(el, AOV):
          el_default="default='rgb(%d, %d, %d)'" % (int(pow(el.default[0],1/2.2) * 255), int(pow(el.default[1],1/2.2) * 255), int(pow(el.default[2],1/2.2) * 255))
-      writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s></div>"
-               % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link), d)
+      el_fig=""
+      if el.fig != None and el.figc != None:
+         el_fig = "fig='%s' figc='%s'" % (el.fig, el.figc)
+      writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s %s></div>"
+               % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link, el_fig), d)
 
 def WalkHTMLRoot(f, el, d):
    if isinstance(el, Group):
