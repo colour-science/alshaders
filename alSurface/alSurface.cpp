@@ -787,7 +787,7 @@ shader_evaluate
 
     // balance diffuse, transmission and backlight
     float t_sum = maxh(transmissionColor) + maxh(diffuseColor) + maxh(backlightColor);
-    if (0)//(t_sum > 1.0f)
+    if (t_sum > 1.0f)
     {
         float t_sum_inv = 1.0f / t_sum;
         transmissionColor *= t_sum_inv;
