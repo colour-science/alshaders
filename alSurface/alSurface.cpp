@@ -782,6 +782,18 @@ shader_evaluate
         transmissionIor = AiShaderEvalParamFlt(p_transmissionIor);
     }
     AtRGB transmissionColor = AiShaderEvalParamRGB(p_transmissionColor) * AiShaderEvalParamFlt(p_transmissionStrength);
+    AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
+    AtRGB backlightColor = AiShaderEvalParamRGB(p_backlightColor) * AiShaderEvalParamFlt(p_backlightStrength);
+
+    // balance diffuse, transmission and backlight
+    float t_sum = maxh(transmissionColor) + maxh(diffuseColor) + maxh(backlightColor);
+    if (t_sum > 1.0f)
+    {
+        float t_sum_inv = 1.0f / t_sum;
+        transmissionColor *= t_sum_inv;
+        diffuseColor *= t_sum_inv;
+        backlightColor *= t_sum_inv;
+    }
 
     AtRGB ssScattering = AiShaderEvalParamRGB(p_ssScattering);
     AtRGB ssAbsorption = AiShaderEvalParamRGB(p_ssAbsorption);
@@ -1006,8 +1018,6 @@ shader_evaluate
 
     // Initialize parameter temporaries
     // TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
-    AtRGB diffuseColor = AiShaderEvalParamRGB( p_diffuseColor ) * AiShaderEvalParamFlt( p_diffuseStrength );
-    AtRGB backlightColor = AiShaderEvalParamRGB(p_backlightColor) * AiShaderEvalParamFlt(p_backlightStrength);
     float diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
     bool diffuseEnableCaustics = AiShaderEvalParamBool(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
@@ -1345,6 +1355,97 @@ shader_evaluate
         AiShaderGlobalsSetTraceSet(sg, data->trace_set_shadows.c_str(), data->trace_set_shadows_inclusive);
     }
 
+    AtVector Norig = sg->Nf;
+    if (do_glossy)
+    {
+        AtRGB LspecularDirect = AI_RGB_BLACK;
+
+        sg->Nf = specular1Normal;
+        AiLightsPrepare(sg);
+        while(AiLightsGetSample(sg))
+        {
+            if (AiLightGetAffectSpecular(sg->Lp))
+            {
+                // get the group assigned to this light from the hash table using the light's pointer
+                int lightGroup = data->lightGroups[sg->Lp];
+
+                // per-light specular and diffuse strength multipliers
+                float specular_strength = AiLightGetSpecular(sg->Lp);
+
+                brdfw.ibs = false;
+                LspecularDirect =
+                    AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+                        * specular_strength;
+                // if the light is assigned a valid group number, add this sample's contribution to that light group
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += LspecularDirect * specular1Color;
+                }
+                // accumulate the result
+                result_glossyDirect += LspecularDirect;
+            }
+        }
+        sg->Nf = Norig;
+
+        kti = 1.0f - (maxh(brdfw.kr_int)/brdfw.ns * maxh(specular1Color));
+    }
+
+    if (do_glossy2)
+    {
+        sg->Nf = specular2Normal;
+        AiLightsPrepare(sg);
+        AtRGB Lspecular2Direct = AI_RGB_BLACK;
+        while(AiLightsGetSample(sg))
+        {
+            if (AiLightGetAffectSpecular(sg->Lp))
+            {
+                // get the group assigned to this light from the hash table using the light's pointer
+                int lightGroup = data->lightGroups[sg->Lp];
+
+                // per-light specular and diffuse strength multipliers
+                float specular_strength = AiLightGetSpecular(sg->Lp);
+
+                sg->Nf = specular2Normal;
+                brdfw2.ibs = false;
+                Lspecular2Direct =
+                AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
+                                        * kti * specular_strength;
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += Lspecular2Direct * specular2Color;
+                }
+                result_glossy2Direct += Lspecular2Direct;
+            }
+        }
+        sg->Nf = Norig;
+
+        kti *= 1.0f - (maxh(brdfw2.kr_int)/brdfw2.ns * maxh(specular2Color));
+    }
+
+    if (do_diffuse)
+    {
+        AiLightsPrepare(sg);
+        AtRGB LdiffuseDirect = AI_RGB_BLACK;
+        while(AiLightsGetSample(sg))
+        {
+            if (AiLightGetAffectDiffuse(sg->Lp))
+            {
+                // get the group assigned to this light from the hash table using the light's pointer
+                int lightGroup = data->lightGroups[sg->Lp];
+                // get diffuse strength multiplier
+                float diffuse_strength = AiLightGetDiffuse(sg->Lp);
+
+                LdiffuseDirect =
+                    AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+                                        * diffuse_strength * kti;
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += LdiffuseDirect * diffuseColor;
+                }
+                result_diffuseDirect += LdiffuseDirect;
+            }
+        }
+    }
     
       
     if (do_backlight)
@@ -1355,21 +1456,24 @@ shader_evaluate
         AtRGB LbacklightDirect;
         while(AiLightsGetSample(sg))
         { 
-            // get the group assigned to this light from the hash table using the light's pointer
-            int lightGroup = data->lightGroups[sg->Lp];
-            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
-
-            LbacklightDirect = 
-                AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                    *  diffuse_strength;
-            if (doDeepGroups || sg->Rt & AI_RAY_CAMERA)
+            if (AiLightGetAffectDiffuse(sg->Lp))
             {
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                // get the group assigned to this light from the hash table using the light's pointer
+                int lightGroup = data->lightGroups[sg->Lp];
+                float diffuse_strength = AiLightGetDiffuse(sg->Lp);
+
+                LbacklightDirect = 
+                    AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
+                                        *  diffuse_strength * kti;
+                if (doDeepGroups || sg->Rt & AI_RAY_CAMERA)
                 {
-                    lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
+                    if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                    {
+                        lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
+                    }
                 }
+                result_backlightDirect += LbacklightDirect;
             }
-            result_backlightDirect += LbacklightDirect;
         }
         flipNormals(sg);
         AiLightsResetCache(sg);
@@ -1387,27 +1491,31 @@ shader_evaluate
         MicrofacetTransmission* mft = MicrofacetTransmission::create(sg, transmissionRoughness, transmissionRoughness, t_eta, sg->Nf, U, V);
         while(AiLightsGetSample(sg))
         { 
-            // get the group assigned to this light from the hash table using the light's pointer
-            int lightGroup = data->lightGroups[sg->Lp];
-            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
-
-            LtransmissionDirect = 
-                AiEvaluateLightSample(sg,mft,MicrofacetTransmission::Sample,MicrofacetTransmission::BTDF, MicrofacetTransmission::PDF)
-                                    *  transmissionColor;
-
-            if (doDeepGroups || sg->Rt & AI_RAY_CAMERA)
+            if (AiLightGetAffectSpecular(sg->Lp))
             {
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                // get the group assigned to this light from the hash table using the light's pointer
+                int lightGroup = data->lightGroups[sg->Lp];
+                float specular_strength = AiLightGetSpecular(sg->Lp);
+
+                LtransmissionDirect = 
+                    AiEvaluateLightSample(sg,mft,MicrofacetTransmission::Sample,MicrofacetTransmission::BTDF, MicrofacetTransmission::PDF)
+                                        *  transmissionColor * specular_strength * kti;
+
+                if (doDeepGroups || sg->Rt & AI_RAY_CAMERA)
                 {
-                    lightGroupsDirect[lightGroup] += LtransmissionDirect * transmissionColor;
+                    if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                    {
+                        lightGroupsDirect[lightGroup] += LtransmissionDirect * transmissionColor;
+                    }
                 }
+                result_transmissionDirect += LtransmissionDirect;
             }
-            result_transmissionDirect += LtransmissionDirect;
         }
         AiLightsResetCache(sg);
         sg->fhemi = true;
     }
 
+#if 0
     // Light loop
     AiLightsPrepare(sg);
     if (doDeepGroups || (sg->Rt & AI_RAY_CAMERA)) 
@@ -1417,14 +1525,6 @@ shader_evaluate
         {
             // get the group assigned to this light from the hash table using the light's pointer
             int lightGroup = data->lightGroups[sg->Lp];
-
-            // The user might have set the shadow_density value to something slightly less than 1
-            // in order to get shadow AOVs from small lights to work correctly. If that's the case
-            // then skip the remaining work.
-            // ... but we can't actually do this here because it biases the result with MIS.
-            // ... hmmm. Need to think about this some more. For now let's just disable
-            // float sd = data->shadowDensities[sg->Lp];
-            // if (maxh(sg->Lo) >= sd) continue;
 
             // per-light specular and diffuse strength multipliers
             float specular_strength = AiLightGetSpecular(sg->Lp);
@@ -1518,7 +1618,7 @@ shader_evaluate
     result_backlightDirect *= kti;
     result_transmissionDirect *= kti;
     sg->fhemi = true;
-
+#endif
     // unset the shadows trace set
     if (data->trace_set_shadows_enabled)
     {
