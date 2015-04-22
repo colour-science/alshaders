@@ -67,6 +67,7 @@ struct ShaderData
    float specular1IndirectClamp;
    float specular2IndirectClamp;
    float transmissionClamp;
+   float diffuseIndirectClamp;
 
    // AOV names
    std::vector<std::string> aovs;

@@ -100,6 +100,7 @@ enum alSurfaceParams
     p_diffuseExtraSamples,
     p_diffuseEnableCaustics,
     p_diffuseIndirectStrength,
+    p_diffuseIndirectClamp,
 
     // specular
     p_specular1Strength,
@@ -274,6 +275,7 @@ node_parameters
     AiParameterINT("diffuseExtraSamples", 0);
     AiParameterBOOL("diffuseEnableCaustics", false);
     AiParameterFLT("diffuseIndirectStrength", 1.0f);
+    AiParameterFLT("diffuseIndirectClamp", 0.0f);
 
     AiParameterFLT("specular1Strength", 1.0f );
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
@@ -532,6 +534,8 @@ node_update
     if (data->specular2IndirectClamp == 0.0f) data->specular2IndirectClamp = AI_INFINITE;
     data->transmissionClamp = params[p_transmissionClamp].FLT;
     if (data->transmissionClamp == 0.0f) data->transmissionClamp = AI_INFINITE;
+    data->diffuseIndirectClamp = params[p_diffuseIndirectClamp].FLT;
+    if (data->diffuseIndirectClamp == 0.0f) data->diffuseIndirectClamp = AI_INFINITE;
 
     data->transmissionDoDirect = params[p_transmissionDoDirect].BOOL;
 
@@ -1964,14 +1968,14 @@ shader_evaluate
                 AiStateSetMsgRGB("als_throughput", throughput);
                 bool hit = AiTrace(&wi_ray, &scrs);
                 
-                result_diffuseIndirectRaw += scrs.color * f;
+                result_diffuseIndirectRaw += min(scrs.color * f, rgb(data->diffuseIndirectClamp));
 
                 // accumulate the lightgroup contributions calculated by the child shader
                 if (doDeepGroups && hit)
                 {
                     for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
                     {
-                        deepGroupsDiffuse[i] += deepGroupPtr[i] * f;
+                        deepGroupsDiffuse[i] += min(deepGroupPtr[i] * f, rgb(data->diffuseIndirectClamp));
                     }
                 }
                 
