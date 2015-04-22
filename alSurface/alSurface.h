@@ -48,7 +48,6 @@ struct ShaderData
    bool standardAovs;
    bool transmitAovs;
    int numLights;
-   bool rrTransmission;
    int rrTransmissionDepth;
    bool transmissionDoDirect;
 

@@ -202,7 +202,6 @@ enum alSurfaceParams
 
     p_standardAovs,
     p_transmitAovs,
-    p_rrTransmission,
     p_rrTransmissionDepth,
 
     p_opacity,
@@ -376,7 +375,6 @@ node_parameters
     AiParameterBool("standardCompatibleAOVs", false);
     AiParameterBool("transmitAovs", false);
 
-    AiParameterBool("rrTransmission", false);
     AiParameterInt("rrTransmissionDepth", 1);
 
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
@@ -526,7 +524,6 @@ node_update
     data->specular1NormalConnected = AiNodeIsLinked(node, "specular1Normal");
     data->specular2NormalConnected = AiNodeIsLinked(node, "specular2Normal");
 
-    data->rrTransmission = params[p_rrTransmission].BOOL;
     data->rrTransmissionDepth = params[p_rrTransmissionDepth].INT;
 
     data->specular1IndirectClamp = params[p_specular1IndirectClamp].FLT;
@@ -1559,7 +1556,7 @@ shader_evaluate
     }
     AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
     bool tir = (!AiRefractRay(&wi_ray, &sg->Nf, n1, n2, sg)) && inside;
-    bool rr_transmission = (data->rrTransmission && (sg->Rr >= data->rrTransmissionDepth) && !tir && roughness == 0.0f);
+    bool rr_transmission = (do_glossy && do_transmission && sg->Rr >= data->rrTransmissionDepth && !tir && roughness == 0.0f);
     bool rr_glossy = false;
     if (rr_transmission)
     {
