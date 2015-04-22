@@ -1515,110 +1515,6 @@ shader_evaluate
         sg->fhemi = true;
     }
 
-#if 0
-    // Light loop
-    AiLightsPrepare(sg);
-    if (doDeepGroups || (sg->Rt & AI_RAY_CAMERA)) 
-    {
-        AtRGB LdiffuseDirect, LspecularDirect, Lspecular2Direct;
-        while(AiLightsGetSample(sg))
-        {
-            // get the group assigned to this light from the hash table using the light's pointer
-            int lightGroup = data->lightGroups[sg->Lp];
-
-            // per-light specular and diffuse strength multipliers
-            float specular_strength = AiLightGetSpecular(sg->Lp);
-            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
-            if (do_glossy)
-            {
-                // override the specular normal
-                sg->Nf = specular1Normal;
-                // evaluate this light sample
-                LspecularDirect =
-                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                    * specular_strength;
-                // if the light is assigned a valid group number, add this sample's contribution to that light group
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-                {
-                    lightGroupsDirect[lightGroup] += LspecularDirect * specular1Color;
-                }
-                // accumulate the result
-                result_glossyDirect += LspecularDirect;
-                // put back the original surface normal
-                sg->Nf = Nfold;
-            }
-            if (do_glossy2)
-            {
-                sg->Nf = specular2Normal;
-                float r = (1.0f - maxh(brdfw.kr)*maxh(specular1Color));
-                Lspecular2Direct =
-                AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                                        * r * specular_strength;
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-                {
-                    lightGroupsDirect[lightGroup] += Lspecular2Direct * specular2Color;
-                }
-                result_glossy2Direct += Lspecular2Direct;
-                sg->Nf = Nfold;
-            }
-            float r = (1.0f - maxh(brdfw.kr)*maxh(specular1Color)) * (1.0f - maxh(brdfw2.kr)*maxh(specular2Color));
-            kti *= r;
-            if (do_diffuse)
-            {
-                LdiffuseDirect =
-                    AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * r * diffuse_strength;
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-                {
-                    lightGroupsDirect[lightGroup] += LdiffuseDirect * diffuseColor;
-                }
-                result_diffuseDirect += LdiffuseDirect;
-            }
-
-            // Get the shadow values for shadow AOVs
-            if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-            {
-                shadowGroups[lightGroup].rgb() += sg->Liu * sg->we * std::max(0.0f, AiV3Dot(sg->Nf, sg->Ld)) * sg->Lo * r * diffuseColor * AI_ONEOVERPI;
-                shadowGroups[lightGroup].a += maxh(sg->Lo) * sg->we;
-            }
-
-        }
-    }
-    else
-    {
-        while(AiLightsGetSample(sg))
-        {
-            float specular_strength = AiLightGetSpecular(sg->Lp);
-            float diffuse_strength = AiLightGetDiffuse(sg->Lp);
-            if (do_glossy)
-            {
-                result_glossyDirect +=
-                AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                    * specular_strength;
-            }
-            if (do_glossy2)
-            {
-                result_glossy2Direct +=
-                AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                                        * (1.0f - brdfw.kr*maxh(specular1Color)) 
-                                        * specular_strength;
-            }
-            if (do_diffuse)
-            {
-                result_diffuseDirect +=
-                AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * (1.0f - brdfw.kr*maxh(specular1Color))
-                                        * (1.0f - brdfw2.kr*maxh(specular2Color))
-                                        * diffuse_strength;
-            }
-            kti *= (1.0f - maxh(brdfw.kr*specular1Color)) * (1.0f - maxh(brdfw2.kr*specular2Color));
-
-        }
-    }
-    result_backlightDirect *= kti;
-    result_transmissionDirect *= kti;
-    sg->fhemi = true;
-#endif
     // unset the shadows trace set
     if (data->trace_set_shadows_enabled)
     {
@@ -1641,12 +1537,7 @@ shader_evaluate
     result_glossy2Direct *= specular2Color;       
 
     // Sample BRDFS
-#if AI_VERSION_MAJOR_NUM > 0
-    float samples[2];
-#else
-    double samples[2];
-#endif
-    
+    float samples[2];    
     AtRay wi_ray;
     AtVector wi;
     AtScrSample scrs;
@@ -1690,6 +1581,31 @@ shader_evaluate
             do_glossy &= false;
             do_transmission &= true;
         }
+    }
+
+    bool rr_backlight = do_diffuse && do_backlight && sg->Rr_diff >= 2;
+    float bd_prob = 1.0f;
+    if (rr_backlight)
+    {
+        // get a permuted, stratified random number
+        float u = (float(data->perm_table[sg->Rr*data->AA_samples+sg->si]) + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_JITTER))*data->AA_samples_inv;
+        // offset based on pixel
+        float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR2_OFFSET);
+        u = fmodf(u+offset, 1.0f);
+
+        float bd_sum = maxh(diffuseColor) + maxh(backlightColor);
+        bd_prob = maxh(backlightColor)/bd_sum;
+        if (u < bd_prob)
+        {
+            do_backlight = true;
+            do_diffuse = false;
+        }
+        else
+        {
+            do_diffuse = true;
+            do_backlight = false;
+        }
+        bd_prob = 1.0f / bd_prob;
     }
 
     // indirect_specular
@@ -2019,7 +1935,7 @@ shader_evaluate
             
             // trace the ray
             wi_ray.dir = wi;
-            AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) / p;
+            AtRGB f = kr * AiOrenNayarMISBRDF(dmis, &wi) * bd_prob/ p;
             AtRGB throughput = path_throughput * f * diffuseColor * diffuseIndirectStrength;
             float rr_p = 1.0f; 
             bool cont = true;
@@ -2407,7 +2323,7 @@ shader_evaluate
             
             // trace the ray
             wi_ray.dir = wi;
-            AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) / p;
+            AtRGB f = kr * AiOrenNayarMISBRDF(bmis, &wi) * bd_prob / p;
             AtRGB throughput = path_throughput * f;
             AiStateSetMsgRGB("als_throughput", throughput);
             bool cont = true;
