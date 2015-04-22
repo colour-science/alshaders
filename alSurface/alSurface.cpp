@@ -1387,8 +1387,8 @@ shader_evaluate
             }
         }
         sg->Nf = Norig;
-
-        kti = 1.0f - (maxh(brdfw.kr_int)/brdfw.ns * maxh(specular1Color));
+        if (brdfw.ns > 0.0f)
+            kti = 1.0f - (maxh(brdfw.kr_int)/brdfw.ns * maxh(specular1Color));
     }
 
     if (do_glossy2)
@@ -1420,7 +1420,8 @@ shader_evaluate
         }
         sg->Nf = Norig;
 
-        kti *= 1.0f - (maxh(brdfw2.kr_int)/brdfw2.ns * maxh(specular2Color));
+        if (brdfw2.ns > 0.0f)
+            kti *= 1.0f - (maxh(brdfw2.kr_int)/brdfw2.ns * maxh(specular2Color));
     }
 
     if (do_diffuse)
