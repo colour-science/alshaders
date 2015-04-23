@@ -1356,12 +1356,13 @@ shader_evaluate
         AiShaderGlobalsSetTraceSet(sg, data->trace_set_shadows.c_str(), data->trace_set_shadows_inclusive);
     }
 
-    AtVector Norig = sg->Nf;
+    AtVector Nforig = sg->Nf;
+    AtVector Norig = sg->N;
     if (do_glossy)
     {
         AtRGB LspecularDirect = AI_RGB_BLACK;
 
-        sg->Nf = specular1Normal;
+        sg->N = sg->Nf = specular1Normal;
         AiLightsPrepare(sg);
         while(AiLightsGetSample(sg))
         {
@@ -1386,14 +1387,16 @@ shader_evaluate
                 result_glossyDirect += LspecularDirect;
             }
         }
-        sg->Nf = Norig;
+        sg->Nf = Nforig;
+        sg->N = Norig;
+        if (Nforig != specular1Normal) AiLightsResetCache(sg);
         if (brdfw.ns > 0.0f)
             kti = 1.0f - (maxh(brdfw.kr_int)/brdfw.ns * maxh(specular1Color));
     }
 
     if (do_glossy2)
     {
-        sg->Nf = specular2Normal;
+        sg->N = sg->Nf = specular2Normal;
         AiLightsPrepare(sg);
         AtRGB Lspecular2Direct = AI_RGB_BLACK;
         while(AiLightsGetSample(sg))
@@ -1418,8 +1421,9 @@ shader_evaluate
                 result_glossy2Direct += Lspecular2Direct;
             }
         }
-        sg->Nf = Norig;
-
+        sg->Nf = Nforig;
+        sg->N = Norig;
+        if (Nforig != specular2Normal) AiLightsResetCache(sg);
         if (brdfw2.ns > 0.0f)
             kti *= 1.0f - (maxh(brdfw2.kr_int)/brdfw2.ns * maxh(specular2Color));
     }
