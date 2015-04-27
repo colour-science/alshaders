@@ -576,12 +576,12 @@ struct HairBsdf
 
         if (randomHue != 0.0f || randomSaturation != 0.0f)
         {
-            hairColor = rgb2hsv(hairColor);
-            hairColor.r += cv.x * randomHue;
-            hairColor.r = clamp(-1.0f, 1.0f, hairColor.r);
-            hairColor.g += cv.y * randomSaturation;
-            hairColor.g = clamp(0.0f, 1.0f, hairColor.g);
-            hairColor = hsv2rgb(hairColor);
+            dyeColor = rgb2hsv(dyeColor);
+            dyeColor.r += cv.x * randomHue;
+            // dyeColor.r = clamp(-1.0f, 1.0f, dyeColor.r);
+            dyeColor.g += cv.y * randomSaturation;
+            dyeColor.g = clamp(0.0f, 1.0f, dyeColor.g);
+            dyeColor = hsv2rgb(dyeColor);
         }
         
         float m = MAX(powf(melanin, 2.0f)*33.0f, 1.0e-2f);
