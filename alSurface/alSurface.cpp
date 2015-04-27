@@ -1362,7 +1362,10 @@ shader_evaluate
     {
         AtRGB LspecularDirect = AI_RGB_BLACK;
 
-        sg->N = sg->Nf = specular1Normal;
+        if (data->specular1NormalConnected)
+        {
+            sg->N = sg->Nf = specular1Normal;
+        }
         AiLightsPrepare(sg);
         while(AiLightsGetSample(sg))
         {
@@ -1389,14 +1392,17 @@ shader_evaluate
         }
         sg->Nf = Nforig;
         sg->N = Norig;
-        if (Nforig != specular1Normal) AiLightsResetCache(sg);
+        if (data->specular1NormalConnected) AiLightsResetCache(sg);
         if (brdfw.ns > 0.0f)
             kti = 1.0f - (maxh(brdfw.kr_int)/brdfw.ns * maxh(specular1Color));
     }
 
     if (do_glossy2)
     {
-        sg->N = sg->Nf = specular2Normal;
+        if (data->specular2NormalConnected)
+        {
+            sg->N = sg->Nf = specular2Normal;
+        }
         AiLightsPrepare(sg);
         AtRGB Lspecular2Direct = AI_RGB_BLACK;
         while(AiLightsGetSample(sg))
@@ -1423,7 +1429,7 @@ shader_evaluate
         }
         sg->Nf = Nforig;
         sg->N = Norig;
-        if (Nforig != specular2Normal) AiLightsResetCache(sg);
+        if (data->specular2NormalConnected) AiLightsResetCache(sg);
         if (brdfw2.ns > 0.0f)
             kti *= 1.0f - (maxh(brdfw2.kr_int)/brdfw2.ns * maxh(specular2Color));
     }
