@@ -2459,7 +2459,7 @@ shader_evaluate
             memcpy(diffusion_msgdata->weights, weights, sizeof(AtRGB)*nc);
             for (int i = 0; i < nc; ++i)
             {
-               diffusion_msgdata->sp[i] = ScatteringProfileDirectional(Rd[i], sssDensityScale/radii[i]);
+               diffusion_msgdata->sp[i] = ScatteringProfileDirectional(MAX(Rd[i], 0.001f), sssDensityScale/radii[i]);
             }
 
             /*
@@ -2482,21 +2482,11 @@ shader_evaluate
             */
             AtRGB result_sss_direct;
             AtRGB result_sss_indirect;
-            #if 0
-            if (data->trace_set_sss_enabled)
-            {
-                AiShaderGlobalsSetTraceSet(sg, data->trace_set_sss.c_str(), data->trace_set_sss_inclusive);
-            }
-            #endif
             result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, 
                                       data->sssMode == SSSMODE_DIRECTIONAL, nc,
                                       result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
                                       deepGroupPtr,
                                       data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
-            if (data->trace_set_sss_enabled)
-            {
-                AiShaderGlobalsUnsetTraceSet(sg);
-            }
         }
         result_sss *= diffuseColor;
     }

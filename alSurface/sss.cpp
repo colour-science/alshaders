@@ -469,6 +469,10 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     assert(AiIsFinite(result_sss));
     sg->fi = old_fi;
 
+    if (trace_set_enabled)
+    {
+        AiShaderGlobalsUnsetTraceSet(sg);
+    }
     // Optimization hack: do a regular indirect diffuse and colour it like the subsurface instead of allowing sss rays to
     // continue for another diffuse bounce.
     /*
