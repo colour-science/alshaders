@@ -1380,11 +1380,11 @@ shader_evaluate
                 brdfw.ibs = false;
                 LspecularDirect =
                     AiEvaluateLightSample(sg,&brdfw,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                        * specular_strength;
+                        * specular_strength * specular1Color;
                 // if the light is assigned a valid group number, add this sample's contribution to that light group
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
-                    lightGroupsDirect[lightGroup] += LspecularDirect * specular1Color;
+                    lightGroupsDirect[lightGroup] += LspecularDirect;
                 }
                 // accumulate the result
                 result_glossyDirect += LspecularDirect;
@@ -1419,10 +1419,10 @@ shader_evaluate
                 brdfw2.ibs = false;
                 Lspecular2Direct =
                 AiEvaluateLightSample(sg,&brdfw2,GlossyMISSample_wrap,GlossyMISBRDF_wrap,GlossyMISPDF_wrap)
-                                        * kti * specular_strength;
+                                        * kti * specular_strength * specular2Color;
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
-                    lightGroupsDirect[lightGroup] += Lspecular2Direct * specular2Color;
+                    lightGroupsDirect[lightGroup] += Lspecular2Direct;
                 }
                 result_glossy2Direct += Lspecular2Direct;
             }
@@ -1449,7 +1449,7 @@ shader_evaluate
 
                 LdiffuseDirect =
                     AiEvaluateLightSample(sg,dmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        * diffuse_strength * kti;
+                                        * diffuse_strength * kti * (1-sssMix);
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += LdiffuseDirect * diffuseColor;
@@ -1476,12 +1476,12 @@ shader_evaluate
 
                 LbacklightDirect = 
                     AiEvaluateLightSample(sg,bmis,AiOrenNayarMISSample,AiOrenNayarMISBRDF, AiOrenNayarMISPDF)
-                                        *  diffuse_strength * kti;
+                                        *  diffuse_strength * kti * backlightColor * (1-sssMix);
                 if (doDeepGroups || sg->Rt & AI_RAY_CAMERA)
                 {
                     if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                     {
-                        lightGroupsDirect[lightGroup] += LbacklightDirect * backlightColor;
+                        lightGroupsDirect[lightGroup] += LbacklightDirect;
                     }
                 }
                 result_backlightDirect += LbacklightDirect;
@@ -1517,7 +1517,7 @@ shader_evaluate
                 {
                     if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                     {
-                        lightGroupsDirect[lightGroup] += LtransmissionDirect * transmissionColor;
+                        lightGroupsDirect[lightGroup] += LtransmissionDirect;
                     }
                 }
                 result_transmissionDirect += LtransmissionDirect;
@@ -1544,9 +1544,6 @@ shader_evaluate
     // Multiply by the colors
     result_diffuseDirectRaw = result_diffuseDirect;
     result_diffuseDirect *= diffuseColor;
-    result_backlightDirect *= backlightColor;
-    result_glossyDirect *= specular1Color;
-    result_glossy2Direct *= specular2Color;       
 
     // Sample BRDFS
     float samples[2];    
@@ -1996,14 +1993,14 @@ shader_evaluate
             
         }
         float invns = AiSamplerGetSampleInvCount(sampit);
-        result_diffuseIndirectRaw *= invns * diffuseIndirectStrength;
+        result_diffuseIndirectRaw *= invns * diffuseIndirectStrength * (1-sssMix);
         result_diffuseIndirect = result_diffuseIndirectRaw * diffuseColor;
 
         if (doDeepGroups)
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroupsDiffuse[i] *= invns * diffuseColor * diffuseIndirectStrength;
+                deepGroupsDiffuse[i] *= invns * diffuseColor * diffuseIndirectStrength * (1-sssMix);
             }
         }
 
@@ -2380,7 +2377,7 @@ shader_evaluate
 
             ssi++;
         }
-        result_backlightIndirect *= AiSamplerGetSampleInvCount(sampit) * backlightColor * backlightIndirectStrength;
+        result_backlightIndirect *= AiSamplerGetSampleInvCount(sampit) * backlightColor * backlightIndirectStrength * (1-sssMix);
 
         if (doDeepGroups)
         {
@@ -2482,22 +2479,27 @@ shader_evaluate
             */
             AtRGB result_sss_direct;
             AtRGB result_sss_indirect;
+            AtRGB lightGroupsSss[NUM_LIGHT_GROUPS];
+            memset(lightGroupsSss, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
             result_sss = alsDiffusion(sg, diffusion_msgdata, data->sss_sampler, 
                                       data->sssMode == SSSMODE_DIRECTIONAL, nc,
-                                      result_sss_direct, result_sss_indirect, lightGroupsDirect, deepGroupsSss,
+                                      result_sss_direct, result_sss_indirect, lightGroupsSss, deepGroupsSss,
                                       deepGroupPtr,
                                       data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
+            for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
+            {
+                lightGroupsDirect[i] += lightGroupsSss[i] * diffuseColor * sssMix * kti * kti2;;
+                deepGroupsSss[i] *= diffuseColor * sssMix * kti * kti2;;
+            }
         }
-        result_sss *= diffuseColor;
+        result_sss *= diffuseColor * sssMix * kti * kti2;
+
     }
 
 
     // blend sss and diffuse
-    result_diffuseDirect *= (1-sssMix);
     result_diffuseIndirect *= (1-sssMix);
-    result_backlightDirect *= (1-sssMix);
     result_backlightIndirect *= (1-sssMix);
-    result_sss *= sssMix * kti * kti2;
 
     // Now accumulate the deep group brdf results onto the relevant samples
     if (sg->Rt & AI_RAY_CAMERA)
@@ -2572,6 +2574,7 @@ shader_evaluate
                                     + deepGroupsGlossy2[i] 
                                     + deepGroupsTransmission[i]
                                     + deepGroupsBacklight[i] 
+                                    + deepGroupsSss[i] 
                                     + lightGroupsDirect[i];
 
                     if (deepGroups[i] != AI_RGB_BLACK)
@@ -2647,6 +2650,7 @@ shader_evaluate
                                 + deepGroupsGlossy2[i] 
                                 + deepGroupsTransmission[i]
                                 + deepGroupsBacklight[i] 
+                                + deepGroupsSss[i] 
                                 + lightGroupsDirect[i];
             }
         }

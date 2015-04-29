@@ -77,6 +77,8 @@ struct DiffusionSample
     AtVector S;     //< vector from shading point to sample
     float r;        //< distance from shading point to sample
     float b;        //< bounce attenuation factor
+    AtRGB lightGroupsDirect[8];
+    AtRGB lightGroupsIndirect[8];
 };
 
 struct DirectionalMessageData
@@ -94,8 +96,6 @@ struct DirectionalMessageData
     bool directional;
     AtShaderGlobals* sg;
     DiffusionSample samples[SSS_MAX_SAMPLES];
-    AtRGB* lightGroupsDirect;
-    AtRGB* lightGroupsIndirect;
     AtRGB* deepGroupPtr;
 };
 
@@ -199,6 +199,7 @@ inline float directionalDipole(AtPoint xi, AtVector ni, AtPoint xo, AtVector no,
     // distance
     AtVector xoxi = xo - xi;
     float r = AiV3Length(xoxi);
+    if (r == 0.0f) return 0.0f;
 
     // modified normal
     AtVector ni_s = AiV3Cross(AiV3Normalize(xoxi), AiV3Normalize(AiV3Cross(ni, xoxi)));

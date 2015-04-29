@@ -142,6 +142,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
         }
     }
 
+    assert(samp.lightGroupsDirect[0] == AI_RGB_BLACK);
     while (AiLightsGetSample(sg))
     {
         // get the group assigned to this light from the hash table using the light's pointer
@@ -150,7 +151,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
         // Does not using MIS here get us anything?
         // AtRGB L = AiEvaluateLightSample(sg, brdf_data, AiOrenNayarMISSample, AiOrenNayarMISBRDF, AiOrenNayarMISPDF);
-        AtRGB L = sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we;
+        AtRGB L = sg->Li * MAX(AiV3Dot(sg->Ld, sg->N), 0.0f) * AI_ONEOVERPI * sg->we * diffuse_strength;
         if (AiColorIsZero(L)) continue;
         if (directional)
         {
@@ -164,20 +165,22 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
             }
             L *= R;
             result_direct += L;
+            if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+            {
+                samp.lightGroupsDirect[lightGroup] += L;
+            }
             assert(AiIsFinite(result_direct));
         }
         else
         {
             L *= Rnond;
             result_direct += L;
+            if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+            {
+                samp.lightGroupsDirect[lightGroup] += L;
+            }
             assert(AiIsFinite(result_direct));
         }
-
-        if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-        {
-            dmd->lightGroupsDirect[lightGroup] += L;
-        }
-
     }
 
     AtRGB result_indirect = AI_RGB_BLACK;
@@ -219,7 +222,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                dmd->lightGroupsIndirect[i] += dmd->deepGroupPtr[i] * f;
+                samp.lightGroupsIndirect[i] += dmd->deepGroupPtr[i] * f;
             }
         }
     }
@@ -227,7 +230,6 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
     // TODO: this is guaranteed to be 1 in every case, right?
     // result_indirect *= AiSamplerGetSampleInvCount(sampit);
-
     samp.Rd = result_direct + result_indirect;
 
     assert(AiIsFinite(samp.Rd));
@@ -316,8 +318,6 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     dmd->wo = -sg->Rd;
     dmd->numComponents = numComponents;
     dmd->directional = directional;
-    dmd->lightGroupsDirect = lightGroupsDirect;
-    dmd->lightGroupsIndirect = lightGroupsIndirect;
     dmd->deepGroupPtr = deepGroupPtr;
     AtVector axes[3] = {U, V, sg->Ng};
     double sss_samples_c  = 0;
@@ -417,9 +417,8 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         dmd->Po = sg->P;
         dmd->No = sg->N;
         float geom[3];
-        AtRGB lg_direct[NUM_LIGHT_GROUPS] = {0.0f};
-        AtRGB lg_indirect[NUM_LIGHT_GROUPS] = {0.0f};
         
+        memset(dmd->samples, 0, sizeof(DiffusionSample)*SSS_MAX_SAMPLES);
         if (AiTrace(&wi_ray, &scrs))
         {            
             for (int i=0; i < dmd->sss_depth; ++i)
@@ -451,6 +450,13 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
 
                 float f = r_disk[0] / pdf_sum;
                 result_sss += dmd->samples[i].Rd * f;
+                for (int g=0; g < 8; ++g)
+                {
+                    lightGroupsDirect[g] += dmd->samples[i].lightGroupsDirect[g] * f;
+                    assert(AiIsFinite(lightGroupsDirect[g]));
+                    lightGroupsIndirect[g] += dmd->samples[i].lightGroupsIndirect[g] * f;
+                    assert(AiIsFinite(lightGroupsIndirect[g]));
+                }
                 assert(AiIsFinite(result_sss));
             }
             
@@ -465,7 +471,14 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     {
         norm_factor += dmd->sp[c].albedo * dmd->weights[c];
     }
+
     result_sss /= norm_factor;
+    for (int g=0; g < 8; ++g)
+    {
+        lightGroupsDirect[g] *= rgb(w) / norm_factor;
+        lightGroupsIndirect[g] *= rgb(w) / norm_factor;
+    }
+
     assert(AiIsFinite(result_sss));
     sg->fi = old_fi;
 
