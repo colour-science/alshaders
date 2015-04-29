@@ -1899,6 +1899,7 @@ shader_evaluate
 
     // Write shader result
     hb.writeResult(sg);
+    sg->out_opacity = opacity;
 }
 
 
