@@ -2,6 +2,7 @@
 #include <ai.h>
 #include "alUtil.h"
 #include "fresnel.h"
+#include <cassert>
 
 struct BrdfData_wrap
 {
@@ -65,9 +66,13 @@ AtVector AiCookTorranceMISSample_wrap( const void* brdf_data, float randx, float
       brdfw->kr = brdfw->fr->kr(std::max(0.0f,AiV3Dot(H,indir)));
       brdfw->brdf = AiCookTorranceMISBRDF(brdfw->brdf_data, &indir);
       brdfw->pdf = AiCookTorranceMISPDF(brdfw->brdf_data, &indir);
-      AtRGB w = brdfw->brdf / brdfw->pdf;
-      brdfw->kr_int += brdfw->kr * w;
-      brdfw->ns++;
+      if (brdfw->pdf > 0.0f)
+      {
+         AtRGB w = brdfw->brdf / brdfw->pdf;
+         brdfw->kr_int += brdfw->kr * w;
+         assert(AiIsFinite(brdfw->kr_int));
+         brdfw->ns++;
+      }
    }
    return indir;
 }

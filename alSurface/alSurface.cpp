@@ -1394,7 +1394,10 @@ shader_evaluate
         sg->N = Norig;
         if (data->specular1NormalConnected) AiLightsResetCache(sg);
         if (brdfw.ns > 0.0f)
+        {
             kti = 1.0f - (maxh(brdfw.kr_int)/brdfw.ns * maxh(specular1Color));
+            assert(AiIsFinite(kti));
+        }
     }
 
     if (do_glossy2)
@@ -1455,6 +1458,7 @@ shader_evaluate
                     lightGroupsDirect[lightGroup] += LdiffuseDirect * diffuseColor;
                 }
                 result_diffuseDirect += LdiffuseDirect;
+                assert(AiIsFinite(result_diffuseDirect));
             }
         }
     }
