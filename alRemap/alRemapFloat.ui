@@ -1,0 +1,25 @@
+import uigen
+
+ui.shader({
+	'name':'alRemapFloat',
+	'intro':'Controls to adjust a float value',
+   'description':'Essential for tuning just about any float value in your network.',
+	'output':'rgb',
+	'maya_name':'alRemapFloat',
+	'maya_classification':'texture',
+	'maya_id':'0x0011640C',
+	'maya_swatch':True,
+	'maya_matte':False,
+	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
+	'soft_name':'ALS_RemapColor',
+	'soft_classification':'texture',
+	'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alRemapFloat.html',
+   'houdini_icon': 'VOP_fit'
+})
+
+ui.parameter('input', 'float', 0.0, 'Input', description='Input value to remap.')
+
+uigen.remapControls(ui)

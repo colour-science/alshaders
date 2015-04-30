@@ -1,0 +1,30 @@
+import uigen
+
+ui.shader({
+	'name':'alCombineFloat',
+	'intro':'Combine two floats together.',
+   'description':'Simple mathematical operations for combining floats: multiplication, addition, division, subtraction and interpolation.',
+	'output':'float',
+	'maya_name':'alCombineFloat',
+	'maya_classification':'texture',
+	'maya_id':'0x00116406',
+	'maya_swatch':True,
+	'maya_matte':False,
+	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
+	'soft_name':'ALS_CombineFloat',
+	'soft_classification':'texture',
+	'soft_version':1,
+	'help_url':'http://www.anderslanglands.com/alshaders/alCombineFloat.html',
+   'houdini_icon': 'VOP_multiply'
+})
+
+ui.parameter('input1', 'float', 0.0, description='The first input to combine')
+ui.parameter('input2', 'float', 0.0, description='The second input to combine')
+ui.parameter('input3', 'float', 0.0, description='The third input used as a mix value when lerp mode is selected.')
+ui.parameter('combineOp', 'enum','multiply 1*2', 'Combine Op', enum_names=["multiply 1*2",
+	"add 1+2",
+	"divide 1/2",
+	"subtract 1-2",
+	"lerp(1, 2, 3)"], description='The operation to use to combine inputs 1 and 2.')

@@ -1,0 +1,72 @@
+MayaShadingEngine
+{
+ name TARGET_SHADER
+ beauty TARGET_SURFACE
+ enable_matte off
+ matte_color 0 0 0 0
+ declare mtoa_aovs constant ARRAY STRING
+ mtoa_aovs 7 1 STRING 
+  "direct_diffuse" 
+  "direct_specular" 
+  "emission" 
+  "indirect_diffuse" 
+  "indirect_specular" 
+  "refraction" 
+  "sss" 
+}
+
+standard
+{
+ name TARGET_SURFACE
+ Kd 1
+ Kd_color 0.0992020145 0.209141284 0.386000007
+ diffuse_roughness 0
+ Ks 1
+ Ks_color 1 1 1
+ specular_brdf "cook_torrance"
+ specular_roughness 0.5
+ specular_anisotropy 0.5
+ specular_rotation 0
+ Phong_exponent 10
+ Kr 0
+ Kr_color 1 1 1
+ reflection_exit_color 0 0 0
+ reflection_exit_use_environment off
+ Kt 0
+ Kt_color 1 1 1
+ transmittance 1 1 1
+ refraction_roughness 0
+ refraction_exit_color 0 0 0
+ refraction_exit_use_environment off
+ IOR 1
+ Kb 0
+ Fresnel off
+ Krn 0
+ specular_Fresnel on
+ Ksn 0.0399999991
+ Fresnel_use_IOR off
+ Fresnel_affect_diff on
+ emission 0
+ emission_color 1 1 1
+ direct_specular 1
+ indirect_specular 1
+ direct_diffuse 1
+ indirect_diffuse 1
+ enable_glossy_caustics off
+ enable_reflective_caustics off
+ enable_refractive_caustics off
+ enable_internal_reflections on
+ Ksss 0
+ Ksss_color 1 1 1
+ sss_radius 0.100000001 0.100000001 0.100000001
+ bounce_factor 1
+ opacity 1 1 1
+ aov_emission "emission"
+ aov_direct_diffuse "direct_diffuse"
+ aov_direct_specular "direct_specular"
+ aov_indirect_diffuse "indirect_diffuse"
+ aov_indirect_specular "indirect_specular"
+ aov_reflection "reflection"
+ aov_refraction "refraction"
+ aov_sss "sss"
+}

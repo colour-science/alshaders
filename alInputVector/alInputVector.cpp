@@ -83,7 +83,7 @@ node_parameters
 	AiParameterEnum("type", T_POINT, TypeNames);
 	AiParameterStr("userName", "");
 	AiParameterVec("vector", 0.0f, 0.0f, 0.0f);
-	AtFloat mtx[4][4];
+	float mtx[4][4];
 	AiM4Identity(mtx);
 	AiParameterMtx("matrix", mtx);
 	AiParameterEnum("coordinates", CS_CARTESIAN, coordinatesNames);
@@ -97,7 +97,7 @@ node_loader
    node->name        = "alInputVector";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize

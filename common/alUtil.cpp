@@ -11,12 +11,27 @@ void alphaInversion( const AtRGB& scatterColour, float scatterDist, AtRGB& sigma
                                    alpha1_3(clamp(col.g*.439f, 0.f, 1.f)),
                                    alpha1_3(clamp(col.b*.439f, 0.f, 1.f )) );
 
-       AtRGB sigma_tr = rgb(1.0f,1.0f,1.0f) / (scatterColour * col);
+       // AtRGB sigma_tr = rgb(1.0f,1.0f,1.0f) / (scatterColour * col);
+       AtRGB sigma_tr = AI_RGB_WHITE / col;
 
 
        AtRGB sigma_t_prime = rgb(  sigma_tr[0] / ( sqrt( 3 * ( 1 - alpha_prime[0] ) ) ),
                                    sigma_tr[1] / ( sqrt( 3 * ( 1 - alpha_prime[1] ) ) ),
                                    sigma_tr[2] / ( sqrt( 3 * ( 1 - alpha_prime[2] ) ) ) );
+
+       sigma_s_prime_ = sigma_t_prime * alpha_prime;
+       sigma_a_ = sigma_t_prime - sigma_s_prime_;
+}
+
+void alphaInversion(float sc, float& sigma_s_prime_, float& sigma_a_ )
+{
+       
+
+       float alpha_prime = alpha1_3(sc*0.439f);
+
+       float sigma_tr = 1.0f / sc;
+
+       float sigma_t_prime = sigma_tr / sqrt(3 * (1-alpha_prime));
 
        sigma_s_prime_ = sigma_t_prime * alpha_prime;
        sigma_a_ = sigma_t_prime - sigma_s_prime_;

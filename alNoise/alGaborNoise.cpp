@@ -258,18 +258,16 @@ node_loader
     node->name        = "alGaborNoise";
     node->node_type   = AI_NODE_SHADER;
     ::strcpy(node->version, AI_VERSION);
-    return TRUE;
+    return true;
 }
 
 struct ShaderData
 {
-    ShaderData() : gp(NULL) {}
-    ~ShaderData() {delete gp;}
-    GaborParams* gp;
-
     int space;
-    float frequency;
+    int anisotropy;
+    bool filter;
     bool turbulent;
+    int impulses;
 };
 
 node_initialize
@@ -287,14 +285,10 @@ node_finish
 node_update
 {
     ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
-    delete data->gp;
-    data->gp = new GaborParams(params[p_anisotropyDirection].VEC, 
-                                params[p_anisotropy].INT, 
-                                params[p_filter].BOOL, 
-                                params[p_bandwidth].FLT, 
-                                params[p_impulses].FLT);
+    data->anisotropy = params[p_anisotropy].INT;
+    data->filter = params[p_filter].BOOL;
+    data->impulses = params[p_impulses].INT;
     data->space = params[p_space].INT;
-    data->frequency = params[p_frequency].FLT;
     data->turbulent = params[p_turbulent].BOOL;
 
 }
@@ -304,6 +298,9 @@ shader_evaluate
     ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
     AtRGB color1 = AiShaderEvalParamRGB(p_color1);
     AtRGB color2 = AiShaderEvalParamRGB(p_color2);
+    float frequency = AiShaderEvalParamFlt(p_frequency);
+    GaborParams gp(AiShaderEvalParamVec(p_anisotropyDirection), data->anisotropy, 
+                                            data->filter, AiShaderEvalParamFlt(p_bandwidth), data->impulses);
 
     // choose what space we want to calculate in
     AtPoint P;
@@ -334,9 +331,9 @@ shader_evaluate
         }
     }
 
-    P *= data->frequency;
+    P *= frequency;
     
-    float result = gabor(P, *(data->gp));
+    float result = gabor(P, gp);
     if (data->turbulent) result = fabsf(result);
 
     RemapFloat r = REMAP_FLOAT_CREATE;

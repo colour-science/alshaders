@@ -24,7 +24,7 @@ node_loader
    node->name        = "alRemapFloat";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -44,7 +44,7 @@ node_update
 
 shader_evaluate
 {
-	AtFloat input = AiShaderEvalParamFlt(p_input);
+	float input = AiShaderEvalParamFlt(p_input);
 
 	RemapFloat r = REMAP_FLOAT_CREATE;
 

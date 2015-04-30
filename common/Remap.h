@@ -26,7 +26,7 @@
 	AiParameterFLT("RMPgain", 0.5f);				\
 	AiParameterFLT("RMPoutputMin", 0.0f);			\
 	AiParameterFLT("RMPoutputMax", 1.0f);			\
-	AiParameterBOOL("RMPclampEnable", false);		\
+    AiParameterBOOL("RMPclampEnable", true);		\
 	AiParameterBOOL("RMPthreshold", false);		\
 	AiParameterFLT("RMPclampMin", 0.0f);			\
 	AiParameterFLT("RMPclampMax", 1.0f);			\
@@ -34,8 +34,8 @@
 struct RemapFloat
 {
 public:
-	RemapFloat(AtFloat imn, AtFloat imx, AtFloat ct, AtFloat ctp, AtFloat bs, AtFloat gn, AtFloat omn, AtFloat omx,
-				bool ce, bool t, AtFloat cmn, AtFloat cmx) :
+	RemapFloat(float imn, float imx, float ct, float ctp, float bs, float gn, float omn, float omx,
+				bool ce, bool t, float cmn, float cmx) :
 		inputMin(imn),
 		inputMax(imx),
 		contrastVal(ct),
@@ -50,9 +50,9 @@ public:
 		clampMax(cmx)
 	{}
 
-	AtFloat remap(AtFloat input)
+	float remap(float input)
 	{
-		AtFloat f = (input-inputMin)/(inputMax-inputMin);
+		float f = (input-inputMin)/(inputMax-inputMin);
 		f = contrast(f, contrastVal, contrastPivot);
 		f = biasandgain(f, bias, gain);
 		f = lerp(outputMin, outputMax, f);
@@ -68,18 +68,18 @@ public:
 		return f;
 	}
 
-	AtFloat inputMin;
-	AtFloat inputMax;
-	AtFloat contrastVal;
-	AtFloat contrastPivot;
-	AtFloat bias;
-	AtFloat gain;
-	AtFloat outputMin;
-	AtFloat outputMax;
+	float inputMin;
+	float inputMax;
+	float contrastVal;
+	float contrastPivot;
+	float bias;
+	float gain;
+	float outputMin;
+	float outputMax;
 	bool clampEnable;
 	bool threshold;
-	AtFloat clampMin;
-	AtFloat clampMax;
+	float clampMin;
+	float clampMax;
 };
 
 #define REMAP_FLOAT_CREATE							\

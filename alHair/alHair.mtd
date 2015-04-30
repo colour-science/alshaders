@@ -1,5 +1,0 @@
-[node alHair]
-    desc                    STRING      ""
-    maya.name               STRING      "alHair"
-    maya.classification     STRING      "shader/surface"
-    maya.id                 INT         0x00116403

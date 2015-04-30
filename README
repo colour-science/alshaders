@@ -2,7 +2,7 @@ alShaders Arnold shader library
 =============================== 
 by Anders Langlands
 
-# See BUILD_INSTRUCTIONS.txt for how to build from source or install from binary
+# See INSTALL for how to build from source or install from binary
 # See TODO.txt for upcoming features and bug fixes
 
 For any questions, bug reports or feature requests, please email: 
@@ -10,6 +10,7 @@ alshaders@googlegroups.com
 
 Contributors
 ------------
+Espen Nordahl
 Tony Barbieri
 Jonah Friedman
 

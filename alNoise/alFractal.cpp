@@ -81,19 +81,14 @@ node_loader
    node->name        = "alFractal";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 struct ShaderData
 {
 	int mode;
 	int space;
-	float frequency;
-	AtVector scale;
-	float time;
 	int octaves;
-	float lacunarity;
-	float gain;
 	bool turbulent;
 	bool ridged;
 };
@@ -115,12 +110,7 @@ node_update
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 	data->mode = params[p_mode].INT;
 	data->space = params[p_space].INT;
-	data->frequency = params[p_frequency].FLT;
-	data->scale = params[p_scale].PNT;
-	data->time = params[p_time].FLT;
 	data->octaves = params[p_octaves].INT;
-	data->lacunarity = params[p_lacunarity].FLT;
-	data->gain = params[p_gain].FLT;
 	data->turbulent = params[p_turbulent].BOOL;
 	data->ridged = params[p_ridged].BOOL;
 }
@@ -128,8 +118,13 @@ node_update
 shader_evaluate
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
-	AtFloat distortion = AiShaderEvalParamFlt(p_distortion);
-	AtFloat ridgeOffset = AiShaderEvalParamFlt(p_ridgeOffset);
+	float frequency = AiShaderEvalParamFlt(p_frequency);
+	AtPoint scale = AiShaderEvalParamVec(p_scale);
+	float gain = AiShaderEvalParamFlt(p_gain);
+	float lacunarity = AiShaderEvalParamFlt(p_lacunarity);
+	float distortion = AiShaderEvalParamFlt(p_distortion);
+	float ridgeOffset = AiShaderEvalParamFlt(p_ridgeOffset);
+	float time = AiShaderEvalParamFlt(p_time);
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
 	AtPoint Pin = AiShaderEvalParamPnt(p_P);
@@ -162,22 +157,22 @@ shader_evaluate
 		}
 	}
 
-	P *= data->frequency;
+	P *= frequency;
 
-	P *= data->scale;
+	P *= scale;
 
 	if (data->mode == NM_SCALAR)
 	{
-		AtFloat n = 0.0f;
-		AtFloat amp = 1.0f;
-		AtFloat weight = 1;
-		AtFloat v;
+		float n = 0.0f;
+		float amp = 1.0f;
+		float weight = 1;
+		float v;
 		for (int i=0; i < data->octaves; ++i)
 		{
 			AtPoint PP = P;
 			if (distortion != 0.0f)
 				PP += distortion * AiVNoise3(P, 1, 0, 0);
-			v = AiPerlin3(PP);
+			v = AiPerlin4(PP, time);
 			if (data->turbulent) v = fabs(v);
 			if (data->ridged)
 			{
@@ -188,9 +183,9 @@ shader_evaluate
 				weight = clamp(weight, 0.0f, 1.0f);
 			}
 			n += v * amp;
-			amp *= data->gain;
+			amp *= gain;
 
-			P *= data->lacunarity;
+			P *= lacunarity;
 		}
 		RemapFloat r = REMAP_FLOAT_CREATE;
 		n = r.remap(n);
@@ -200,7 +195,7 @@ shader_evaluate
 	else
 	{
 		AtRGB n= rgb(0, 0, 0);
-		AtFloat amp = 1.0f;
+		float amp = 1.0f;
 		AtRGB weight = rgb(0, 0, 0);
 		AtRGB v;
 		for (int i=0; i < data->octaves; ++i)
@@ -208,7 +203,7 @@ shader_evaluate
 			AtPoint PP = P;
 			if (distortion != 0.0f)
 				PP += distortion * AiVNoise3(P, 1, 0, 0);
-			v = rgb(AiVNoise3(PP, 1, 0, 0));
+			v = rgb(AiVNoise4(PP, time, 1, 0, 0));
 			if (data->turbulent) v = fabs(v);
 			if (data->ridged)
 			{
@@ -219,10 +214,14 @@ shader_evaluate
 				weight = clamp(weight, AI_RGB_BLACK, AI_RGB_WHITE);
 			}
 			n += v * amp;
-			amp *= data->gain;
+			amp *= gain;
 
-			P *= data->lacunarity;
+			P *= lacunarity;
 		}
+        RemapFloat r = REMAP_FLOAT_CREATE;
+        n.r = r.remap(n.r);
+        n.g = r.remap(n.g);
+        n.b = r.remap(n.b);
 
 		sg->out.RGB = n;
 	}

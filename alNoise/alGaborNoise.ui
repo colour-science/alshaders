@@ -1,0 +1,46 @@
+import uigen
+
+ui.shader({
+	'name':'alGaborNoise',
+	'intro':'Gabor noise pattern generator',
+   'description':'An advanced noise type.',
+	'output':'rgb',
+	'maya_name':'alGaborNoise',
+	'maya_classification':'texture',
+	'maya_id':'0x00116410',
+	'maya_swatch':True,
+	'maya_matte':False,
+	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
+	'soft_name':'ALS_GaborNoise',
+	'soft_classification':'texture',
+	'soft_version':1,
+	'help_url':'http://www.anderslanglands.com/alshaders/alGaborNoise.html',
+   'houdini_icon': 'VOP_turbnoise'
+})
+
+ui.parameter('space', 'enum','world' 'Space', enum_names=[
+	"world",
+	"object",
+	"Pref",
+	"UV"
+])
+ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.')
+ui.parameter('anisotropy', 'enum','isotropic', 'Anisotropy', enum_names=[
+	"isotropic",
+	"anisotropic",
+	"hybrid"
+])
+ui.parameter('anisotropyDirection', 'vector', (0.0, 1.0, 0.0), 'Anisotropy direction')
+ui.parameter('filter', 'bool', False, 'Filter')
+ui.parameter('bandwidth', 'float', 1.0, 'Bandwidth')
+ui.parameter('impulses', 'float', 8.0, 'Impulses', connectible=False)
+ui.parameter('turbulent', 'bool', False, 'Turbulent', description='Enable this to switch to Turbulent noise.')
+
+uigen.remapControls(ui)
+
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.')
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.')
+
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.')

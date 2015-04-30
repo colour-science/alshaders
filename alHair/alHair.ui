@@ -1,0 +1,115 @@
+import uigen
+
+ui.shader({
+   'name':'alHair',
+   'intro':'Dual-scattering, multiple-importance-sampled hair shader.',
+   'description':'Create believable hair shading with a plausible direct lighting model and approximate multiple scattering. The scattering from a hair fibre is a complex interaction of multiple lobes, often referred to in the literature as R, TT and TRT. Those related to the Specular 1, Transmission and Specular 2 lobes, respectively. The Diffuse lobe represents multiple scattering between hair fibres.',
+   'output':'rgb',
+   'maya_name':'alHair',
+   'maya_classification':'shader/surface',
+   'maya_id':'0x00116403',
+   'maya_swatch':True,
+   'maya_matte':False,
+   'maya_bump':False,
+   'c4d_classification':'surface',
+   'c4d_menu':'surface', 
+   'c4d_command_id':'1034646',   
+   'soft_name':'ALS_Hair',
+   'soft_classification':'material',
+   'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alHair.html',
+   'houdini_icon': 'SHELF_hair'
+})
+
+with uigen.group(ui, 'Fibre properties', False, description='The base properties of the hair fibres used to drive all lobes and the dual scattering. The color of the hair is defined by the Melanin and Dye color parameters and generates the correct color for all lobes based on the attenutaion of light inside the hair fibre. The Highlight Width and Shift parameters are also remapped to control each lobe in a plausible fashion. For the most part, you should be able to drive the hair shading with these parameters alone.'):
+   ui.parameter('melanin', 'float', 0.15, 'Melanin', mn=0, mx=1, description='The melanin content of the hair fibre. Use this to generated natural colors for mammalian hair. 0 will give white hair, 0.2-04 blonde, 0.4-0.6 red, 0.6-0.8 brown and 0.8-1.0 black hair. If you want to set the color of the hair with a texture map, set this to 0 and use the Dye color parameter.')
+   ui.parameter('dyeColor', 'rgb', (1.0, 1.0, 1.0), 'Dye color', description='Color tint to apply to the hair. You can also plug a MayaRamp in here to define the color along the lenght of the hair.')
+   
+   ui.parameter('specularWidth', 'float', 3.0, 'Highlight width', connectible=False, description='The width of the hair highlights, essentially how shiny the hair appears. Values in the range 1-7 are sensible for human hair.')
+   ui.parameter('specularShift', 'float', 4.0, 'Highlight shift', connectible=False, description='How much the highlights are shifted along the hair by the cuticles on the hair fibre. Generally this wants to be 1 to 1.5 times the value of the Width parameter.')
+   ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity', description='Opacity of the hair fibre. Setting this to anything other than white can make the shader very slow. If you want to get a softer look and resolve fine hair better, it is often a better idea to raise your AA samples instead.')
+
+   with uigen.group(ui, 'Randomize', description='Add randomization to each hair fibre to create a more natural feel. In order for these controls to work correctly, an int or float user data named curve_id must be applied to the hair geometry with a unique value per hair.'):
+      ui.parameter('randomTangent', 'float', 0.0, 'Tangent', description='Adds a random offset to the hair tangent which can be useful for breaking up uniform-looking grooms.')
+      ui.parameter('randomMelanin', 'float', 0.15, 'Melanin', description='Adds a random offset to the melanin content of the hair. Values from 0.05 to 0.2 give a very natural color variation.')
+      ui.parameter('randomHue', 'float', 0.0, 'Dye hue', description='Add a random offest to the hue of the Dye color.')
+      ui.parameter('randomSaturation', 'float', 0.0, 'Dye saturation', description='Add a random offest to the saturation of the Dye color.')
+
+
+   with uigen.group(ui, 'Advanced', description='These parameters controls the rolloff of the highlights, which is a measure of how quickly the highlights appear as the light moves around the longitudinal axis of the hair.'):
+      ui.parameter('glintRolloff', 'float', 5.0, 'Glint rolloff', connectible=False, description='Controls the rolloff of the caustic glints in the hair. Lower values make the glints more pingy, higher values make them softer and less apparent.')
+      ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False, description='Controls the rolloff of the transmission highlight. Essentially, if you want the transmission highlight to only appear when the light is directly behind the hair, set this value to 10 or lower. If you want to increase the amount the highlight spreads as the light comes around from behind, set this value higher than 10.')
+
+with uigen.group(ui, 'Diffuse', False, description='The diffuse lobe represents light that has scattered multiple times between hair fibres and so become soft and diffuse. This is especially important for lighter hair colors, whereas dark brown and black hair have little to no diffuse component.'):
+   ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of the diffuse illumination.')
+   ui.parameter('diffuseColor', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Tint on the diffuse illumination. This is multiplied on top of the Fibre color specified above.')
+   ui.parameter('diffuseScatteringMode', 'enum', 'dual-scattering', 'Scattering mode', enum_names=['kajiya-kay', 'dual-scattering'], description='The algorithm to use for diffuse calculation. dual-scattering is a realistic approximation of multiple scattering in hair and is more appropriate for long, realistic hair. kajiya-kay is the class algorithm used in the standard hair shader and is more suitable for short, cartoony fur. It is also a little cheaper to compute than dual-scattering.')
+   ui.parameter('diffuseForward', 'float',0.7, 'Forward scattering', mn=0, mx=1, description='Controls the amount of light bleeding through the hair in dual-scattering mode.')
+   ui.parameter('diffuseBack', 'float', 0.7, 'Back scattering', mn=0, mx=1, description='Controls the amount of light kicked back from the hair in dual-scattering mode.')
+      
+
+with uigen.group(ui, 'Specular 1', False, description='The direct-reflected, primary white highlight on the hair.'):
+   ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe')
+   ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.')
+   ui.parameter('specular1WidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.')
+   ui.parameter('specular1Shift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.')
+   
+with uigen.group(ui, 'Specular 2', False, description='The secondary colored highlight on the hair. This lobe is broader than the primary highlight and is strongly colored by the Fibre color. It also contains caustic glints caused by the hair focusing light.'):
+   ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe')
+   ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.')
+   ui.parameter('specular2WidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.')
+   ui.parameter('specular2Shift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.')
+   ui.parameter('glintStrength', 'float', 2.0, 'Glint strength', description='Strength of the caustic glints. Sensible values are in the range 1-5.')      
+
+with uigen.group(ui, 'Transmission', False, description='The transmitted colored highlight on the hair. This lobe is tighter than the primary highlight and is weakly colored by the Fibre color.'):
+   ui.parameter('transmissionStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe')
+   ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.')
+   ui.parameter('transmissionWidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.')
+   ui.parameter('transmissionShift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.')
+
+with uigen.group(ui, 'IDs', description='Whatever you plug in or set in the ID parameters in this section is written straight out to the corresponding id_X AOV. This is exteremely useful for creating mattes, or for outputting textures or other sub-network results to be used in comp.'):
+   for i in range(1,9):
+      ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0), description='Color to be output in id_%d AOV.' % i)
+
+with uigen.group(ui, 'AOVs', description='Use these parameters to change the name of the AOVs that the shader writes'):
+   ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color', description='Set the name of the AOV that contains the final color of the hair.')
+   ui.aov('aov_direct_diffuse', 'rgb', 'Direct diffuse', description='Set the name of the AOV that contains the final direct diffuse illumination.')
+   ui.aov('aov_indirect_diffuse', 'rgb', 'Indirect diffuse', description='Set the name of the AOV that contains the final indirect diffuse illumination.')
+   ui.aov('aov_direct_local', 'rgb', 'Direct local', description='Set the name of the AOV that contains the local, back-scattered, direct diffuse illumination.')
+   ui.aov('aov_indirect_local', 'rgb', 'Indirect local', description='Set the name of the AOV that contains the local, back-scattered, indirect diffuse illumination.')
+   ui.aov('aov_direct_global', 'rgb', 'Direct global', description='Set the name of the AOV that contains the global, forward-scattered, direct diffuse illumination.')
+   ui.aov('aov_indirect_global', 'rgb', 'Indirect global', description='Set the name of the AOV that contains the global, forward-scattered, indirect diffuse illumination.')
+   ui.aov('aov_direct_specular', 'rgb', 'Direct specular', description='Set the name of the AOV that contains the direct illumination reflected by the primary specular lobe.')
+   ui.aov('aov_indirect_specular', 'rgb', 'Indirect specular', description='Set the name of the AOV that contains the indirect illumination reflected by the primary specular lobe.')
+   ui.aov('aov_direct_specular_2', 'rgb', 'Direct specular 2', description='Set the name of the AOV that contains the direct illumination reflected by the secondary specular lobe.')
+   ui.aov('aov_indirect_specular_2', 'rgb', 'Indirect specular 2', description='Set the name of the AOV that contains the indirect illumination reflected by the secondary specular lobe.')
+   ui.aov('aov_direct_glint', 'rgb', 'Direct glint', description='Set the name of the AOV that contains the direct illumination reflected by the caustic glints. Note that this contribution is already in the secondary specular AOV.')
+   ui.aov('aov_indirect_glint', 'rgb', 'Indirect glint', description='Set the name of the AOV that contains the indirect illumination reflected by the caustic glints. Note that this contribution is already in the secondary specular AOV.')
+   ui.aov('aov_direct_transmission', 'rgb', 'Direct transmission', description='Set the name of the AOV that contains the direct illumination transmitted through the hair.')
+   ui.aov('aov_indirect_transmission', 'rgb', 'Indirect transmission', description='Set the name of the AOV that contains the indirect illumination transmitted through the hair.')
+   ui.aov('aov_light_group_1', 'rgb', 'Light group [1]', description='Set the name of the AOV that contains the lighting contribution from light group 1.')
+   ui.aov('aov_light_group_2', 'rgb', 'Light group [2]', description='Set the name of the AOV that contains the lighting contribution from light group 2.')
+   ui.aov('aov_light_group_3', 'rgb', 'Light group [3]', description='Set the name of the AOV that contains the lighting contribution from light group 3.')
+   ui.aov('aov_light_group_4', 'rgb', 'Light group [4]', description='Set the name of the AOV that contains the lighting contribution from light group 4.')
+   ui.aov('aov_light_group_5', 'rgb', 'Light group [5]', description='Set the name of the AOV that contains the lighting contribution from light group 5.')
+   ui.aov('aov_light_group_6', 'rgb', 'Light group [6]', description='Set the name of the AOV that contains the lighting contribution from light group 6.')
+   ui.aov('aov_light_group_7', 'rgb', 'Light group [7]', description='Set the name of the AOV that contains the lighting contribution from light group 7.')
+   ui.aov('aov_light_group_8', 'rgb', 'Light group [8]', description='Set the name of the AOV that contains the lighting contribution from light group 8.')
+   ui.aov('aov_id_1', 'rgb', 'ID [1]', description='Set the name of the AOV that contains ID 1.')
+   ui.aov('aov_id_2', 'rgb', 'ID [2]', description='Set the name of the AOV that contains ID 2.')
+   ui.aov('aov_id_3', 'rgb', 'ID [3]', description='Set the name of the AOV that contains ID 3.')
+   ui.aov('aov_id_4', 'rgb', 'ID [4]', description='Set the name of the AOV that contains ID 4.')
+   ui.aov('aov_id_5', 'rgb', 'ID [5]', description='Set the name of the AOV that contains ID 5.')
+   ui.aov('aov_id_6', 'rgb', 'ID [6]', description='Set the name of the AOV that contains ID 6.')
+   ui.aov('aov_id_7', 'rgb', 'ID [7]', description='Set the name of the AOV that contains ID 7.')
+   ui.aov('aov_id_8', 'rgb', 'ID [8]', description='Set the name of the AOV that contains ID 8.')
+
+with uigen.group(ui, 'Advanced'):
+   ui.parameter('dualDepth', 'int', 0, 'Brute force bounces', description='Number of brute-force, inter-hair bounces to calculate before falling back to dual scattering. THIS PARAMETER IS DEPRECATED AND WILL BE REMOVED IN A FUTURE RELEASE.')
+   ui.parameter('diffuseIndirectStrength', 'float', 0.0, 'Diffuse indirect strength', description='Multiplier on the intensity of the indirect diffuse illumination. The default value of 0 disables indirect illumination on the hair since in most cases you don\'t need it and it can be quite expensive.')
+   ui.parameter('extraSamplesDiffuse', 'int', 0, 'Diffuse extra samples', description='Number of extra samples to take when calculating indirect diffuse illumination.')
+   ui.parameter('glossyIndirectStrength', 'float', 0.0, 'Glossy indirect strength', description='Multiplier on the intensity of the indirect glossy illumination. The default value of 0 disables indirect illumination on the hair since in most cases you don\'t need it and it can be quite expensive.')
+   ui.parameter('extraSamplesGlossy', 'int', 0, 'Glossy extra samples', description='Number of extra samples to take when calculating indirect glossy illumination.')
+   ui.parameter('uparam', 'string', 'uparamcoord', 'U param', description='Name of the user data that contains the U coordinate of the surface for texturing.')
+   ui.parameter('vparam', 'string', 'vparamcoord', 'V param', description='Name of the user data that contains the V coordinate of the surface for texturing.')
+

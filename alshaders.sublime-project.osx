@@ -1,12 +1,12 @@
 {
-	"folders":
-	[
-		{
-			"path": "/Volumes/HDD/code/alShaders"
-		}
-	],
+    "folders":
+    [
+        {
+            "path": "/Users/anders/code/alShaders"
+        }
+    ],
 
-	"build_systems":
+    "build_systems":
     [
         {
             "name": "Build",
@@ -16,14 +16,14 @@
         }
     ],
 
-	"settings":
-	{
-	
-		"sublimeclang_options":
-		[
-			"-I${folder:${project_path:alshaders.sublime-project}}/*",
-			"-I/Users/anders/vfx/arnold/4.0.14.0/include",
-            "-I/Users/anders/vfx/boost/1.43.0/include"
-		]
-	}
+    "settings":
+    {
+    
+        "sublimeclang_options" :
+        [
+            "-Wno-reorder",
+            "-I${folder:${project_path:alshaders.sublime-project}}/*",
+            "-I/Users/anders/vfx/arnold/4.1.3.2/include"
+        ]
+    }
 }

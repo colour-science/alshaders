@@ -1,0 +1,74 @@
+import uigen
+
+ui.shader({
+	'name':'alLayerColor',
+	'intro':'Layer multiple colors together.',
+   'description':'Layer up to eight color channels together with a variety of Photoshop-styl blending modes.',
+	'output':'rgb',
+	'maya_name':'alLayerColor',
+	'maya_classification':'shader/texture',
+	'maya_id':'0x0011641C',
+	'maya_swatch':True,
+	'maya_matte':False,
+	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
+	'soft_name':'ALS_LayerColor',
+	'soft_classification':'material',
+	'soft_version':1,
+	'help_url':'http://www.anderslanglands.com/alshaders/alLayerColor.html',
+   'houdini_icon': 'COP2_composite'
+})
+
+blend_modes = [
+   "Normal",
+   "Lighten",
+   "Darken",
+   "Multiply",
+   "Average",
+   "Add",
+   "Subtract",
+   "Difference",
+   "Negation",
+   "Exclusion",
+   "Screen",
+   "Overlay",
+   "Soft Light",
+   "Hard Light",
+   "Color Dodge",
+   "Color Burn",
+   "Linear Dodge",
+   "Linear Burn",
+   "Linear Light",
+   "Vivid Light",
+   "Pin Light",
+   "Hard Mix",
+   "Reflect",
+   "Glow",
+   "Phoenix"
+]
+
+ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1', description='The background layer (will be blended over black if its alpha is not 1.')
+ui.parameter('layer1a', 'float', 0.0, 'Layer 1 Alpha', description='The alpha of the background layer')
+ui.parameter('layer1blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='Blend mode for the background layer.')
+ui.parameter('layer2', 'rgb', (0.0, 0.0, 0.0), 'Layer 2', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.')
+ui.parameter('layer2a', 'float', 0.0, 'Layer 2 Alpha', description='The alpha used to blend this layer over the layers below.')
+ui.parameter('layer2blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.')
+ui.parameter('layer3', 'rgb', (0.0, 0.0, 0.0), 'Layer 3', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.')
+ui.parameter('layer3a', 'float', 0.0, 'Layer 3 Alpha', description='The alpha used to blend this layer over the layers below.')
+ui.parameter('layer3blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.')
+ui.parameter('layer4', 'rgb', (0.0, 0.0, 0.0), 'Layer 4', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.')
+ui.parameter('layer4a', 'float', 0.0, 'Layer 4 Alpha', description='The alpha used to blend this layer over the layers below.')
+ui.parameter('layer4blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.')
+ui.parameter('layer5', 'rgb', (0.0, 0.0, 0.0), 'Layer 5', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.')
+ui.parameter('layer5a', 'float', 0.0, 'Layer 5 Alpha', description='The alpha used to blend this layer over the layers below.')
+ui.parameter('layer5blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.')
+ui.parameter('layer6', 'rgb', (0.0, 0.0, 0.0), 'Layer 6', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.')
+ui.parameter('layer6a', 'float', 0.0, 'Layer 6 Alpha', description='The alpha used to blend this layer over the layers below.')
+ui.parameter('layer6blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.')
+ui.parameter('layer7', 'rgb', (0.0, 0.0, 0.0), 'Layer 7', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.')
+ui.parameter('layer7a', 'float', 0.0, 'Layer 7 Alpha', description='The alpha used to blend this layer over the layers below.')
+ui.parameter('layer7blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.')
+ui.parameter('layer8', 'rgb', (0.0, 0.0, 0.0), 'Layer 8', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.')
+ui.parameter('layer8a', 'float', 0.0, 'Layer 8 Alpha', description='The alpha used to blend this layer over the layers below.')
+ui.parameter('layer8blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.')

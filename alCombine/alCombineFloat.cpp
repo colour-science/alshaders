@@ -46,7 +46,7 @@ node_loader
    node->name        = "alCombineFloat";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -66,29 +66,45 @@ node_update
 
 shader_evaluate
 {
-	AtFloat input1 = AiShaderEvalParamFlt(p_input1);
-	AtFloat input2 = AiShaderEvalParamFlt(p_input2);
-	AtFloat input3 = AiShaderEvalParamFlt(p_input3);
+    float input1;
+    float input2;
+	float input3 = AiShaderEvalParamFlt(p_input3);
 	int combineOp = AiShaderEvalParamInt(p_combineOp);
 
 	float f = input1;
 	switch(combineOp)
 	{
 	case CO_MULTIPLY:
+        input1 = AiShaderEvalParamFlt(p_input1);
+        input2 = AiShaderEvalParamFlt(p_input2);
 		f = input1*input2;
 		break;
 	case CO_ADD:
-		f = input1+input2;
+        input1 = AiShaderEvalParamFlt(p_input1);
+        input2 = AiShaderEvalParamFlt(p_input2);
+        f = input1+input2;
 		break;
 	case CO_DIVIDE:
-		f = input1/input2;
+        input1 = AiShaderEvalParamFlt(p_input1);
+        input2 = AiShaderEvalParamFlt(p_input2);
+        f = input1/input2;
 		break;
 	case CO_SUBTRACT:
-		f = input1-input2;
+        input1 = AiShaderEvalParamFlt(p_input1);
+        input2 = AiShaderEvalParamFlt(p_input2);
+        f = input1-input2;
 		break;
 	case CO_LERP:
-		f = lerp(input1, input2, input3);
-		break;
+        if(input3 <= 0.f){
+            f = AiShaderEvalParamFlt(p_input1);
+        } else if (input3 >= 1.f){
+            f = AiShaderEvalParamFlt(p_input2);
+        } else {
+            input1 = AiShaderEvalParamFlt(p_input1);
+            input2 = AiShaderEvalParamFlt(p_input2);
+            f = lerp(input1, input2, input3);
+        }
+        break;
 	default:
 		f = input1;
 		break;

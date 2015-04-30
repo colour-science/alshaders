@@ -11,3 +11,10 @@ test.py
 package.py
 test/*.nk.autosave
 test/*.nk~
+*.pyc
+/alShaders.includes
+/alShaders.files
+/alShaders.creator.user
+/alShaders.creator
+/alShaders.config
+docs

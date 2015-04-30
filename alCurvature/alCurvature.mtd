@@ -1,4 +1,0 @@
-[node alCurvature]
-	desc					STRING		""
-	maya.name				STRING		"alCurvature"
-	maya.classification		STRING		"shader/utility"

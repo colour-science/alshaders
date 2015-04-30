@@ -6,11 +6,12 @@
 #include <cstring>
 #include <algorithm>
 #include <iostream>
+#include <climits>
+#include <cfloat>
 
 #include <ai.h>
 
-#define IMPORTANCE_EPS 0.01f
-
+#define IMPORTANCE_EPS 0.001f
 
 inline AtRGB rgb(float f)
 {
@@ -81,7 +82,6 @@ inline AtVector min(const AtVector& c1, const AtVector& c2)
     return c;
 }
 
-
 inline int clamp(int a, int mn, int mx)
 {
     return std::min(std::max(a, mn), mx);
@@ -111,6 +111,53 @@ inline AtVector fabs(const AtVector& v)
 inline AtRGB fabs(const AtRGB& c)
 {
     return rgb(fabsf(c.r), fabsf(c.g), fabsf(c.b));
+}
+
+inline float maxh(const AtRGB& c)
+{
+   return std::max(std::max(c.r, c.g), c.b);
+}
+
+inline float minh(const AtRGB& c)
+{
+   return std::min(std::min(c.r, c.g ), c.b);
+}
+
+
+inline float lerp(const float a, const float b, const float t)
+{
+   return (1-t)*a + t*b;
+}
+
+inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
+{
+   AtRGB r;
+   r.r = lerp( a.r, b.r, t );
+   r.g = lerp( a.g, b.g, t );
+   r.b = lerp( a.b, b.b, t );
+   return r;
+}
+
+inline AtRGBA lerp(const AtRGBA& a, const AtRGBA& b, const float t)
+{
+   AtRGBA r;
+   r.r = lerp( a.r, b.r, t );
+   r.g = lerp( a.g, b.g, t );
+   r.b = lerp( a.b, b.b, t );
+   r.a = lerp( a.a, b.a, t );
+   return r;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const AtRGB& c)
+{
+    os << "(" << c.r << ", " << c.g << ", " << c.b << ")";
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const AtVector2& c)
+{
+    os << "(" << c.x << ", " << c.y << ")";
+    return os;
 }
 
 
@@ -204,6 +251,40 @@ inline AtVector uniformSampleSphere(float u1, float u2)
     return v;
 }
 
+inline AtVector uniformSampleHemisphere(float u1, float u2) {
+    float y = u1;
+    float r = sqrtf(MAX(0.f, 1.f - y*y));
+    float phi = 2 * AI_PI * u2;
+    float x = r * cosf(phi);
+    float z = r * sinf(phi);
+    return AiVector(x, y, z);
+}
+
+inline float uniformConePdf(float cosThetaMax) 
+{
+    return 1.f / (2.f * AI_PI * (1.f - cosThetaMax));
+}
+
+
+inline AtVector uniformSampleCone(float u1, float u2, float costhetamax) 
+{
+    float costheta = (1.f - u1) + u1 * costhetamax;
+    float sintheta = sqrtf(1.f - costheta*costheta);
+    float phi = u2 * 2.f * AI_PI;
+    return aivec(cosf(phi) * sintheta, sinf(phi) * sintheta, costheta);
+}
+
+
+inline AtVector uniformSampleCone(float u1, float u2, float costhetamax,
+        const AtVector &x, const AtVector &y, const AtVector &z) 
+{
+    float costheta = lerp(costhetamax, 1.f, u1);
+    float sintheta = sqrtf(1.f - costheta*costheta);
+    float phi = u2 * 2.f * AI_PI;
+    return cosf(phi) * sintheta * x + sinf(phi) * sintheta * y +
+        costheta * z;
+}
+
 inline float sphericalTheta(const AtVector &v)
 {
     return acosf(clamp(v.z, -1.f, 1.f));
@@ -232,30 +313,7 @@ inline void sphericalDirection(float theta, float phi, const AtVector& U, const 
     w = U*cosf(theta)*sinf(phi) + V*cosf(theta)*cosf(phi) + W*sinf(theta);
 }
 
-inline float maxh(const AtRGB& c)
-{
-   return std::max(std::max(c.r, c.g), c.b);
-}
 
-inline float minh(const AtRGB& c)
-{
-   return std::min(std::min(c.r, c.g ), c.b);
-}
-
-
-inline float lerp(const float a, const float b, const float t)
-{
-   return (1-t)*a + t*b;
-}
-
-inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
-{
-   AtRGB r;
-   r.r = lerp( a.r, b.r, t );
-   r.g = lerp( a.g, b.g, t );
-   r.b = lerp( a.b, b.b, t );
-   return r;
-}
 
 inline float fresnel(float cosi, float etai)
 {
@@ -269,6 +327,11 @@ inline float fresnel(float cosi, float etai)
     float pp =    ((etai * cosi) - cost)
                     / ((etai * cosi) + cost);
     return (pl*pl+pp*pp)*0.5f;
+}
+
+inline float powerHeuristic(float fp, float gp)
+{
+    return SQR(fp) / (SQR(fp)+SQR(gp));
 }
 
 // Stolen wholesale from OSL:
@@ -355,11 +418,27 @@ inline AtRGB exp(AtRGB c)
     return c;
 }
 
+inline AtRGB fast_exp(AtRGB c)
+{
+    c.r = fast_exp(c.r);
+    c.g = fast_exp(c.g);
+    c.b = fast_exp(c.b);
+    return c;
+}
+
 inline AtRGB pow(AtRGB c, float e)
 {
     c.r = powf(c.r, e);
     c.g = powf(c.g, e);
     c.b = powf(c.b, e);
+    return c;
+}
+
+inline AtRGB log(AtRGB c)
+{
+    c.r = logf(c.r);
+    c.g = logf(c.g);
+    c.b = logf(c.b);
     return c;
 }
 
@@ -399,6 +478,8 @@ inline float bias(float f, float b)
 
 inline float biasandgain(float f, float b, float g)
 {
+    if (f < 0.f) return f;
+
     if (b != 0.5f)
     {
         f = bias(f, b);
@@ -482,6 +563,7 @@ inline AtRGB bssrdfbrdf( const AtRGB& _alpha_prime )
 }
 
 void alphaInversion( const AtRGB& scatterColour, float scatterDist, AtRGB& sigma_s_prime_, AtRGB& sigma_a_ );
+void alphaInversion(float sc, float& sigma_s_prime_, float& sigma_a_ );
 float alpha1_3(float x);
 inline AtRGB alpha1_3(const AtRGB& c)
 {
@@ -506,48 +588,6 @@ inline int modulo(int a, int b)
 inline float modulo(float a, float b) {
     float r = fmodf(a, b);
     return (r < 0) ? r+b : r;
-}
-
-/**
- * \ref Generate fast and reasonably good pseudorandom numbers using the
- * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
- *
- * For details, refer to "GPU Random Numbers via the Tiny Encryption Algorithm"
- * by Fahad Zafar, Marc Olano, and Aaron Curtis.
- *
- * \param v0
- *     First input value to be encrypted (could be the sample index)
- * \param v1
- *     Second input value to be encrypted (e.g. the requested random number dimension)
- * \param rounds
- *     How many rounds should be executed? The default for random number
- *     generation is 4.
- * \return
- *     A uniformly distributed 64-bit integer
- */
-inline AtUInt64 sampleTEA(AtUInt32 v0, AtUInt32 v1, int rounds = 4) {
-    AtUInt32 sum = 0;
-
-    for (int i=0; i<rounds; ++i)
-    {
-        sum += 0x9e3779b9;
-        v0 += ((v1 << 4) + 0xA341316C) ^ (v1 + sum) ^ ((v1 >> 5) + 0xC8013EA4);
-        v1 += ((v0 << 4) + 0xAD90777D) ^ (v0 + sum) ^ ((v0 >> 5) + 0x7E95761E);
-    }
-
-    return ((AtUInt64) v1 << 32) + v0;
-}
-
-inline float sampleTEAFloat(AtUInt32 v0, AtUInt32 v1, int rounds = 4) {
-    /* Trick from MTGP: generate an uniformly distributed
-       single precision number in [1,2) and subtract 1. */
-    union
-    {
-        AtUInt32 u;
-        float f;
-    } x;
-    x.u = ((sampleTEA(v0, v1, rounds) & 0xFFFFFFFF) >> 9) | 0x3f800000UL;
-    return x.f - 1.0f;
 }
 
 // TODO: make this better
@@ -822,3 +862,39 @@ inline AtVector floor(const AtVector& v)
     AiV3Create(r, floorf(v.x), floorf(v.y), floorf(v.z));
     return r;
 }
+
+inline bool AiIsFinite(const AtRGB& c)
+{
+    return AiIsFinite(c.r) && AiIsFinite(c.g) && AiIsFinite(c.b);
+}
+
+inline bool AiIsFinite(const AtVector& v)
+{
+    return AiIsFinite(v.x) && AiIsFinite(v.y) && AiIsFinite(v.z);
+}
+
+inline bool isValidColor(AtRGB c)
+{
+   return AiIsFinite(c) && c.r >= 0.0f && c.g >= 0.0f && c.b >= 0.0f;
+}
+
+inline bool isPositiveReal(float f)
+{
+   return AiIsFinite(f) && f >= 0.0f;
+}
+
+/// Generate a random integer in the range [0,n)
+// TODO: this isn't great
+inline int rand0n(int n)
+{
+    return rand() / (RAND_MAX / n + 1);
+}
+
+
+#define ALS_RAY_UNDEFINED 0
+#define ALS_RAY_SSS 1
+#define ALS_RAY_DUAL 2
+#define ALS_RAY_HAIR 3
+
+#define VAR(x) #x << ": " << x
+#define VARL(x) std::cerr << #x << ": " << x << "\n"

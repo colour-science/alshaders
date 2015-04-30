@@ -1,0 +1,51 @@
+import uigen
+
+ui.shader({
+	'name':'alPattern',
+	'intro':'Simple pattern generator.',
+   'description':'Generate different periodic wave signals to be used as the basis for other effects.',
+	'output':'rgb',
+	'maya_name':'alPattern',
+	'maya_classification':'texture',
+	'maya_id':'0x0011640A',
+	'maya_swatch':True,
+	'maya_matte':False,
+	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
+	'soft_name':'ALS_Pattern',
+	'soft_classification':'texture',
+	'soft_version':1,
+	'help_url':'http://www.anderslanglands.com/alshaders/alPattern.html',
+   'houdini_icon': 'VOP_boxes'
+	
+})
+
+ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
+	"world",
+	"object",
+	"Pref",
+	"UV"
+], description='Space to generate the pattern in.')
+
+ui.parameter('axis', 'enum', 'X', 'Axis', enum_names=[
+	"X",
+	"Y",
+	"Z"
+], description='Axis to generate the pattern along.')
+
+ui.parameter('shape', 'enum', 'sine', 'Shape', enum_names=[
+	"sine",
+	"square",
+	"saw"
+], description='Pattern to generate.')
+
+ui.parameter('frequency', 'float', 5.0, 'Frequency', connectible=False, description='Frequency of the pattern.')
+ui.parameter('offset', 'float', 0.0, 'Offset', connectible=True, description='Offset of the pattern. You can plug a noise in here to get warped patterns.')
+
+uigen.remapControls(ui)
+
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the pattern value is 0.')
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the pattern value is 1.')
+
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')

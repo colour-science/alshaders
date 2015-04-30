@@ -37,7 +37,7 @@ node_loader
    node->name        = "alRemapColor";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   return TRUE;
+   return true;
 }
 
 node_initialize
@@ -58,14 +58,14 @@ node_update
 shader_evaluate
 {
 	AtRGB input = AiShaderEvalParamRGB(p_input);
-	AtFloat gamma = AiShaderEvalParamFlt(p_gamma);
-	AtFloat saturation = AiShaderEvalParamFlt(p_saturation);
-	AtFloat hueOffset = AiShaderEvalParamFlt(p_hueOffset);
-	AtFloat contrastVal = AiShaderEvalParamFlt(p_contrast);
-	AtFloat contrastPivot = AiShaderEvalParamFlt(p_contrastPivot);
-	AtFloat gain = AiShaderEvalParamFlt(p_gain);
-	AtFloat exposure = AiShaderEvalParamFlt(p_exposure);
-	AtFloat mask = AiShaderEvalParamFlt(p_mask);
+	float gamma = AiShaderEvalParamFlt(p_gamma);
+	float saturation = AiShaderEvalParamFlt(p_saturation);
+	float hueOffset = AiShaderEvalParamFlt(p_hueOffset);
+	float contrastVal = AiShaderEvalParamFlt(p_contrast);
+	float contrastPivot = AiShaderEvalParamFlt(p_contrastPivot);
+	float gain = AiShaderEvalParamFlt(p_gain);
+	float exposure = AiShaderEvalParamFlt(p_exposure);
+	float mask = AiShaderEvalParamFlt(p_mask);
 
 	AtRGB result = input;
 	if (mask > 0.0f)
