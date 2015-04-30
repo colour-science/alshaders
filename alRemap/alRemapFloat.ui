@@ -23,3 +23,6 @@ ui.shader({
 ui.parameter('input', 'float', 0.0, 'Input', description='Input value to remap.')
 
 uigen.remapControls(ui)
+
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the pattern value is 0.')
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the pattern value is 1.')
