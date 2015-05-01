@@ -536,15 +536,15 @@ struct HairBsdf
 
         sp.beta_R = data->beta_R;
         sp.alpha_R = data->alpha_R;
-        sp.alpha_R_offset = -AiShaderEvalParamFlt(p_specular1Shift);
+        sp.alpha_R_offset = -AiShaderEvalParamFlt(p_specular1Shift) * AI_DTOR;
 
         sp.beta_TT = data->beta_TT;
         sp.alpha_TT = data->alpha_TT;
-        sp.alpha_TT_offset = -AiShaderEvalParamFlt(p_transmissionShift);
+        sp.alpha_TT_offset = -AiShaderEvalParamFlt(p_transmissionShift) * AI_DTOR;
 
         sp.beta_TRT = data->beta_TRT;
         sp.alpha_TRT = data->alpha_TRT;
-        sp.alpha_TRT_offset = -AiShaderEvalParamFlt(p_specular2Shift);
+        sp.alpha_TRT_offset = -AiShaderEvalParamFlt(p_specular2Shift) * AI_DTOR;
 
         sp.beta_R2 = data->beta_R2;
         sp.beta_TT2 = data->beta_TT2;
