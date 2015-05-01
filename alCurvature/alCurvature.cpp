@@ -114,18 +114,16 @@ shader_evaluate
 	AtSamplerIterator* sampit = AiSamplerIterator(data->sampler, sg);
 	AtRay ray;
 	AtShaderGlobals* hitpoint = AiShaderGlobals();
-#if AI_VERSION_MAJOR_NUM > 0
-    float samples[2];
-#else
-    double samples[2];
-#endif
+   float samples[2];
 	float du, dv;
 	// AtVector dir = -sg->N;
 	AtVector dir = sg->Rd;
 	int count = 0;
 	// float sampleRadius = sg->area * 10;
 	float sampleOffset = sg->area * 10;
-	sg->fi = -1;
+	AtUInt32 fi = sg->fi;
+	sg->fi = UINT_MAX;
+
 	AtPoint& pi = sg->P;
 	float& t = sampleRadius;
 	sampleOffset = sampleRadius * 0.5f;
@@ -141,7 +139,7 @@ shader_evaluate
 		// AtPoint srcpoint = sg->P + sg->N*sampleOffset + uniformSampleSphere(samples[0], samples[1]);
 
 		// trace straight back down
-		AiMakeRay(&ray, AI_RAY_GENERIC, &srcpoint, &dir, sampleRadius, sg);
+		AiMakeRay(&ray, AI_RAY_CAMERA, &srcpoint, &dir, sampleRadius, sg);
 		AiTraceProbe(&ray, hitpoint);
 		if (hitpoint)
 		{
@@ -157,7 +155,7 @@ shader_evaluate
 		}		
 	}
 
-	AiShaderGlobalsDestroy(hitpoint);
+	sg->fi = fi;
 
 	if (count)
 	{
@@ -209,6 +207,7 @@ shader_evaluate
 	}
 
 	sg->out.RGB = lerp(color1, color2, result);
+	AiShaderGlobalsDestroy(hitpoint);	
 }
 
 
