@@ -41,7 +41,10 @@ class alShadersTemplate(ShaderAETemplate):
         pann = self.params[pname].annotation
         presets = self.params[pname].presets
         precision = self.params[pname].precision
-        self.controls[pname] = pm.attrFieldSliderGrp(pname + 'Ctrl', attribute=attr, label=plabel, annotation=pann, precision=precision)
+        l = plabel
+        if presets is not None:
+            l = unicode(plabel) + u' \u1392'
+        self.controls[pname] = pm.attrFieldSliderGrp(pname + 'Ctrl', attribute=attr, label=l, annotation=pann, precision=precision)
         if presets is not None:
             pm.attrFieldSliderGrp(self.controls[pname], edit=True)
             pm.popupMenu()
@@ -60,7 +63,10 @@ class alShadersTemplate(ShaderAETemplate):
         plabel = self.params[pname].label
         pann = self.params[pname].annotation
         presets = self.params[pname].presets
-        self.controls[pname] = pm.attrColorSliderGrp(pname + 'Ctrl', attribute=attr, label=plabel, annotation=pann)
+        l = plabel
+        if presets is not None:
+            l = unicode(plabel) + u' \u1392'
+        self.controls[pname] = pm.attrColorSliderGrp(pname + 'Ctrl', attribute=attr, label=l, annotation=pann)
         if presets is not None:
             pm.attrColorSliderGrp(self.controls[pname], edit=True)
             pm.popupMenu()
