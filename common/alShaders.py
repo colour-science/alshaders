@@ -44,8 +44,8 @@ class alShadersTemplate(ShaderAETemplate):
         self.controls[pname] = pm.attrFieldSliderGrp(pname + 'Ctrl', attribute=attr, label=plabel, annotation=pann, precision=precision)
         if presets is not None:
             pm.popupMenu()
-            for k, v in presets.iteritems():
-                pm.menuItem(label=k, command=pm.Callback(setPresetFlt, self.controls[pname], v))
+            for k in sorted(presets, key=presets.get):
+                pm.menuItem(label=k, command=pm.Callback(setPresetRgb, self.controls[pname], presets[k]))
 
 
     def customUpdateFlt(self, attr):
@@ -62,8 +62,8 @@ class alShadersTemplate(ShaderAETemplate):
         self.controls[pname] = pm.attrColorSliderGrp(pname + 'Ctrl', attribute=attr, label=plabel, annotation=pann)
         if presets is not None:
             pm.popupMenu()
-            for k, v in presets.iteritems():
-                pm.menuItem(label=k, command=pm.Callback(setPresetRgb, self.controls[pname], v))
+            for k in sorted(presets, key=presets.get):
+                pm.menuItem(label=k, command=pm.Callback(setPresetRgb, self.controls[pname], presets[k]))
 
     def customUpdateRgb(self, attr):
         pname = attr.split('.')[-1]

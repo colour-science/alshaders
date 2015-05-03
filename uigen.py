@@ -78,12 +78,29 @@ class Parameter(UiElement):
    default = None
    fig = None
    figc = None
+   short_description = ''
+   presets = None
 
-   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None):
+   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None, presets={}):
       self.name = name
       self.ptype = ptype
       self.default = default
-      self.description = description      
+      self.description = description
+      self.presets = presets
+
+      if description is not None:
+         if len(description) > 150:
+            # build the short description, < 200 chars
+            sentences = description.split('.')
+            sdlen = 0
+            for s in sentences:
+               self.short_description += s + "."
+               sdlen += len(s)
+               if sdlen > 150:
+                  break
+         else:
+            self.short_description = description
+
       if not label:
          label = name   
       self.label = label   
@@ -186,8 +203,8 @@ class ShaderDef:
    def endGroup(self):
       self.current_parent = self.current_parent.parent
 
-   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None):
-      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc)
+   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None, presets=None):
+      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc, presets)
       if not self.current_parent.children:
          self.current_parent.children = [p]
       else:
@@ -296,15 +313,38 @@ def WalkAETemplate(el, f, d):
       writei(f, 'self.endLayout() # END %s' % el.name, d)
 
    elif isinstance(el, Parameter):
-      writei(f, 'self.addControl("%s", label="%s")' % (el.name, el.label), d)
+      if el.ptype == 'float':
+         writei(f, 'self.addCustomFlt("%s")' % el.name, d)
+      elif el.ptype == 'rgb':
+         writei(f, 'self.addCustomRgb("%s")' % el.name, d)
+      else:
+         writei(f, 'self.addControl("%s", label="%s", annotation="%s")' % (el.name, el.label, el.short_description), d)
+
+def WalkAETemplateParams(el, f, d):
+   if isinstance(el, Group):
+      if el.children:
+         for e in el.children:
+            WalkAETemplateParams(e, f, d)
+
+   elif isinstance(el, Parameter):
+      writei(f, 'self.params["%s"] = Param("%s", "%s", "%s", "%s", presets=%s)' % (el.name, el.name, el.label, el.short_description, el.ptype, el.presets), d)
 
 def WriteAETemplate(sd, fn):
    f = open(fn, 'w')
    writei(f, 'import pymel.core as pm', 0)
-   writei(f, 'from alShaders import alShadersTemplate\n', 0)
+   writei(f, 'from alShaders import *\n', 0)
 
    writei(f, 'class AE%sTemplate(alShadersTemplate):' % sd.name, 0)
+   writei(f, 'controls = {}', 1)
+   writei(f, 'params = {}', 1)
+   
    writei(f, 'def setup(self):', 1)
+
+   writei(f, 'self.params.clear()', 2)
+   for e in sd.root.children:
+      WalkAETemplateParams(e, f, 2)
+   
+   writei(f, '')
 
    if sd.maya_swatch:
       writei(f, 'self.addSwatch()', 2)
