@@ -1617,6 +1617,7 @@ shader_evaluate
         {
             do_diffuse = true;
             do_backlight = false;
+            bd_prob = 1.0f - bd_prob;
         }
         bd_prob = 1.0f / bd_prob;
     }
