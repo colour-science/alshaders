@@ -43,7 +43,7 @@ class alShadersTemplate(ShaderAETemplate):
         precision = self.params[pname].precision
         self.controls[pname] = pm.attrFieldSliderGrp(pname + 'Ctrl', attribute=attr, label=plabel, annotation=pann, precision=precision)
         if presets is not None:
-            pm.attrFieldSliderGrp(self.controls[pname], edit=True, bgc=(.22, .22, .22))
+            pm.attrFieldSliderGrp(self.controls[pname], edit=True)
             pm.popupMenu()
             for k in sorted(presets, key=presets.get):
                 pm.menuItem(label=k, command=pm.Callback(setPresetRgb, self.controls[pname], presets[k]))
@@ -62,9 +62,9 @@ class alShadersTemplate(ShaderAETemplate):
         presets = self.params[pname].presets
         self.controls[pname] = pm.attrColorSliderGrp(pname + 'Ctrl', attribute=attr, label=plabel, annotation=pann)
         if presets is not None:
-            pm.attrColorSliderGrp(self.controls[pname], edit=True, bgc=(.22, .22, .22))
+            pm.attrColorSliderGrp(self.controls[pname], edit=True)
             pm.popupMenu()
-            for k in sorted(presets, key=presets.get):
+            for k in sorted(presets):
                 pm.menuItem(label=k, command=pm.Callback(setPresetRgb, self.controls[pname], presets[k]))
 
     def customUpdateRgb(self, attr):
@@ -106,5 +106,4 @@ class alShadersTemplate(ShaderAETemplate):
 
         self.endLayout() # end Remap
 
-    
     
