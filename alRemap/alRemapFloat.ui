@@ -13,7 +13,7 @@ ui.shader({
 	'maya_bump':False,
    'c4d_classification':'texture',
    'c4d_menu':'texture',   
-	'soft_name':'ALS_RemapColor',
+	'soft_name':'ALS_RemapFloat',
 	'soft_classification':'texture',
 	'soft_version':1,
    'help_url':'http://www.anderslanglands.com/alshaders/alRemapFloat.html',

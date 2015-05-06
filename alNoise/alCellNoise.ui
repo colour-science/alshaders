@@ -34,8 +34,8 @@ ui.parameter('mode', 'enum', 'features', 'Mode', enum_names=[
 
 with uigen.group(ui, 'Features', False, None):
 	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.')
-	ui.parameter('lacunarity', 'int', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.')
-	ui.parameter('randomness', 'int', 1.0, 'Randomness', description='How much randomness is added to the cel positions.')
+	ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.')
+	ui.parameter('randomness', 'float', 1.0, 'Randomness', description='How much randomness is added to the cel positions.')
 
 	with uigen.group(ui, 'Feature weights', False):
 		ui.parameter('f1w', 'float', -1.0, 'F1')
