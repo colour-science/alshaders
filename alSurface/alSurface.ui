@@ -118,8 +118,30 @@ with uigen.group(ui, 'Transmission', description='The transmission lobe describe
 		ui.parameter('rrTransmissionDepth', 'int', 1, 'RR depth', connectible=False, description='Controls the depth at which the Russian roulette optimization kicks in. If you find your renders are too noisy with RR on try raising this to 2.')
 		ui.parameter('transmissionClamp', 'float', 0.0, 'Indirect clamp', connectible=False, description='Clamp the brightness of indirect samples for this lobe. This can effectively reduce fireflies but makes the shader less accurate. The default value of 0 means no clamping. Sensible values are normally in the range of 10-20.')
 		ui.parameter('ssSpecifyCoefficients', 'bool', False, 'Specify attenuation coeffs.', connectible=False, description='Enable this to directly specify the scattering and absorption parameters rather than use the Color and Scattering controls in the attenutaion section above. This can be useful for inputting measured data.')
-		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering', description='Scattering coefficient')
-		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption', description='Absorption coefficient')
+		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering', description='Scattering coefficient', presets= {
+				'Milk':(1.1873, 1.3293, 1.4589),
+				'Coffee':(0.2707, 0.2828, 0.2970),
+				'Cola':(0.0177, 0.0208, 0.0000),
+				'Sprite':(0.0069, 0.0089, 0.0089),
+				'Chardonnay':(0.0030, 0.0047, 0.0069),
+				'Merlot':(0.0053, 0.0000, 0.0000),
+				'Beer':(0.0037, 0.0069, 0.0074),
+				'Apple juice':(0.0201, 0.0243, 0.0323),
+				'Cranberry juice':(0.0128, 0.0155, 0.0196),
+				'Pacific ocean':(0.1800, 0.1834, 0.2281)
+			})
+		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption', description='Absorption coefficient', presets= {
+				'Milk':(0.0001, 0.0003, 0.00129),
+				'Coffee':(0.1669, 0.2287, 0.3078),
+				'Cola':(0.6966, 1.148, 1.7169),
+				'Sprite':(0.123, 0.1194, 0.1306),
+				'Chardonnay':(0.1547, 0.1701, 0.3443),
+				'Merlot':(0.7586, 1.6429, 1.9196),
+				'Beer':(0.1449, 0.3141, 0.7286),
+				'Apple juice':(0.1014, 0.1858, 0.4084),
+				'Cranberry juice':(0.2572, 0.6145, 0.8104),
+				'Pacific ocean':(3.1845, 3.1324, 3.0147)
+			})
 		ui.parameter('traceSetTransmission', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict this lobe to trace only against that set.')
 		ui.parameter('transmissionDoDirect', 'bool', False, 'Direct lighting', connectible=False, description='Enable this to have the transmission lobe calculate direct lighting when leaving a closed volume. This allos you to, for instance, put a glass lens in front of a light source and see the image of the light source in the lens.')
 # end Transmission
