@@ -1,0 +1,35 @@
+import uigen
+
+ui.shader({
+   'name':'alInputScalar',
+   'intro':'Grab useful scalar values from the shader state and use them in a network.',
+   'description':'Combining these vectors can be useful as building blocks for more complex effects.',
+   'output':'float',
+   'maya_name':'alInputScalar',
+   'maya_classification':'texture',
+   'maya_id':'0x0011641E',
+   'maya_swatch':True,
+   'maya_matte':False,
+   'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',    
+   'soft_name':'ALS_InputScalar',
+   'soft_classification':'texture',
+   'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alInputScalar.html',
+   'houdini_icon': 'VOP_global'
+
+})
+
+ui.parameter('input', 'enum', 'P', 'Input', enum_names=[
+   "facing-ratio",
+   "area",
+   "face-index",
+   "ray-length",
+   "ray-depth",
+   "User",
+], description='The scalar from from the shader globals to output. When User is selected, the user data float named in the User name parameter will be output.')
+
+ui.parameter('userName', 'string', '', 'User name', description='Enter the name of a user data float to output.')
+
+uigen.remapControls(ui)
