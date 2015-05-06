@@ -119,28 +119,28 @@ with uigen.group(ui, 'Transmission', description='The transmission lobe describe
 		ui.parameter('transmissionClamp', 'float', 0.0, 'Indirect clamp', connectible=False, description='Clamp the brightness of indirect samples for this lobe. This can effectively reduce fireflies but makes the shader less accurate. The default value of 0 means no clamping. Sensible values are normally in the range of 10-20.')
 		ui.parameter('ssSpecifyCoefficients', 'bool', False, 'Specify attenuation coeffs.', connectible=False, description='Enable this to directly specify the scattering and absorption parameters rather than use the Color and Scattering controls in the attenutaion section above. This can be useful for inputting measured data.')
 		ui.parameter('ssScattering', 'rgb', (1.0, 1.0, 1.0), 'Scattering', description='Scattering coefficient', presets= {
-				'Milk':(1.1873, 1.3293, 1.4589),
-				'Coffee':(0.2707, 0.2828, 0.2970),
-				'Cola':(0.0177, 0.0208, 0.0000),
-				'Sprite':(0.0069, 0.0089, 0.0089),
-				'Chardonnay':(0.0030, 0.0047, 0.0069),
-				'Merlot':(0.0053, 0.0000, 0.0000),
-				'Beer':(0.0037, 0.0069, 0.0074),
-				'Apple juice':(0.0201, 0.0243, 0.0323),
-				'Cranberry juice':(0.0128, 0.0155, 0.0196),
-				'Pacific ocean':(0.1800, 0.1834, 0.2281)
+				'Milk':(79.07418, 88.53138, 97.16274),
+				'Coffee':(33.8375, 35.35, 37.125),
+				'Cola':(0.0110625, 0.013, 0.0),
+				'Sprite':(0.000046, 0.0000593, 0.0000593),
+				'Chardonnay':(0.000909090909091, 0.00142424242424, 0.00209090909091),
+				'Merlot':(0.00353333333333, 0.0, 0.0),
+				'Beer':(0.00127586206897, 0.00237931034483, 0.00255172413793),
+				'Apple juice':(0.0111666666667, 0.0135, 0.0179444444444),
+				'Cranberry juice':(0.00853333333333, 0.0103333333333, 0.0130666666667),
+				'Pacific ocean':(0.018, 0.01834, 0.02281)
 			})
 		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption', description='Absorption coefficient', presets= {
-				'Milk':(0.0001, 0.0003, 0.00129),
-				'Coffee':(0.1669, 0.2287, 0.3078),
-				'Cola':(0.6966, 1.148, 1.7169),
-				'Sprite':(0.123, 0.1194, 0.1306),
-				'Chardonnay':(0.1547, 0.1701, 0.3443),
-				'Merlot':(0.7586, 1.6429, 1.9196),
-				'Beer':(0.1449, 0.3141, 0.7286),
-				'Apple juice':(0.1014, 0.1858, 0.4084),
-				'Cranberry juice':(0.2572, 0.6145, 0.8104),
-				'Pacific ocean':(3.1845, 3.1324, 3.0147)
+				'Milk':(0.00666, 0.01998, 0.085914),
+				'Coffee':(20.8625, 28.5875, 38.475),
+				'Cola':(0.435375,0.7175, 1.0730625),
+				'Sprite':(0.00082, 0.000796, 0.000870666666667),
+				'Chardonnay':(0.0468787878788, 0.0515454545455, 0.104333333333),
+				'Merlot':(0.505733333333, 1.09526666667, 1.27973333333),
+				'Beer':(0.0499655172414, 0.108310344828, 0.25124137931),
+				'Apple juice':(0.0563333333333, 0.103222222222, 0.226888888889),
+				'Cranberry juice':(0.171466666667, 0.409666666667, 0.540266666667),
+				'Pacific ocean':(0.31845, 0.31324, 0.30147)
 			})
 		ui.parameter('traceSetTransmission', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict this lobe to trace only against that set.')
 		ui.parameter('transmissionDoDirect', 'bool', False, 'Direct lighting', connectible=False, description='Enable this to have the transmission lobe calculate direct lighting when leaving a closed volume. This allos you to, for instance, put a glass lens in front of a light source and see the image of the light source in the lens.')
