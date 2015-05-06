@@ -19,8 +19,8 @@ ui.shader({
    'help_url':'http://www.anderslanglands.com/alshaders/alCurvature.html'
 })
 
-ui.parameter('mode', 'enum', 'positive', 'Mode', enum_names=['positive', 'negative'], description='Select the type of curvature to output. positive selects convex regions while negative selects concave regions.')
+ui.parameter('mode', 'enum', 'positive', 'Mode', enum_names=['positive', 'negative'], description='Select the type of curvature to output. positive selects convex regions while negative selects concave regions.', fig='alCurvature_mode', figc='Mode set to positive and negative.')
 ui.parameter('samples', 'int', 3, 'Samples', description='The sampling rate for the curvature calculation.')
-ui.parameter('sampleRadius', 'float', 1.0, 'Radius', description='The radius to consider when estimating the curvature. Smaller values pick out finer detail, while larger values give a smoother result.')
-
+ui.parameter('sampleRadius', 'float', 1.0, 'Radius', description='The radius to consider when estimating the curvature. Smaller values pick out finer detail, while larger values give a smoother result.', fig='alCurvature_radius', figc='Radius at 0.1, 0.25, 0.4')
+ui.parameter('traceSet', 'string', '', 'Trace set', description='Enter a trace set here to restrict the curvature calculation to only consider that set of objects.')
 uigen.remapControls(ui)

@@ -1055,8 +1055,33 @@ def WalkHTML(f, el, d):
       el_fig=""
       if el.fig != None and el.figc != None:
          el_fig = "fig='%s' figc='%s'" % (el.fig, el.figc)
-      writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s %s></div>"
-               % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link, el_fig), d)
+
+      el_presets=""
+      if el.presets is not None:
+         if el.ptype == 'float':
+            el_presets = "presets='"
+            first = True
+            for k in sorted(el.presets, key=el.presets.get):
+               if first:
+                  first = False
+               else:
+                  el_presets += "|"
+                  
+               el_presets += "%s:%.3f" % (k, el.presets[k])
+            el_presets += "'"
+         elif el.ptype == 'rgb':
+            el_presets = "presets='"
+            first = True
+            for k in sorted(el.presets):
+               if first:
+                  first = False
+               else:
+                  el_presets += "|"
+               el_presets += "%s:(%.2f, %.2f, %.2f)" % (k, el.presets[k][0], el.presets[k][1], el.presets[k][2])
+            el_presets += "'"
+
+      writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s %s %s></div>"
+               % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link, el_fig, el_presets), d)
 
 def WalkHTMLRoot(f, el, d):
    if isinstance(el, Group):

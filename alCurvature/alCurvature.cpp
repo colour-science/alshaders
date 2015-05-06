@@ -1,6 +1,7 @@
 #include "Remap.h"
 #include <ai.h>
 #include <cassert>
+#include <string>
 
 AI_SHADER_NODE_EXPORT_METHODS(alCurvatureMtd)
 
@@ -10,6 +11,7 @@ AI_SHADER_NODE_EXPORT_METHODS(alCurvatureMtd)
 struct ShaderData
 {
 	AtSampler* sampler;
+	std::string trace_set;
 	int mode;
 };
 
@@ -18,6 +20,7 @@ enum alCurvatureParams
 	p_mode,
 	p_samples,
 	p_sampleRadius,
+	p_traceSet,
 	p_color1,
 	p_color2,
 	REMAP_FLOAT_PARAM_ENUM
@@ -48,6 +51,7 @@ node_parameters
 	AiParameterENUM("mode", CRV_POSITIVE, curvatureModeNames)
 	AiParameterINT("samples", 3);
 	AiParameterFLT("sampleRadius", 1.0f);
+	AiParameterSTR("traceSet", "");
 	AiParameterRGB("color1", 0.0f, 0.0f, 0.0f);
 	AiParameterRGB("color2", 1.0f, 1.0f, 1.0f);
 	REMAP_FLOAT_PARAM_DECLARE;
@@ -66,7 +70,7 @@ node_loader
 
 node_initialize
 {
-	ShaderData *data = (ShaderData*) AiMalloc(sizeof(ShaderData));
+	ShaderData *data = new ShaderData();
 	AiNodeSetLocalData(node,data);
 	data->sampler = NULL;
 }
@@ -78,7 +82,7 @@ node_finish
 		ShaderData* data = (ShaderData*) AiNodeGetLocalData(node);
 		AiSamplerDestroy(data->sampler);
 
-		AiFree((void*) data);
+		delete data;
 		AiNodeSetLocalData(node, NULL);
 	}
 }
@@ -88,7 +92,9 @@ node_update
 	ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
 	AiSamplerDestroy(data->sampler);
 	data->sampler = AiSampler(std::min(params[p_samples].INT, MAX_SAMPLES), 2);
-	data->mode = params[p_mode].INT;	
+	data->mode = params[p_mode].INT;
+	data->trace_set = std::string();
+	data->trace_set = params[p_traceSet].STR;
 }
 
 struct Sample
@@ -129,6 +135,11 @@ shader_evaluate
 	sampleOffset = sampleRadius * 0.5f;
 	float t2 = t*t;
 	
+	if (data->trace_set.length())
+	{
+		AiShaderGlobalsSetTraceSet(sg, data->trace_set.c_str(), true);
+	}
+
 	Sample psamp[MAX_SAMPLES2];
 	while (AiSamplerGetSample(sampit, samples))
 	{
@@ -155,6 +166,7 @@ shader_evaluate
 		}		
 	}
 
+	AiShaderGlobalsUnsetTraceSet(sg);
 	sg->fi = fi;
 
 	if (count)
