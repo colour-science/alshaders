@@ -1162,6 +1162,7 @@ def WriteHTML(sd, fn):
                <li><a href="alSwitchColor.html">alSwitchColor</a></li>
                <li><a href="alCache.html">alCache</a></li>
                <li><a href="alInputVector.html">alInputVector</a></li>
+               <li><a href="alInputScalar.html">alInputScalar</a></li>
                <li><a href="alJitterColor.html">alJitterColor</a></li>
       </ul>
     </nav>

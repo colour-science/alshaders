@@ -28,3 +28,4 @@
 0x0011641B - alLayerFloat
 0x0011641C - alLayerColor
 0x0011641D - alCel
+0x0011641E - alInputScalar
