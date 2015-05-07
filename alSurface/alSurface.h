@@ -40,6 +40,7 @@ struct ShaderData
    int backlight_sample_offset;
    int total_samples;
    int sss_bssrdf_samples;
+   int sss_bssrdf_samples2;
    AtCritSec cs;
    std::map<AtNode*, int> lightGroups;
    std::map<AtNode*, float> shadowDensities;

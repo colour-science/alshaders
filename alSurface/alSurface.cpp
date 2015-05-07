@@ -492,6 +492,7 @@ node_update
     data->GI_refraction_samples = AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT;
     data->refraction_samples2 = SQR(data->GI_refraction_samples);
     data->sss_bssrdf_samples = AiNodeGetInt(options, "sss_bssrdf_samples");
+    data->sss_bssrdf_samples2 = SQR(data->sss_bssrdf_samples);
 
     // setup samples
     AiSamplerDestroy(data->diffuse_sampler);
@@ -548,15 +549,15 @@ node_update
     delete[] data->perm_table;
     data->perm_table = new int[data->AA_samples*data->total_depth];
     delete[] data->perm_table_diffuse;
-    data->perm_table_diffuse = new int[data->AA_samples*data->GI_diffuse_samples*data->total_depth];
+    data->perm_table_diffuse = new int[data->AA_samples*data->diffuse_samples2*data->total_depth];
     delete[] data->perm_table_spec1;
-    data->perm_table_spec1 = new int[data->AA_samples*data->GI_glossy_samples*data->total_depth];
+    data->perm_table_spec1 = new int[data->AA_samples*data->glossy_samples2*data->total_depth];
     delete[] data->perm_table_spec2;
-    data->perm_table_spec2 = new int[data->AA_samples*data->GI_glossy2_samples*data->total_depth];
+    data->perm_table_spec2 = new int[data->AA_samples*data->glossy2_samples2*data->total_depth];
     delete[] data->perm_table_backlight;
-    data->perm_table_backlight = new int[data->AA_samples*data->GI_diffuse_samples*data->total_depth];
+    data->perm_table_backlight = new int[data->AA_samples*data->diffuse_samples2*data->total_depth];
     delete[] data->perm_table_sss;
-    data->perm_table_sss = new int[data->AA_samples*data->sss_bssrdf_samples*data->total_depth];
+    data->perm_table_sss = new int[data->AA_samples*data->sss_bssrdf_samples2*data->total_depth];
     // permute uses rand() to generate the random number stream so seed it first
     // so we get a determistic sequence between renders
     srand(RAND_STREAM_ALSURFACE_RR_PERMUTE);
@@ -568,35 +569,35 @@ node_update
 
     srand(RAND_STREAM_ALSURFACE_RR_DIFF_PERMUTE);
     // generate the permutation table for rr_diffuse
-    for (int d=0; d < data->total_depth*data->GI_diffuse_samples; ++d)
+    for (int d=0; d < data->total_depth*data->diffuse_samples2; ++d)
     {
         permute(&(data->perm_table_diffuse[d*data->AA_samples]), data->AA_samples);
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_SPEC1_PERMUTE);
     // generate the permutation table for rr_spec1
-    for (int d=0; d < data->total_depth*data->GI_glossy_samples; ++d)
+    for (int d=0; d < data->total_depth*data->glossy_samples2; ++d)
     {
         permute(&(data->perm_table_spec1[d*data->AA_samples]), data->AA_samples);
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_SPEC2_PERMUTE);
     // generate the permutation table for rr_spec2
-    for (int d=0; d < data->total_depth*data->GI_glossy2_samples; ++d)
+    for (int d=0; d < data->total_depth*data->glossy2_samples2; ++d)
     {
         permute(&(data->perm_table_spec2[d*data->AA_samples]), data->AA_samples);
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_BACKLIGHT_PERMUTE);
     // generate the permutation table for rr_backlight
-    for (int d=0; d < data->total_depth*data->GI_diffuse_samples; ++d)
+    for (int d=0; d < data->total_depth*data->diffuse_samples2; ++d)
     {
         permute(&(data->perm_table_backlight[d*data->AA_samples]), data->AA_samples);
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_SSS_PERMUTE);
     // generate the permutation table for rr_backlight
-    for (int d=0; d < data->total_depth*data->sss_bssrdf_samples; ++d)
+    for (int d=0; d < data->total_depth*data->sss_bssrdf_samples2; ++d)
     {
         permute(&(data->perm_table_sss[d*data->AA_samples]), data->AA_samples);
     }
@@ -1740,7 +1741,7 @@ shader_evaluate
                     {
                         cont = false;
                         // get a permuted, stratified random number
-                        int idx = (ssi*data->GI_glossy_samples + sg->Rr) * data->AA_samples + sg->si;
+                        int idx = (ssi*data->glossy_samples2 + sg->Rr) * data->AA_samples + sg->si;
                         float u = (float(data->perm_table_spec1[idx]) 
                                     + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
                                     * data->AA_samples_inv;
@@ -1849,7 +1850,7 @@ shader_evaluate
                 {
                     cont = false;
                     // get a permuted, stratified random number
-                    int idx = (ssi*data->GI_glossy2_samples + sg->Rr) * data->AA_samples + sg->si;
+                    int idx = (ssi*data->glossy2_samples2 + sg->Rr) * data->AA_samples + sg->si;
                     float u = (float(data->perm_table_spec2[idx]) 
                                 + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC2_JITTER))
                                 * data->AA_samples_inv;
@@ -1958,7 +1959,7 @@ shader_evaluate
             {
                 cont = false;
                 // get a permuted, stratified random number
-                int idx = (ssi*data->GI_diffuse_samples + sg->Rr) * data->AA_samples + sg->si;
+                int idx = (ssi*data->diffuse_samples2 + sg->Rr) * data->AA_samples + sg->si;
                 float u = (float(data->perm_table_diffuse[idx]) 
                             + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_DIFF_JITTER))
                             * data->AA_samples_inv;
@@ -2348,7 +2349,7 @@ shader_evaluate
                 {
                     cont = false;
                     // get a permuted, stratified random number
-                    int idx = (ssi*data->GI_diffuse_samples + sg->Rr) * data->AA_samples + sg->si;
+                    int idx = (ssi*data->diffuse_samples2 + sg->Rr) * data->AA_samples + sg->si;
                     float u = (float(data->perm_table_backlight[idx]) 
                                 + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER))
                                 * data->AA_samples_inv;
