@@ -129,7 +129,7 @@ with uigen.group(ui, 'Transmission', description='The transmission lobe describe
 				'Apple juice':(0.0111666666667, 0.0135, 0.0179444444444),
 				'Cranberry juice':(0.00853333333333, 0.0103333333333, 0.0130666666667),
 				'Pacific ocean':(0.018, 0.01834, 0.02281)
-			})
+			}, fig='transmissionCoefficients', figc='Scattering and Absorption set to Chardonnay, Cola, Merlot.')
 		ui.parameter('ssAbsorption', 'rgb', (1.0, 1.0, 1.0), 'Absorption', description='Absorption coefficient', presets= {
 				'Milk':(0.00666, 0.01998, 0.085914),
 				'Coffee':(20.8625, 28.5875, 38.475),
@@ -141,7 +141,7 @@ with uigen.group(ui, 'Transmission', description='The transmission lobe describe
 				'Apple juice':(0.0563333333333, 0.103222222222, 0.226888888889),
 				'Cranberry juice':(0.171466666667, 0.409666666667, 0.540266666667),
 				'Pacific ocean':(0.31845, 0.31324, 0.30147)
-			})
+			}, fig='transmissionCoefficients', figc='Scattering and Absorption set to Chardonnay, Cola, Merlot.')
 		ui.parameter('traceSetTransmission', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict this lobe to trace only against that set.')
 		ui.parameter('transmissionDoDirect', 'bool', False, 'Direct lighting', connectible=False, description='Enable this to have the transmission lobe calculate direct lighting when leaving a closed volume. This allos you to, for instance, put a glass lens in front of a light source and see the image of the light source in the lens.')
 # end Transmission

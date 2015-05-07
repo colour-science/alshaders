@@ -1034,6 +1034,47 @@ def WriteSPDL(sd, fn):
 
    f.close()
 
+def WriteHTMLParam(f, el, d):
+   el_link="link='false'"
+   if el.connectible:
+      el_link=''
+   el_range=''
+   if el.mn != None and el.mx != None:
+      el_range="range='[%s, %s]'" % (str(el.mn), str(el.mx))
+   el_default="default='%s'" % str(el.default)
+   if el.ptype == 'rgb' and not isinstance(el, AOV):
+      el_default="default='rgb(%d, %d, %d)'" % (int(pow(el.default[0],1/2.2) * 255), int(pow(el.default[1],1/2.2) * 255), int(pow(el.default[2],1/2.2) * 255))
+   el_fig=""
+   if el.fig != None and el.figc != None:
+      el_fig = "fig='%s' figc='%s'" % (el.fig, el.figc)
+
+   el_presets=""
+   if el.presets is not None:
+      if el.ptype == 'float':
+         el_presets = "presets='"
+         first = True
+         for k in sorted(el.presets, key=el.presets.get):
+            if first:
+               first = False
+            else:
+               el_presets += "|"
+               
+            el_presets += "%s:%.3f" % (k, el.presets[k])
+         el_presets += "'"
+      elif el.ptype == 'rgb':
+         el_presets = "presets='"
+         first = True
+         for k in sorted(el.presets):
+            if first:
+               first = False
+            else:
+               el_presets += "|"
+            el_presets += "%s:(%.5f, %.5f, %.5f)" % (k, el.presets[k][0], el.presets[k][1], el.presets[k][2])
+         el_presets += "'"
+
+   writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s %s %s></div>"
+            % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link, el_fig, el_presets), d)
+
 def WalkHTML(f, el, d):
    if isinstance(el, Group):
       writei(f, "<h3 class='section'><span>%s</span></h3>" % el.name, d)
@@ -1043,45 +1084,7 @@ def WalkHTML(f, el, d):
             WalkHTML(f, e, d+1)
 
    elif isinstance(el, Parameter):
-      el_link="link='false'"
-      if el.connectible:
-         el_link=''
-      el_range=''
-      if el.mn != None and el.mx != None:
-         el_range="range='[%s, %s]'" % (str(el.mn), str(el.mx))
-      el_default="default='%s'" % str(el.default)
-      if el.ptype == 'rgb' and not isinstance(el, AOV):
-         el_default="default='rgb(%d, %d, %d)'" % (int(pow(el.default[0],1/2.2) * 255), int(pow(el.default[1],1/2.2) * 255), int(pow(el.default[2],1/2.2) * 255))
-      el_fig=""
-      if el.fig != None and el.figc != None:
-         el_fig = "fig='%s' figc='%s'" % (el.fig, el.figc)
-
-      el_presets=""
-      if el.presets is not None:
-         if el.ptype == 'float':
-            el_presets = "presets='"
-            first = True
-            for k in sorted(el.presets, key=el.presets.get):
-               if first:
-                  first = False
-               else:
-                  el_presets += "|"
-                  
-               el_presets += "%s:%.3f" % (k, el.presets[k])
-            el_presets += "'"
-         elif el.ptype == 'rgb':
-            el_presets = "presets='"
-            first = True
-            for k in sorted(el.presets):
-               if first:
-                  first = False
-               else:
-                  el_presets += "|"
-               el_presets += "%s:(%.2f, %.2f, %.2f)" % (k, el.presets[k][0], el.presets[k][1], el.presets[k][2])
-            el_presets += "'"
-
-      writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s %s %s></div>"
-               % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link, el_fig, el_presets), d)
+      WriteHTMLParam(f, el, d)
 
 def WalkHTMLRoot(f, el, d):
    if isinstance(el, Group):
@@ -1101,8 +1104,7 @@ def WalkHTMLRoot(f, el, d):
       writei(f, "</div> <!-- end expander %s -->" % el.name, d)
 
    elif isinstance(el, Parameter):
-      writei(f, "<div class='param' name='%s' label='%s' type='%s' default='%s' desc='%s'></div>"
-               % (el.name, el.label, el.ptype, el.default, el.description), d)
+      WriteHTMLParam(f, el, d)
 
 def WriteHTML(sd, fn):
    f = open(fn, 'w')
