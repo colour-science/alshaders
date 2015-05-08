@@ -297,7 +297,7 @@ node_parameters
     AiParameterFLT("specular2Roughness", 0.5f );
     AiParameterFLT("specular2Anisotropy", 0.5f );
     AiParameterFLT("specular2Rotation", 0.0f );
-    AiParameterENUM("specular2FresnelMode", FM_METALLIC, fresnel_mode_names);
+    AiParameterENUM("specular2FresnelMode", FM_DIELECTRIC, fresnel_mode_names);
     AiParameterFLT("specular2Ior", 1.4f );
     AiParameterRGB("specular2Reflectivity", 0.548, .549, .570);
     AiParameterRGB("specular2EdgeTint", 0.579, .598, .620);
