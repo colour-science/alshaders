@@ -1690,7 +1690,7 @@ shader_evaluate
                     int pi = data->glossy_samples2 * sg->si;
                     float u = (float(data->perm_table_spec1[sg->Rr*pb + pi]) 
                                 + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
-                                *data->AA_samples_inv;
+                                / float(pb);
                     // offset based on pixel
                     float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC1_OFFSET);
                     u = fmodf(u+offset, 1.0f);
@@ -1763,7 +1763,7 @@ shader_evaluate
                         int idx = sg->Rr * pb + pi;
                         float u = (float(data->perm_table_spec1[idx]) 
                                     + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
-                                    * data->AA_samples_inv;
+                                    / float(pb);
                         // offset based on pixel
                         float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC1_OFFSET);
                         u = fmodf(u+offset, 1.0f);
@@ -1874,7 +1874,7 @@ shader_evaluate
                     int idx = sg->Rr * pb + pi;
                     float u = (float(data->perm_table_spec2[idx]) 
                                 + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC2_JITTER))
-                                * data->AA_samples_inv;
+                                / float(pb);
                     // offset based on pixel
                     float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_SPEC2_OFFSET);
                     u = fmodf(u+offset, 1.0f);
@@ -1985,7 +1985,7 @@ shader_evaluate
                 int idx = sg->Rr * pb + pi;
                 float u = (float(data->perm_table_diffuse[idx]) 
                             + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_DIFF_JITTER))
-                            * data->AA_samples_inv;
+                            / float(pb);
                 // offset based on pixel
                 float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_DIFF_OFFSET);
                 u = fmodf(u+offset, 1.0f);
@@ -2377,7 +2377,7 @@ shader_evaluate
                     int idx = sg->Rr * pb + pi;
                     float u = (float(data->perm_table_backlight[idx]) 
                                 + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER))
-                                * data->AA_samples_inv;
+                                / float(pb);
                     // offset based on pixel
                     float offset = sampleTEAFloat(sg->y*data->xres+sg->x, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_OFFSET);
                     u = fmodf(u+offset, 1.0f);
