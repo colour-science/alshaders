@@ -545,7 +545,7 @@ node_update
     data->AA_samples = SQR(std::max(1,AiNodeGetInt(options, "AA_samples")));
     data->AA_samples_inv = 1.0f / float(data->AA_samples);
 
-    data->total_depth = AiNodeGetInt(options, "GI_total_depth");
+    data->total_depth = AiNodeGetInt(options, "GI_total_depth")+1;
     delete[] data->perm_table;
     data->perm_table = new int[data->AA_samples*data->total_depth];
     delete[] data->perm_table_diffuse;
@@ -569,37 +569,52 @@ node_update
 
     srand(RAND_STREAM_ALSURFACE_RR_DIFF_PERMUTE);
     // generate the permutation table for rr_diffuse
-    for (int d=0; d < data->total_depth*data->diffuse_samples2; ++d)
+    if (data->diffuse_samples2 > 0)
     {
-        permute(&(data->perm_table_diffuse[d*data->AA_samples]), data->AA_samples);
+        for (int d=0; d < data->total_depth; ++d)
+        {
+            permute(&(data->perm_table_diffuse[d*data->AA_samples*data->diffuse_samples2]), data->AA_samples*data->diffuse_samples2);
+        }
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_SPEC1_PERMUTE);
     // generate the permutation table for rr_spec1
-    for (int d=0; d < data->total_depth*data->glossy_samples2; ++d)
+    if (data->glossy_samples2 > 0)
     {
-        permute(&(data->perm_table_spec1[d*data->AA_samples]), data->AA_samples);
+        for (int d=0; d < data->total_depth; ++d)
+        {
+            permute(&(data->perm_table_spec1[d*data->AA_samples*data->glossy_samples2]), data->AA_samples*data->glossy_samples2);
+        }
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_SPEC2_PERMUTE);
     // generate the permutation table for rr_spec2
-    for (int d=0; d < data->total_depth*data->glossy2_samples2; ++d)
+    if (data->glossy2_samples2 > 0)
     {
-        permute(&(data->perm_table_spec2[d*data->AA_samples]), data->AA_samples);
+        for (int d=0; d < data->total_depth; ++d)
+        {
+            permute(&(data->perm_table_spec2[d*data->AA_samples*data->glossy2_samples2]), data->AA_samples*data->glossy2_samples2);
+        }
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_BACKLIGHT_PERMUTE);
     // generate the permutation table for rr_backlight
-    for (int d=0; d < data->total_depth*data->diffuse_samples2; ++d)
+    if (data->diffuse_samples2 > 0)
     {
-        permute(&(data->perm_table_backlight[d*data->AA_samples]), data->AA_samples);
+        for (int d=0; d < data->total_depth; ++d)
+        {
+            permute(&(data->perm_table_backlight[d*data->AA_samples*data->diffuse_samples2]), data->AA_samples*data->diffuse_samples2);
+        }
     }
 
     srand(RAND_STREAM_ALSURFACE_RR_SSS_PERMUTE);
     // generate the permutation table for rr_backlight
-    for (int d=0; d < data->total_depth*data->sss_bssrdf_samples2; ++d)
+    if (data->sss_bssrdf_samples2 > 0)
     {
-        permute(&(data->perm_table_sss[d*data->AA_samples]), data->AA_samples);
+        for (int d=0; d < data->total_depth; ++d)
+        {
+            permute(&(data->perm_table_sss[d*data->AA_samples*data->sss_bssrdf_samples2]), data->AA_samples*data->sss_bssrdf_samples2);
+        }
     }
 
     data->xres = AiNodeGetInt(options, "xres");
@@ -1671,7 +1686,9 @@ shader_evaluate
                 {
                     cont = false;
                     // get a permuted, stratified random number
-                    float u = (float(data->perm_table_spec1[sg->Rr*data->AA_samples+sg->si]) 
+                    int pb = data->AA_samples*data->glossy_samples2;
+                    int pi = data->glossy_samples2 * sg->si;
+                    float u = (float(data->perm_table_spec1[sg->Rr*pb + pi]) 
                                 + sampleTEAFloat(sg->Rr*data->AA_samples+sg->si, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
                                 *data->AA_samples_inv;
                     // offset based on pixel
@@ -1741,7 +1758,9 @@ shader_evaluate
                     {
                         cont = false;
                         // get a permuted, stratified random number
-                        int idx = (ssi*data->glossy_samples2 + sg->Rr) * data->AA_samples + sg->si;
+                        int pb = data->AA_samples*data->glossy_samples2;
+                        int pi = data->glossy_samples2 * sg->si + ssi;
+                        int idx = sg->Rr * pb + pi;
                         float u = (float(data->perm_table_spec1[idx]) 
                                     + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC1_JITTER))
                                     * data->AA_samples_inv;
@@ -1850,7 +1869,9 @@ shader_evaluate
                 {
                     cont = false;
                     // get a permuted, stratified random number
-                    int idx = (ssi*data->glossy2_samples2 + sg->Rr) * data->AA_samples + sg->si;
+                    int pb = data->AA_samples*data->glossy2_samples2;
+                    int pi = data->glossy2_samples2 * sg->si + ssi;
+                    int idx = sg->Rr * pb + pi;
                     float u = (float(data->perm_table_spec2[idx]) 
                                 + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_SPEC2_JITTER))
                                 * data->AA_samples_inv;
@@ -1959,7 +1980,9 @@ shader_evaluate
             {
                 cont = false;
                 // get a permuted, stratified random number
-                int idx = (ssi*data->diffuse_samples2 + sg->Rr) * data->AA_samples + sg->si;
+                int pb = data->AA_samples*data->diffuse_samples2;
+                int pi = data->diffuse_samples2 * sg->si + ssi;
+                int idx = sg->Rr * pb + pi;
                 float u = (float(data->perm_table_diffuse[idx]) 
                             + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_DIFF_JITTER))
                             * data->AA_samples_inv;
@@ -2349,7 +2372,9 @@ shader_evaluate
                 {
                     cont = false;
                     // get a permuted, stratified random number
-                    int idx = (ssi*data->diffuse_samples2 + sg->Rr) * data->AA_samples + sg->si;
+                    int pb = data->AA_samples*data->diffuse_samples2;
+                    int pi = data->diffuse_samples2 * sg->si + ssi;
+                    int idx = sg->Rr * pb + pi;
                     float u = (float(data->perm_table_backlight[idx]) 
                                 + sampleTEAFloat(idx, TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER))
                                 * data->AA_samples_inv;
