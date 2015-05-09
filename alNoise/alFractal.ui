@@ -23,21 +23,21 @@ ui.shader({
 ui.parameter('mode', 'enum', 'scalar', 'Mode', enum_names=[
 	"scalar",
 	"vector"
-], description='Scalar outputs a black and white pattern, Vector outputs random colors.')
+], description='Scalar outputs a black and white pattern, Vector outputs random colors.', fig='alFractal_mode', figc='scalar and vector modes.')
 ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
 	"world",
 	"object",
 	"Pref",
 	"UV"
 ], description='Space in which to calculate the noise pattern.')
-ui.parameter('scale', 'vector', (1.0, 1.0, 1.0), 'Vector', description='Scale values of the noise space for each axis. Use this to stretch the noise along a certain direction.')
-ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.')
-ui.parameter('time', 'float', 0.0, 'Time', description='4th dimension of the noise. Connect this to a time value to animate the noise.')
-ui.parameter('octaves', 'int', 8, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.')
-ui.parameter('distortion', 'float', 0.0, 'Distortion', description='Apply a random warp to the noise space.')
-ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.')
-ui.parameter('gain', 'float', 0.5, 'Gain', description='How much the intensity of the noise is scaled with each object.')
-ui.parameter('turbulent', 'bool', False, 'Turbulent', description='Enable this to switch from fBM to Turbulent noise.')
+ui.parameter('scale', 'vector', (1.0, 1.0, 1.0), 'Vector', description='Scale values of the noise space for each axis. Use this to stretch the noise along a certain direction.', fig='alFractal_vector', figc='Vector at (1.0, 0.1, 0.1), (0.1, 1.0, 0.1), (0.1, 0.1, 1.0).')
+ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.', fig='alFractal_frequency', figc='Frequency at 1, 2, 4.')
+ui.parameter('time', 'float', 0.0, 'Time', description='4th dimension of the noise. Connect this to a time value to animate the noise.', fig='alFractal_time', figc='Time at 0.0, 0.25, 0.5')
+ui.parameter('octaves', 'int', 8, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.', fig='alFractal_octaves', figc='Octaves at 1, 3, 8')
+ui.parameter('distortion', 'float', 0.0, 'Distortion', description='Apply a random warp to the noise space.', fig='alFractal_distortion', figc='Distortion at 0.0, 0.5, 1.0')
+ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.', fig='alFractal_lacunarity', figc='Lacunarity at 1.0, 1.5, 2.121')
+ui.parameter('gain', 'float', 0.5, 'Gain', description='How much the intensity of the noise is scaled with each object.', fig='alFractal_gain', figc='Gain at 0.25, 0.5, 0.75')
+ui.parameter('turbulent', 'bool', False, 'Turbulent', description='Enable this to switch from fBM to Turbulent noise.', fig='alFractal_turbulent', figc='Turbulent off and on (Input min set to 0 when on, -1 when off)')
 
 uigen.remapControls(ui)
 
