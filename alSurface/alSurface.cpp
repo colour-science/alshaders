@@ -217,6 +217,8 @@ enum alSurfaceParams
     p_trace_set_specular2,
     p_trace_set_transmission,
 
+    p_debug,
+
     p_bump
 };
 
@@ -231,6 +233,58 @@ const char* SssModeNames[] = {
     "cubic",
     "diffusion",
     "directional",
+    NULL
+};
+
+enum Debug {
+    DB_OFF = 0,
+    DB_diffuseStrength,
+    DB_diffuseColor,
+    DB_diffuseRoughness,
+    DB_backlightStrength,
+    DB_backlightColor,
+    DB_sssMix,
+    DB_sssWeight1,
+    DB_sssColor1,
+    DB_sssWeight2,
+    DB_sssColor2,
+    DB_sssWeight3,
+    DB_sssColor3,
+    DB_specular1Strength,
+    DB_specular1Color,
+    DB_specular1Roughness,
+    DB_specular2Strength,
+    DB_specular2Color,
+    DB_specular2Roughness,
+    DB_transmissionStrength,
+    DB_transmissionColor,
+    DB_transmissionRoughness,
+    DB_END
+};
+
+const char* debugNames[] = {
+    "off",
+    "diffuse-strength",
+    "diffuse-color",
+    "diffuse-roughness",
+    "backlight-strength",
+    "backlight-color",
+    "sss-mix",
+    "sss-weight-1",
+    "sss-color-1",
+    "sss-weight-2",
+    "sss-color-2",
+    "sss-weight-3",
+    "sss-color-3",
+    "specular-1-strength",
+    "specular-1-color",
+    "specular-1-roughness",
+    "specular-2-strength",
+    "specular-2-color",
+    "specular-2-roughness",
+    "transmission-strength",
+    "transmission-color",
+    "transmission-roughness",
     NULL
 };
 
@@ -390,6 +444,8 @@ node_parameters
     AiParameterSTR("traceSetSpecular1", "");
     AiParameterSTR("traceSetSpecular2", "");
     AiParameterSTR("traceSetTransmission", "");
+
+    AiParameterENUM("debug", DB_OFF, debugNames);
 }
 
 #ifdef MSVC
@@ -766,12 +822,91 @@ node_update
     data->cel_connected = true;
 
     data->sssMode = params[p_sssMode].INT;
+
+    data->debug = params[p_debug].INT;
 };
 
 
 shader_evaluate
 {
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
+
+    // do debug mode if requested
+    if (data->debug > DB_OFF && data->debug < DB_END)
+    {
+        AtRGB result = AI_RGB_BLACK;
+
+        switch (data->debug)
+        {
+        case DB_diffuseStrength:
+            result = AiColor(AiShaderEvalParamFlt(p_diffuseStrength));
+            break;
+        case DB_diffuseColor:
+            result = AiShaderEvalParamRGB(p_diffuseColor);
+            break;
+        case DB_diffuseRoughness:
+            result = AiColor(AiShaderEvalParamFlt(p_diffuseRoughness));
+            break;
+        case DB_backlightStrength:
+            result = AiColor(AiShaderEvalParamFlt(p_backlightStrength));
+            break;
+        case DB_backlightColor:
+            result = AiShaderEvalParamRGB(p_backlightColor);
+            break;
+        case DB_sssMix:
+            result = AiColor(AiShaderEvalParamFlt(p_sssMix));
+            break;
+        case DB_sssWeight1:
+            result = AiColor(AiShaderEvalParamFlt(p_sssWeight1));
+            break;
+        case DB_sssColor1:
+            result = AiShaderEvalParamRGB(p_sssRadiusColor);
+            break;
+        case DB_sssWeight2:
+            result = AiColor(AiShaderEvalParamFlt(p_sssWeight2));
+            break;
+        case DB_sssColor2:
+            result = AiShaderEvalParamRGB(p_sssRadiusColor2);
+            break;
+        case DB_sssWeight3:
+            result = AiColor(AiShaderEvalParamFlt(p_sssWeight3));
+            break;
+        case DB_sssColor3:
+            result = AiShaderEvalParamRGB(p_sssRadiusColor3);
+            break;
+        case DB_specular1Strength:
+            result = AiColor(AiShaderEvalParamFlt(p_specular1Strength));
+            break;
+        case DB_specular1Color:
+            result = AiShaderEvalParamRGB(p_specular1Color);
+            break;
+        case DB_specular1Roughness:
+            result = AiColor(AiShaderEvalParamFlt(p_specular1Roughness));
+            break;
+        case DB_specular2Strength:
+            result = AiColor(AiShaderEvalParamFlt(p_specular2Strength));
+            break;
+        case DB_specular2Color:
+            result = AiShaderEvalParamRGB(p_specular2Color);
+            break;
+        case DB_specular2Roughness:
+            result = AiColor(AiShaderEvalParamFlt(p_specular2Roughness));
+            break;
+        case DB_transmissionStrength:
+            result = AiColor(AiShaderEvalParamFlt(p_transmissionStrength));
+            break;
+        case DB_transmissionColor:
+            result = AiShaderEvalParamRGB(p_transmissionColor);
+            break;
+        case DB_transmissionRoughness:
+            result = AiColor(AiShaderEvalParamFlt(p_transmissionRoughness));
+            break;
+        }
+
+        sg->out.RGB = result;
+        sg->out_opacity = AI_RGB_WHITE;
+        return;
+    }
 
     float ior, ior2;
     float eta, eta2;

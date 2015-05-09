@@ -207,6 +207,28 @@ with uigen.group(ui, 'Advanced', description='The Advanced section contains cont
 	ui.parameter('rr', 'bool', True, 'RR', description='When this is enabled the shader will automatically stop tracing indirect bounces when the final contribution for continuing would be insignificant. This allows you to go to very high ray depths without a significant render time hit. You generally always want this on.')
 	ui.parameter('traceSetAll', 'string', '', 'Global trace set', description='Enter the name of a trace set here to restrict the shader to trace only against that set. Entering a different trace set in the individual lobes\' Trace set parameters will override the one set here.')
 	ui.parameter('traceSetShadows', 'string', '', 'Shadow trace set', description='Enter the name of a trace set here to restrict the shader to trace only against that set for shadows.')
+	ui.parameter('debug', 'enum', 'off', 'Debug', enum_names=["off",
+    "diffuse-strength",
+    "diffuse-color",
+    "diffuse-roughness",
+    "backlight-strength",
+    "backlight-color",
+    "sss-mix",
+    "sss-weight-1",
+    "sss-color-1",
+    "sss-weight-2",
+    "sss-color-2",
+    "sss-weight-3",
+    "sss-color-3",
+    "specular-1-strength",
+    "specular-1-color",
+    "specular-1-roughness",
+    "specular-2-strength",
+    "specular-2-color",
+    "specular-2-roughness",
+    "transmission-strength",
+    "transmission-color",
+    "transmission-roughness",], description='Select a component here to replace the shader result with that component. This allows you to quickly debug your inputs and check value ranges while setting up shading.')
 
 
 

@@ -114,6 +114,8 @@ struct ShaderData
 
    int sssMode;
    Range sss_samples_taken;
+
+   int debug;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0
