@@ -26,40 +26,38 @@ ui.parameter('space', 'enum', 'world',  'Space', enum_names=[
 	"Pref",
 	"UV"
 ], description='Space in which to calculate the noise pattern.')
-ui.parameter('frequency', 'float', 1.0 ,'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.')
+ui.parameter('frequency', 'float', 1.0 ,'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.', fig='alCellNoise_frequency', figc='Frequency at 1, 2, 4')
 ui.parameter('mode', 'enum', 'features', 'Mode', enum_names=[
 	"features",
 	"chips"
-], description='Features allows you to measure the distance to features to create veiny textures, chips simply puts a random color in each block.')
-
+], description='Features allows you to measure the distance to features to create veiny textures, chips simply puts a random color in each block.', fig='alCellNoise_mode', figc='Mode set to features and chips')
+ui.parameter('randomness', 'float', 1.0, 'Randomness', description='How much randomness is added to the cel positions.', fig='alCellNoise_randomness', figc='Randomness at 0.0, 0.5, 1.0')
 with uigen.group(ui, 'Features', False, None):
-	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.')
-	ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.')
-	ui.parameter('randomness', 'float', 1.0, 'Randomness', description='How much randomness is added to the cel positions.')
+	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.', fig='alCellNoise_octaves', figc='Octaves set to 1, 2, 4')
+	ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.', fig='alCellNoise_lacunarity', figc='Lacunarity at 1.0, 1.5, 2.121')
 
-	with uigen.group(ui, 'Feature weights', False):
-		ui.parameter('f1w', 'float', -1.0, 'F1')
-		ui.parameter('f2w', 'float', 1.0, 'F2')
-		ui.parameter('f3w', 'float', 0.0, 'F3')
-		ui.parameter('f4w', 'float', 0.0, 'F4')
-		ui.parameter('mynkowskiShape', 'float', 2.0, 'Shape')
+	# with uigen.group(ui, 'Feature weights', False):
+	# 	ui.parameter('f1w', 'float', -1.0, 'F1')
+	# 	ui.parameter('f2w', 'float', 1.0, 'F2')
+	# 	ui.parameter('f3w', 'float', 0.0, 'F3')
+	# 	ui.parameter('f4w', 'float', 0.0, 'F4')
+	# 	ui.parameter('mynkowskiShape', 'float', 2.0, 'Shape')
 
-		uigen.remapControls(ui)
+	uigen.remapControls(ui)
 
-		ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.')
-		ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.')
+	ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.')
+	ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.')
 
 with uigen.group(ui,'Chips', False):
-	ui.parameter('smoothChips', 'bool', False, 'Smooth chips')
-	ui.parameter('chipColor1', 'rgb', (.383, .318, .252), 'Chip color 1')
-	ui.parameter('chipProb1', 'float', 0.2, 'Chip probability 1')
-	ui.parameter('chipColor2', 'rgb', (.383, .191, .01), 'Chip color 2')
-	ui.parameter('chipProb2', 'float', 0.4, 'Chip probability 2')
-	ui.parameter('chipColor3', 'rgb', (.635, .612, .563), 'Chip color 3')
-	ui.parameter('chipProb3', 'float', 0.6, 'Chip probability 3')
-	ui.parameter('chipColor4', 'rgb', (.509, .361, .213), 'Chip color 4')
-	ui.parameter('chipProb4', 'float', 0.8, 'Chip probability 4')
-	ui.parameter('chipColor5', 'rgb', (.593, .472, .248), 'Chip color 5')
-	ui.parameter('chipProb5', 'float', 1.0, 'Chip probability 5')
+	ui.parameter('chipColor1', 'rgb', (.383, .318, .252), 'Chip color 1', description='Color of the first set of chips')
+	ui.parameter('chipProb1', 'float', 0.2, 'Chip probability 1', description='Probability of the cell being the first color.')
+	ui.parameter('chipColor2', 'rgb', (.383, .191, .01), 'Chip color 2', description='Color of the second set of chips')
+	ui.parameter('chipProb2', 'float', 0.4, 'Chip probability 2', description='Probability of the cell being the second color.')
+	ui.parameter('chipColor3', 'rgb', (.635, .612, .563), 'Chip color 3', description='Color of the third set of chips')
+	ui.parameter('chipProb3', 'float', 0.6, 'Chip probability 3', description='Probability of the cell being the third color.')
+	ui.parameter('chipColor4', 'rgb', (.509, .361, .213), 'Chip color 4', description='Color of the fourth set of chips')
+	ui.parameter('chipProb4', 'float', 0.8, 'Chip probability 4', description='Probability of the cell being the fourth color.')
+	ui.parameter('chipColor5', 'rgb', (.593, .472, .248), 'Chip color 5', description='Color of the fifth set of chips')
+	ui.parameter('chipProb5', 'float', 1.0, 'Chip probability 5', description='Probability of the cell being the fifth color.')
 
 ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.')
