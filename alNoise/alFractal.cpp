@@ -45,8 +45,6 @@ enum alNoiseParams
 	p_lacunarity,
 	p_gain,
 	p_turbulent,
-	p_ridged,
-	p_ridgeOffset,
 	REMAP_FLOAT_PARAM_ENUM,
 	p_color1,
 	p_color2,
@@ -65,8 +63,6 @@ node_parameters
 	AiParameterFLT("lacunarity", 2.121f);
 	AiParameterFLT("gain", 0.5f);
 	AiParameterBOOL("turbulent", false);
-	AiParameterBOOL("ridged", false);
-	AiParameterFLT("ridgeOffset", 0.0f);
 	REMAP_FLOAT_PARAM_DECLARE;
 	AiParameterRGB("color1", 0.0f, 0.0f, 0.0f);
 	AiParameterRGB("color2", 1.0f, 1.0f, 1.0f);
@@ -112,7 +108,6 @@ node_update
 	data->space = params[p_space].INT;
 	data->octaves = params[p_octaves].INT;
 	data->turbulent = params[p_turbulent].BOOL;
-	data->ridged = params[p_ridged].BOOL;
 }
 
 shader_evaluate
@@ -123,7 +118,6 @@ shader_evaluate
 	float gain = AiShaderEvalParamFlt(p_gain);
 	float lacunarity = AiShaderEvalParamFlt(p_lacunarity);
 	float distortion = AiShaderEvalParamFlt(p_distortion);
-	float ridgeOffset = AiShaderEvalParamFlt(p_ridgeOffset);
 	float time = AiShaderEvalParamFlt(p_time);
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
@@ -167,6 +161,7 @@ shader_evaluate
 		float amp = 1.0f;
 		float weight = 1;
 		float v;
+		float nrm = 0.0f;
 		for (int i=0; i < data->octaves; ++i)
 		{
 			AtPoint PP = P;
@@ -174,19 +169,12 @@ shader_evaluate
 				PP += distortion * AiVNoise3(P, 1, 0, 0);
 			v = AiPerlin4(PP, time);
 			if (data->turbulent) v = fabs(v);
-			if (data->ridged)
-			{
-				v = ridgeOffset - v;
-				v *= v;
-				v *= weight;
-				weight = v * 2;
-				weight = clamp(weight, 0.0f, 1.0f);
-			}
 			n += v * amp;
 			amp *= gain;
 
 			P *= lacunarity;
 		}
+		
 		RemapFloat r = REMAP_FLOAT_CREATE;
 		n = r.remap(n);
 
@@ -205,14 +193,6 @@ shader_evaluate
 				PP += distortion * AiVNoise3(P, 1, 0, 0);
 			v = rgb(AiVNoise4(PP, time, 1, 0, 0));
 			if (data->turbulent) v = fabs(v);
-			if (data->ridged)
-			{
-				v = ridgeOffset - v;
-				v *= v;
-				v *= weight;
-				weight = v * 2;
-				weight = clamp(weight, AI_RGB_BLACK, AI_RGB_WHITE);
-			}
 			n += v * amp;
 			amp *= gain;
 

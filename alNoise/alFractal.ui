@@ -38,8 +38,6 @@ ui.parameter('distortion', 'float', 0.0, 'Distortion', description='Apply a rand
 ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.')
 ui.parameter('gain', 'float', 0.5, 'Gain', description='How much the intensity of the noise is scaled with each object.')
 ui.parameter('turbulent', 'bool', False, 'Turbulent', description='Enable this to switch from fBM to Turbulent noise.')
-ui.parameter('ridged', 'bool', False, 'Ridged', description='Ridged mode combines with turbulent to create a look more suitable for landscapes.')
-ui.parameter('ridgeOffset', 'float', 0.0, 'Ridge offset', description='Offset of the ridge features.')
 
 uigen.remapControls(ui)
 
