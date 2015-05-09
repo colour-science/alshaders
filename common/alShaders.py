@@ -49,7 +49,7 @@ class alShadersTemplate(ShaderAETemplate):
             pm.attrFieldSliderGrp(self.controls[pname], edit=True)
             pm.popupMenu()
             for k in sorted(presets, key=presets.get):
-                pm.menuItem(label=k, command=pm.Callback(setPresetRgb, self.controls[pname], presets[k]))
+                pm.menuItem(label=k, command=pm.Callback(setPresetFlt, self.controls[pname], presets[k]))
 
 
     def customUpdateFlt(self, attr):
