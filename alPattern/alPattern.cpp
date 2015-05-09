@@ -151,7 +151,7 @@ shader_evaluate
 		result = sinf(x) > 0.0f ? 1.0f : 0.0f;
 		break;
 	case PN_SAW:
-		result = modulo(x, 1.0f);
+		result = modulo(x*0.25f, 1.0f);
 		break;
 	default:
 		result = 0.0f;
