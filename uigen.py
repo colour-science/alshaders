@@ -1123,7 +1123,7 @@ def WriteHTML(sd, fn):
    <script src="../js/param.js"></script>
 </head>
 
-<header class="navigation" role="banner">
+<header class="navigationnofix fixed" role="banner">
   <div class="navigation-wrapper">
     <a href="index.html" class="logo">
       <img src="img/als-logo-white.svg" alt="Logo Image">
@@ -1176,7 +1176,7 @@ def WriteHTML(sd, fn):
 <body>
    <div class='shader-content'>
       <div class='article-block'>
-         <article class='type-system-sans'>
+         <article class='type-system-sans-dark'>
             <p class='type'>%s</p>
             <h2>%s</h2>
             <p>%s This document is a reference guide to the parameters.</p>
