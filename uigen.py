@@ -1175,6 +1175,7 @@ def WriteHTML(sd, fn):
 
 <body>
    <div class='shader-content'>
+   <div style='background-image: url(img/%s_banner.jpg); height: 300px; background-size: cover; background-repeat: no-repeat; background-position: center top; padding-bottom:0; margin-top: 60px; background-color: #6E7982;'></div>
       <div class='article-block'>
          <article class='type-system-sans-dark'>
             <p class='type'>%s</p>
@@ -1186,7 +1187,7 @@ def WriteHTML(sd, fn):
       <div class='parameter-block'>
       <div class='parameter-content'>
 """
-   % (sd.name, sd.name, sd.intro, sd.description)
+   % (sd.name, sd.name, sd.name, sd.intro, sd.description)
    )
 
    # parameters
