@@ -105,7 +105,11 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     samp.r = AiV3Length(samp.S);
     dmd->maxdist -= samp.r;
     samp.Rd = AI_RGB_BLACK;
-    if (!trace_set_enabled && orig_op != sg->Op)
+    if (dmd->shader_orig != sg->shader)
+    {
+        return;
+    }
+    if ((!trace_set_enabled && orig_op != sg->Op))
     {
         if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
         {
@@ -319,6 +323,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     dmd->numComponents = numComponents;
     dmd->directional = directional;
     dmd->deepGroupPtr = deepGroupPtr;
+    dmd->shader_orig = sg->shader;
     AtVector axes[3] = {U, V, sg->Ng};
     double sss_samples_c  = 0;
     if (trace_set_enabled)
@@ -450,6 +455,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
 
                 float f = r_disk[0] / pdf_sum;
                 result_sss += dmd->samples[i].Rd * f;
+                
                 for (int g=0; g < 8; ++g)
                 {
                     lightGroupsDirect[g] += dmd->samples[i].lightGroupsDirect[g] * f;

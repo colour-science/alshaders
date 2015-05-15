@@ -87,8 +87,8 @@ struct DirectionalMessageData
     float maxdist;
     AtVector Po;
     AtVector No;
-    AtVector U;
-    AtVector V;
+    // AtVector U;
+    // AtVector V;
     AtVector wo;
     ScatteringProfileDirectional sp[9];
     AtRGB weights[9];
@@ -97,6 +97,7 @@ struct DirectionalMessageData
     AtShaderGlobals* sg;
     DiffusionSample samples[SSS_MAX_SAMPLES];
     AtRGB* deepGroupPtr;
+    AtNode* shader_orig;
 };
 
 inline float diffusionSampleDistance(float u1, float sigma)

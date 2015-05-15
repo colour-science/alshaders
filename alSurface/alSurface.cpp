@@ -1056,7 +1056,7 @@ shader_evaluate
                            data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
-        AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
+        // AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
         return;
     }
     // if it's a shadow ray, handle shadow colouring through absorption
@@ -2606,6 +2606,7 @@ shader_evaluate
         }
         else
         {  
+            // memset(diffusion_msgdata, 0, sizeof(DirectionalMessageData));
             int nc = 3;
             if (sssWeight2 > 0.0f) nc = 6;
             if (sssWeight3 > 0.0f) nc = 9;
