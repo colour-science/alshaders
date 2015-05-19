@@ -1056,7 +1056,6 @@ shader_evaluate
                            data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
         sg->out_opacity = AI_RGB_WHITE;
         // reset ray type just to be safe
-        // AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
         return;
     }
     // if it's a shadow ray, handle shadow colouring through absorption

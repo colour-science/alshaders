@@ -875,6 +875,7 @@ def WriteSPDLParameter(f, p):
          writei(f, 'Texturable = on;', 2)
       else:
          writei(f, 'Texturable = off;', 2)
+
       if p.ptype == 'bool':
          writei(f, 'Value = %s;' % str(p.default).lower(), 2)
       elif p.ptype == 'int':
@@ -885,6 +886,14 @@ def WriteSPDLParameter(f, p):
          writei(f, 'Value = %f %f %f;' % p.default, 2)
       elif p.ptype == 'string':
          writei(f, 'Value = "%s";' % p.default, 2)
+      elif p.ptype == 'enum':
+         writei(f, 'Value = "%s";' % p.default, 2)
+
+      if p.mn is not None:
+         writei(f, 'Value Minimum = %f;' % p.mn, 2)
+
+      if p.mx is not None:
+         writei(f, 'Value Maximum = %f;' % p.mx, 2)
 
    writei(f, '}', 1)
 
