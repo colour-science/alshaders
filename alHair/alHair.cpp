@@ -509,7 +509,6 @@ struct HairBsdf
 
             AtPoint p2 = aivec(float(curve_idi)+17.0f, 0.0f, 0.0f);
             cv = (AiVCellNoise3(p2)*2.0f - aivec(1.0f));
-            AiAOVSetRGB(sg, "id_1", rgb(float(curve_idi)));
         }
         else if (AiUDataGetFlt("curve_id", &curve_id))
         {
@@ -1579,7 +1578,7 @@ struct HairBsdf
             assert(isValidColor(result_TRT_indirect));
             assert(isValidColor(result_TRTg_direct));
             assert(isValidColor(result_TRTg_indirect));
-#if 0
+
             for (int i=0; i < NUM_ID_AOVS; ++i)
             {
                 AtRGB tmp;
@@ -1598,7 +1597,6 @@ struct HairBsdf
                     AiAOVSetRGB(sg, data->aovs[k_id_1+i].c_str(), tmp);
                 }
             }
-#endif
 
             for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
             {
