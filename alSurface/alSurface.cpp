@@ -1606,6 +1606,8 @@ shader_evaluate
                 if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
                 {
                     lightGroupsDirect[lightGroup] += LdiffuseDirect * diffuseColor;
+                    shadowGroups[lightGroup].rgb() += sg->Liu * sg->we * std::max(0.0f, AiV3Dot(sg->Nf, sg->Ld)) * sg->Lo * kti * diffuseColor * AI_ONEOVERPI;
+                    shadowGroups[lightGroup].a += maxh(sg->Lo) * sg->we;
                 }
                 result_diffuseDirect += LdiffuseDirect;
                 assert(AiIsFinite(result_diffuseDirect));
