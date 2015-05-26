@@ -138,6 +138,15 @@ inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
    return r;
 }
 
+inline AtVector lerp(const AtVector& a, const AtVector& b, const float t)
+{
+   AtVector r;
+   r.x = lerp( a.x, b.x, t );
+   r.y = lerp( a.y, b.y, t );
+   r.z = lerp( a.z, b.z, t );
+   return r;
+}
+
 inline AtRGBA lerp(const AtRGBA& a, const AtRGBA& b, const float t)
 {
    AtRGBA r;
