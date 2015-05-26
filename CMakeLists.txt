@@ -85,6 +85,7 @@ set(SUBDIRECTORIES
         alJitterColor
         alCache
         alCel
+        alFlake
         common
 )
 
