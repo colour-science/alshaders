@@ -50,6 +50,7 @@ with uigen.group(ui, 'Diffuse', False, description='The diffuse layer sits under
 		ui.parameter('diffuseExtraSamples', 'int', 0, 'Extra samples', connectible=False, description='Add or subtract samples for this lobe from the global sampling rate.')
 		ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect strength', mn=0, mx=1, description='Multiplier on the amount of indirect light transmitted by this lobe.')
 		ui.parameter('diffuseIndirectClamp', 'float', 0.0, 'Indirect clamp', connectible=False, description='Clamp the brightness of indirect samples for this lobe. This can effectively reduce fireflies but makes the shader less accurate. The default value of 0 means no clamping. Sensible values are normally in the range of 10-20.')
+		ui.parameter('diffuseNormal', 'vector', (0.0, 0.0, 0.0), 'Normal', description='Override the normal used for this lobe.')
 		ui.parameter('traceSetDiffuse', 'string', '', 'Diffuse trace set', connectible=False, description='Enter the name of a trace set here to restrict the diffuse lobe to trace only against that set.')
 		ui.parameter('traceSetBacklight', 'string', '', 'Backlight trace set', connectible=False, description='Enter the name of a trace set here to restrict the backlight lobe to trace only against that set.')
 # end Diffuse
@@ -144,6 +145,7 @@ with uigen.group(ui, 'Transmission', description='The transmission lobe describe
 			}, fig='transmissionCoefficients', figc='Scattering and Absorption set to Chardonnay, Cola, Merlot.')
 		ui.parameter('traceSetTransmission', 'string', '', 'Trace set', connectible=False, description='Enter the name of a trace set here to restrict this lobe to trace only against that set.')
 		ui.parameter('transmissionDoDirect', 'bool', False, 'Direct lighting', connectible=False, description='Enable this to have the transmission lobe calculate direct lighting when leaving a closed volume. This allos you to, for instance, put a glass lens in front of a light source and see the image of the light source in the lens.')
+		ui.parameter('transmissionNormal', 'vector', (0.0, 0.0, 0.0), 'Normal', description='Override the normal used for this lobe.')
 # end Transmission
 
 with uigen.group(ui, 'Emission', description='The emission lobe represents light that is emitted from the surface itself. It sits beneath the two specular lobes and so is attenuated by both of them.'):

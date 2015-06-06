@@ -101,6 +101,7 @@ enum alSurfaceParams
     p_diffuseEnableCaustics,
     p_diffuseIndirectStrength,
     p_diffuseIndirectClamp,
+    p_diffuseNormal,
 
     // specular
     p_specular1Strength,
@@ -144,6 +145,7 @@ enum alSurfaceParams
     p_transmissionExtraSamples,
     p_transmissionClamp,
     p_transmissionDoDirect,
+    p_transmissionNormal,
 
     p_id1,
     p_id2,
@@ -330,6 +332,7 @@ node_parameters
     AiParameterBOOL("diffuseEnableCaustics", false);
     AiParameterFLT("diffuseIndirectStrength", 1.0f);
     AiParameterFLT("diffuseIndirectClamp", 0.0f);
+    AiParameterVec("diffuseNormal", 0, 0, 0);
 
     AiParameterFLT("specular1Strength", 1.0f );
     AiParameterRGB("specular1Color", 1.0f, 1.0f, 1.0f );
@@ -371,6 +374,7 @@ node_parameters
     AiParameterINT("transmissionExtraSamples", 0);
     AiParameterFLT("transmissionClamp", 0.0f );
     AiParameterBOOL("transmissionDoDirect", false);
+    AiParameterVec("transmissionNormal", 0, 0, 0);
 
 
     AiParameterRGB("id1", 0.0f, 0.0f, 0.0f);
@@ -582,6 +586,8 @@ node_update
     // check whether the normal parameters are connected or not
     data->specular1NormalConnected = AiNodeIsLinked(node, "specular1Normal");
     data->specular2NormalConnected = AiNodeIsLinked(node, "specular2Normal");
+    data->diffuseNormalConnected = AiNodeIsLinked(node, "diffuseNormal");
+    data->transmissionNormalConnected = AiNodeIsLinked(node, "transmissionNormal");
 
     data->rrTransmissionDepth = params[p_rrTransmissionDepth].INT;
 
@@ -1204,6 +1210,18 @@ shader_evaluate
         specular2Normal = AiV3Normalize(AiShaderEvalParamVec(p_specular2Normal));
     }
 
+    AtVector diffuseNormal = sg->Nf;
+    if (data->diffuseNormalConnected)
+    {
+        diffuseNormal = AiV3Normalize(AiShaderEvalParamVec(p_diffuseNormal));
+    }
+
+    AtVector transmissionNormal = sg->Nf;
+    if (data->transmissionNormalConnected)
+    {
+        transmissionNormal = AiV3Normalize(AiShaderEvalParamVec(p_transmissionNormal));
+    }
+
     float roughness2 = AiShaderEvalParamFlt( p_specular2Roughness );
     roughness2 *= roughness2;
 
@@ -1481,6 +1499,7 @@ shader_evaluate
     sg->N = Nold;
     sg->Nf = Nfold;
     
+    sg->Nf = sg->Nf = diffuseNormal;
     void* dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
 
     if (do_backlight) sg->fhemi = false;
@@ -1488,7 +1507,9 @@ shader_evaluate
     void* bmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
     flipNormals(sg);
     sg->fhemi = true;
-    // }
+
+    sg->Nf = Nfold;
+    sg->N = Nold;
 
     AtRGBA shadowGroups[NUM_LIGHT_GROUPS];
     memset(shadowGroups, 0, sizeof(AtRGBA)*NUM_LIGHT_GROUPS);
@@ -1589,6 +1610,10 @@ shader_evaluate
 
     if (do_diffuse)
     {
+        if (data->diffuseNormalConnected)
+        {
+            sg->N = sg->Nf = diffuseNormal;
+        }
         AiLightsPrepare(sg);
         AtRGB LdiffuseDirect = AI_RGB_BLACK;
         while(AiLightsGetSample(sg))
@@ -1613,6 +1638,8 @@ shader_evaluate
                 assert(AiIsFinite(result_diffuseDirect));
             }
         }
+        sg->Nf = Nforig;
+        sg->N = Norig;
     }
     
       

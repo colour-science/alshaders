@@ -35,6 +35,7 @@ def setPresetRgb(ctrl, value):
 class alShadersTemplate(ShaderAETemplate):
 
     def customCreateFlt(self, attr):
+        print "creating %s" % attr
         pname = attr.split('.')[-1]
         ptype = self.params[pname].ptype
         plabel = self.params[pname].label
@@ -53,6 +54,7 @@ class alShadersTemplate(ShaderAETemplate):
 
 
     def customUpdateFlt(self, attr):
+        print "updating %s" % attr
         pname = attr.split('.')[-1]
         ptype = self.params[pname].ptype
         pm.attrFieldSliderGrp(self.controls[pname], edit=True, attribute=attr)
