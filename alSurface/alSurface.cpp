@@ -221,6 +221,30 @@ enum alSurfaceParams
 
     p_debug,
 
+    p_aov_diffuse_color_clamp,
+    p_aov_direct_diffuse_clamp,
+    p_aov_direct_diffuse_raw_clamp,
+    p_aov_indirect_diffuse_clamp,
+    p_aov_indirect_diffuse_raw_clamp,
+    p_aov_direct_backlight_clamp,
+    p_aov_indirect_backlight_clamp,
+    p_aov_direct_specular_clamp,
+    p_aov_indirect_specular_clamp,
+    p_aov_direct_specular_2_clamp,
+    p_aov_indirect_specular_2_clamp,
+    p_aov_single_scatter_clamp,
+    p_aov_sss_clamp,
+    p_aov_refraction_clamp,
+    p_aov_emission_clamp,
+    p_aov_light_group_1_clamp,
+    p_aov_light_group_2_clamp,
+    p_aov_light_group_3_clamp,
+    p_aov_light_group_4_clamp,
+    p_aov_light_group_5_clamp,
+    p_aov_light_group_6_clamp,
+    p_aov_light_group_7_clamp,
+    p_aov_light_group_8_clamp,
+
     p_bump
 };
 
@@ -450,6 +474,30 @@ node_parameters
     AiParameterSTR("traceSetTransmission", "");
 
     AiParameterENUM("debug", DB_OFF, debugNames);
+
+    AiParameterFlt("aov_diffuse_color_clamp", 0.0f);
+    AiParameterFlt("aov_direct_diffuse_clamp", 0.0f);
+    AiParameterFlt("aov_direct_diffuse_raw_clamp", 0.0f);
+    AiParameterFlt("aov_indirect_diffuse_clamp", 0.0f);
+    AiParameterFlt("aov_indirect_diffuse_raw_clamp", 0.0f);
+    AiParameterFlt("aov_direct_backlight_clamp", 0.0f);
+    AiParameterFlt("aov_indirect_backlight_clamp", 0.0f);
+    AiParameterFlt("aov_direct_specular_clamp", 0.0f);
+    AiParameterFlt("aov_indirect_specular_clamp", 0.0f);
+    AiParameterFlt("aov_direct_specular_2_clamp", 0.0f);
+    AiParameterFlt("aov_indirect_specular_2_clamp", 0.0f);
+    AiParameterFlt("aov_single_scatter_clamp", 0.0f);
+    AiParameterFlt("aov_sss_clamp", 0.0f);
+    AiParameterFlt("aov_refraction_clamp", 0.0f);
+    AiParameterFlt("aov_emission_clamp", 0.0f);
+    AiParameterFlt("aov_light_group_1_clamp", 0.0f);
+    AiParameterFlt("aov_light_group_2_clamp", 0.0f);
+    AiParameterFlt("aov_light_group_3_clamp", 0.0f);
+    AiParameterFlt("aov_light_group_4_clamp", 0.0f);
+    AiParameterFlt("aov_light_group_5_clamp", 0.0f);
+    AiParameterFlt("aov_light_group_6_clamp", 0.0f);
+    AiParameterFlt("aov_light_group_7_clamp", 0.0f);
+    AiParameterFlt("aov_light_group_8_clamp", 0.0f);
 }
 
 #ifdef MSVC
@@ -830,6 +878,54 @@ node_update
     data->sssMode = params[p_sssMode].INT;
 
     data->debug = params[p_debug].INT;
+
+    // sample clamping values
+    data->aov_diffuse_color_clamp = params[p_aov_diffuse_color_clamp].FLT;
+    if (data->aov_diffuse_color_clamp == 0.0f) data->aov_diffuse_color_clamp = AI_INFINITE;
+    data->aov_direct_diffuse_clamp = params[p_aov_direct_diffuse_clamp].FLT;
+    if (data->aov_direct_diffuse_clamp == 0.0f) data->aov_direct_diffuse_clamp = AI_INFINITE;
+    data->aov_direct_diffuse_raw_clamp = params[p_aov_direct_diffuse_raw_clamp].FLT;
+    if (data->aov_direct_diffuse_raw_clamp == 0.0f) data->aov_direct_diffuse_raw_clamp = AI_INFINITE;
+    data->aov_indirect_diffuse_clamp = params[p_aov_indirect_diffuse_clamp].FLT;
+    if (data->aov_indirect_diffuse_clamp == 0.0f) data->aov_indirect_diffuse_clamp = AI_INFINITE;
+    data->aov_indirect_diffuse_raw_clamp = params[p_aov_indirect_diffuse_raw_clamp].FLT;
+    if (data->aov_indirect_diffuse_raw_clamp == 0.0f) data->aov_indirect_diffuse_raw_clamp = AI_INFINITE;
+    data->aov_direct_backlight_clamp = params[p_aov_direct_backlight_clamp].FLT;
+    if (data->aov_direct_backlight_clamp == 0.0f) data->aov_direct_backlight_clamp = AI_INFINITE;
+    data->aov_indirect_backlight_clamp = params[p_aov_indirect_backlight_clamp].FLT;
+    if (data->aov_indirect_backlight_clamp == 0.0f) data->aov_indirect_backlight_clamp = AI_INFINITE;
+    data->aov_direct_specular_clamp = params[p_aov_direct_specular_clamp].FLT;
+    if (data->aov_direct_specular_clamp == 0.0f) data->aov_direct_specular_clamp = AI_INFINITE;
+    data->aov_indirect_specular_clamp = params[p_aov_indirect_specular_clamp].FLT;
+    if (data->aov_indirect_specular_clamp == 0.0f) data->aov_indirect_specular_clamp = AI_INFINITE;
+    data->aov_direct_specular_2_clamp = params[p_aov_direct_specular_2_clamp].FLT;
+    if (data->aov_direct_specular_2_clamp == 0.0f) data->aov_direct_specular_2_clamp = AI_INFINITE;
+    data->aov_indirect_specular_2_clamp = params[p_aov_indirect_specular_2_clamp].FLT;
+    if (data->aov_indirect_specular_2_clamp == 0.0f) data->aov_indirect_specular_2_clamp = AI_INFINITE;
+    data->aov_single_scatter_clamp = params[p_aov_single_scatter_clamp].FLT;
+    if (data->aov_single_scatter_clamp == 0.0f) data->aov_single_scatter_clamp = AI_INFINITE;
+    data->aov_sss_clamp = params[p_aov_sss_clamp].FLT;
+    if (data->aov_sss_clamp == 0.0f) data->aov_sss_clamp = AI_INFINITE;
+    data->aov_refraction_clamp = params[p_aov_refraction_clamp].FLT;
+    if (data->aov_refraction_clamp == 0.0f) data->aov_refraction_clamp = AI_INFINITE;
+    data->aov_emission_clamp = params[p_aov_emission_clamp].FLT;
+    if (data->aov_emission_clamp == 0.0f) data->aov_emission_clamp = AI_INFINITE;
+    data->aov_light_group_clamp[0] = params[p_aov_light_group_1_clamp].FLT;
+    if (data->aov_light_group_clamp[0] == 0.0f) data->aov_light_group_clamp[0] = AI_INFINITE;
+    data->aov_light_group_clamp[1] = params[p_aov_light_group_2_clamp].FLT;
+    if (data->aov_light_group_clamp[1] == 0.0f) data->aov_light_group_clamp[1] = AI_INFINITE;
+    data->aov_light_group_clamp[2] = params[p_aov_light_group_3_clamp].FLT;
+    if (data->aov_light_group_clamp[2] == 0.0f) data->aov_light_group_clamp[2] = AI_INFINITE;
+    data->aov_light_group_clamp[3] = params[p_aov_light_group_4_clamp].FLT;
+    if (data->aov_light_group_clamp[3] == 0.0f) data->aov_light_group_clamp[3] = AI_INFINITE;
+    data->aov_light_group_clamp[4] = params[p_aov_light_group_5_clamp].FLT;
+    if (data->aov_light_group_clamp[4] == 0.0f) data->aov_light_group_clamp[4] = AI_INFINITE;
+    data->aov_light_group_clamp[5] = params[p_aov_light_group_6_clamp].FLT;
+    if (data->aov_light_group_clamp[5] == 0.0f) data->aov_light_group_clamp[5] = AI_INFINITE;
+    data->aov_light_group_clamp[6] = params[p_aov_light_group_7_clamp].FLT;
+    if (data->aov_light_group_clamp[6] == 0.0f) data->aov_light_group_clamp[6] = AI_INFINITE;
+    data->aov_light_group_clamp[7] = params[p_aov_light_group_8_clamp].FLT;
+    if (data->aov_light_group_clamp[7] == 0.0f) data->aov_light_group_clamp[7] = AI_INFINITE;
 };
 
 
@@ -2774,7 +2870,10 @@ shader_evaluate
                                     + lightGroupsDirect[i];
 
                     if (deepGroups[i] != AI_RGB_BLACK)
+                    {
+                        deepGroups[i] = min(deepGroups[i], rgb(data->aov_light_group_clamp[i]));
                         AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), deepGroups[i]);
+                    }
                 }
             }
             else
@@ -2782,7 +2881,10 @@ shader_evaluate
                 for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
                 {
                     if (lightGroupsDirect[i] != AI_RGB_BLACK)
+                    {
+                        lightGroupsDirect[i] = min(lightGroupsDirect[i], rgb(data->aov_light_group_clamp[i]));
                         AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), lightGroupsDirect[i]);
+                    }
                 }
             }
 
@@ -2791,6 +2893,22 @@ shader_evaluate
                 if (shadowGroups[i] != AI_RGBA_BLACK)
                     AiAOVSetRGBA(sg, data->aovs_rgba[k_shadow_group_1+i].c_str(), shadowGroups[i]);
             }
+
+            diffuseColor = min(diffuseColor, rgb(data->aov_diffuse_color_clamp));
+            result_diffuseDirect = min(result_diffuseDirect, rgb(data->aov_direct_diffuse_clamp));
+            result_diffuseDirectRaw = min(result_diffuseDirectRaw, rgb(data->aov_direct_diffuse_raw_clamp));
+            result_backlightDirect = min(result_backlightDirect, rgb(data->aov_direct_backlight_clamp));
+            result_sss = min(result_sss, rgb(data->aov_sss_clamp));
+            result_glossyDirect = min(result_glossyDirect, rgb(data->aov_direct_specular_clamp));
+            result_glossy2Direct = min(result_glossy2Direct, rgb(data->aov_direct_specular_2_clamp));
+            result_diffuseIndirect = min(result_diffuseIndirect, rgb(data->aov_indirect_diffuse_clamp));
+            result_diffuseIndirectRaw = min(result_diffuseIndirectRaw, rgb(data->aov_indirect_diffuse_raw_clamp));
+            result_backlightIndirect = min(result_backlightIndirect, rgb(data->aov_indirect_backlight_clamp));
+            result_glossyIndirect = min(result_glossyIndirect, rgb(data->aov_indirect_specular_clamp));
+            result_glossy2Indirect = min(result_glossy2Indirect, rgb(data->aov_indirect_specular_2_clamp));
+            result_ss = min(result_ss, rgb(data->aov_single_scatter_clamp));
+            result_transmission = min(result_transmission, rgb(data->aov_refraction_clamp));
+            result_emission = min(result_emission, rgb(data->aov_emission_clamp));
 
             if (diffuseColor != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_diffuse_color].c_str(), diffuseColor);
             if (result_diffuseDirect != AI_RGB_BLACK) AiAOVSetRGB(sg, data->aovs[k_direct_diffuse].c_str(), result_diffuseDirect);
