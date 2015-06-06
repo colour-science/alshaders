@@ -2218,13 +2218,10 @@ shader_evaluate
     memset(childAovs, 0, sizeof(AtRGB)*NUM_AOVs);
     if (do_transmission)
     {
-#if AI_VERSION_MAJOR_NUM > 0
         float samples[2];
-#else
-        double samples[2];
-#endif
         float kt;
         AtRay wi_ray;
+        sg->N = sg->Nf = transmissionNormal;
         AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
         AtVector wi, R;
         AtScrSample sample;
@@ -2488,6 +2485,10 @@ shader_evaluate
                 AiShaderGlobalsUnsetTraceSet(sg);
             }
         }
+
+        // reset the normal
+        sg->N = Norig;
+        sg->Nf = Nforig;
 
     } // if (do_transmission)
     result_transmission += result_transmissionDirect;
