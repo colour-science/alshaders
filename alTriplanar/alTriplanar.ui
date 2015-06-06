@@ -6,7 +6,7 @@ ui.shader({
     'description':'Useful for quickly adding bombing patterns of texture to objects to add variation and breakup.',
     'output':'rgb',
     'maya_name':'alTriplanar',
-    'maya_classification':'texture',
+    'maya_classification':'texture/other',
     'maya_id':'0x00116413',
     'maya_swatch':True,
     'maya_matte':False,
@@ -20,7 +20,7 @@ ui.shader({
     'houdini_icon': 'SHELF_distribute_fluid_sim'
 })
 
-ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Background', description='Background color over which to project the texture.')
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Background', description='Background color over which to project the texture.', mayane=True)
 
 ui.parameter('texture', 'string', '', 'Texture', connectible=False, description='The texture image to project over the background.')
 

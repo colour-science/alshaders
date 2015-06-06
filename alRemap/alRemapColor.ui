@@ -6,7 +6,7 @@ ui.shader({
    'description':'Use controls such as gamma, saturation and contrast to tweak the color values in your network. Operations are applied in the order they appear in the shader.',
 	'output':'rgb',
 	'maya_name':'alRemapColor',
-	'maya_classification':'texture',
+	'maya_classification':'utility/color',
 	'maya_id':'0x0011640D',
 	'maya_swatch':True,
 	'maya_matte':False,
@@ -20,7 +20,7 @@ ui.shader({
    'houdini_icon': 'COP2_colorcorrect'
 })
 
-ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Input', description='Input color to remap.')
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Input', description='Input color to remap.', mayane=True)
 ui.parameter('gamma', 'float', 1.0, 'Gamma', description='Gamma value to apply to input.')
 ui.parameter('saturation', 'float', 1.0, 'Saturation', description='Saturation to apply to the input.')
 ui.parameter('hueOffset', 'float', 0.0, 'Hue offset', description='Hue offset to apply to the input.')

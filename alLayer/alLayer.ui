@@ -20,9 +20,9 @@ ui.shader({
    'houdini_icon': 'SHOP_surface'
 })
 
-ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1', description='The bottom layer to blend.')
-ui.parameter('layer2', 'rgb', (0.0, 0.0, 0.0), 'Layer 2', description='The top layer to blend.')
-ui.parameter('mix', 'float', 0.0, 'Mix', description='The amount to blend from the bottom layer to the top.')
+ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1', description='The bottom layer to blend.', mayane=True)
+ui.parameter('layer2', 'rgb', (0.0, 0.0, 0.0), 'Layer 2', description='The top layer to blend.', mayane=True)
+ui.parameter('mix', 'float', 0.0, 'Mix', description='The amount to blend from the bottom layer to the top.', mayane=True)
 ui.parameter('debug', 'enum', 'off', 'Debug', enum_names=[
 	"off",
 	"layer1",

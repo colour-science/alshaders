@@ -6,7 +6,7 @@ ui.shader({
 	'description':'Can be used to create effects such as stretch maps and dirt maps, or to simulate wear and tear. For best results remap and combine with a noise function then use it to drive layering effects in your surface shader.',
 	'output':'rgb',
 	'maya_name':'alCurvature',
-	'maya_classification':'texture',
+	'maya_classification':'utility/color',
 	'maya_id':'0x00116412',
 	'maya_swatch':True,
 	'maya_matte':False,

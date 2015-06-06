@@ -22,9 +22,9 @@ ui.shader({
 })
 
 with uigen.group(ui, 'Fibre properties', False, description='The base properties of the hair fibres used to drive all lobes and the dual scattering. The color of the hair is defined by the Melanin and Dye color parameters and generates the correct color for all lobes based on the attenutaion of light inside the hair fibre. The Highlight Width and Shift parameters are also remapped to control each lobe in a plausible fashion. For the most part, you should be able to drive the hair shading with these parameters alone.'):
-   ui.parameter('melanin', 'float', 0.15, 'Melanin', mn=0, mx=1, description='The melanin content of the hair fibre. Use this to generated natural colors for mammalian hair. 0 will give white hair, 0.2-04 blonde, 0.4-0.6 red, 0.6-0.8 brown and 0.8-1.0 black hair. If you want to set the color of the hair with a texture map, set this to 0 and use the Dye color parameter.', fig='alHair_melanin', figc='Melanin at 0.15, 0.4, 0.8')
+   ui.parameter('melanin', 'float', 0.15, 'Melanin', mn=0, mx=1, description='The melanin content of the hair fibre. Use this to generated natural colors for mammalian hair. 0 will give white hair, 0.2-04 blonde, 0.4-0.6 red, 0.6-0.8 brown and 0.8-1.0 black hair. If you want to set the color of the hair with a texture map, set this to 0 and use the Dye color parameter.', fig='alHair_melanin', figc='Melanin at 0.15, 0.4, 0.8', mayane=True)
 
-   ui.parameter('dyeColor', 'rgb', (1.0, 1.0, 1.0), 'Dye color', description='Color tint to apply to the hair. You can also plug a MayaRamp in here to define the color along the lenght of the hair.', fig='alHair_dyeColor', figc='Dye color at red, geen, blue')
+   ui.parameter('dyeColor', 'rgb', (1.0, 1.0, 1.0), 'Dye color', description='Color tint to apply to the hair. You can also plug a MayaRamp in here to define the color along the lenght of the hair.', fig='alHair_dyeColor', figc='Dye color at red, geen, blue', mayane=True)
    
    ui.parameter('specularWidth', 'float', 3.0, 'Highlight width', connectible=False, description='The width of the hair highlights, essentially how shiny the hair appears. Values in the range 1-7 are sensible for human hair.', fig='alHair_width', figc='Highlight width at 1, 3, 7')
 
@@ -43,35 +43,35 @@ with uigen.group(ui, 'Fibre properties', False, description='The base properties
       ui.parameter('transmissionRolloff', 'float', 10.0, 'Transmission rolloff', connectible=False, description='Controls the rolloff of the transmission highlight. Essentially, if you want the transmission highlight to only appear when the light is directly behind the hair, set this value to 10 or lower. If you want to increase the amount the highlight spreads as the light comes around from behind, set this value higher than 10.')
 
 with uigen.group(ui, 'Diffuse', False, description='The diffuse lobe represents light that has scattered multiple times between hair fibres and so become soft and diffuse. This is especially important for lighter hair colors, whereas dark brown and black hair have little to no diffuse component.'):
-   ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of the diffuse illumination.', fig='alHair_diffuseStrength', figc='Strength at 1.0, 0.5, 0.0')
-   ui.parameter('diffuseColor', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Tint on the diffuse illumination. This is multiplied on top of the Fibre color specified above.', fig='alHair_diffuseColor', figc='Tint at red, green, blue.')
+   ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of the diffuse illumination.', fig='alHair_diffuseStrength', figc='Strength at 1.0, 0.5, 0.0', mayane=True)
+   ui.parameter('diffuseColor', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Tint on the diffuse illumination. This is multiplied on top of the Fibre color specified above.', fig='alHair_diffuseColor', figc='Tint at red, green, blue.', mayane=True)
    ui.parameter('diffuseScatteringMode', 'enum', 'dual-scattering', 'Scattering mode', enum_names=['kajiya-kay', 'dual-scattering'], description='The algorithm to use for diffuse calculation. dual-scattering is a realistic approximation of multiple scattering in hair and is more appropriate for long, realistic hair. kajiya-kay is the class algorithm used in the standard hair shader and is more suitable for short, cartoony fur. It is also a little cheaper to compute than dual-scattering.', fig='alHair_diffuseMode', figc='Mode set to dual-scattering, kajiya-kay, and no diffuse')
    ui.parameter('diffuseForward', 'float',0.7, 'Forward scattering', mn=0, mx=1, description='Controls the amount of light bleeding through the hair in dual-scattering mode.', fig='alHair_forwardScattering', figc='Forward scattering at 1.0, 0.5, 0.0')
    ui.parameter('diffuseBack', 'float', 0.7, 'Back scattering', mn=0, mx=1, description='Controls the amount of light kicked back from the hair in dual-scattering mode.', fig='alHair_backScattering', figc='Back scattering at 1.0, 0.5, 0.0')
       
 
 with uigen.group(ui, 'Specular 1', False, description='The direct-reflected, primary white highlight on the hair.'):
-   ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe', fig='alHair_specular1Strength', figc='Strength at 1.0, 0.5, 0.0')
-   ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.', fig='alHair_specular1Color', figc='Tint at red, green, blue.')
-   ui.parameter('specular1WidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.', fig='alHair_specular1Width', figc='Width scale at 0.5, 1.0, 2.0')
-   ui.parameter('specular1Shift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.', fig='alHair_specular1Shift', figc='Shift offset at -3, 0, 3')
+   ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe', fig='alHair_specular1Strength', figc='Strength at 1.0, 0.5, 0.0', mayane=True)
+   ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.', fig='alHair_specular1Color', figc='Tint at red, green, blue.', mayane=True)
+   ui.parameter('specular1WidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.', fig='alHair_specular1Width', figc='Width scale at 0.5, 1.0, 2.0', mayane=True)
+   ui.parameter('specular1Shift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.', fig='alHair_specular1Shift', figc='Shift offset at -3, 0, 3', mayane=True)
    
 with uigen.group(ui, 'Specular 2', False, description='The secondary colored highlight on the hair. This lobe is broader than the primary highlight and is strongly colored by the Fibre color. It also contains caustic glints caused by the hair focusing light.'):
-   ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe', fig='alHair_specular2Strength', figc='Strength at 1.0, 0.5, 0.0')
-   ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.', fig='alHair_specular2Color', figc='Tint at red, green, blue.')
-   ui.parameter('specular2WidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.', fig='alHair_specular2Width', figc='Width scale at 0.5, 1.0, 2.0')
-   ui.parameter('specular2Shift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.', fig='alHair_specular2Shift', figc='Shift offset at -3, 0, 3')
+   ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe', fig='alHair_specular2Strength', figc='Strength at 1.0, 0.5, 0.0', mayane=True)
+   ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.', fig='alHair_specular2Color', figc='Tint at red, green, blue.', mayane=True)
+   ui.parameter('specular2WidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.', fig='alHair_specular2Width', figc='Width scale at 0.5, 1.0, 2.0', mayane=True)
+   ui.parameter('specular2Shift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.', fig='alHair_specular2Shift', figc='Shift offset at -3, 0, 3', mayane=True)
    ui.parameter('glintStrength', 'float', 2.0, 'Glint strength', description='Strength of the caustic glints. Sensible values are in the range 1-5.', fig='alHair_glintStrength', figc='Glint strength at 0.0, 2.5, 5.0')      
 
 with uigen.group(ui, 'Transmission', False, description='The transmitted colored highlight on the hair. This lobe is tighter than the primary highlight and is weakly colored by the Fibre color.'):
-   ui.parameter('transmissionStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe')
-   ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.')
-   ui.parameter('transmissionWidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.')
-   ui.parameter('transmissionShift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.')
+   ui.parameter('transmissionStrength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the strength of this lobe', mayane=True)
+   ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Tint', description='Color tint on the color automatically generated for this lobe by the Fibre color settings.', mayane=True)
+   ui.parameter('transmissionWidthScale', 'float', 1.0, 'Width scale', description='Multiplier on the width of this lobe\'s highlight.', mayane=True)
+   ui.parameter('transmissionShift', 'float', 0.0, 'Shift offset', description='Offset on the shift of this lobe\'s highlight.', mayane=True)
 
 with uigen.group(ui, 'IDs', description='Whatever you plug in or set in the ID parameters in this section is written straight out to the corresponding id_X AOV. This is exteremely useful for creating mattes, or for outputting textures or other sub-network results to be used in comp.'):
    for i in range(1,9):
-      ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0), description='Color to be output in id_%d AOV.' % i)
+      ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0), description='Color to be output in id_%d AOV.' % i, mayane=True)
 
 with uigen.group(ui, 'AOVs', description='Use these parameters to change the name of the AOVs that the shader writes'):
    ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color', description='Set the name of the AOV that contains the final color of the hair.')

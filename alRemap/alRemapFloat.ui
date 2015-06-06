@@ -6,7 +6,7 @@ ui.shader({
    'description':'Essential for tuning just about any float value in your network.',
 	'output':'rgb',
 	'maya_name':'alRemapFloat',
-	'maya_classification':'texture',
+	'maya_classification':'utility/color',
 	'maya_id':'0x0011640C',
 	'maya_swatch':True,
 	'maya_matte':False,
@@ -20,7 +20,7 @@ ui.shader({
    'houdini_icon': 'VOP_fit'
 })
 
-ui.parameter('input', 'float', 0.0, 'Input', description='Input value to remap.')
+ui.parameter('input', 'float', 0.0, 'Input', description='Input value to remap.', mayane=True)
 
 uigen.remapControls(ui)
 

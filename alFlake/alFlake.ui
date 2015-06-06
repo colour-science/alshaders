@@ -6,7 +6,7 @@ ui.shader({
    'description':'Useful for car paint shaders.',
    'output':'vector',
    'maya_name':'alFlake',
-   'maya_classification':'texture',
+   'maya_classification':'texture/other',
    'maya_id':'0x0011641F',
    'maya_swatch':True,
    'maya_matte':False,
@@ -24,4 +24,4 @@ ui.shader({
 ui.parameter('amount', 'float', 0.7, 'Amount', description='Proportion of the surface that is covered by flakes', mn=0.0, mx=1.0)
 ui.parameter('size', 'float', 0.01, 'Size')
 ui.parameter('divergence', 'float', .5, 'Divergence')
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', mayane=True)

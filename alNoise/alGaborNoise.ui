@@ -6,7 +6,7 @@ ui.shader({
    'description':'An advanced noise type.',
 	'output':'rgb',
 	'maya_name':'alGaborNoise',
-	'maya_classification':'texture',
+	'maya_classification':'texture/other',
 	'maya_id':'0x00116410',
 	'maya_swatch':True,
 	'maya_matte':False,
@@ -40,7 +40,7 @@ ui.parameter('turbulent', 'bool', False, 'Turbulent', description='Enable this t
 
 uigen.remapControls(ui)
 
-ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.')
-ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.')
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.', mayane=True)
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.', mayane=True)
 
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.')
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.', mayane=True)

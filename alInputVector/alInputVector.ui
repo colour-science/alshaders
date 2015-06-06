@@ -6,7 +6,7 @@ ui.shader({
    'description':'Combining these vectors can be useful as building blocks for more complex effects.',
 	'output':'vector',
 	'maya_name':'alInputVector',
-	'maya_classification':'texture',
+	'maya_classification':'utility/color',
 	'maya_id':'0x0011640E',
 	'maya_swatch':True,
 	'maya_matte':False,

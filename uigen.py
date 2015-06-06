@@ -80,13 +80,15 @@ class Parameter(UiElement):
    figc = None
    short_description = ''
    presets = None
+   mayane = False
 
-   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None, presets={}):
+   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None, presets={}, mayane=False):
       self.name = name
       self.ptype = ptype
       self.default = default
       self.description = description
       self.presets = presets
+      self.mayane = mayane
 
       if description is not None:
          if len(description) > 150:
@@ -203,8 +205,8 @@ class ShaderDef:
    def endGroup(self):
       self.current_parent = self.current_parent.parent
 
-   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None, presets=None):
-      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc, presets)
+   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None, presets=None, mayane=False):
+      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc, presets, mayane)
       if not self.current_parent.children:
          self.current_parent.children = [p]
       else:
@@ -311,7 +313,8 @@ def WalkAETemplate(el, f, d):
             WalkAETemplate(e, f, d)
 
       writei(f, 'self.endLayout() # END %s' % el.name, d)
-
+   elif isinstance(el, AOV):
+      writei(f, 'self.addControl("%s", label="%s", annotation="%s")' % (el.name, el.label, el.short_description), d)
    elif isinstance(el, Parameter):
       if el.ptype == 'float':
          writei(f, 'self.addCustomFlt("%s")' % el.name, d)
@@ -352,14 +355,6 @@ def WriteAETemplate(sd, fn):
    writei(f, 'self.beginScrollLayout()', 2) # begin main scrollLayout
    writei(f, '')
 
-   if sd.maya_matte:
-      writei(f, 'self.beginLayout("Matte")', 2)
-      writei(f, 'self.addControl("aiEnableMatte", label="Enable Matte")', 2)
-      writei(f, 'self.addControl("aiMatteColor", label="Matte Color")', 2)
-      writei(f, 'self.addControl("aiMatteColorA", label="Matte Opacity")', 2)
-      writei(f, 'self.endLayout()', 2)
-
-
    for e in sd.root.children:
       WalkAETemplate(e, f, 2)
 
@@ -375,6 +370,122 @@ def WriteAETemplate(sd, fn):
    writei(f, 'self.endScrollLayout()', 2) #end main scrollLayout
 
    f.close()
+
+def toMayaType(ptype):
+   if ptype == 'rgb' or ptype == 'vector':
+      return 'float3'
+   else:
+      return ptype
+
+def WalkAEXMLAttributes(el, f, d):
+   if isinstance(el, Group):
+      if el.children:
+         for e in el.children:
+            WalkAEXMLAttributes(e, f, d)
+   elif isinstance(el, Parameter):
+      writei(f, '<attribute name="%s" type="maya.%s">' % (el.name, toMayaType(el.ptype)), 2)
+      writei(f, '<label>%s</label>' % el.label, 3)
+      writei(f, '<description>%s</description>' % el.short_description, 3)
+      writei(f, '</attribute>', 2)
+
+def WalkNEXMLAttributes(el, f, d):
+   if isinstance(el, Group):
+      if el.children:
+         for e in el.children:
+            WalkNEXMLAttributes(e, f, d)
+   elif isinstance(el, Parameter) and el.mayane:
+      writei(f, '<attribute name="%s" type="maya.%s">' % (el.name, toMayaType(el.ptype)), 2)
+      writei(f, '<label>%s</label>' % el.label, 3)
+      writei(f, '</attribute>', 2)
+
+def WalkNEXMLView(el, f, d):
+   if isinstance(el, Group):
+      if el.children:
+         for e in el.children:
+            WalkNEXMLView(e, f, d)
+   elif isinstance(el, Parameter) and el.mayane:
+      writei(f, '<property name="%s" />' % el.name, 2)
+
+def WalkAEXMLGroups(el, f, d):
+   if isinstance(el, Group):
+      writei(f, '<group name="%s">' % el.name, d)
+      if el.children:
+         for e in el.children:
+            WalkAEXMLGroups(e, f, d+1)
+      writei(f, '</group>', d)
+   elif isinstance(el, Parameter):
+      writei(f, '<property name="%s"/>' % el.name, d)
+
+def WriteNEOutputAttr(sd, f, d):
+   if sd.output == 'rgb':
+      writei(f, '<attribute name="outColor" type="maya.float3">', d)
+      writei(f, '<label>Out Color</label>', d)
+      writei(f, '</attribute>')
+   elif sd.output == 'rgba':
+      writei(f, '<attribute name="outColor" type="maya.float3">', d)
+      writei(f, '<label>Out Color</label>', d)
+      writei(f, '</attribute>')
+      writei(f, '<attribute name="outAlpha" type="maya.float">', d)
+      writei(f, '<label>Out Alpha</label>', d)
+      writei(f, '</attribute>')
+   elif sd.output == 'vector':
+      writei(f, '<attribute name="outValue" type="maya.float3">', d)
+      writei(f, '<label>Out Value</label>', d)
+      writei(f, '</attribute>')
+   elif sd.output == 'float':
+      writei(f, '<attribute name="outValue" type="maya.float">', d)
+      writei(f, '<label>Out Value</label>', d)
+      writei(f, '</attribute>')
+
+def WriteNEOutputProp(sd, f, d):
+   if sd.output == 'rgb':
+      writei(f, '<property name="outColor" />', d)
+   elif sd.output == 'rgba':
+      writei(f, '<property name="outColor" />', d)
+      writei(f, '<property name="outAlpha" />', d)
+   elif sd.output == 'vector':
+      writei(f, '<property name="outValue" />', d)
+   elif sd.output == 'float':
+      writei(f, '<property name="outValue" />', d)
+
+def WriteAEXML(sd, fn):
+   f = open(fn, 'w')
+   writei(f, '<?xml version="1.0" encoding="UTF-8"?>', 0)
+   writei(f, '<templates>', 1)
+
+   writei(f, '<template name="AE%s">' % sd.name, 1)
+   writei(f, '<label>%s</label>' % sd.name, 2)
+   writei(f, '<description>%s</description>' % sd.description, 2)
+
+   for e in sd.root.children:
+      WalkAEXMLAttributes(e, f, 2)
+   writei(f, '</template>', 1)
+
+   writei(f, '<view name="Lookdev" template="AE%s">' % sd.name, 2)
+   for e in sd.root.children:
+      WalkAEXMLGroups(e, f, 3)
+   writei(f, '</view>', 2)
+
+   writei(f, '</templates>', 0)
+
+def WriteNEXML(sd, fn):
+   f = open(fn, 'w')
+   writei(f, '<?xml version="1.0" encoding="UTF-8"?>', 0)
+   writei(f, '<templates>', 1)
+
+   writei(f, '<template name="NE%s">' % sd.name, 1)
+   WriteNEOutputAttr(sd, f, 2)
+   for e in sd.root.children:
+      WalkNEXMLAttributes(e, f, 2)
+   writei(f, '</template>', 1)
+
+   writei(f, '<view name="NEDefault" template="NE%s">' % sd.name, 2)
+   WriteNEOutputProp(sd, f, 2)
+   for e in sd.root.children:
+      WalkNEXMLView(e, f, 2)
+   writei(f, '</view>', 2)
+
+   writei(f, '</templates>', 0)
 
 #########
 # C4DtoA
@@ -1252,14 +1363,16 @@ if __name__ == '__main__':
 
    WriteMTD(ui, sys.argv[2])  
    WriteAETemplate(ui, sys.argv[3])
-   WriteSPDL(ui, sys.argv[4])
-   WriteArgs(ui, sys.argv[5])
+   WriteAEXML(ui, sys.argv[4])
+   WriteNEXML(ui, sys.argv[5])
+   WriteSPDL(ui, sys.argv[6])
+   WriteArgs(ui, sys.argv[7])
 
    # C4DtoA resource files
    name = os.path.basename(os.path.splitext(sys.argv[1])[0])
-   build_dir = sys.argv[6] if len(sys.argv) > 6 else os.path.abspath("")
+   build_dir = sys.argv[8] if len(sys.argv) > 6 else os.path.abspath("")
    WriteC4DtoAResourceFiles(ui, name, build_dir)
 
    # HTML
-   WriteHTML(ui, sys.argv[7])
+   WriteHTML(ui, sys.argv[9])
 

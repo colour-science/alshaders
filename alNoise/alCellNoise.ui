@@ -6,7 +6,7 @@ ui.shader({
    'description':'Fractal cell noise with support for both distance-based effects and chips can be useful for a variety of procedural effects.',
 	'output':'rgb',
 	'maya_name':'alCellNoise',
-	'maya_classification':'texture',
+	'maya_classification':'texture/other',
 	'maya_id':'0x00116408',
 	'maya_swatch':True,
 	'maya_matte':False,
@@ -38,8 +38,8 @@ with uigen.group(ui, 'Features', False, None):
 
 	uigen.remapControls(ui)
 
-	ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.')
-	ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.')
+	ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the noise result is 0.', mayane=True)
+	ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the noise result is 1.', mayane=True)
 
 with uigen.group(ui,'Chips', False):
 
@@ -56,4 +56,4 @@ with uigen.group(ui,'Chips', False):
 	ui.parameter('chipColor5', 'rgb', (.593, .472, .248), 'Chip color 5', description='Color of the fifth set of chips')
 	ui.parameter('chipProb5', 'float', 1.0, 'Chip probability 5', description='Probability of the cell being the fifth color.')
 
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.')
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to define a custom space for the noise to be calculated in. You can use alInputVector to get and transform points. This can be useful for animating noises in coordinate systems.', mayane=True)

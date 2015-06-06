@@ -22,8 +22,8 @@ ui.shader({
 })
 
 with uigen.group(ui, 'Diffuse', False, description='The diffuse layer sits underneath both specular layers and so its intensity is scaled according to the Fresnel transmission of both the specular lobes.'):
-	ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0.0, mx=1.0, description='Multiplier on the intensity of the diffuse reflection.', fig='diffuseStrength', figc='Strength set to 1.0, 0.5, 0.0.')
-	ui.parameter('diffuseColor', 'rgb', (0.5, 0.5, 0.5), 'Color', description='Color of the diffuse reflection.', fig='diffuseColor', figc='Color set to red, green, blue.')
+	ui.parameter('diffuseStrength', 'float', 1.0, 'Strength', mn=0.0, mx=1.0, description='Multiplier on the intensity of the diffuse reflection.', fig='diffuseStrength', figc='Strength set to 1.0, 0.5, 0.0.', mayane=True)
+	ui.parameter('diffuseColor', 'rgb', (0.5, 0.5, 0.5), 'Color', description='Color of the diffuse reflection.', fig='diffuseColor', figc='Color set to red, green, blue.', mayane=True)
 	ui.parameter('diffuseRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1, description='Roughness of the diffuse reflection. Higher values cause the surface to appear flatter and darker.', fig='diffuseRoughness', figc='Roughness set to 0.0, 0.5, 1.0.')
 
 	with uigen.group(ui, 'Backlight', description='The backlight layer represents light that is diffusely transmitted from the reverse side of the object and it useful as a cheap subsurface effect for thin ojects such as cloth, paper and leaves. It sits underneath both specular layers and so its intensity is scaled according to the Fresnel transmission of both the specular lobes.'):
@@ -56,9 +56,9 @@ with uigen.group(ui, 'Diffuse', False, description='The diffuse layer sits under
 # end Diffuse
 
 with uigen.group(ui, 'Specular 1', False, description='Specular (glossy) layers represent light that is reflected immediately at the boundary of the surface. The specular 1 lobe sits on top of all the others and so both receives all the light and attenuates the light reaching all other lobes. It can be used either as the primary specular for the material, or as a clear coat layer on top.'):
-	ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the specular reflection.', fig='specularStrength', figc='Strength at 1.0, 0.5, 0.0')
-	ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the specular reflection.', fig='specularColor', figc='Color at red, green, blue.')
-	ui.parameter('specular1Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1, description='The roughness of the specular reflection. Lower numbers produce sharper reflections, higher numbers produce blurrier reflections.', fig='specularRoughness', figc='Roughness at 0.0, 0.3, 0.7')
+	ui.parameter('specular1Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the specular reflection.', fig='specularStrength', figc='Strength at 1.0, 0.5, 0.0', mayane=True)
+	ui.parameter('specular1Color', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the specular reflection.', fig='specularColor', figc='Color at red, green, blue.', mayane=True)
+	ui.parameter('specular1Roughness', 'float', 0.3, 'Roughness', mn=0, mx=1, description='The roughness of the specular reflection. Lower numbers produce sharper reflections, higher numbers produce blurrier reflections.', fig='specularRoughness', figc='Roughness at 0.0, 0.3, 0.7', mayane=True)
 	ui.parameter('specular1Anisotropy', 'float', 0.5, 'Anisotropy', mn=0, mx=1, description='Controls how much the specular highlight is stretched along its axis. The default value of 0.5 produces a round highlight. Higher values will stretch the highlight along the V axis, lower values stretch along the U axis. The axis of the highlight is controlled by the UVs of the object. For best results, give your object a single UV shell with as few seams as possible.', fig='specularAnisotropy', figc='Anisotropy at 0.5, 0.25, 0.0 with Roughness at 0.1.')
 	ui.parameter('specular1Rotation', 'float', 0.0, 'Rotation', mn=0, mx=1, description='Rotates the axis of specular anisotropy around the surface normal. 0 gives no rotation, 0.5 gives 90 degree rotation, 1 gives 180 degree rotation.', fig='specularRotation', figc='Rotation at 0, 0.25, 0.5 with Anisotropy at 0.0')
 
@@ -78,9 +78,9 @@ with uigen.group(ui, 'Specular 1', False, description='Specular (glossy) layers 
 # end Specular 1
 
 with uigen.group(ui, 'Specular 2', description='Specular (glossy) layers represent light that is reflected immediately at the boundary of the surface. The specular 2 lobe sits underneath the specular 1 lobe and so is attenuated by it and attenuates the light reaching all other lobes. It can be used either as the primary specular for the material, or as a clear coat layer on top.'):
-	ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the specular reflection.', fig='specular2Strength', figc='Strength at 1.0, 0.5, 0.0')
-	ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the specular reflection.', fig='specular2Color', figc='Color at red, green, blue.')
-	ui.parameter('specular2Roughness', 'float', 0.5, 'Roughness', mn=0, mx=1, description='The roughness of the specular reflection. Lower numbers produce sharper reflections, higher numbers produce blurrier reflections.', fig='specular2Roughness', figc='Roughness at 0.3, 0.5, 0.7')
+	ui.parameter('specular2Strength', 'float', 1.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the specular reflection.', fig='specular2Strength', figc='Strength at 1.0, 0.5, 0.0', mayane=True)
+	ui.parameter('specular2Color', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the specular reflection.', fig='specular2Color', figc='Color at red, green, blue.', mayane=True)
+	ui.parameter('specular2Roughness', 'float', 0.5, 'Roughness', mn=0, mx=1, description='The roughness of the specular reflection. Lower numbers produce sharper reflections, higher numbers produce blurrier reflections.', fig='specular2Roughness', figc='Roughness at 0.3, 0.5, 0.7', mayane=True)
 	ui.parameter('specular2Anisotropy', 'float', 0.5, 'Anisotropy', mn=0, mx=1, description='Controls how much the specular highlight is stretched along its axis. The default value of 0.5 produces a round highlight. Higher values will stretch the highlight along the V axis, lower values stretch along the U axis. The axis of the highlight is controlled by the UVs of the object. For best results, give your object a single UV shell with as few seams as possible.', fig='specular2Anisotropy', figc='Anisotropy at 0.5, 0.25, 0.0 with Roughness at 0.1')
 	ui.parameter('specular2Rotation', 'float', 0.0, 'Rotation', mn=0, mx=1, description='Rotates the axis of specular anisotropy around the surface normal. 0 gives no rotation, 0.5 gives 90 degree rotation, 1 gives 180 degree rotation.', fig='specular2Rotation', figc='Rotation at 0, 0.25, 0.5 with Anisotropy at 0.')
 
@@ -100,10 +100,10 @@ with uigen.group(ui, 'Specular 2', description='Specular (glossy) layers represe
 # end Specular 2
 
 with uigen.group(ui, 'Transmission', description='The transmission lobe describes light that is refracted through the surface. It allows you to create materials such as water and glass.The transmission lobe sits underneath the two specular layers and is attenuated by both. Any changes that affect the color of the transmission lobe, such as Color or the Attenuation controls, will also color the object\'s shadows.'):
-	ui.parameter('transmissionStrength', 'float', 0.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the transmission.', fig='transmissionStrength', figc='Strength at 1.0, 0.5, 0.0')
-	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Multiplier on the intensity of the transmission.', fig='transmissionColor', figc='Color at red, green, blue.')
+	ui.parameter('transmissionStrength', 'float', 0.0, 'Strength', mn=0, mx=1, description='Multiplier on the intensity of the transmission.', fig='transmissionStrength', figc='Strength at 1.0, 0.5, 0.0', mayane=True)
+	ui.parameter('transmissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Multiplier on the intensity of the transmission.', fig='transmissionColor', figc='Color at red, green, blue.', mayane=True)
 	ui.parameter('transmissionLinkToSpecular1', 'bool', True, 'Link to specular 1', description='When this is enabled, the transmission lobe will copy its Roughness and IOR values from the Specular 1 lobe. This is generally what you want for most materials.')
-	ui.parameter('transmissionRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1, description='The roughness of the transmission. 0 creates a perfect refracted image like water or highly polished glass. Higher values will give results like frosted glass.', fig='transmissionRoughness', figc='Roughness at 0.0, 0.3, 0.7')
+	ui.parameter('transmissionRoughness', 'float', 0.0, 'Roughness', mn=0, mx=1, description='The roughness of the transmission. 0 creates a perfect refracted image like water or highly polished glass. Higher values will give results like frosted glass.', fig='transmissionRoughness', figc='Roughness at 0.0, 0.3, 0.7', mayane=True)
 	ui.parameter('transmissionIor', 'float', 1.4, 'IOR', description='The index of refraction of the transmission lobe. Higher values cause a more distorted refracted image.', presets={'Water': 1.33, 'Ethyl alcohol': 1.36, 'Cornea': 1.37, 'Skin': 1.4, 'Glass': 1.5, 'Plastic': 1.55, 'Flint glass': 1.6, 'Dense glass': 1.7, 'Diamond': 2.4}, fig='transmissionIor', figc='IOR at 1.35, 1.5, 2.4')
 
 	with uigen.group(ui, 'Attenuation', description='The attenution parameters allow you to control how light is absorbed and scattered as it travels through the inside volume of your surface in order to simulate effects such as smoked glass, absorption through water etc. By default, only absorption is calculated, while setting Scattering to some value greater than 0 will calculate (single) in-scattering as well.'):
@@ -149,15 +149,15 @@ with uigen.group(ui, 'Transmission', description='The transmission lobe describe
 # end Transmission
 
 with uigen.group(ui, 'Emission', description='The emission lobe represents light that is emitted from the surface itself. It sits beneath the two specular lobes and so is attenuated by both of them.'):
-	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', description='Multiplier on the intensity of the emitted light.', fig='emissionStrength', figc='Strength at 1.0, 0.5, 0.0')
-	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the emitted light.', fig='emissionColor', figc='Color at red, green, blue.')
+	ui.parameter('emissionStrength', 'float', 0.0, 'Strength', description='Multiplier on the intensity of the emitted light.', fig='emissionStrength', figc='Strength at 1.0, 0.5, 0.0', mayane=True)
+	ui.parameter('emissionColor', 'rgb', (1.0, 1.0, 1.0), 'Color', description='Color tint on the emitted light.', fig='emissionColor', figc='Color at red, green, blue.', mayane=True)
 # end Emission
 
-ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity', description='Opacity of the material. In the vast majority of cases, if you want to see through your material you should be using transmission. Opacity can be useful for doing cut out effects such as a leaf texture on a card.')
+ui.parameter('opacity', 'rgb', (1.0, 1.0, 1.0), 'Opacity', description='Opacity of the material. In the vast majority of cases, if you want to see through your material you should be using transmission. Opacity can be useful for doing cut out effects such as a leaf texture on a card.', mayane=True)
 
 with uigen.group(ui, 'IDs', description='Whatever you plug in or set in the ID parameters in this section is written straight out to the corresponding id_X AOV. This is exteremely useful for creating mattes, or for outputting textures or other sub-network results to be used in comp.'):
 	for i in range(1,9):
-		ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0), description='Color to be output in id_%d AOV.' % i)
+		ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0), description='Color to be output in id_%d AOV.' % i, mayane=True)
 # end IDs
 
 with uigen.group(ui, 'AOVs', description='Use these parameters to change the name of the AOVs that the shader writes'):
