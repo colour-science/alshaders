@@ -50,6 +50,7 @@ enum alCellNoiseParams
 	// p_mynkowskiShape,
 	p_color1,
 	p_color2,
+	p_smoothChips,
 	p_randomChips,
 	p_chipColor1,
 	p_chipProb1,
@@ -80,6 +81,7 @@ node_parameters
 	// AiParameterFLT("mynkowskiShape", 2.0f);
 	AiParameterRGB("color1", 0.0f, 0.0f, 0.0f);
 	AiParameterRGB("color2", 1.0f, 1.0f, 1.0f);
+	AiParameterBOOL("smoothChips", false);
 	AiParameterBOOL("randomChips", false);
 	AiParameterRGB("chipColor1", .383f, .318f, .252f);
 	AiParameterFLT("chipProb1", 1.0f);
@@ -114,6 +116,7 @@ struct ShaderData
 	int octaves;
 	float mynkowskiShape;
 	bool randomChips;
+	bool smoothChips;
 	float chipProb1;
 	float chipProb2;
 	float chipProb3;
@@ -142,6 +145,7 @@ node_update
 	// data->mynkowskiShape = params[p_mynkowskiShape].FLT;
 	data->mynkowskiShape = 2.0f;
 	data->randomChips = params[p_randomChips].BOOL;
+	data->smoothChips = params[p_smoothChips].BOOL;
 	float cpsum = 0.0f;
 	data->chipProb1 = params[p_chipProb1].FLT;
 	cpsum += data->chipProb1;
@@ -274,24 +278,26 @@ shader_evaluate
 			}
 			else if (rr < chip_cdf[1])
 			{
-				// if (data->smoothChips) chipColor = lerp(chipColor1, chipColor2, (rr-chip_cdf[0])/(chip_cdf[1]-chip_cdf[0]));
-				chipColor = chipColor2;
+				if (data->smoothChips) chipColor = lerp(chipColor1, chipColor2, (rr-chip_cdf[0])/(chip_cdf[1]-chip_cdf[0]));
+				else chipColor = chipColor2;
 			}
 			else if (rr < chip_cdf[2])
 			{
-				// if (data->smoothChips) chipColor = lerp(chipColor2, chipColor3, (rr-chip_cdf[1])/(chip_cdf[2]-chip_cdf[1]));
-				chipColor = chipColor3;
+				if (data->smoothChips) chipColor = lerp(chipColor2, chipColor3, (rr-chip_cdf[1])/(chip_cdf[2]-chip_cdf[1]));
+				else chipColor = chipColor3;
 			}
 			else if (rr < chip_cdf[3])
 			{
-				// if (data->smoothChips) chipColor = lerp(chipColor3, chipColor4, (rr-chip_cdf[2])/(chip_cdf[3]-chip_cdf[2]));
-				chipColor = chipColor4;
+				if (data->smoothChips) chipColor = lerp(chipColor3, chipColor4, (rr-chip_cdf[2])/(chip_cdf[3]-chip_cdf[2]));
+				else chipColor = chipColor4;
 			}
 			else
 			{
-				// if (data->smoothChips) chipColor = lerp(chipColor4, chipColor5, (rr-chip_cdf[3])/(1.0f-chip_cdf[3]));
-				chipColor = chipColor5;
+				if (data->smoothChips) chipColor = lerp(chipColor4, chipColor5, (rr-chip_cdf[3])/(1.0f-chip_cdf[3]));
+				else chipColor = chipColor5;
 			}
+
+			sg->out.RGB = chipColor;
 		}
 	}
 }

@@ -1270,6 +1270,7 @@ def WriteHTML(sd, fn):
                <li><a href="alPattern.html">alPattern</a></li>
                <li><a href="alTriplanar.html">alTriplanar</a></li>
                <li><a href="alBlackbody.html">alBlackbody</a></li>
+               <li><a href="alFlake.html">alFlake</a></li>
             </ul>
             </li>
             <li class="nav-link more"><a href="javascript:void(0)">Utilities</a>

@@ -3,7 +3,7 @@ import uigen
 ui.shader({
    'name':'alFlake',
    'intro':'Generate a normal map of randomly-oriented flakes.',
-   'description':'Useful for car paint shaders.',
+   'description':'Useful for car paint shaders, granite and other polished minerals. To use, connect it as a tangent-space normal map to alSurface, making sure Gamma is set 1. Then connect a smooth normal (alInputVector set to Ns) to the Diffuse and Specular 1 Normal parameters. This will use the flake normal for Specular 2 only and the original smooth normal for Diffuse and Specular 1.',
    'output':'vector',
    'maya_name':'alFlake',
    'maya_classification':'texture/other',
@@ -21,7 +21,7 @@ ui.shader({
 
 })
 
-ui.parameter('amount', 'float', 0.7, 'Amount', description='Proportion of the surface that is covered by flakes', mn=0.0, mx=1.0)
-ui.parameter('size', 'float', 0.01, 'Size')
-ui.parameter('divergence', 'float', .5, 'Divergence')
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', mayane=True)
+ui.parameter('amount', 'float', 0.7, 'Amount', description='Proportion of the surface that is covered by flakes', mn=0.0, mx=1.0, fig='alFlake_amount', figc='Amount at 0.0, 0.5, 1.0')
+ui.parameter('size', 'float', 0.01, 'Size', description='Size of the flakes', fig='alFlake_size', figc='Size at 0.01, 0.05, 0.1')
+ui.parameter('divergence', 'float', .5, 'Divergence', description='How much the flake normals diverge from the surface normal.', mn=0.0, mx=1.0, fig='alFlake_divergence', figc='Divergence at 0.1, 0.5, 1.0')
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to override the space used for flake calculation.', mayane=True)

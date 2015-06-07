@@ -43,6 +43,7 @@ with uigen.group(ui, 'Features', False, None):
 
 with uigen.group(ui,'Chips', False):
 
+	ui.parameter('smoothChips', 'bool', False, 'Smooth', description='Smooth the chip colors.')
 	ui.parameter('randomChips', 'bool', False, 'Randomize', description='Give each chip a randomly-generated color.')
 
 	ui.parameter('chipColor1', 'rgb', (.383, .318, .252), 'Chip color 1', description='Color of the first set of chips')
