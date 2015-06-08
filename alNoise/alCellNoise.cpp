@@ -168,6 +168,7 @@ node_update
 shader_evaluate
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
+
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
 

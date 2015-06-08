@@ -803,11 +803,12 @@ def WriteHoudiniHeader(sd, f):
          root_order_list.append(HoudiniEntry(el.name, 'param'))
 
    # tell houdini how many groups we have and how big they are. in advance. because houdini can be dumb too sometimes
-   folder_ROOT_list_STR = 'houdini.parm.folder.ROOT STRING "'
-   for folder in folder_ROOT_list:
-      folder_ROOT_list_STR += '%s;%d;' % (folder.name, len(folder.group_list))
-   folder_ROOT_list_STR += '"'
-   writei(f, folder_ROOT_list_STR, 1)
+   if len(folder_ROOT_list):
+      folder_ROOT_list_STR = 'houdini.parm.folder.ROOT STRING "'
+      for folder in folder_ROOT_list:
+         folder_ROOT_list_STR += '%s;%d;' % (folder.name, len(folder.group_list))
+      folder_ROOT_list_STR += '"'
+      writei(f, folder_ROOT_list_STR, 1)
 
    # now tell houdini about all the headings we have...
    heading_list = []
@@ -824,7 +825,10 @@ def WriteHoudiniHeader(sd, f):
    for entry in root_order_list:
       order += entry.name
       order += ' '
-   order += ' ROOT"'
+   if len(folder_ROOT_list):
+      order += ' ROOT"'
+   else:
+      order += '"'
 
    writei(f, order, 1)
 

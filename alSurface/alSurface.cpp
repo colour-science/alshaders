@@ -578,6 +578,7 @@ inline void permute(int* perm, int n)
 node_update
 {
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
+    
 
     // set up AOVs
     REGISTER_AOVS
