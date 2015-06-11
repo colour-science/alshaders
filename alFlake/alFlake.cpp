@@ -10,7 +10,21 @@ enum alFlakeParams
    p_amount = 0,
    p_size,
    p_divergence,
-   p_P
+   p_P,
+   p_space
+};
+
+enum FlakeSpace
+{
+   S_TANGENT = 0,
+   S_WORLD
+};
+
+const char* space_names[] = 
+{
+   "tangent",
+   "world",
+   NULL
 };
 
 node_parameters
@@ -19,6 +33,7 @@ node_parameters
    AiParameterFlt("size", 0.01f);
    AiParameterFlt("divergence", 0.5f);
    AiParameterPnt("P", 0.0f, 0.0, 0.0);
+   AiParameterEnum("space", S_TANGENT, space_names);
 }
 
 node_loader
@@ -54,6 +69,7 @@ shader_evaluate
    float amount = clamp(AiShaderEvalParamFlt(p_amount), 0.0f, 1.0f);
    float size = AiShaderEvalParamFlt(p_size);
    float divergence = clamp(AiShaderEvalParamFlt(p_divergence), 0.0f, 1.0f);
+   int space = AiShaderEvalParamInt(p_space);
 
    AtPoint P = sg->P;
    if (AiNodeIsLinked(node, "P"))
@@ -82,7 +98,29 @@ shader_evaluate
       // blend it in 
       result = lerp(result, d, divergence);
    }
-   sg->out.VEC = result * .5f + AiVector(0.5f, 0.5f, 0.5f);
+
+   if (space == S_WORLD)
+   {
+      // build a local tangent frame to transform the normals
+      AtVector U, V;
+      if (!AiV3isZero(sg->dPdu) && AiV3Exists(sg->dPdu))
+      {
+        // we have valid a valid dPdu derivative, construct V 
+        AtVector Utmp = AiV3Normalize(sg->dPdu);
+        V = AiV3Normalize(AiV3Cross(sg->Nf, Utmp));
+        U = AiV3Cross(V, sg->Nf);
+      }
+      else
+      {
+        AiBuildLocalFramePolar(&U, &V, &sg->Nf);
+      }
+
+      sg->out.VEC = U * result.x + V * result.y + sg->Nf * result.z;
+   }
+   else
+   {
+      sg->out.VEC = result * .5f + AiVector(0.5f, 0.5f, 0.5f);
+   }
 }
 
 
