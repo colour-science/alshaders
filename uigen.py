@@ -408,7 +408,8 @@ def WalkNEXMLView(el, f, d):
 
 def WalkAEXMLGroups(el, f, d):
    if isinstance(el, Group):
-      writei(f, '<group name="%s">' % el.name, d)
+      writei(f, '<group name="%s">' % ''.join(el.name.split()), d)
+      writei(f, '<label>%s</label>' % el.name, d+1)
       if el.children:
          for e in el.children:
             WalkAEXMLGroups(e, f, d+1)
