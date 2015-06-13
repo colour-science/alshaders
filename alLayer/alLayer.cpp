@@ -202,12 +202,14 @@ shader_evaluate
 		if (debug == kLayer1) mix = 0.0f;
 		else if (debug == kLayer2) mix = 1.0f;
 
+        int als_raytype = ALS_RAY_UNDEFINED;
+        AiStateGetMsgInt("als_raytype", &als_raytype);
 
-		if (mix >= (1.0f-IMPORTANCE_EPS))
+		if (als_raytype != ALS_RAY_SSS && mix >= (1.0f-IMPORTANCE_EPS))
 		{
 			result = AiShaderEvalParamRGB(p_layer2);
 		}
-		else if (mix <= IMPORTANCE_EPS)
+		else if (als_raytype != ALS_RAY_SSS && mix <= IMPORTANCE_EPS)
 		{
 			result = AiShaderEvalParamRGB(p_layer1);
 		}

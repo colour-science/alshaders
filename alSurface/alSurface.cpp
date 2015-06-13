@@ -1160,7 +1160,6 @@ shader_evaluate
         alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups, path_throughput,
                            data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
         sg->out_opacity = AI_RGB_WHITE;
-        // reset ray type just to be safe
         return;
     }
     // if it's a shadow ray, handle shadow colouring through absorption

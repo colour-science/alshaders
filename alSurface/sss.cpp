@@ -96,24 +96,27 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
                         const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive)
 {
     
-    DiffusionSample& samp = dmd->samples[dmd->sss_depth];
+    
     void* orig_op;
     AiStateGetMsgPtr("als_sss_op", &orig_op);
+    
+    if ((sg->psg && sg->psg->shader != sg->shader) || dmd->shader_orig != sg->shader)
+    {
+        return;
+    }
+
     AtRay ray;
     AtScrSample scrs;
+    DiffusionSample& samp = dmd->samples[dmd->sss_depth];
     samp.S = sg->P - dmd->Po;
     samp.r = AiV3Length(samp.S);
     dmd->maxdist -= samp.r;
     samp.Rd = AI_RGB_BLACK;
-    if (dmd->shader_orig != sg->shader)
-    {
-        return;
-    }
+  
     if ((!trace_set_enabled && orig_op != sg->Op))
     {
         if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
         {
-            
             AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
             AiTrace(&ray, &scrs);
         }
@@ -245,14 +248,15 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
     dmd->sss_depth++;
 
+    AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
+    
     if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
     {
-        AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
+        
         if (trace_set_enabled)
         {
             AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
         }
-        sg->Rr--;
         AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
         AiTrace(&ray, &scrs);
     }
@@ -424,6 +428,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         float geom[3];
         
         memset(dmd->samples, 0, sizeof(DiffusionSample)*SSS_MAX_SAMPLES);
+        dmd->sss_depth = 0;
         if (AiTrace(&wi_ray, &scrs))
         {            
             for (int i=0; i < dmd->sss_depth; ++i)
@@ -455,7 +460,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
 
                 float f = r_disk[0] / pdf_sum;
                 result_sss += dmd->samples[i].Rd * f;
-                
+
                 for (int g=0; g < 8; ++g)
                 {
                     lightGroupsDirect[g] += dmd->samples[i].lightGroupsDirect[g] * f;
@@ -502,6 +507,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         result_sss += result_sss_indirect;
     }
     */
+    AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
 
     return result_sss;
 }
