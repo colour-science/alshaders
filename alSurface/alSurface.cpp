@@ -88,6 +88,7 @@ enum alSurfaceParams
     p_sssRadiusColor3,
     p_sssDensityScale,
     p_sssTraceSet,
+    p_sssExtraSamples,
 
     p_ssInScatteringStrength,
     p_ssAttenuationColor,
@@ -343,6 +344,7 @@ node_parameters
     AiMetaDataSetBool(mds, "sssRadiusColor3", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssDensityScale", 1.0f );
     AiParameterSTR("sssTraceSet", "");
+    AiParameterINT("sssExtraSamples", 0);
 
     AiParameterFLT("ssInScatteringStrength", 0.0f);
     AiParameterRGB("ssAttenuationColor", 1.0f, 1.0f, 1.0f);
@@ -600,7 +602,7 @@ node_update
     data->diffuse_samples2 = SQR(data->GI_diffuse_samples);
     data->GI_refraction_samples = AiNodeGetInt(options, "GI_refraction_samples")+params[p_transmissionExtraSamples].INT;
     data->refraction_samples2 = SQR(data->GI_refraction_samples);
-    data->sss_bssrdf_samples = AiNodeGetInt(options, "sss_bssrdf_samples");
+    data->sss_bssrdf_samples = AiNodeGetInt(options, "sss_bssrdf_samples")+params[p_sssExtraSamples].INT;
     data->sss_bssrdf_samples2 = SQR(data->sss_bssrdf_samples);
 
     // setup samples
@@ -2199,7 +2201,7 @@ shader_evaluate
         }
 
     } // if (do_glossy2)
-
+    
     // indirect_diffuse
     // ----------------
     if (do_diffuse && kti*kti2*maxh(diffuseColor)*diffuseIndirectStrength > IMPORTANCE_EPS)
