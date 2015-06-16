@@ -1058,6 +1058,11 @@ shader_evaluate
     float ssDirection = AiShaderEvalParamFlt(p_ssDirection);
     float ssInScatteringStrength = AiShaderEvalParamFlt(p_ssInScatteringStrength);
     AtRGB ssAttenuationColor = AiShaderEvalParamRGB(p_ssAttenuationColor);
+    // if the attenuation color is anything but white, make sure we don't have some channels left at pure white
+    if (minh(ssAttenuationColor) < 1.0f)
+    {
+        ssAttenuationColor = clamp(ssAttenuationColor, AI_RGB_BLACK, rgb(0.999f));
+    }
     bool ssSpecifyCoefficients = AiShaderEvalParamBool(p_ssSpecifyCoefficients);
 
     AtRGB opacity = AiShaderEvalParamRGB(p_opacity);
@@ -1216,7 +1221,8 @@ shader_evaluate
                             outOpacity.r = fast_exp(-z * als_sigma_t.r);
                             outOpacity.g = fast_exp(-z * als_sigma_t.g);
                             outOpacity.b = fast_exp(-z * als_sigma_t.b);
-                            outOpacity = 1.0f - (outOpacity*kt*transmissionColor);
+                            // outOpacity = 1.0f - (outOpacity*kt*transmissionColor);
+                            outOpacity = -log(outOpacity) * (1.0f - kt);
                         }
 
                     }
