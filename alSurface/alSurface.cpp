@@ -1221,7 +1221,6 @@ shader_evaluate
                             outOpacity.r = fast_exp(-z * als_sigma_t.r);
                             outOpacity.g = fast_exp(-z * als_sigma_t.g);
                             outOpacity.b = fast_exp(-z * als_sigma_t.b);
-                            // outOpacity = 1.0f - (outOpacity*kt*transmissionColor);
                             outOpacity = -log(outOpacity) * (1.0f - kt);
                         }
 
