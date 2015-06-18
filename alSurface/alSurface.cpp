@@ -333,15 +333,12 @@ node_parameters
     AiParameterFLT("sssRadius", 1.5f );
     AiParameterFLT("sssWeight1", 1.0f  );
     AiParameterRGB("sssRadiusColor", .439, .156, .078);
-    AiMetaDataSetBool(mds, "sssRadiusColor", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssRadius2", 4.0f );
     AiParameterFLT("sssWeight2", 0.0f );
     AiParameterRGB("sssRadiusColor2", .439, .08, .018 );
-    AiMetaDataSetBool(mds, "sssRadiusColor2", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssRadius3", .75f );
     AiParameterFLT("sssWeight3", .0f);
     AiParameterRGB("sssRadiusColor3", .523, .637, .667 );
-    AiMetaDataSetBool(mds, "sssRadiusColor3", "always_linear", true);  // no inverse-gamma correction
     AiParameterFLT("sssDensityScale", 1.0f );
     AiParameterSTR("sssTraceSet", "");
     AiParameterINT("sssExtraSamples", 0);
