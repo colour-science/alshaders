@@ -138,6 +138,15 @@ inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
    return r;
 }
 
+inline AtVector lerp(const AtVector& a, const AtVector& b, const float t)
+{
+   AtVector r;
+   r.x = lerp( a.x, b.x, t );
+   r.y = lerp( a.y, b.y, t );
+   r.z = lerp( a.z, b.z, t );
+   return r;
+}
+
 inline AtRGBA lerp(const AtRGBA& a, const AtRGBA& b, const float t)
 {
    AtRGBA r;
@@ -249,6 +258,15 @@ inline AtVector uniformSampleSphere(float u1, float u2)
      AtVector v;
     AiV3Create(v, x, y, z);
     return v;
+}
+
+inline AtVector uniformSampleHemisphere(float u1, float u2) {
+    float y = u1;
+    float r = sqrtf(MAX(0.f, 1.f - y*y));
+    float phi = 2 * AI_PI * u2;
+    float x = r * cosf(phi);
+    float z = r * sinf(phi);
+    return AiVector(x, y, z);
 }
 
 inline float uniformConePdf(float cosThetaMax) 
@@ -554,6 +572,7 @@ inline AtRGB bssrdfbrdf( const AtRGB& _alpha_prime )
 }
 
 void alphaInversion( const AtRGB& scatterColour, float scatterDist, AtRGB& sigma_s_prime_, AtRGB& sigma_a_ );
+void alphaInversion(float sc, float& sigma_s_prime_, float& sigma_a_ );
 float alpha1_3(float x);
 inline AtRGB alpha1_3(const AtRGB& c)
 {
@@ -856,6 +875,21 @@ inline AtVector floor(const AtVector& v)
 inline bool AiIsFinite(const AtRGB& c)
 {
     return AiIsFinite(c.r) && AiIsFinite(c.g) && AiIsFinite(c.b);
+}
+
+inline bool AiIsFinite(const AtVector& v)
+{
+    return AiIsFinite(v.x) && AiIsFinite(v.y) && AiIsFinite(v.z);
+}
+
+inline bool isValidColor(AtRGB c)
+{
+   return AiIsFinite(c) && c.r >= 0.0f && c.g >= 0.0f && c.b >= 0.0f;
+}
+
+inline bool isPositiveReal(float f)
+{
+   return AiIsFinite(f) && f >= 0.0f;
 }
 
 /// Generate a random integer in the range [0,n)

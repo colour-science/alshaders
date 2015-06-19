@@ -1,13 +1,16 @@
+#pragma once
+
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <ai.h>
 
 
 // stats.h
 struct Range
 {
 	Range(const std::string& nm, bool rod=false)
-	: name(nm), min(HUGE), max(-HUGE), total(0.0), n(0.0), reportOnDestruction(rod)
+	: name(nm), min(AI_INFINITE), max(-AI_INFINITE), total(0.0), n(0.0), reportOnDestruction(rod)
 	{}
 
 	~Range()

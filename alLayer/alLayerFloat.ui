@@ -2,33 +2,37 @@ import uigen
 
 ui.shader({
 	'name':'alLayerFloat',
-	'description':'Layer multiple floats together with alpha blending',
+	'intro':'Layer multiple floats together with alpha blending.',
+   'description':'This can be handy for stacking multiple image or procedural channels together and blending between them in different areas, for example for a displacement shader.',
 	'output':'float',
 	'maya_name':'alLayerFloat',
-	'maya_classification':'shader/texture',
+	'maya_classification':'utility/color',
 	'maya_id':'0x0011641B',
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
 	'soft_name':'ALS_LayerFloat',
 	'soft_classification':'material',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alLayer'
+	'help_url':'http://www.anderslanglands.com/alshaders/alLayerFloat.html',
+   'houdini_icon': 'COP2_composite'
 })
 
-ui.parameter('layer1', 'float', 0.0, 'Layer 1')
-ui.parameter('layer1a', 'float', 0.0, 'Layer 1 Alpha')
-ui.parameter('layer2', 'float', 0.0, 'Layer 2')
-ui.parameter('layer2a', 'float', 0.0, 'Layer 2 Alpha')
-ui.parameter('layer3', 'float', 0.0, 'Layer 3')
-ui.parameter('layer3a', 'float', 0.0, 'Layer 3 Alpha')
-ui.parameter('layer4', 'float', 0.0, 'Layer 4')
-ui.parameter('layer4a', 'float', 0.0, 'Layer 4 Alpha')
-ui.parameter('layer5', 'float', 0.0, 'Layer 5')
-ui.parameter('layer5a', 'float', 0.0, 'Layer 5 Alpha')
-ui.parameter('layer6', 'float', 0.0, 'Layer 6')
-ui.parameter('layer6a', 'float', 0.0, 'Layer 6 Alpha')
-ui.parameter('layer7', 'float', 0.0, 'Layer 7')
-ui.parameter('layer7a', 'float', 0.0, 'Layer 7 Alpha')
-ui.parameter('layer8', 'float', 0.0, 'Layer 8')
-ui.parameter('layer8a', 'float', 0.0, 'Layer 8 Alpha')
+ui.parameter('layer1', 'float', 0.0, 'Layer 1', description='The background layer (will be blended over black if its alpha is not 1.', mayane=True)
+ui.parameter('layer1a', 'float', 0.0, 'Layer 1 Alpha', description='The alpha of the background layer', mayane=True)
+ui.parameter('layer2', 'float', 0.0, 'Layer 2', description='The value plugged in here will be blended over the layers below according to its alpha.', mayane=True)
+ui.parameter('layer2a', 'float', 0.0, 'Layer 2 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
+ui.parameter('layer3', 'float', 0.0, 'Layer 3', description='The value plugged in here will be blended over the layers below according to its alpha.', mayane=True)
+ui.parameter('layer3a', 'float', 0.0, 'Layer 3 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
+ui.parameter('layer4', 'float', 0.0, 'Layer 4', description='The value plugged in here will be blended over the layers below according to its alpha.', mayane=True)
+ui.parameter('layer4a', 'float', 0.0, 'Layer 4 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
+ui.parameter('layer5', 'float', 0.0, 'Layer 5', description='The value plugged in here will be blended over the layers below according to its alpha.', mayane=True)
+ui.parameter('layer5a', 'float', 0.0, 'Layer 5 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
+ui.parameter('layer6', 'float', 0.0, 'Layer 6', description='The value plugged in here will be blended over the layers below according to its alpha.', mayane=True)
+ui.parameter('layer6a', 'float', 0.0, 'Layer 6 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
+ui.parameter('layer7', 'float', 0.0, 'Layer 7', description='The value plugged in here will be blended over the layers below according to its alpha.', mayane=True)
+ui.parameter('layer7a', 'float', 0.0, 'Layer 7 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
+ui.parameter('layer8', 'float', 0.0, 'Layer 8', description='The value plugged in here will be blended over the layers below according to its alpha.', mayane=True)
+ui.parameter('layer8a', 'float', 0.0, 'Layer 8 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)

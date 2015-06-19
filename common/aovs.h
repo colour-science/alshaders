@@ -1,5 +1,7 @@
+#pragma once
 // aovs.h
 
+#define NUM_LIGHT_GROUPS 8
 #define NUM_AOVs 33
 #define NUM_AOVs_RGBA 8
 

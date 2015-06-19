@@ -1,55 +1,65 @@
 import uigen
 
 ui.shader({
-        'name':'alTriplanar',
-        'description':'Projects a texture orthographically in three axis.',
-        'output':'rgb',
-        'maya_name':'alTriplanar',
-        'maya_classification':'texture',
-        'maya_id':'0x00116413',
-        'maya_swatch':True,
-        'maya_matte':False,
-        'maya_bump':False,
-        'soft_name':'ALS_Triplanar',
-        'soft_classification':'texture',
-        'soft_version':1
+    'name':'alTriplanar',
+    'intro':'Projects a texture orthographically in three axes.',
+    'description':'Useful for quickly adding bombing patterns of texture to objects to add variation and breakup.',
+    'output':'rgb',
+    'maya_name':'alTriplanar',
+    'maya_classification':'texture/other',
+    'maya_id':'0x00116413',
+    'maya_swatch':True,
+    'maya_matte':False,
+    'maya_bump':False,
+    'c4d_classification':'texture',
+    'c4d_menu':'texture',   
+    'soft_name':'ALS_Triplanar',
+    'soft_classification':'texture',
+    'soft_version':1,
+    'help_url':'http://www.anderslanglands.com/alshaders/alTriplanar.html',
+    'houdini_icon': 'SHELF_distribute_fluid_sim'
 })
+
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Background', description='Background color over which to project the texture.', mayane=True)
+
+ui.parameter('texture', 'string', '', 'Texture', connectible=False, description='The texture image to project over the background.')
 
 ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
         "world",
         "object",
         "Pref"
-])
+], description='Space in which to project the texture.')
 
 ui.parameter('normal', 'enum', 'geometric', 'Normal', enum_names=[
         "geometric",
         "smooth",
         "smooth-NoBump"
-])
+], description='Normal to use for projection.')
 
 ui.parameter('tiling', 'enum', 'regular', 'Tiling', enum_names=[
         "regular",
         "cellnoise"
-])
+], description='Tiling pattern. regular gives a regular grid, cellnoise gives a random pattern.', fig='alTriplanar_tiling', figc='Tiling set to cellnoise and regular')
 
-ui.parameter('texture', 'string', '', 'Texture', connectible=False)
+ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the pattern. Higher numbers give more repetions, lower numbers give less.', fig='alTriplanar_frequency', figc='Frequency at 0.5, 1.0, 2.0')
 
-ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', "", 0., 1., 0., 1.)
+with uigen.group(ui, 'Blending', False, 'Use these parameters to soften the blend of the image between projection planes and between cells.'):
+    ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', mn=0, mx=1, description='The softness of the blends.', fig='alTriplanar_blend', figc='Blend softness at 0.0, 0.1, 0.5')
+    ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', mn=0, mx=1, description='The softness of the cell borders.', fig='alTriplanar_cell', figc='Cell softness at 0.0, 0.1, 0.5')
 
-ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', "", 0., 1., 0., 1.)
+with uigen.group(ui, 'Positioning', True, 'Use these parameters to control the scale and placement of the image.'):
+    ui.parameter('scalex', 'float', 1.0, 'X Scale')
+    ui.parameter('scaley', 'float', 1.0, 'Y Scale')
+    ui.parameter('scalez', 'float', 1.0, 'Z Scale')
 
-ui.parameter('scalex', 'float', 1.0, 'X Scale')
-ui.parameter('scaley', 'float', 1.0, 'Y Scale')
-ui.parameter('scalez', 'float', 1.0, 'Z Scale')
+    ui.parameter('offsetx', 'float', 0.0, 'X Offset')
+    ui.parameter('offsety', 'float', 0.0, 'Y Offset')
+    ui.parameter('offsetz', 'float', 0.0, 'Z Offset')
 
-ui.parameter('offsetx', 'float', 0.0, 'X Offset')
-ui.parameter('offsety', 'float', 0.0, 'Y Offset')
-ui.parameter('offsetz', 'float', 0.0, 'Z Offset')
+    ui.parameter('rotx', 'float', 0.0, 'X Rotation', "", 0., 360., 0., 360.)
+    ui.parameter('roty', 'float', 0.0, 'Y Rotation', "", 0., 360., 0., 360.)
+    ui.parameter('rotz', 'float', 0.0, 'Z Rotation', "", 0., 360., 0., 360.)
 
-ui.parameter('rotx', 'float', 0.0, 'X Rotation', "", 0., 360., 0., 360.)
-ui.parameter('roty', 'float', 0.0, 'Y Rotation', "", 0., 360., 0., 360.)
-ui.parameter('rotz', 'float', 0.0, 'Z Rotation', "", 0., 360., 0., 360.)
-
-ui.parameter('rotjitterx', 'float', 1.0, 'X Rotation Jitter', "", 0., 1., 0., 1.)
-ui.parameter('rotjittery', 'float', 1.0, 'Y Rotation Jitter', "", 0., 1., 0., 1.)
-ui.parameter('rotjitterz', 'float', 1.0, 'Z Rotation Jitter', "", 0., 1., 0., 1.)
+    ui.parameter('rotjitterx', 'float', 1.0, 'X Rotation Jitter', "", 0., 1., 0., 1.)
+    ui.parameter('rotjittery', 'float', 1.0, 'Y Rotation Jitter', "", 0., 1., 0., 1.)
+    ui.parameter('rotjitterz', 'float', 1.0, 'Z Rotation Jitter', "", 0., 1., 0., 1.)

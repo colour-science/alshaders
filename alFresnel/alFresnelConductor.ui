@@ -5,15 +5,18 @@ ui.shader({
 	'description':'Measured metallic fresnel',
 	'output':'rgb',
 	'maya_name':'alFresnelConductor',
-	'maya_classification':'texture',
+	'maya_classification':'utility/color',
 	'maya_id':'0x0011641A',
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',    
 	'soft_name':'ALS_FresnelConductor',
 	'soft_classification':'texture',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alpattern'
+	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/Home#rst-header-alpattern',
+   'houdini_icon': 'VOP_rayhit'
 	
 })
 
@@ -29,5 +32,5 @@ ui.parameter('material', 'enum', 'aluminium', 'Material', enum_names=[
 ])
 
 ui.parameter('normalize', 'bool', False, 'Normalize')
-ui.parameter('n', 'float', 1.19781, 'n')
-ui.parameter('k', 'float', 7.0488, 'k')
+ui.parameter('reflectivity', 'rgb', (0.99, 0.791587, 0.3465), 'Reflectivity')
+ui.parameter('edgetint', 'rgb', (0.99, 0.9801, 0.792), 'Edge tint')

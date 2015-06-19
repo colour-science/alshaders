@@ -2,30 +2,34 @@ import uigen
 
 ui.shader({
 	'name':'alCel',
-	'description':'Apply a cel-shaded look to the result of an alSurface using MayaRamp nodes',
+	'intro':'Apply a cel-shaded look to the result of an alSurface using MayaRamp nodes.',
+   'description':'Connect an alSurface to the Surface shader parameter to remap its direct lighting and create a toon-shaded appearance.',
 	'output':'rgb',
 	'maya_name':'alCel',
 	'maya_classification':'shader/surface',
 	'maya_id':'0x0011641D',
 	'maya_swatch':True,
-	'maya_matte':True,
+	'maya_matte':False,
 	'maya_bump':True,
+   'c4d_classification':'surface',
+   'c4d_menu':'surface', 
 	'soft_name':'ALS_Cel',
 	'soft_classification':'material',
 	'soft_version':1,
-	'help_url':''
+	'help_url':'http://www.anderslanglands.com/alshaders/alCel.html',
+   'houdini_icon': 'SOP_paint'
 })
 
 with uigen.group(ui, 'Shading', False):
-	ui.parameter('surfaceShader', 'rgb', (0.0, 0.0, 0.0), 'Surface shader')
-	ui.parameter('diffuseDirectStrength', 'float', 0.75, 'Diffuse strength')
-	ui.parameter('diffuseRamp', 'rgb', (0.0, 0.0, 0.0), 'Diffuse ramp')
-	ui.parameter('diffuseColorRamp', 'rgb', (1.0, 1.0, 1.0), 'Diffuse color ramp')
-	ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect diffuse strength')
-	ui.parameter('diffuseIndirectSaturation', 'float', 1.0, 'Indirect diffuse saturation')
-	ui.parameter('diffuseIndirectTint', 'rgb', (1.0, 1.0, 1.0), 'Indirect diffuse tint')
+	ui.parameter('surfaceShader', 'rgb', (0.0, 0.0, 0.0), 'Surface shader', description='Connect an alSurface shader here to have its diffuse component run through the ramp for cel shading.', mayane=True)
+	ui.parameter('diffuseDirectStrength', 'float', 0.75, 'Diffuse strength', description='A multiplier on the diffuse component before being passed through the ramp. This is useful to bring your diffuse illumination into the 0-1 range required by the ramp.', mayane=True)
+	ui.parameter('diffuseRamp', 'rgb', (0.0, 0.0, 0.0), 'Diffuse ramp', description='Plug a MayaRamp node here to control the cel shading colors.', mayane=True)
+	ui.parameter('diffuseColorRamp', 'rgb', (1.0, 1.0, 1.0), 'Diffuse color ramp', description='Plug a MayaRamp node here to tint the diffuse shading.', mayane=True)
+	ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect diffuse strength', description='Multipler on the strength of the indirect diffuse illumination.', mayane=True)
+	ui.parameter('diffuseIndirectSaturation', 'float', 1.0, 'Indirect diffuse saturation', description='Controls the saturation of the indirect diffuse illumination. It can be useful to increase this for more stylized effects.', mayane=True)
+	ui.parameter('diffuseIndirectTint', 'rgb', (1.0, 1.0, 1.0), 'Indirect diffuse tint', description='Color tint on the indirect diffuse illumination.', mayane=True)
 
-with uigen.group(ui, 'AOVs'):
-	ui.aov('aov_direct_diffuse_cel', 'rgb', 'Cel Diffuse')
-	ui.aov('aov_direct_diffuse_raw_cel', 'rgb', 'Cel Raw Diffuse')
-	ui.aov('aov_indirect_diffuse_cel', 'rgb', 'Cel Indirect Diffuse')
+with uigen.group(ui, 'AOVs', description='Use these parameters to change the name of the AOVs that the shader writes'):
+	ui.aov('aov_direct_diffuse_cel', 'rgb', 'Cel Diffuse', description='The name of the AOV containing the cel-shaded diffuse result.')
+	ui.aov('aov_direct_diffuse_raw_cel', 'rgb', 'Cel Raw Diffuse', description='The name of the AOV containing the untextured cel-shaded diffuse result.')
+	ui.aov('aov_indirect_diffuse_cel', 'rgb', 'Cel Indirect Diffuse', description='The name of the AOV containing the adjusted indirect diffuse result.')

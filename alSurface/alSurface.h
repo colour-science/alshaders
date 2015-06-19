@@ -4,12 +4,20 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "aovs.h"
 
 #include "fresnel.h"
+#include "stats.h"
 
 struct ShaderData
 {
+   ShaderData()
+   : sss_samples_taken("sss_samples")
+   {
+
+   }
    AtSampler* diffuse_sampler;
+   AtSampler* sss_sampler;
    AtSampler* glossy_sampler;
    AtSampler* glossy2_sampler;
    AtSampler* refraction_sampler;
@@ -32,16 +40,18 @@ struct ShaderData
    int refraction_sample_offset;
    int backlight_sample_offset;
    int total_samples;
+   int sss_bssrdf_samples;
+   int sss_bssrdf_samples2;
    AtCritSec cs;
    std::map<AtNode*, int> lightGroups;
    std::map<AtNode*, float> shadowDensities;
    bool specular1NormalConnected;
    bool specular2NormalConnected;
-   bool lightGroupsIndirect;
+   bool diffuseNormalConnected;
+   bool transmissionNormalConnected;
    bool standardAovs;
    bool transmitAovs;
    int numLights;
-   bool rrTransmission;
    int rrTransmissionDepth;
    bool transmissionDoDirect;
 
@@ -55,22 +65,21 @@ struct ShaderData
    int* perm_table_spec1;
    int* perm_table_spec2;
    int* perm_table_backlight;
+   int* perm_table_sss;
    int xres;
 
    float specular1IndirectClamp;
    float specular2IndirectClamp;
    float transmissionClamp;
+   float diffuseIndirectClamp;
 
    // AOV names
    std::vector<std::string> aovs;
    std::vector<std::string> aovs_rgba;
 
    // Fresnel
-   Fresnel* fr1;
-   bool fr1_uniform;
-   Fresnel* fr2;
-   bool fr2_uniform;
-
+   int specular1FresnelMode;
+   int specular2FresnelMode;
 
    std::string trace_set_all;
    bool trace_set_all_enabled;
@@ -100,7 +109,33 @@ struct ShaderData
    bool trace_set_transmission_enabled;
    bool trace_set_transmission_inclusive;
 
+   std::string trace_set_sss;
+   bool trace_set_sss_enabled;
+   bool trace_set_sss_inclusive;
+
    bool cel_connected;
+
+   int sssMode;
+   Range sss_samples_taken;
+
+   int debug;
+
+    float aov_diffuse_color_clamp;
+    float aov_direct_diffuse_clamp;
+    float aov_direct_diffuse_raw_clamp;
+    float aov_indirect_diffuse_clamp;
+    float aov_indirect_diffuse_raw_clamp;
+    float aov_direct_backlight_clamp;
+    float aov_indirect_backlight_clamp;
+    float aov_direct_specular_clamp;
+    float aov_indirect_specular_clamp;
+    float aov_direct_specular_2_clamp;
+    float aov_indirect_specular_2_clamp;
+    float aov_single_scatter_clamp;
+    float aov_sss_clamp;
+    float aov_refraction_clamp;
+    float aov_emission_clamp;
+    float aov_light_group_clamp[NUM_LIGHT_GROUPS];
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0
@@ -108,6 +143,7 @@ struct ShaderData
 #define RAND_STREAM_ALSURFACE_RR_SPEC1_PERMUTE 20000
 #define RAND_STREAM_ALSURFACE_RR_SPEC2_PERMUTE 30000
 #define RAND_STREAM_ALSURFACE_RR_BACKLIGHT_PERMUTE 40000
+#define RAND_STREAM_ALSURFACE_RR_SSS_PERMUTE 50000
 
 
 #define TEA_STREAM_ALSURFACE_RR_OFFSET 0
@@ -124,3 +160,8 @@ struct ShaderData
 
 #define TEA_STREAM_ALSURFACE_RR_BACKLIGHT_OFFSET 8
 #define TEA_STREAM_ALSURFACE_RR_BACKLIGHT_JITTER 9
+
+#define TEA_STREAM_ALSURFACE_RR_SSS_OFFSET 10
+#define TEA_STREAM_ALSURFACE_RR_SSS_JITTER 11
+
+#define TEA_STREAM_ALSURFACE_RR2_OFFSET 12

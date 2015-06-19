@@ -2,24 +2,25 @@ import uigen
 
 ui.shader({
 	'name':'alCurvature',
-	'description':'Provides a measure of the surface curvature',
+   'intro':'Measure the local curvature of the surface.',
+	'description':'Can be used to create effects such as stretch maps and dirt maps, or to simulate wear and tear. For best results remap and combine with a noise function then use it to drive layering effects in your surface shader.',
 	'output':'rgb',
 	'maya_name':'alCurvature',
-	'maya_classification':'texture',
+	'maya_classification':'utility/color',
 	'maya_id':'0x00116412',
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',    
 	'soft_name':'ALS_Curvature',
 	'soft_classification':'texture',
-	'soft_version':1
+	'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alCurvature.html'
 })
 
-ui.parameter('samples', 'int', 2)
-ui.parameter('sampleOffset', 'float', 1.0)
-ui.parameter('sampleRadius', 'float', 1.0)
-
+ui.parameter('mode', 'enum', 'positive', 'Mode', enum_names=['positive', 'negative'], description='Select the type of curvature to output. positive selects convex regions while negative selects concave regions.', fig='alCurvature_mode', figc='Mode set to positive and negative.')
+ui.parameter('samples', 'int', 3, 'Samples', description='The sampling rate for the curvature calculation.')
+ui.parameter('sampleRadius', 'float', 1.0, 'Radius', description='The radius to consider when estimating the curvature. Smaller values pick out finer detail, while larger values give a smoother result.', fig='alCurvature_radius', figc='Radius at 0.1, 0.25, 0.4')
+ui.parameter('traceSet', 'string', '', 'Trace set', description='Enter a trace set here to restrict the curvature calculation to only consider that set of objects.')
 uigen.remapControls(ui)
-
-ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0))
-ui.parameter('color2', 'rgb', (1.0, 1.0, 1.0))

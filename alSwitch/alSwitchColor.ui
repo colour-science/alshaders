@@ -2,26 +2,31 @@ import uigen
 
 ui.shader({
         'name':'alSwitchColor',
-        'description':'Eight-way switch between inputs',
+        'intro':'Eight-way switch between inputs.',
+        'description':'Use this to select between multiple color values based on the value of a float input.',
 	'output':'rgb',
         'maya_name':'alSwitchColor',
-	'maya_classification':'texture',
+	'maya_classification':'utility/color',
         'maya_id':'0x00116414',
 	'maya_swatch':True,
 	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',   
         'soft_name':'ALS_SwitchColor',
 	'soft_classification':'texture',
-	'soft_version':1
+	'soft_version':1,
+  'help_url':'http://www.anderslanglands.com/alshaders/alSwitchColor.html',
+   'houdini_icon': 'VOP_switch'
 })
 
-ui.parameter('inputA', 'rgb', (0.0, 0.0, 0.0), 'Input 0')
-ui.parameter('inputB', 'rgb', (1.0, 1.0, 1.0), 'Input 1')
-ui.parameter('inputC', 'rgb', (1.0, 0.0, 0.0), 'Input 2')
-ui.parameter('inputD', 'rgb', (0.0, 1.0, 0.0), 'Input 3')
-ui.parameter('inputE', 'rgb', (0.0, 0.0, 1.0), 'Input 4')
-ui.parameter('inputF', 'rgb', (1.0, 1.0, 0.0), 'Input 5')
-ui.parameter('inputG', 'rgb', (1.0, 0.0, 1.0), 'Input 6')
-ui.parameter('inputH', 'rgb', (0.0, 1.0, 1.0), 'Input 7')
-ui.parameter('mix', 'float', 1.0, 'mix')
-ui.parameter('threshold', 'float', 0.5, 'threshold')
+ui.parameter('inputA', 'rgb', (0.0, 0.0, 0.0), 'Input 0', description='Connect a color here to have it selected by the mix value', mayane=True)
+ui.parameter('inputB', 'rgb', (1.0, 1.0, 1.0), 'Input 1', description='Connect a color here to have it selected by the mix value', mayane=True)
+ui.parameter('inputC', 'rgb', (1.0, 0.0, 0.0), 'Input 2', description='Connect a color here to have it selected by the mix value', mayane=True)
+ui.parameter('inputD', 'rgb', (0.0, 1.0, 0.0), 'Input 3', description='Connect a color here to have it selected by the mix value', mayane=True)
+ui.parameter('inputE', 'rgb', (0.0, 0.0, 1.0), 'Input 4', description='Connect a color here to have it selected by the mix value', mayane=True)
+ui.parameter('inputF', 'rgb', (1.0, 1.0, 0.0), 'Input 5', description='Connect a color here to have it selected by the mix value', mayane=True)
+ui.parameter('inputG', 'rgb', (1.0, 0.0, 1.0), 'Input 6', description='Connect a color here to have it selected by the mix value', mayane=True)
+ui.parameter('inputH', 'rgb', (0.0, 1.0, 1.0), 'Input 7', description='Connect a color here to have it selected by the mix value', mayane=True)
+ui.parameter('mix', 'float', 1.0, 'mix', description='Signal that selects from one of the 8 inputs.', mayane=True)
+ui.parameter('threshold', 'float', 0.5, 'threshold', description='Partial threshold at which the signal transitions from one input to the next.')

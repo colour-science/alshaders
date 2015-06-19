@@ -2,31 +2,35 @@ import uigen
 
 ui.shader({
 	'name':'alLayer',
-	'description':'Layer two shaders together',
+	'intro':'Layer two shaders together',
+   'description':'Simply blends two surface shaders, including all their AOVs while preserving light group information.',
 	'output':'rgb',
 	'maya_name':'alLayer',
 	'maya_classification':'shader/surface',
 	'maya_id':'0x00116407',
 	'maya_swatch':True,
-	'maya_matte':True,
+	'maya_matte':False,
 	'maya_bump':False,
+   'c4d_classification':'surface',
+   'c4d_menu':'surface',
 	'soft_name':'ALS_Layer',
 	'soft_classification':'material',
 	'soft_version':1,
-	'help_url':'https://bitbucket.org/anderslanglands/alshaders/wiki/alLayer'
+	'help_url':'http://www.anderslanglands.com/alshaders/alLayer.html',
+   'houdini_icon': 'SHOP_surface'
 })
 
-ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1')
-ui.parameter('layer2', 'rgb', (0.0, 0.0, 0.0), 'Layer 2')
-ui.parameter('mix', 'float', 0.0, 'Mix')
+ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1', description='The bottom layer to blend.', mayane=True)
+ui.parameter('layer2', 'rgb', (0.0, 0.0, 0.0), 'Layer 2', description='The top layer to blend.', mayane=True)
+ui.parameter('mix', 'float', 0.0, 'Mix', description='The amount to blend from the bottom layer to the top.', mayane=True)
 ui.parameter('debug', 'enum', 'off', 'Debug', enum_names=[
 	"off",
 	"layer1",
 	"layer2",
 	"mixer"
-])
+], description='Allows you to quickly preview each layer and the mix value.')
 
-with uigen.group(ui, 'AOVs'):
+with uigen.group(ui, 'AOVs', description='Use these parameters to rename the AOVs that the shader blends and outputs.'):
 	ui.parameter('standardCompatibleAOVs', 'bool', False, 'Write standard AOVs only')
 	ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color')
 	ui.aov('aov_direct_diffuse', 'rgb', 'Direct diffuse')
