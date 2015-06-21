@@ -31,11 +31,6 @@ struct RemapFloatParams
 #define REMAP_FLOAT_CREATE \
 {RMPinputMin, RMPinputMax, RMPcontrast, RMPcontrastPivot, RMPbias, RMPgain, RMPoutputMin, RMPoutputMax, RMPclampEnable, RMPthreshold, RMPclampMin, RMPclampMax}
 
-
-//RemapFloatParams params = {0, 1, 1, 0.5, 0.5, 0.5, 0, 1, 1, 0, 0, 1} 
-
-
-
 float contrast(float input, float c, float pivot)
 {
     if (c == 1.0) return input;

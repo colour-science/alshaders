@@ -31,6 +31,6 @@ ui.parameter('maxGain', 'float', 1.0, 'Max Gain', description='Maximum random ga
 ui.parameter('minHueOffset', 'float', -0.1, 'Min Hue Offset', description='Minimum hue offset to apply.', fig='alJitterColor_minHue', figc='Min Hue Offset at 0.0, -0.2, -0.4. Signal is the face ID')
 ui.parameter('maxHueOffset', 'float', 0.1, 'Max Hue Offset', description='Maximum hue offset to apply.', fig='alJitterColor_maxHue', figc='Max Hue Offset at 0.0, 0.2, 0.4. Signal is the face ID')
 
-ui.parameter('clamp', 'bool', True, 'Clamp', description='If enabled, the output color will be clamped to 0-1.')
+ui.parameter('clampResult', 'bool', True, 'Clamp', description='If enabled, the output color will be clamped to 0-1.')
 
 ui.parameter('signal', 'float', 0.0, 'Signal', description='Signal to use to drive the randomization. This wants to be a unique value per object such as the object id.', mayane=True)

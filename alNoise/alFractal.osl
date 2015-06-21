@@ -18,8 +18,6 @@ shader alFractal
    float lacunarity = 2.121,
    float gain = 0.5,
    int turbulent = 0,
-   int ridged = 0,
-   float ridgeOffset = 0,
    REMAP_FLOAT_DECLARE_PARAMS,
    color color1 = color(0),
    color color2 = color(1),
@@ -47,24 +45,15 @@ shader alFractal
       float vv;
       for (int i=0; i < octaves; ++i)
       {
-         /*
          if (distortion != 0)
          {
-            pp += distortion * 
+            vector vd = noise("snoise", p);
+            pp += distortion * vd;
          }
-         */
          vv = noise("snoise", pp, t);
          if (turbulent)
          {
             vv = abs(vv);
-         }
-         if (ridged)
-         {
-            vv = ridgeOffset - vv;
-            vv *= vv;
-            vv *= weight;
-            weight = vv * 2;
-            weight = clamp(weight, 0, 1);
          }
 
          n += vv * amp;
@@ -76,6 +65,33 @@ shader alFractal
       RemapFloatParams rmp = REMAP_FLOAT_CREATE;
       n = remap(n, rmp);
       result = mix(color1, color2, n);
+   }
+   else // vector
+   {
+      color n = color(0, 0, 0);
+      float amp = 1.0;
+      color weight = color(0, 0, 0);
+      color vv;
+      for (int i=0; i < octaves; ++i)
+      {
+         if (distortion != 0)
+         {
+            vector vd = noise("snoise", p);
+            pp += distortion * vd;
+         }
+         vv = noise("snoise", pp, t);
+         if (turbulent) vv = abs(vv);
+         n += vv * amp;
+         amp *= gain;
+
+         pp *= lacunarity;
+      }
+      RemapFloatParams rmp = REMAP_FLOAT_CREATE;
+      n[0] = remap(n[0], rmp);
+      n[1] = remap(n[1], rmp);
+      n[2] = remap(n[2], rmp);
+
+      result = n;
    }
 
 }

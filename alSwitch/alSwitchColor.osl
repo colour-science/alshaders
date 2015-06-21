@@ -1,0 +1,27 @@
+shader alSwitchColor
+(
+   color inputA = 0,
+   color inputB = 1,
+   color inputC = 0.15,
+   color inputD = 0.3,
+   color inputE = 0.45,
+   color inputF = 0.6,
+   color inputG = 0.75,
+   color inputH = 0.9,
+   float mixer=1,
+   float threshold=0.5,
+   output color result = 0
+)
+{
+   float input = floor(mixer);
+   if (mixer-input >= threshold) input++;
+   input = clamp(input, 0, 7);
+   if (input == 0) result = inputA;
+   else if (input == 1) result = inputB;
+   else if (input == 2) result = inputC;
+   else if (input == 3) result = inputD;
+   else if (input == 4) result = inputE;
+   else if (input == 5) result = inputF;
+   else if (input == 6) result = inputG;
+   else if (input == 7) result = inputH;
+}

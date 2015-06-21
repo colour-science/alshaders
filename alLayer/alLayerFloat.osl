@@ -1,0 +1,30 @@
+shader alLayerFloat
+(
+   float layer1 = 0,
+   float layer1a = 0,
+   float layer2 = 0,
+   float layer2a = 0,
+   float layer3 = 0,
+   float layer3a = 0,
+   float layer4 = 0,
+   float layer4a = 0,
+   float layer5 = 0,
+   float layer5a = 0,
+   float layer6 = 0,
+   float layer6a = 0,
+   float layer7 = 0,
+   float layer7a = 0,
+   float layer8 = 0,
+   float layer8a = 0,
+
+   output float result = 0
+)
+{
+   result = mix(layer1, layer2, layer2a);
+   result = mix(layer2, layer3, layer3a);
+   result = mix(layer3, layer4, layer4a);
+   result = mix(layer4, layer5, layer5a);
+   result = mix(layer5, layer6, layer6a);
+   result = mix(layer6, layer7, layer7a);
+   result = mix(layer7, layer8, layer8a);
+}

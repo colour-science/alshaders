@@ -28,5 +28,5 @@ ui.parameter('inputE', 'float', .45, 'InputE', description='Connect a value here
 ui.parameter('inputF', 'float', .60, 'InputF', description='Connect a value here to have it selected by the mix value', mayane=True)
 ui.parameter('inputG', 'float', .75, 'InputG', description='Connect a value here to have it selected by the mix value', mayane=True)
 ui.parameter('inputH', 'float', .90, 'InputH', description='Connect a value here to have it selected by the mix value', mayane=True)
-ui.parameter('mix', 'float', 1.0, 'mix', description='Signal that selects from one of the 8 inputs.', mayane=True)
+ui.parameter('mixer', 'float', 1.0, 'mix', description='Signal that selects from one of the 8 inputs.', mayane=True)
 ui.parameter('threshold', 'float', 0.5, 'threshold', description='Partial threshold at which the signal transitions from one input to the next.')

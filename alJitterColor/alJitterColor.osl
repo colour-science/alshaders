@@ -1,0 +1,42 @@
+shader alJitterColor
+(
+   color input = color(1),
+   float minSaturation = 0.0,
+   float maxSaturation = 1.0,
+   float minHueOffset = -1.0,
+   float maxHueOffset = 1.0,
+   float minGain = 0.0,
+   float maxGain = 1.0,
+   float clampResult = 1,
+   float signal = 0.0,
+   output color result = color(0)
+)
+{
+   result = input;
+
+   float saturation = noise("cell", signal, 51731.132151);
+   saturation = mix(minSaturation, maxSaturation, saturation);
+   if (saturation != 1)
+   {
+      float l = luminance(result);
+      result = mix(color(l), result, saturation);
+   }
+
+   float hueOffset = noise("cell", signal, 173.1231);
+   hueOffset = mix(minHueOffset, maxHueOffset, hueOffset);
+   if (hueOffset != 0)
+   {
+      color hsv = transformc("hsv", result);
+      hsv[0] += hueOffset;
+      result = transformc("rgb", hsv);
+   }
+
+   float gain = noise("cell", signal, 413.7254);
+   gain = mix(minGain, maxGain, gain);
+   result *= gain;
+
+   if (clampResult)
+   {
+      result = clamp(result, color(0), color(1));
+   }
+}

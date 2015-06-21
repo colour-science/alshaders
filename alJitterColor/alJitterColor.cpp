@@ -28,7 +28,7 @@ node_parameters
     AiParameterFLT("maxHueOffset", 0.1);
     AiParameterFLT("minGain", 0.5);
     AiParameterFLT("maxGain", 1.5);
-    AiParameterBOOL("clamp", true);
+    AiParameterBOOL("clampResult", true);
     AiParameterFLT("signal", 0.f);
 }
 

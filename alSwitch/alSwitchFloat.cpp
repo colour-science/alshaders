@@ -27,7 +27,7 @@ node_parameters
     AiParameterFLT("inputF", .60f);
     AiParameterFLT("inputG", .75f);
     AiParameterFLT("inputH", .90f);
-    AiParameterFLT("mix", 1.0f);
+    AiParameterFLT("mixer", 1.0f);
     AiParameterFLT("threshold", 0.5f);
 }
 

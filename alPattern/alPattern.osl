@@ -1,0 +1,65 @@
+#include "../alRemap/osl_remap.h"
+
+#define PN_SINE 0
+#define PN_SQUARE 1
+#define PN_SAW 2
+
+#define NS_WORLD 0
+#define NS_OBJECT 1
+#define NS_PREF 2
+#define NS_UV 3
+
+shader alPattern
+(
+   int space = 0,
+   int axis = 0,
+   int shape = 0,
+   float frequency = 5,
+   float offset = 0,
+   color color1 = 0,
+   color color2 = 1,
+   REMAP_FLOAT_DECLARE_PARAMS,
+   point p = P,
+   output color result = 0
+)
+{
+   point pp = p;
+
+   // switch space
+   if (space == NS_OBJECT)
+   {
+      pp = transform("object", pp);
+   }
+   else if (space == NS_UV)
+   {
+      pp = point(u, v, 0);
+   }
+
+   pp *= frequency;
+   float r = 0;
+   float x = pp[0];
+
+   if (axis == 1) x = pp[1];
+   else if (axis == 2) x = pp[2];
+
+   x += offset;
+
+   if (shape == PN_SINE)
+   {
+      r = sin(x);
+   }
+   else if (shape == PN_SQUARE)
+   {
+      r = sin(x) > 0 ? 1 : 0;
+   }
+   else if (shape == PN_SAW)
+   {
+      r = mod(x * 0.25, 1);
+   }
+
+   RemapFloatParams rmp = REMAP_FLOAT_CREATE;
+   r = remap(r, rmp);
+
+   result = mix(color1, color2, r);
+
+}

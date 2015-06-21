@@ -93,7 +93,7 @@ set(SUBDIRECTORIES
         common
 )
 
-set(OSLC /Users/anders/code/arnold/contrib/OSL/bin/darwin/oslc)
+set(OSLC /Users/anders/vfx/platform/2015/bin/oslc)
 
 # define shader build function
 function(build_shader)

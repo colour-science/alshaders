@@ -5,7 +5,7 @@ shader alCombineFloat
    float input3 = 0,
    int combineOp =0 [[
       string widget = "mapper",
-      string options = "multiply 1*2:0|add 1+2:1|divide 1/2:2|subtract 1-2:3|mix(1, 2, 3):4"]],
+      string options = "multiply 1*2:0|add 1+2:1|divide 1/2:2|subtract 1-2:3|lerp(1, 2, 3):4"]],
    output float result = 0
 )
 {
