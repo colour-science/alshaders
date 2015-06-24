@@ -905,5 +905,8 @@ inline int rand0n(int n)
 #define ALS_RAY_DUAL 2
 #define ALS_RAY_HAIR 3
 
+#define ALS_CONTEXT_NONE 0
+#define ALS_CONTEXT_LAYER 1
+
 #define VAR(x) #x << ": " << x
 #define VARL(x) std::cerr << #x << ": " << x << "\n"

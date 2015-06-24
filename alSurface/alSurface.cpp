@@ -1155,12 +1155,13 @@ shader_evaluate
     DirectionalMessageData* diffusion_msgdata = NULL; 
     AiStateGetMsgPtr("als_dmd", (void**)&diffusion_msgdata);
 
+    float sssMix = AiShaderEvalParamFlt(p_sssMix);
     if (als_raytype == ALS_RAY_SSS)
     {
         // compute the diffusion sample
         assert(diffusion_msgdata);
         alsIrradiateSample(sg, diffusion_msgdata, data->diffuse_sampler, U, V, data->lightGroups, path_throughput,
-                           data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive);
+                           data->trace_set_sss.c_str(), data->trace_set_sss_enabled, data->trace_set_sss_inclusive, sssMix);
         sg->out_opacity = AI_RGB_WHITE;
         return;
     }
@@ -1278,7 +1279,7 @@ shader_evaluate
     float diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
     bool diffuseEnableCaustics = AiShaderEvalParamBool(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
-    float sssMix = AiShaderEvalParamFlt( p_sssMix );
+    
     AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
     float sssRadius = AiShaderEvalParamFlt( p_sssRadius );
     float sssWeight1 = AiShaderEvalParamFlt( p_sssWeight1 );
@@ -1477,7 +1478,7 @@ shader_evaluate
         do_backlight = false;
     }
 
-    if (    (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
+    if (    (sg->Rr_diff > 0 && !diffuseEnableCaustics)                                    // disable glossy->diffuse caustics
             || maxh(specular1Color) < IMPORTANCE_EPS             // disable glossy if contribution is small
             || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
             || roughness > 1.0f 
@@ -1487,7 +1488,7 @@ shader_evaluate
         do_glossy = false;
     }
 
-    if (    (sg->Rr_diff > 0)                                    // disable glossy->diffuse caustics
+    if (    (sg->Rr_diff > 0 && !diffuseEnableCaustics)                                    // disable glossy->diffuse caustics
             || maxh(specular2Color) < IMPORTANCE_EPS             // disable glossy2 if contribution is small
             || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
             || roughness2 > 1.0f 
@@ -1496,13 +1497,7 @@ shader_evaluate
         do_glossy2 = false;
     }
 
-    // make sure diffuse and transmission can't sum > 1
-    // TODO: this will break the ability to do SSS + SS
-    // TODO: is there a better way? or do we just implement diffuse single scattering a la Habel?
-    //transmissionColor *= 1.0f - maxh(diffuseColor);
-
-
-    if (    (sg->Rr_diff > 0)                               // disable transmitted caustics
+    if (    (sg->Rr_diff > 0 && !diffuseEnableCaustics)                               // disable transmitted caustics
             || maxh(transmissionColor) < IMPORTANCE_EPS
             || als_raytype == ALS_RAY_HAIR)    // disable transmission if contribution is small
     {
