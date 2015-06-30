@@ -99,7 +99,6 @@ enum alSurfaceParams
     p_ssDirection,
 
     p_diffuseExtraSamples,
-    p_diffuseEnableCaustics,
     p_diffuseIndirectStrength,
     p_diffuseIndirectClamp,
     p_diffuseNormal,
@@ -119,6 +118,7 @@ enum alSurfaceParams
     p_specular1Normal,
     p_specular1IndirectStrength,
     p_specular1IndirectClamp,
+    p_specular1CausticPaths,
 
     p_specular2Strength,
     p_specular2Color,
@@ -134,6 +134,7 @@ enum alSurfaceParams
     p_specular2Normal,
     p_specular2IndirectStrength,
     p_specular2IndirectClamp,
+    p_specular2CausticPaths,
 
     // transmission
     p_transmissionStrength,
@@ -147,6 +148,7 @@ enum alSurfaceParams
     p_transmissionClamp,
     p_transmissionDoDirect,
     p_transmissionNormal,
+    p_transmissionCausticPaths,
 
     p_id1,
     p_id2,
@@ -352,7 +354,6 @@ node_parameters
     AiParameterFLT("ssDirection", 0.0f);
 
     AiParameterINT("diffuseExtraSamples", 0);
-    AiParameterBOOL("diffuseEnableCaustics", false);
     AiParameterFLT("diffuseIndirectStrength", 1.0f);
     AiParameterFLT("diffuseIndirectClamp", 0.0f);
     AiParameterVec("diffuseNormal", 0, 0, 0);
@@ -371,6 +372,8 @@ node_parameters
     AiParameterVec("specular1Normal", 0, 0, 0);
     AiParameterFLT("specular1IndirectStrength", 1.0f );
     AiParameterFLT("specular1IndirectClamp", 0.0f );
+    AiParameterBOOL("specular1CausticPaths", false);
+
 
     AiParameterFLT("specular2Strength", 0.0f );
     AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f );
@@ -386,6 +389,7 @@ node_parameters
     AiParameterVec("specular2Normal", 0, 0, 0);
     AiParameterFLT("specular2IndirectStrength", 1.0f );
     AiParameterFLT("specular2IndirectClamp", 0.0f );
+    AiParameterBOOL("specular2CausticPaths", false);
 
     AiParameterFLT("transmissionStrength", 0.0f );
     AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f );
@@ -398,6 +402,7 @@ node_parameters
     AiParameterFLT("transmissionClamp", 0.0f );
     AiParameterBOOL("transmissionDoDirect", false);
     AiParameterVec("transmissionNormal", 0, 0, 0);
+    AiParameterBOOL("transmissionCausticPaths", false);
 
 
     AiParameterRGB("id1", 0.0f, 0.0f, 0.0f);
@@ -926,6 +931,12 @@ node_update
     if (data->aov_light_group_clamp[6] == 0.0f) data->aov_light_group_clamp[6] = AI_INFINITE;
     data->aov_light_group_clamp[7] = params[p_aov_light_group_8_clamp].FLT;
     if (data->aov_light_group_clamp[7] == 0.0f) data->aov_light_group_clamp[7] = AI_INFINITE;
+
+    // caustic flags
+    data->specular1CausticPaths = params[p_specular1CausticPaths].BOOL;
+    data->specular2CausticPaths = params[p_specular2CausticPaths].BOOL;
+    data->transmissionCausticPaths = params[p_transmissionCausticPaths].BOOL;
+    if (data->transmissionCausticPaths) data->transmissionDoDirect = true;
 };
 
 
@@ -1277,7 +1288,6 @@ shader_evaluate
     // Initialize parameter temporaries
     // TODO: reorganize this so we're not evaluating upstream when we don't need the parameters, e.g. in shadow rays
     float diffuseRoughness = AiShaderEvalParamFlt(p_diffuseRoughness);
-    bool diffuseEnableCaustics = AiShaderEvalParamBool(p_diffuseEnableCaustics);
     AtRGB emissionColor = AiShaderEvalParamRGB(p_emissionColor) * AiShaderEvalParamFlt(p_emissionStrength);
     
     AtRGB sssRadiusColor = AiShaderEvalParamRGB( p_sssRadiusColor );
@@ -1478,7 +1488,7 @@ shader_evaluate
         do_backlight = false;
     }
 
-    if (    (sg->Rr_diff > 0 && !diffuseEnableCaustics)                                    // disable glossy->diffuse caustics
+    if (    (sg->Rr_diff > 0 && !data->specular1CausticPaths)                                    // disable glossy->diffuse caustics
             || maxh(specular1Color) < IMPORTANCE_EPS             // disable glossy if contribution is small
             || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
             || roughness > 1.0f 
@@ -1488,7 +1498,7 @@ shader_evaluate
         do_glossy = false;
     }
 
-    if (    (sg->Rr_diff > 0 && !diffuseEnableCaustics)                                    // disable glossy->diffuse caustics
+    if (    (sg->Rr_diff > 0 && !data->specular2CausticPaths)                                    // disable glossy->diffuse caustics
             || maxh(specular2Color) < IMPORTANCE_EPS             // disable glossy2 if contribution is small
             || (sg->Rr_refr > 0 && !transmissionEnableCaustics) // disable glossy->transmitted caustics
             || roughness2 > 1.0f 
@@ -1497,7 +1507,7 @@ shader_evaluate
         do_glossy2 = false;
     }
 
-    if (    (sg->Rr_diff > 0 && !diffuseEnableCaustics)                               // disable transmitted caustics
+    if (    (sg->Rr_diff > 0 && !data->transmissionCausticPaths)                               // disable transmitted caustics
             || maxh(transmissionColor) < IMPORTANCE_EPS
             || als_raytype == ALS_RAY_HAIR)    // disable transmission if contribution is small
     {
