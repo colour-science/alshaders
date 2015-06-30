@@ -498,6 +498,7 @@ struct HairBsdf
 
         // Get a random value per curve
         AtUInt32 curve_idi = 0;
+        int curve_idii = 0;
         float curve_id = 0.0f;
         cn = 1.0f;
         AtVector cv = aivec(0.0f);
@@ -518,6 +519,14 @@ struct HairBsdf
             AtPoint p2 = aivec(curve_id+17.0f, 0.0f, 0.0f);
             cv = (AiVCellNoise3(p2)*2.0f - aivec(1.0f));
 
+        }
+        else if (AiUDataGetInt("curve_id", &curve_idii))
+        {
+            AtPoint2 p; p.x = float(curve_idii); p.y = 0.0f;
+            cn = AiCellNoise2(p);
+
+            AtPoint p2 = aivec(float(curve_idii)+17.0f, 0.0f, 0.0f);
+            cv = (AiVCellNoise3(p2)*2.0f - aivec(1.0f));
         }
         else
         {
