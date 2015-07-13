@@ -161,6 +161,8 @@ shader_evaluate
 			s.qi = hitpoint->P;
 			s.wi = SQR(MAX(AiV3Dot(s.qi, pi) / t2 - 1.0f, 0.0f));
 			s.ni = hitpoint->N;
+			// set qi to be the point *relative* to the shading point to combat issues when close to the origin
+			s.qi = hitpoint->P - pi;
 			assert(AiIsFinite(s.wi));
 			count++;
 		}		
