@@ -95,6 +95,8 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
                         AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput,
                         const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive, float sssMix)
 {
+    if (dmd->sss_depth >= SSS_MAX_SAMPLES) return;
+    
     void* orig_op;
     AiStateGetMsgPtr("als_sss_op", &orig_op);
     
