@@ -158,11 +158,11 @@ shader_evaluate
 			float dist2 = AiV3Dot(L, L);
 			if (dist2 > t2) continue;
 			Sample& s = psamp[count];
-			s.qi = hitpoint->P;
-			s.wi = SQR(MAX(AiV3Dot(s.qi, pi) / t2 - 1.0f, 0.0f));
+			// the estimation breaks down close to the origin. centering relative to the point at 0 doesn't work, so
+			// instead we center at (1,1,1) and calculate everything relative to that
+			s.qi = hitpoint->P + AI_V3_ONE;
+			s.wi = SQR(MAX(AiV3Dot(s.qi, AI_V3_ONE) / t2 - 1.0f, 0.0f));
 			s.ni = hitpoint->N;
-			// set qi to be the point *relative* to the shading point to combat issues when close to the origin
-			s.qi = hitpoint->P - pi;
 			assert(AiIsFinite(s.wi));
 			count++;
 		}		
