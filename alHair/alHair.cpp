@@ -1053,6 +1053,9 @@ struct HairBsdf
                 pdf_bb = pdf_lb = 0.0f;
                 AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
 
+                // mesh lights return infinite PDFs?
+                if (!AiIsFinite(pdf_ll) || !AiIsFinite(pdf_lb)) continue;
+
                 float w = powerHeuristic(pdf_ll, pdf_lb);
                 L_l = L_l * w / (pdf_ll*sg->n);
                 result_R_direct += L_l * f_R_l;
@@ -1158,6 +1161,10 @@ struct HairBsdf
             is_bsdf_sample = false;
             pdf_bb = pdf_lb = 0.0f;
             AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
+
+            // mesh lights return infinite PDFs?
+            if (!AiIsFinite(pdf_ll) || !AiIsFinite(pdf_lb)) continue;
+
             SctGeo geo_l(w_l, theta_r, phi_r, U, V, W);
             float w = powerHeuristic(pdf_ll, pdf_lb);
             
