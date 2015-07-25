@@ -81,14 +81,16 @@ class Parameter(UiElement):
    short_description = ''
    presets = None
    mayane = False
+   ui = ''
 
-   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None, presets={}, mayane=False):
+   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None, presets={}, mayane=False, ui=''):
       self.name = name
       self.ptype = ptype
       self.default = default
       self.description = description
       self.presets = presets
       self.mayane = mayane
+      self.ui = ui
 
       if description is not None:
          if len(description) > 150:
@@ -205,8 +207,8 @@ class ShaderDef:
    def endGroup(self):
       self.current_parent = self.current_parent.parent
 
-   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None, presets=None, mayane=False):
-      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc, presets, mayane)
+   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None, presets=None, mayane=False, ui=''):
+      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc, presets, mayane, ui)
       if not self.current_parent.children:
          self.current_parent.children = [p]
       else:
@@ -909,6 +911,8 @@ def WriteMTD(sd, fn):
       WriteMTDParam(f, "softmax", "float", p.smx, 2)               
       WriteMTDParam(f, "desc", "string", p.description, 2)
       WriteMTDParam(f, "linkable", "bool", p.connectible, 2)
+      if p.ui == 'file':
+         WriteMTDParam(f, "c4d.gui_type", "int", 3, 2)
 
    for a in sd.aovs:
       writei(f, '[attr %s]' % a.name, 1)

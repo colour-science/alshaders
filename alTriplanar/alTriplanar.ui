@@ -22,7 +22,7 @@ ui.shader({
 
 ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Background', description='Background color over which to project the texture.', mayane=True)
 
-ui.parameter('texture', 'string', '', 'Texture', connectible=False, description='The texture image to project over the background.')
+ui.parameter('texture', 'string', '', 'Texture', connectible=False, description='The texture image to project over the background.', ui='file')
 
 ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
         "world",
