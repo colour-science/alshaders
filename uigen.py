@@ -913,6 +913,7 @@ def WriteMTD(sd, fn):
       WriteMTDParam(f, "linkable", "bool", p.connectible, 2)
       if p.ui == 'file':
          WriteMTDParam(f, "c4d.gui_type", "int", 3, 2)
+         WriteMTDParam(f, "houdini.type", "string", "file:image", 2)
 
    for a in sd.aovs:
       writei(f, '[attr %s]' % a.name, 1)
