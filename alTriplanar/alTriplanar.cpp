@@ -231,7 +231,7 @@ void computeBlendWeights(const AtVector N, int space, float blendSoftness, float
     }
 }
 
-inline void rotateUVs(AtPoint &P, float degrees){
+void rotateUVs(AtPoint &P, float degrees){
     AtVector orientVectorX;
     const double d2r = 1. / 360. * AI_PI * 2;
     double phi = d2r * degrees;
@@ -249,7 +249,7 @@ inline void rotateUVs(AtPoint &P, float degrees){
     AiV3RotateToFrame(P, orientVectorX, orientVectorY, orientVectorZ);
 }
 
-inline AtRGBA tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector dPdy,
+AtRGBA tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector dPdy,
 						 const AtPoint &scale, const AtPoint &offset,
                          float *weights, const AtPoint &rot, AtShaderGlobals *sg,
                          AtTextureHandle *handle, AtTextureParams *params){
@@ -333,7 +333,7 @@ inline AtRGBA tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector
     }
 }
 
-inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx, float dvdy,
+bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx, float dvdy,
 							const float cellSoftness, float rot, float rotjitter,
                             AtShaderGlobals *sg, AtTextureHandle *handle,
                             AtTextureParams *params, AtRGBA *textureResult){
@@ -414,7 +414,7 @@ inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx
     return success;
 }
 
-inline AtRGBA tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVector &dPdy,
+AtRGBA tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVector &dPdy,
 						   const AtPoint &scale, const AtPoint &offset,
                            float *weights, float cellSoftness,
                            const AtPoint &rot, const AtPoint &rotjitter, AtShaderGlobals *sg,
