@@ -1274,11 +1274,8 @@ shader_evaluate
     sg->out_opacity = opacity;
 
     // early out if we're fully transparent or the object is matte
-#if AI_VERSION_MINOR_NUM >= 2
     if (AiColorIsZero(opacity) || (AiShaderGlobalsIsObjectMatte(sg) && (sg->Rt & AI_RAY_CAMERA))) return;
-#else
-    if (AiColorIsZero(opacity)) return;
-#endif
+
     // Evaluate bump;
     //AtRGB bump = AiShaderEvalParamRGB(p_bump);
 
