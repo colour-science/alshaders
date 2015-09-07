@@ -1274,8 +1274,11 @@ shader_evaluate
     sg->out_opacity = opacity;
 
     // early out if we're fully transparent or the object is matte
+#if AI_VERSION_MINOR_NUM >= 2
     if (AiColorIsZero(opacity) || (AiShaderGlobalsIsObjectMatte(sg) && (sg->Rt & AI_RAY_CAMERA))) return;
-
+#else
+    if (AiColorIsZero(opacity)) return;
+#endif
     // Evaluate bump;
     //AtRGB bump = AiShaderEvalParamRGB(p_bump);
 
@@ -2384,7 +2387,6 @@ shader_evaluate
 
                         AtRGB f = transmittance;
                         result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
-                        assert(AiIsFinite(result_transmission));
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
                         {
@@ -2413,7 +2415,6 @@ shader_evaluate
                             AiTraceBackground(&wi_ray, &sample);
                             result_transmission += min(sample.color, rgb(data->transmissionClamp)) 
                                                     * (AI_RGB_WHITE - sample.opacity);
-                            assert(AiIsFinite(result_transmission));
                         }
                     }
                 }
@@ -2438,7 +2439,6 @@ shader_evaluate
                     transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
                 }
                 result_transmission += min(sample.color * transmittance, rgb(data->transmissionClamp));
-                assert(AiIsFinite(result_transmission));
                 // accumulate the lightgroup contributions calculated by the child shader
                 if (doDeepGroups && hit)
                 {
@@ -2486,7 +2486,7 @@ shader_evaluate
                     pdf = 1.0f;
                 }
 
-                if (AiIsFinite(wi_ray.dir) && pdf > 1e-7f)
+                if (AiIsFinite(wi_ray.dir) && pdf > 0.0f)
                 {
                      
                     AtRGB f = brdf / pdf;
@@ -2507,7 +2507,6 @@ shader_evaluate
                         }
 
                         result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
-                        assert(AiIsFinite(result_transmission));
                         // accumulate the lightgroup contributions calculated by the child shader
                         if (doDeepGroups)
                         {
@@ -2540,15 +2539,13 @@ shader_evaluate
                         {
                             AiTraceBackground(&wi_ray, &sample);
                             result_transmission += min(sample.color * f, rgb(data->transmissionClamp)) 
-                                                    * (AI_RGB_WHITE - sample.opacity);  
-                            assert(AiIsFinite(result_transmission)); 
+                                                    * (AI_RGB_WHITE - sample.opacity);   
                         }
                     }
                     else // trace the background if we've hit nothing
                     {
                         AiTraceBackground(&wi_ray, &sample);
                         result_transmission += min(sample.color * f, rgb(data->transmissionClamp));
-                        assert(AiIsFinite(result_transmission));
                     }
                 }
             }
@@ -2562,7 +2559,6 @@ shader_evaluate
         }
 
         result_transmission *= inv_ns * transmissionColor * kti * kti2;
-        assert(AiIsFinite(result_transmission));
         result_ss *= inv_ns * transmissionColor * kti * kti2;
 
         if (doDeepGroups)
@@ -2601,7 +2597,6 @@ shader_evaluate
 
     } // if (do_transmission)
     result_transmission += result_transmissionDirect;
-    assert(AiIsFinite(result_transmission));
 
     // backlight
     // ---------
@@ -3031,18 +3026,6 @@ shader_evaluate
             
         }
     }
-
-    assert(AiIsFinite(result_diffuseDirect));
-    assert(AiIsFinite(result_backlightDirect));
-    assert(AiIsFinite(result_sss));
-    assert(AiIsFinite(result_glossyDirect));
-    assert(AiIsFinite(result_glossy2Direct));
-    assert(AiIsFinite(result_diffuseIndirect));
-    assert(AiIsFinite(result_glossyIndirect));
-    assert(AiIsFinite(result_glossy2Indirect));
-    assert(AiIsFinite(result_ss));
-    assert(AiIsFinite(result_transmission));
-    assert(AiIsFinite(result_emission));
 
     // Sum final result from temporaries
     //

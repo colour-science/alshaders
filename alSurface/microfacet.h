@@ -175,7 +175,7 @@ struct MicrofacetTransmission
       float d = 0.0f;
 
       const float cos_theta = AiV3Dot(M, N);
-      if (cos_theta > 0.0f)
+      if (cos_theta > 1e-7f)
       {
          const float cos_theta2 = SQR(cos_theta);
          const float cos_theta4 = SQR(cos_theta2);
@@ -184,6 +184,7 @@ struct MicrofacetTransmission
          const float tan_theta2 = SQR(sx) + SQR(sy);
 
          d = fast_exp(-tan_theta2) / (AI_PI * alpha_x * alpha_y * cos_theta4);
+         assert(AiIsFinite(d));
       }
 
       return d;
@@ -240,6 +241,7 @@ struct MicrofacetTransmission
             const float g1 = G1(lambda_o);
 
             result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g2 * d) * inv_h2) / fabsf(cos_N_o);
+            assert(AiIsFinite(result));
             // cancelling out all the like terms from the pdf in the above leaves us:
             // result = g2;
 
@@ -276,6 +278,7 @@ struct MicrofacetTransmission
             result = (fabsf(cos_H_i * cos_H_o) * (eta*eta) * (g1 * d) * inv_h2) / fabsf(cos_N_o);
             // cancelling out all the like terms from the btdf in the above leaves us:
             // result = g1;
+            assert(AiIsFinite(result));
 
          }
 
