@@ -1068,6 +1068,12 @@ struct HairBsdf
                 assert(isValidColor(result_TRT_direct));
                 assert(isValidColor(result_TRTg_direct));
 
+                // if the light is assigned a valid group number, add this sample's contribution to that light group
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += L_l * (f_R_l + f_TT_l + f_TRT_l + f_TRTg_l);
+                }
+
                 if (pdf_bb != 0.0f)
                 {
                     w = powerHeuristic(pdf_bb, pdf_bl);
@@ -1081,17 +1087,15 @@ struct HairBsdf
                     assert(isValidColor(result_TT_direct));
                     assert(isValidColor(result_TRT_direct));
                     assert(isValidColor(result_TRTg_direct));
-                }
 
-                // if the light is assigned a valid group number, add this sample's contribution to that light group
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-                {
-                    lightGroupsDirect[lightGroup] += L_b * (f_R_b + f_TT_b + f_TRT_b + f_TRTg_b);
-                    lightGroupsDirect[lightGroup] += L_l * (f_R_l + f_TT_l + f_TRT_l + f_TRTg_l);
+                    // if the light is assigned a valid group number, add this sample's contribution to that light group
+                    if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                    {
+                        lightGroupsDirect[lightGroup] += L_b * (f_R_b + f_TT_b + f_TRT_b + f_TRTg_b);
+                    }
                 }
 
             }
-            
 
         }
 
@@ -1555,8 +1559,8 @@ struct HairBsdf
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroupPtr[i] = lightGroupsDirect[i] + deepGroupsDiffuse[i] + deepGroupsSpecular[i] 
-                                + deepGroupsSpecular2[i] + deepGroupsTransmission[i];
+                deepGroupPtr[i] = lightGroupsDirect[i];/* + deepGroupsDiffuse[i] + deepGroupsSpecular[i] 
+                                + deepGroupsSpecular2[i] + deepGroupsTransmission[i];*/
             }
         }
 
