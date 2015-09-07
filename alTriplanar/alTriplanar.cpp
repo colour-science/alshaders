@@ -195,14 +195,17 @@ void getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int sp
 		*dPdy = AiShaderGlobalsTransformVector(sg, sg->dPdy, AI_WORLD_TO_OBJECT);
         break;
     case NS_PREF:
-        if (!(AiUDataGetPnt("Pref", P) && AiUDataGetVec("Nref", N))){
+        if (!AiUDataGetPnt("Pref", P)){
+            AiMsgWarning("[alTriplanar] could not get Pref");
             // TODO: Output warning about not finding the correct data.
             *P = sg->Po;
             *N = AiShaderGlobalsTransformNormal(sg, baseN, AI_WORLD_TO_OBJECT);
 			*dPdx = AiShaderGlobalsTransformVector(sg, sg->dPdx, AI_WORLD_TO_OBJECT);
 			*dPdy = AiShaderGlobalsTransformVector(sg, sg->dPdy, AI_WORLD_TO_OBJECT);	
         } else {
+            AiMsgWarning("[alTriplanar got Pref]");
 			AiUDataGetDxyDerivativesPnt("Pref", dPdx, dPdy);
+            *N = AiV3Normalize(AiV3Cross(*dPdx, *dPdy));
 		}
         break;
     default:
