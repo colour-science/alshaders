@@ -67,7 +67,8 @@ enum alTriplanarParams
     p_rotz,
     p_rotjitterx,
     p_rotjittery,
-    p_rotjitterz
+    p_rotjitterz,
+    p_mipMapBias
 };
 
 node_parameters
@@ -92,6 +93,7 @@ node_parameters
     AiParameterFLT("rotjitterx", 1.0f);
     AiParameterFLT("rotjittery", 1.0f);
     AiParameterFLT("rotjitterz", 1.0f);
+    AiParameterINT("mipMapBias", 0);
 }
 
 node_loader
@@ -131,6 +133,8 @@ node_finish
 
 node_update
 {
+    ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
+    data->textureparams->mipmap_bias = params[p_mipMapBias].INT;
 
 }
 
