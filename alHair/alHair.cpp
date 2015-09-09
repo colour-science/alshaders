@@ -486,7 +486,12 @@ struct HairBsdf
 
         // set the hair u, v coords so other shaders (e.g. ramp) can use them
         AtPoint2 hair_uv = AiPoint2(sg->u, sg->v);
+#if AI_VERSION_MINOR_NUM >= 6
+        static const AtString maya_ramp_uv_override("maya_ramp_uv_override");
+        AiStateSetMsgPnt2(maya_ramp_uv_override, hair_uv);
+#else
         AiStateSetMsgPnt2("maya_ramp_uv_override", hair_uv);
+#endif
 
         // replace uvs
         float s, t;
@@ -654,6 +659,10 @@ struct HairBsdf
             memset(deepGroupsDiffuse, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
             memset(deepGroupsTransmission, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
         }
+
+#if AI_VERSION_MINOR_NUM >= 8
+        AiStateUnsetMsgPnt2(maya_ramp_uv_override);
+#endif
     }
 
     inline void AB(float theta_r, float alpha, float beta, float& A, float& B)
