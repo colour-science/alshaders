@@ -6,7 +6,7 @@ ui.shader({
    'description':'Generate different periodic wave signals to be used as the basis for other effects.',
 	'output':'rgb',
 	'maya_name':'alPattern',
-	'maya_classification':'texture',
+	'maya_classification':'texture/other',
 	'maya_id':'0x0011640A',
 	'maya_swatch':True,
 	'maya_matte':False,
@@ -32,20 +32,20 @@ ui.parameter('axis', 'enum', 'X', 'Axis', enum_names=[
 	"X",
 	"Y",
 	"Z"
-], description='Axis to generate the pattern along.')
+], description='Axis to generate the pattern along.', fig='alPattern_axis', figc='Axis set to X, Y, Z')
 
 ui.parameter('shape', 'enum', 'sine', 'Shape', enum_names=[
 	"sine",
 	"square",
 	"saw"
-], description='Pattern to generate.')
+], description='Pattern to generate.', fig='alPattern_shape', figc='Shape set to sine, square, saw')
 
-ui.parameter('frequency', 'float', 5.0, 'Frequency', connectible=False, description='Frequency of the pattern.')
-ui.parameter('offset', 'float', 0.0, 'Offset', connectible=True, description='Offset of the pattern. You can plug a noise in here to get warped patterns.')
+ui.parameter('frequency', 'float', 5.0, 'Frequency', connectible=False, description='Frequency of the pattern.', fig='alPattern_frequency', figc='Frequency at 2, 5, 10')
+ui.parameter('offset', 'float', 0.0, 'Offset', connectible=True, description='Offset of the pattern. You can plug a noise in here to get warped patterns.', fig='alPattern_offset', figc='Offset at 0, then with fractals of different strengths plugged in')
 
 uigen.remapControls(ui)
 
-ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the pattern value is 0.')
-ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the pattern value is 1.')
+ui.parameter('color1', 'rgb', (0.0, 0.0, 0.0), 'Color 1', description='Color to use when the pattern value is 0.', mayane=True)
+ui.parameter('color2', 'rgb', (0.0, 0.0, 0.0), 'Color 2', description='Color to use when the pattern value is 1.', mayane=True)
 
-ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P')
+ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', mayane=True)

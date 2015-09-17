@@ -43,14 +43,15 @@ enum alCellNoiseParams
 	p_octaves,
 	p_randomness,
 	p_lacunarity,
-	p_f1w,
-	p_f2w,
-	p_f3w,
-	p_f4w,
-	p_mynkowskiShape,
+	// p_f1w,
+	// p_f2w,
+	// p_f3w,
+	// p_f4w,
+	// p_mynkowskiShape,
 	p_color1,
 	p_color2,
 	p_smoothChips,
+	p_randomChips,
 	p_chipColor1,
 	p_chipProb1,
 	p_chipColor2,
@@ -73,22 +74,23 @@ node_parameters
 	AiParameterINT("octaves", 1);
 	AiParameterFLT("randomness", 1.0f);
 	AiParameterFLT("lacunarity", 2.121f);
-	AiParameterFlt("f1w", -1.0f);
-	AiParameterFlt("f2w", 1.0f);
-	AiParameterFlt("f3w", 0.0f);
-	AiParameterFlt("f4w", 0.0f);
-	AiParameterFLT("mynkowskiShape", 2.0f);
+	// AiParameterFlt("f1w", -1.0f);
+	// AiParameterFlt("f2w", 1.0f);
+	// AiParameterFlt("f3w", 0.0f);
+	// AiParameterFlt("f4w", 0.0f);
+	// AiParameterFLT("mynkowskiShape", 2.0f);
 	AiParameterRGB("color1", 0.0f, 0.0f, 0.0f);
 	AiParameterRGB("color2", 1.0f, 1.0f, 1.0f);
 	AiParameterBOOL("smoothChips", false);
+	AiParameterBOOL("randomChips", false);
 	AiParameterRGB("chipColor1", .383f, .318f, .252f);
-	AiParameterFLT("chipProb1", 0.2f);
+	AiParameterFLT("chipProb1", 1.0f);
 	AiParameterRGB("chipColor2", .383f, .191f, 0.01f);
-	AiParameterFLT("chipProb2", 0.4f);
+	AiParameterFLT("chipProb2", 1.0f);
 	AiParameterRGB("chipColor3", .635f, .612f, .563f);
-	AiParameterFLT("chipProb3", 0.6f);
+	AiParameterFLT("chipProb3", 1.0f);
 	AiParameterRGB("chipColor4", .509f, .361f, .213f);
-	AiParameterFLT("chipProb4", 0.8f);
+	AiParameterFLT("chipProb4", 1.0f);
 	AiParameterRGB("chipColor5", .593f, .472f, .248f);
 	AiParameterFLT("chipProb5", 1.0f);
 	AiParameterPnt("P", 0.0f, 0.0f, 0.0f);
@@ -113,6 +115,7 @@ struct ShaderData
 	int mode;
 	int octaves;
 	float mynkowskiShape;
+	bool randomChips;
 	bool smoothChips;
 	float chipProb1;
 	float chipProb2;
@@ -139,28 +142,47 @@ node_update
 	data->space = params[p_space].INT;
 	data->mode = params[p_mode].INT;
 	data->octaves = params[p_octaves].INT;
-	data->mynkowskiShape = params[p_mynkowskiShape].FLT;
+	// data->mynkowskiShape = params[p_mynkowskiShape].FLT;
+	data->mynkowskiShape = 2.0f;
+	data->randomChips = params[p_randomChips].BOOL;
 	data->smoothChips = params[p_smoothChips].BOOL;
+	float cpsum = 0.0f;
 	data->chipProb1 = params[p_chipProb1].FLT;
+	cpsum += data->chipProb1;
 	data->chipProb2 = params[p_chipProb2].FLT;
+	cpsum += data->chipProb2;
 	data->chipProb3 = params[p_chipProb3].FLT;
+	cpsum += data->chipProb3;
 	data->chipProb4 = params[p_chipProb4].FLT;
+	cpsum += data->chipProb4;
 	data->chipProb5 = params[p_chipProb5].FLT;
+	cpsum += data->chipProb5;
+
+	data->chipProb1 /= cpsum;
+	data->chipProb2 /= cpsum;
+	data->chipProb3 /= cpsum;
+	data->chipProb4 /= cpsum;
+	data->chipProb5 /= cpsum;
 }
 
 shader_evaluate
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
+
 	AtRGB color1 = AiShaderEvalParamRGB(p_color1);
 	AtRGB color2 = AiShaderEvalParamRGB(p_color2);
 
 	float frequency = AiShaderEvalParamFlt(p_frequency);
 	float lacunarity = AiShaderEvalParamFlt(p_lacunarity);
 	float randomness = AiShaderEvalParamFlt(p_randomness);
-	float f1w = AiShaderEvalParamFlt(p_f1w);
-	float f2w = AiShaderEvalParamFlt(p_f2w);
-	float f3w = AiShaderEvalParamFlt(p_f3w);
-	float f4w = AiShaderEvalParamFlt(p_f4w);
+	// float f1w = AiShaderEvalParamFlt(p_f1w);
+	// float f2w = AiShaderEvalParamFlt(p_f2w);
+	// float f3w = AiShaderEvalParamFlt(p_f3w);
+	// float f4w = AiShaderEvalParamFlt(p_f4w);
+	float f1w = -1.0f;
+	float f2w = 1.0f;
+	float f3w = 0.0f;
+	float f4w = 0.0f;
 
 	AtRGB chipColor1 = AiShaderEvalParamRGB(p_chipColor1);
 	AtRGB chipColor2 = AiShaderEvalParamRGB(p_chipColor2);
@@ -234,35 +256,50 @@ shader_evaluate
 	}
 	else if (data->mode == CN_CHIPS)
 	{
-		double rr = random(ID[0]);
-
-		AtRGB chipColor;
-		if (rr < data->chipProb1)
+		if (data->randomChips)
 		{
-			chipColor = chipColor1;
-		}
-		else if (rr < data->chipProb2)
-		{
-			if (data->smoothChips) chipColor = lerp(chipColor1, chipColor2, (rr-data->chipProb1)/(data->chipProb2-data->chipProb1));
-			else chipColor = chipColor2;
-		}
-		else if (rr < data->chipProb3)
-		{
-			if (data->smoothChips) chipColor = lerp(chipColor2, chipColor3, (rr-data->chipProb2)/(data->chipProb3-data->chipProb2));
-			else chipColor = chipColor3;
-		}
-		else if (rr < data->chipProb4)
-		{
-			if (data->smoothChips) chipColor = lerp(chipColor3, chipColor4, (rr-data->chipProb3)/(data->chipProb4-data->chipProb3));
-			else chipColor = chipColor4;
+			AtVector v = AiVCellNoise3(AiPoint(ID[0]/100, 0, 0));
+			sg->out.RGB.r = v.x;
+			sg->out.RGB.g = v.y;
+			sg->out.RGB.b = v.z;
 		}
 		else
 		{
-			if (data->smoothChips) chipColor = lerp(chipColor4, chipColor5, (rr-data->chipProb4)/(data->chipProb5-data->chipProb4));
-			else chipColor = chipColor5;
-		}
+			double rr = random(ID[0]);
+			float chip_cdf[4] = {
+				data->chipProb1,
+				data->chipProb1+data->chipProb2,
+				data->chipProb1+data->chipProb2+data->chipProb3,
+				data->chipProb1+data->chipProb2+data->chipProb3+data->chipProb4,
+			};
+			AtRGB chipColor;
+			if (rr < chip_cdf[0])
+			{
+				chipColor = chipColor1;
+			}
+			else if (rr < chip_cdf[1])
+			{
+				if (data->smoothChips) chipColor = lerp(chipColor1, chipColor2, (rr-chip_cdf[0])/(chip_cdf[1]-chip_cdf[0]));
+				else chipColor = chipColor2;
+			}
+			else if (rr < chip_cdf[2])
+			{
+				if (data->smoothChips) chipColor = lerp(chipColor2, chipColor3, (rr-chip_cdf[1])/(chip_cdf[2]-chip_cdf[1]));
+				else chipColor = chipColor3;
+			}
+			else if (rr < chip_cdf[3])
+			{
+				if (data->smoothChips) chipColor = lerp(chipColor3, chipColor4, (rr-chip_cdf[2])/(chip_cdf[3]-chip_cdf[2]));
+				else chipColor = chipColor4;
+			}
+			else
+			{
+				if (data->smoothChips) chipColor = lerp(chipColor4, chipColor5, (rr-chip_cdf[3])/(1.0f-chip_cdf[3]));
+				else chipColor = chipColor5;
+			}
 
-		sg->out.RGB = chipColor;
+			sg->out.RGB = chipColor;
+		}
 	}
 }
 

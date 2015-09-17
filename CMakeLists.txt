@@ -6,7 +6,7 @@ project(alShaders)
 
 set(ALS_MAJOR_VERSION 1)
 set(ALS_MINOR_VERSION 0)
-set(ALS_PATCH_VERSION 0rc6)
+set(ALS_PATCH_VERSION 0rc11)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
 
 set(CMAKE_BUILD_TYPE RELEASE)
@@ -22,6 +22,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_definitions( "-W3 -D_CRT_SECURE_NO_WARNINGS -wd4005 -wd4996 -wd4305 -wd4244 -nologo" )
 else()
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden -DNDEBUG")
+    # set(CMAKE_CXX_FLAGS_DEBUG "-fsanitize=address -fno-omit-frame-pointer")
 endif()
 
 # check if we have a local cmake include file and include it if we do
@@ -53,6 +54,8 @@ endif()
 set(DSO_INSTALL_DIR ${INSTALL_DIR}/bin)
 set(MTD_INSTALL_DIR ${INSTALL_DIR}/bin)
 set(AE_INSTALL_DIR ${INSTALL_DIR}/ae)
+set(AEXML_INSTALL_DIR ${INSTALL_DIR}/aexml)
+set(NEXML_INSTALL_DIR ${INSTALL_DIR}/aexml)
 set(SPDL_INSTALL_DIR ${INSTALL_DIR}/spdl)
 set(ARGS_INSTALL_DIR ${INSTALL_DIR}/Args)
 
@@ -85,6 +88,7 @@ set(SUBDIRECTORIES
         alJitterColor
         alCache
         alCel
+        alFlake
         common
 )
 
@@ -95,6 +99,8 @@ function(build_shader)
         set(UI ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.ui)
         set(MTD ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.mtd)
         set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
+        set(AEXML ${CMAKE_CURRENT_BINARY_DIR}/AE${SHADER}Template.xml)
+        set(NEXML ${CMAKE_CURRENT_BINARY_DIR}/NE${SHADER}Template.xml)
         set(SPDL ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spdl)
         set(KARGS ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.args)
         set(C4DRES ${CMAKE_CURRENT_BINARY_DIR}/C4DtoA)
@@ -105,12 +111,14 @@ function(build_shader)
         target_link_libraries(${SHADER} ai)
         set_target_properties(${SHADER} PROPERTIES PREFIX "")
 
-        add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} ${KARGS} ${CMAKE_CURRENT_BINARY_DIR} ${HTML} DEPENDS ${UI})
+        add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${AEXML} ${NEXML} ${SPDL} ${KARGS} ${CMAKE_CURRENT_BINARY_DIR} ${HTML} DEPENDS ${UI})
         add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
 
         install(TARGETS ${SHADER} DESTINATION ${DSO_INSTALL_DIR})
         install(FILES ${MTD} DESTINATION ${MTD_INSTALL_DIR})
         install(FILES ${AE} DESTINATION ${AE_INSTALL_DIR})
+        install(FILES ${AEXML} DESTINATION ${AEXML_INSTALL_DIR})
+        install(FILES ${NEXML} DESTINATION ${NEXML_INSTALL_DIR})
         install(FILES ${SPDL} DESTINATION ${SPDL_INSTALL_DIR})
         install(FILES ${KARGS} DESTINATION ${ARGS_INSTALL_DIR})
         install(FILES ${KARGS} DESTINATION ${ARGS_INSTALL_DIR})

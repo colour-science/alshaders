@@ -6,7 +6,7 @@ ui.shader({
 	'description':'Converts a color to linear Rec.709 from a given color space.',
 	'output':'rgb',
 	'maya_name':'alColorSpace',
-	'maya_classification':'texture',
+	'maya_classification':'utility/other',
 	'maya_id':'0x00116411',
 	'maya_swatch':True,
 	'maya_matte':False,
@@ -20,5 +20,5 @@ ui.shader({
    'houdini_icon': 'COP2_lookup'
 })
 
-ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), description='Color to be transformed.')
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), description='Color to be transformed.', mayane=True)
 ui.parameter('sourceSpace', 'enum', 'sRGB', 'Source space', enum_names=['sRGB', 'Cineon', 'LogC'], description='Source color space. The input will be transformed from this space to linear Rec.709.')

@@ -38,7 +38,7 @@ node_parameters
 	AiParameterFLT("temperature", 1000.0f);
 	AiParameterFLT("strength", 1.0f);
 	AiParameterFLT("physicalIntensity", 1.0f);
-	AiParameterFLT("physicalExposure", -16.0f);
+	AiParameterFLT("physicalExposure", -20.0f);
 }
 
 node_loader

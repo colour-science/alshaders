@@ -87,8 +87,8 @@ struct DirectionalMessageData
     float maxdist;
     AtVector Po;
     AtVector No;
-    AtVector U;
-    AtVector V;
+    // AtVector U;
+    // AtVector V;
     AtVector wo;
     ScatteringProfileDirectional sp[9];
     AtRGB weights[9];
@@ -97,6 +97,7 @@ struct DirectionalMessageData
     AtShaderGlobals* sg;
     DiffusionSample samples[SSS_MAX_SAMPLES];
     AtRGB* deepGroupPtr;
+    AtNode* shader_orig;
 };
 
 inline float diffusionSampleDistance(float u1, float sigma)
@@ -318,7 +319,7 @@ inline AtRGB integrateDirectionalHemi(const ScatteringParamsDirectional& sp, flo
 
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
                         AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput,
-                        const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive);
+                        const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive, float sssMix);
 AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* sss_sampler, 
                    bool directional, int numComponents, 
                    AtRGB& result_direct, AtRGB& result_indirect, AtRGB* lightGroupsDirect, AtRGB* deepGroupsSss,

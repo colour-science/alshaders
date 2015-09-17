@@ -486,7 +486,12 @@ struct HairBsdf
 
         // set the hair u, v coords so other shaders (e.g. ramp) can use them
         AtPoint2 hair_uv = AiPoint2(sg->u, sg->v);
+#if AI_VERSION_MINOR_NUM >= 6
+        static const AtString maya_ramp_uv_override("maya_ramp_uv_override");
+        AiStateSetMsgPnt2(maya_ramp_uv_override, hair_uv);
+#else
         AiStateSetMsgPnt2("maya_ramp_uv_override", hair_uv);
+#endif
 
         // replace uvs
         float s, t;
@@ -498,6 +503,7 @@ struct HairBsdf
 
         // Get a random value per curve
         AtUInt32 curve_idi = 0;
+        int curve_idii = 0;
         float curve_id = 0.0f;
         cn = 1.0f;
         AtVector cv = aivec(0.0f);
@@ -519,6 +525,14 @@ struct HairBsdf
             cv = (AiVCellNoise3(p2)*2.0f - aivec(1.0f));
 
         }
+        else if (AiUDataGetInt("curve_id", &curve_idii))
+        {
+            AtPoint2 p; p.x = float(curve_idii); p.y = 0.0f;
+            cn = AiCellNoise2(p);
+
+            AtPoint p2 = aivec(float(curve_idii)+17.0f, 0.0f, 0.0f);
+            cv = (AiVCellNoise3(p2)*2.0f - aivec(1.0f));
+        }
         else
         {
             cn = 0.5f;
@@ -536,15 +550,15 @@ struct HairBsdf
 
         sp.beta_R = data->beta_R;
         sp.alpha_R = data->alpha_R;
-        sp.alpha_R_offset = -AiShaderEvalParamFlt(p_specular1Shift);
+        sp.alpha_R_offset = -AiShaderEvalParamFlt(p_specular1Shift) * AI_DTOR;
 
         sp.beta_TT = data->beta_TT;
         sp.alpha_TT = data->alpha_TT;
-        sp.alpha_TT_offset = -AiShaderEvalParamFlt(p_transmissionShift);
+        sp.alpha_TT_offset = -AiShaderEvalParamFlt(p_transmissionShift) * AI_DTOR;
 
         sp.beta_TRT = data->beta_TRT;
         sp.alpha_TRT = data->alpha_TRT;
-        sp.alpha_TRT_offset = -AiShaderEvalParamFlt(p_specular2Shift);
+        sp.alpha_TRT_offset = -AiShaderEvalParamFlt(p_specular2Shift) * AI_DTOR;
 
         sp.beta_R2 = data->beta_R2;
         sp.beta_TT2 = data->beta_TT2;
@@ -645,6 +659,10 @@ struct HairBsdf
             memset(deepGroupsDiffuse, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS);
             memset(deepGroupsTransmission, 0, sizeof(AtRGB)*NUM_LIGHT_GROUPS); 
         }
+
+#if AI_VERSION_MINOR_NUM >= 8
+        AiStateUnsetMsgPnt2(maya_ramp_uv_override);
+#endif
     }
 
     inline void AB(float theta_r, float alpha, float beta, float& A, float& B)
@@ -1044,6 +1062,9 @@ struct HairBsdf
                 pdf_bb = pdf_lb = 0.0f;
                 AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
 
+                // mesh lights return infinite PDFs?
+                if (!AiIsFinite(pdf_ll) || !AiIsFinite(pdf_lb)) continue;
+
                 float w = powerHeuristic(pdf_ll, pdf_lb);
                 L_l = L_l * w / (pdf_ll*sg->n);
                 result_R_direct += L_l * f_R_l;
@@ -1055,6 +1076,12 @@ struct HairBsdf
                 assert(isValidColor(result_TT_direct));
                 assert(isValidColor(result_TRT_direct));
                 assert(isValidColor(result_TRTg_direct));
+
+                // if the light is assigned a valid group number, add this sample's contribution to that light group
+                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                {
+                    lightGroupsDirect[lightGroup] += L_l * (f_R_l + f_TT_l + f_TRT_l + f_TRTg_l);
+                }
 
                 if (pdf_bb != 0.0f)
                 {
@@ -1069,17 +1096,15 @@ struct HairBsdf
                     assert(isValidColor(result_TT_direct));
                     assert(isValidColor(result_TRT_direct));
                     assert(isValidColor(result_TRTg_direct));
-                }
 
-                // if the light is assigned a valid group number, add this sample's contribution to that light group
-                if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
-                {
-                    lightGroupsDirect[lightGroup] += L_b * (f_R_b + f_TT_b + f_TRT_b + f_TRTg_b);
-                    lightGroupsDirect[lightGroup] += L_l * (f_R_l + f_TT_l + f_TRT_l + f_TRTg_l);
+                    // if the light is assigned a valid group number, add this sample's contribution to that light group
+                    if (lightGroup >= 0 && lightGroup < NUM_LIGHT_GROUPS)
+                    {
+                        lightGroupsDirect[lightGroup] += L_b * (f_R_b + f_TT_b + f_TRT_b + f_TRTg_b);
+                    }
                 }
 
             }
-            
 
         }
 
@@ -1149,6 +1174,10 @@ struct HairBsdf
             is_bsdf_sample = false;
             pdf_bb = pdf_lb = 0.0f;
             AiEvaluateLightSample(sg, this, HairGlossySample, HairGlossyBsdf, HairGlossyPdf);
+
+            // mesh lights return infinite PDFs?
+            if (!AiIsFinite(pdf_ll) || !AiIsFinite(pdf_lb)) continue;
+
             SctGeo geo_l(w_l, theta_r, phi_r, U, V, W);
             float w = powerHeuristic(pdf_ll, pdf_lb);
             
@@ -1539,8 +1568,8 @@ struct HairBsdf
         {
             for (int i=0; i < NUM_LIGHT_GROUPS; ++i)
             {
-                deepGroupPtr[i] = lightGroupsDirect[i] + deepGroupsDiffuse[i] + deepGroupsSpecular[i] 
-                                + deepGroupsSpecular2[i] + deepGroupsTransmission[i];
+                deepGroupPtr[i] = lightGroupsDirect[i];/* + deepGroupsDiffuse[i] + deepGroupsSpecular[i] 
+                                + deepGroupsSpecular2[i] + deepGroupsTransmission[i];*/
             }
         }
 
@@ -1597,7 +1626,6 @@ struct HairBsdf
                     AiAOVSetRGB(sg, data->aovs[k_id_1+i].c_str(), tmp);
                 }
             }
-
 
             for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
             {

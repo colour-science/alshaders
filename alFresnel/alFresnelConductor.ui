@@ -5,7 +5,7 @@ ui.shader({
 	'description':'Measured metallic fresnel',
 	'output':'rgb',
 	'maya_name':'alFresnelConductor',
-	'maya_classification':'texture',
+	'maya_classification':'utility/color',
 	'maya_id':'0x0011641A',
 	'maya_swatch':True,
 	'maya_matte':False,

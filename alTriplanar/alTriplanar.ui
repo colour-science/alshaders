@@ -6,7 +6,7 @@ ui.shader({
     'description':'Useful for quickly adding bombing patterns of texture to objects to add variation and breakup.',
     'output':'rgb',
     'maya_name':'alTriplanar',
-    'maya_classification':'texture',
+    'maya_classification':'texture/other',
     'maya_id':'0x00116413',
     'maya_swatch':True,
     'maya_matte':False,
@@ -19,6 +19,10 @@ ui.shader({
     'help_url':'http://www.anderslanglands.com/alshaders/alTriplanar.html',
     'houdini_icon': 'SHELF_distribute_fluid_sim'
 })
+
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), 'Background', description='Background color over which to project the texture.', mayane=True)
+
+ui.parameter('texture', 'string', '', 'Texture', connectible=False, description='The texture image to project over the background.', ui='file')
 
 ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
         "world",
@@ -35,26 +39,29 @@ ui.parameter('normal', 'enum', 'geometric', 'Normal', enum_names=[
 ui.parameter('tiling', 'enum', 'regular', 'Tiling', enum_names=[
         "regular",
         "cellnoise"
-], description='Tiling pattern. regular gives a regular grid, cellnoise gives a random pattern.')
+], description='Tiling pattern. regular gives a regular grid, cellnoise gives a random pattern.', fig='alTriplanar_tiling', figc='Tiling set to cellnoise and regular')
 
-ui.parameter('texture', 'string', '', 'Texture', connectible=False, description='The texture image to project.')
+ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the pattern. Higher numbers give more repetions, lower numbers give less.', fig='alTriplanar_frequency', figc='Frequency at 0.5, 1.0, 2.0')
 
-ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', mn=0, mx=1, description='The softness of the blends.')
+ui.parameter('mipMapBias', 'int', 0, 'Mip map bias', description='Biases the lookup into the texture to select a higher or lower mipmap level. Positive numbers select a higher (blurrier) level, negative numbers select a lower (sharper) level. Be careful: pushing the lookup too low will cause aliasing if your camera samples are not high enough and could cause excessive texture IO which can lead to massive slowdowns when using large textures.')
 
-ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', mn=0, mx=1, description='The softness of the cell borders.')
+with uigen.group(ui, 'Blending', False, 'Use these parameters to soften the blend of the image between projection planes and between cells.'):
+    ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', mn=0, mx=1, description='The softness of the blends.', fig='alTriplanar_blend', figc='Blend softness at 0.0, 0.1, 0.5')
+    ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', mn=0, mx=1, description='The softness of the cell borders.', fig='alTriplanar_cell', figc='Cell softness at 0.0, 0.1, 0.5')
 
-ui.parameter('scalex', 'float', 1.0, 'X Scale')
-ui.parameter('scaley', 'float', 1.0, 'Y Scale')
-ui.parameter('scalez', 'float', 1.0, 'Z Scale')
+with uigen.group(ui, 'Positioning', True, 'Use these parameters to control the scale and placement of the image.'):
+    ui.parameter('scalex', 'float', 1.0, 'X Scale')
+    ui.parameter('scaley', 'float', 1.0, 'Y Scale')
+    ui.parameter('scalez', 'float', 1.0, 'Z Scale')
 
-ui.parameter('offsetx', 'float', 0.0, 'X Offset')
-ui.parameter('offsety', 'float', 0.0, 'Y Offset')
-ui.parameter('offsetz', 'float', 0.0, 'Z Offset')
+    ui.parameter('offsetx', 'float', 0.0, 'X Offset')
+    ui.parameter('offsety', 'float', 0.0, 'Y Offset')
+    ui.parameter('offsetz', 'float', 0.0, 'Z Offset')
 
-ui.parameter('rotx', 'float', 0.0, 'X Rotation', "", 0., 360., 0., 360.)
-ui.parameter('roty', 'float', 0.0, 'Y Rotation', "", 0., 360., 0., 360.)
-ui.parameter('rotz', 'float', 0.0, 'Z Rotation', "", 0., 360., 0., 360.)
+    ui.parameter('rotx', 'float', 0.0, 'X Rotation', "", 0., 360., 0., 360.)
+    ui.parameter('roty', 'float', 0.0, 'Y Rotation', "", 0., 360., 0., 360.)
+    ui.parameter('rotz', 'float', 0.0, 'Z Rotation', "", 0., 360., 0., 360.)
 
-ui.parameter('rotjitterx', 'float', 1.0, 'X Rotation Jitter', "", 0., 1., 0., 1.)
-ui.parameter('rotjittery', 'float', 1.0, 'Y Rotation Jitter', "", 0., 1., 0., 1.)
-ui.parameter('rotjitterz', 'float', 1.0, 'Z Rotation Jitter', "", 0., 1., 0., 1.)
+    ui.parameter('rotjitterx', 'float', 1.0, 'X Rotation Jitter', "", 0., 1., 0., 1.)
+    ui.parameter('rotjittery', 'float', 1.0, 'Y Rotation Jitter', "", 0., 1., 0., 1.)
+    ui.parameter('rotjitterz', 'float', 1.0, 'Z Rotation Jitter', "", 0., 1., 0., 1.)

@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "aovs.h"
 
 #include "fresnel.h"
 #include "stats.h"
@@ -40,11 +41,14 @@ struct ShaderData
    int backlight_sample_offset;
    int total_samples;
    int sss_bssrdf_samples;
+   int sss_bssrdf_samples2;
    AtCritSec cs;
    std::map<AtNode*, int> lightGroups;
    std::map<AtNode*, float> shadowDensities;
    bool specular1NormalConnected;
    bool specular2NormalConnected;
+   bool diffuseNormalConnected;
+   bool transmissionNormalConnected;
    bool standardAovs;
    bool transmitAovs;
    int numLights;
@@ -113,6 +117,29 @@ struct ShaderData
 
    int sssMode;
    Range sss_samples_taken;
+
+   int debug;
+
+    float aov_diffuse_color_clamp;
+    float aov_direct_diffuse_clamp;
+    float aov_direct_diffuse_raw_clamp;
+    float aov_indirect_diffuse_clamp;
+    float aov_indirect_diffuse_raw_clamp;
+    float aov_direct_backlight_clamp;
+    float aov_indirect_backlight_clamp;
+    float aov_direct_specular_clamp;
+    float aov_indirect_specular_clamp;
+    float aov_direct_specular_2_clamp;
+    float aov_indirect_specular_2_clamp;
+    float aov_single_scatter_clamp;
+    float aov_sss_clamp;
+    float aov_refraction_clamp;
+    float aov_emission_clamp;
+    float aov_light_group_clamp[NUM_LIGHT_GROUPS];
+
+    bool transmissionCausticPaths;
+    bool specular1CausticPaths;
+    bool specular2CausticPaths;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0

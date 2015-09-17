@@ -93,23 +93,51 @@ void matchNormals(const AtVector Nref, AtVector& Nmatch)
 
 void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* diffuse_sampler, 
                         AtVector U, AtVector V, std::map<AtNode*, int>& lightGroupMap, AtRGB path_throughput,
-                        const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive)
+                        const char* trace_set, bool trace_set_enabled, bool trace_set_inclusive, float sssMix)
 {
+    if (dmd->sss_depth >= SSS_MAX_SAMPLES) return;
     
-    DiffusionSample& samp = dmd->samples[dmd->sss_depth];
     void* orig_op;
     AiStateGetMsgPtr("als_sss_op", &orig_op);
+    
+    int als_context = ALS_CONTEXT_NONE;
+    AiStateGetMsgInt("als_context", &als_context);
+
     AtRay ray;
     AtScrSample scrs;
+    DiffusionSample& samp = dmd->samples[dmd->sss_depth];
     samp.S = sg->P - dmd->Po;
     samp.r = AiV3Length(samp.S);
     dmd->maxdist -= samp.r;
     samp.Rd = AI_RGB_BLACK;
-    if (!trace_set_enabled && orig_op != sg->Op)
+
+    // There are a few contexts in which we can be called here:
+    // 1) Intersecting same object with same shader
+    // 2) Intersecting same object with different shader
+    // 3) Intersecting different object with same shader
+    // 4) Intersecting different object with different shader
+    // 5) Called from an indirect ray from another shader while tracing for SSS
+    // 2 and 4 could possibly be because we're running from a layer shader. if we try to evaluate in that context we will simply crash
+    // 5 will cause fireflies so we need to detect this and return
+
+    // just return if the shader that called us was not alSurface
+    if (sg->psg && AiNodeGetNodeEntry(sg->shader) != AiNodeGetNodeEntry(sg->psg->shader))
+    {
+        return;
+    }
+
+    // if we're in a layered context and running a different shader from the one that's tracing for sss, just return to let the other shader handle it
+    if (als_context == ALS_CONTEXT_LAYER && ((sg->psg && sg->psg->shader != sg->shader) || dmd->shader_orig != sg->shader))
+    {
+        return;
+    }
+
+    // if we're not using trace sets to explicitly define what objects we want to trace against, then assume we only want to trace against ourselves
+    // or if we're not doing sss in this shader, just continue the ray
+    if ((!trace_set_enabled && orig_op != sg->Op) || sssMix == 0.0f)
     {
         if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
         {
-            
             AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
             AiTrace(&ray, &scrs);
         }
@@ -241,14 +269,15 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
     dmd->sss_depth++;
 
+    AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
+    
     if (dmd->sss_depth < SSS_MAX_SAMPLES && dmd->maxdist > 0.0f)
     {
-        AiStateSetMsgInt("als_raytype", ALS_RAY_SSS);
+        
         if (trace_set_enabled)
         {
             AiShaderGlobalsSetTraceSet(sg, trace_set, trace_set_inclusive);
         }
-        sg->Rr--;
         AiMakeRay(&ray, AI_RAY_SUBSURFACE, &sg->P, &sg->Rd, dmd->maxdist, sg);
         AiTrace(&ray, &scrs);
     }
@@ -319,6 +348,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     dmd->numComponents = numComponents;
     dmd->directional = directional;
     dmd->deepGroupPtr = deepGroupPtr;
+    dmd->shader_orig = sg->shader;
     AtVector axes[3] = {U, V, sg->Ng};
     double sss_samples_c  = 0;
     if (trace_set_enabled)
@@ -419,6 +449,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         float geom[3];
         
         memset(dmd->samples, 0, sizeof(DiffusionSample)*SSS_MAX_SAMPLES);
+        dmd->sss_depth = 0;
         if (AiTrace(&wi_ray, &scrs))
         {            
             for (int i=0; i < dmd->sss_depth; ++i)
@@ -450,6 +481,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
 
                 float f = r_disk[0] / pdf_sum;
                 result_sss += dmd->samples[i].Rd * f;
+
                 for (int g=0; g < 8; ++g)
                 {
                     lightGroupsDirect[g] += dmd->samples[i].lightGroupsDirect[g] * f;
@@ -496,6 +528,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
         result_sss += result_sss_indirect;
     }
     */
+    AiStateSetMsgInt("als_raytype", ALS_RAY_UNDEFINED);
 
     return result_sss;
 }

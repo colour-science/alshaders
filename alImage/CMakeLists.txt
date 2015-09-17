@@ -5,6 +5,7 @@ foreach(SHADER ${SHADERS})
 	set(UI ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.ui.py)
 	set(MTD ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.mtd)
 	set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
+	set(AEXML ${CMAKE_CURRENT_BINARY_DIR}/AE${SHADER}Template.xml)
 	set(SPDL ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spdl)
 
 	add_library(${SHADER} SHARED ${SRC})
@@ -12,7 +13,7 @@ foreach(SHADER ${SHADERS})
 	target_link_libraries(${SHADER} ai)
 	set_target_properties(${SHADER} PROPERTIES PREFIX "")
 
-	add_custom_command(OUTPUT ${MTD} COMMAND ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${SPDL} DEPENDS ${UI})
+	add_custom_command(OUTPUT ${MTD} COMMAND ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${AEXML} ${SPDL} DEPENDS ${UI})
 	add_custom_target(${SHADER}UI ALL DEPENDS ${MTD})
 
 	if(DEFINED MTOA_SHADERS)

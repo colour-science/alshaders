@@ -78,12 +78,33 @@ class Parameter(UiElement):
    default = None
    fig = None
    figc = None
+   short_description = ''
+   presets = None
+   mayane = False
+   ui = ''
 
-   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None):
+   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None, presets={}, mayane=False, ui=''):
       self.name = name
       self.ptype = ptype
       self.default = default
-      self.description = description      
+      self.description = description
+      self.presets = presets
+      self.mayane = mayane
+      self.ui = ui
+
+      if description is not None:
+         if len(description) > 150:
+            # build the short description, < 200 chars
+            sentences = description.split('.')
+            sdlen = 0
+            for s in sentences:
+               self.short_description += s + "."
+               sdlen += len(s)
+               if sdlen > 150:
+                  break
+         else:
+            self.short_description = description
+
       if not label:
          label = name   
       self.label = label   
@@ -186,8 +207,8 @@ class ShaderDef:
    def endGroup(self):
       self.current_parent = self.current_parent.parent
 
-   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None):
-      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc)
+   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None, presets=None, mayane=False, ui=''):
+      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc, presets, mayane, ui)
       if not self.current_parent.children:
          self.current_parent.children = [p]
       else:
@@ -294,31 +315,47 @@ def WalkAETemplate(el, f, d):
             WalkAETemplate(e, f, d)
 
       writei(f, 'self.endLayout() # END %s' % el.name, d)
+   elif isinstance(el, AOV):
+      writei(f, 'self.addControl("%s", label="%s", annotation="%s")' % (el.name, el.label, el.short_description), d)
+   elif isinstance(el, Parameter):
+      if el.ptype == 'float':
+         writei(f, 'self.addCustomFlt("%s")' % el.name, d)
+      elif el.ptype == 'rgb':
+         writei(f, 'self.addCustomRgb("%s")' % el.name, d)
+      else:
+         writei(f, 'self.addControl("%s", label="%s", annotation="%s")' % (el.name, el.label, el.short_description), d)
+
+def WalkAETemplateParams(el, f, d):
+   if isinstance(el, Group):
+      if el.children:
+         for e in el.children:
+            WalkAETemplateParams(e, f, d)
 
    elif isinstance(el, Parameter):
-      writei(f, 'self.addControl("%s", label="%s")' % (el.name, el.label), d)
+      writei(f, 'self.params["%s"] = Param("%s", "%s", "%s", "%s", presets=%s)' % (el.name, el.name, el.label, el.short_description, el.ptype, el.presets), d)
 
 def WriteAETemplate(sd, fn):
    f = open(fn, 'w')
    writei(f, 'import pymel.core as pm', 0)
-   writei(f, 'from alShaders import alShadersTemplate\n', 0)
+   writei(f, 'from alShaders import *\n', 0)
 
    writei(f, 'class AE%sTemplate(alShadersTemplate):' % sd.name, 0)
+   writei(f, 'controls = {}', 1)
+   writei(f, 'params = {}', 1)
+   
    writei(f, 'def setup(self):', 1)
+
+   writei(f, 'self.params.clear()', 2)
+   for e in sd.root.children:
+      WalkAETemplateParams(e, f, 2)
+   
+   writei(f, '')
 
    if sd.maya_swatch:
       writei(f, 'self.addSwatch()', 2)
 
    writei(f, 'self.beginScrollLayout()', 2) # begin main scrollLayout
    writei(f, '')
-
-   if sd.maya_matte:
-      writei(f, 'self.beginLayout("Matte")', 2)
-      writei(f, 'self.addControl("aiEnableMatte", label="Enable Matte")', 2)
-      writei(f, 'self.addControl("aiMatteColor", label="Matte Color")', 2)
-      writei(f, 'self.addControl("aiMatteColorA", label="Matte Opacity")', 2)
-      writei(f, 'self.endLayout()', 2)
-
 
    for e in sd.root.children:
       WalkAETemplate(e, f, 2)
@@ -335,6 +372,123 @@ def WriteAETemplate(sd, fn):
    writei(f, 'self.endScrollLayout()', 2) #end main scrollLayout
 
    f.close()
+
+def toMayaType(ptype):
+   if ptype == 'rgb' or ptype == 'vector':
+      return 'float3'
+   else:
+      return ptype
+
+def WalkAEXMLAttributes(el, f, d):
+   if isinstance(el, Group):
+      if el.children:
+         for e in el.children:
+            WalkAEXMLAttributes(e, f, d)
+   elif isinstance(el, Parameter):
+      writei(f, '<attribute name="%s" type="maya.%s">' % (el.name, toMayaType(el.ptype)), 2)
+      writei(f, '<label>%s</label>' % el.label, 3)
+      writei(f, '<description>%s</description>' % el.short_description, 3)
+      writei(f, '</attribute>', 2)
+
+def WalkNEXMLAttributes(el, f, d):
+   if isinstance(el, Group):
+      if el.children:
+         for e in el.children:
+            WalkNEXMLAttributes(e, f, d)
+   elif isinstance(el, Parameter) and el.mayane:
+      writei(f, '<attribute name="%s" type="maya.%s">' % (el.name, toMayaType(el.ptype)), 2)
+      writei(f, '<label>%s</label>' % el.label, 3)
+      writei(f, '</attribute>', 2)
+
+def WalkNEXMLView(el, f, d):
+   if isinstance(el, Group):
+      if el.children:
+         for e in el.children:
+            WalkNEXMLView(e, f, d)
+   elif isinstance(el, Parameter) and el.mayane:
+      writei(f, '<property name="%s" />' % el.name, 2)
+
+def WalkAEXMLGroups(el, f, d):
+   if isinstance(el, Group):
+      writei(f, '<group name="%s">' % ''.join(el.name.split()), d)
+      writei(f, '<label>%s</label>' % el.name, d+1)
+      if el.children:
+         for e in el.children:
+            WalkAEXMLGroups(e, f, d+1)
+      writei(f, '</group>', d)
+   elif isinstance(el, Parameter):
+      writei(f, '<property name="%s"/>' % el.name, d)
+
+def WriteNEOutputAttr(sd, f, d):
+   if sd.output == 'rgb':
+      writei(f, '<attribute name="outColor" type="maya.float3">', d)
+      writei(f, '<label>Out Color</label>', d)
+      writei(f, '</attribute>')
+   elif sd.output == 'rgba':
+      writei(f, '<attribute name="outColor" type="maya.float3">', d)
+      writei(f, '<label>Out Color</label>', d)
+      writei(f, '</attribute>')
+      writei(f, '<attribute name="outAlpha" type="maya.float">', d)
+      writei(f, '<label>Out Alpha</label>', d)
+      writei(f, '</attribute>')
+   elif sd.output == 'vector':
+      writei(f, '<attribute name="outValue" type="maya.float3">', d)
+      writei(f, '<label>Out Value</label>', d)
+      writei(f, '</attribute>')
+   elif sd.output == 'float':
+      writei(f, '<attribute name="outValue" type="maya.float">', d)
+      writei(f, '<label>Out Value</label>', d)
+      writei(f, '</attribute>')
+
+def WriteNEOutputProp(sd, f, d):
+   if sd.output == 'rgb':
+      writei(f, '<property name="outColor" />', d)
+   elif sd.output == 'rgba':
+      writei(f, '<property name="outColor" />', d)
+      writei(f, '<property name="outAlpha" />', d)
+   elif sd.output == 'vector':
+      writei(f, '<property name="outValue" />', d)
+   elif sd.output == 'float':
+      writei(f, '<property name="outValue" />', d)
+
+def WriteAEXML(sd, fn):
+   f = open(fn, 'w')
+   writei(f, '<?xml version="1.0" encoding="UTF-8"?>', 0)
+   writei(f, '<templates>', 1)
+
+   writei(f, '<template name="AE%s">' % sd.name, 1)
+   writei(f, '<label>%s</label>' % sd.name, 2)
+   writei(f, '<description>%s</description>' % sd.description, 2)
+
+   for e in sd.root.children:
+      WalkAEXMLAttributes(e, f, 2)
+   writei(f, '</template>', 1)
+
+   writei(f, '<view name="Lookdev" template="AE%s">' % sd.name, 2)
+   for e in sd.root.children:
+      WalkAEXMLGroups(e, f, 3)
+   writei(f, '</view>', 2)
+
+   writei(f, '</templates>', 0)
+
+def WriteNEXML(sd, fn):
+   f = open(fn, 'w')
+   writei(f, '<?xml version="1.0" encoding="UTF-8"?>', 0)
+   writei(f, '<templates>', 1)
+
+   writei(f, '<template name="NE%s">' % sd.name, 1)
+   WriteNEOutputAttr(sd, f, 2)
+   for e in sd.root.children:
+      WalkNEXMLAttributes(e, f, 2)
+   writei(f, '</template>', 1)
+
+   writei(f, '<view name="NEDefault" template="NE%s">' % sd.name, 2)
+   WriteNEOutputProp(sd, f, 2)
+   for e in sd.root.children:
+      WalkNEXMLView(e, f, 2)
+   writei(f, '</view>', 2)
+
+   writei(f, '</templates>', 0)
 
 #########
 # C4DtoA
@@ -652,11 +806,12 @@ def WriteHoudiniHeader(sd, f):
          root_order_list.append(HoudiniEntry(el.name, 'param'))
 
    # tell houdini how many groups we have and how big they are. in advance. because houdini can be dumb too sometimes
-   folder_ROOT_list_STR = 'houdini.parm.folder.ROOT STRING "'
-   for folder in folder_ROOT_list:
-      folder_ROOT_list_STR += '%s;%d;' % (folder.name, len(folder.group_list))
-   folder_ROOT_list_STR += '"'
-   writei(f, folder_ROOT_list_STR, 1)
+   if len(folder_ROOT_list):
+      folder_ROOT_list_STR = 'houdini.parm.folder.ROOT STRING "'
+      for folder in folder_ROOT_list:
+         folder_ROOT_list_STR += '%s;%d;' % (folder.name, len(folder.group_list))
+      folder_ROOT_list_STR += '"'
+      writei(f, folder_ROOT_list_STR, 1)
 
    # now tell houdini about all the headings we have...
    heading_list = []
@@ -673,7 +828,10 @@ def WriteHoudiniHeader(sd, f):
    for entry in root_order_list:
       order += entry.name
       order += ' '
-   order += ' ROOT"'
+   if len(folder_ROOT_list):
+      order += ' ROOT"'
+   else:
+      order += '"'
 
    writei(f, order, 1)
 
@@ -753,6 +911,9 @@ def WriteMTD(sd, fn):
       WriteMTDParam(f, "softmax", "float", p.smx, 2)               
       WriteMTDParam(f, "desc", "string", p.description, 2)
       WriteMTDParam(f, "linkable", "bool", p.connectible, 2)
+      if p.ui == 'file':
+         WriteMTDParam(f, "c4d.gui_type", "int", 3, 2)
+         WriteMTDParam(f, "houdini.type", "string", "file:image", 2)
 
    for a in sd.aovs:
       writei(f, '[attr %s]' % a.name, 1)
@@ -835,6 +996,7 @@ def WriteSPDLParameter(f, p):
          writei(f, 'Texturable = on;', 2)
       else:
          writei(f, 'Texturable = off;', 2)
+
       if p.ptype == 'bool':
          writei(f, 'Value = %s;' % str(p.default).lower(), 2)
       elif p.ptype == 'int':
@@ -845,6 +1007,14 @@ def WriteSPDLParameter(f, p):
          writei(f, 'Value = %f %f %f;' % p.default, 2)
       elif p.ptype == 'string':
          writei(f, 'Value = "%s";' % p.default, 2)
+      elif p.ptype == 'enum':
+         writei(f, 'Value = "%s";' % p.default, 2)
+
+      if p.mn is not None:
+         writei(f, 'Value Minimum = %f;' % p.mn, 2)
+
+      if p.mx is not None:
+         writei(f, 'Value Maximum = %f;' % p.mx, 2)
 
    writei(f, '}', 1)
 
@@ -994,6 +1164,47 @@ def WriteSPDL(sd, fn):
 
    f.close()
 
+def WriteHTMLParam(f, el, d):
+   el_link="link='false'"
+   if el.connectible:
+      el_link=''
+   el_range=''
+   if el.mn != None and el.mx != None:
+      el_range="range='[%s, %s]'" % (str(el.mn), str(el.mx))
+   el_default="default='%s'" % str(el.default)
+   if el.ptype == 'rgb' and not isinstance(el, AOV):
+      el_default="default='rgb(%d, %d, %d)'" % (int(pow(el.default[0],1/2.2) * 255), int(pow(el.default[1],1/2.2) * 255), int(pow(el.default[2],1/2.2) * 255))
+   el_fig=""
+   if el.fig != None and el.figc != None:
+      el_fig = "fig='%s' figc='%s'" % (el.fig, el.figc)
+
+   el_presets=""
+   if el.presets is not None:
+      if el.ptype == 'float':
+         el_presets = "presets='"
+         first = True
+         for k in sorted(el.presets, key=el.presets.get):
+            if first:
+               first = False
+            else:
+               el_presets += "|"
+               
+            el_presets += "%s:%.3f" % (k, el.presets[k])
+         el_presets += "'"
+      elif el.ptype == 'rgb':
+         el_presets = "presets='"
+         first = True
+         for k in sorted(el.presets):
+            if first:
+               first = False
+            else:
+               el_presets += "|"
+            el_presets += "%s:(%.5f, %.5f, %.5f)" % (k, el.presets[k][0], el.presets[k][1], el.presets[k][2])
+         el_presets += "'"
+
+   writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s %s %s></div>"
+            % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link, el_fig, el_presets), d)
+
 def WalkHTML(f, el, d):
    if isinstance(el, Group):
       writei(f, "<h3 class='section'><span>%s</span></h3>" % el.name, d)
@@ -1003,20 +1214,7 @@ def WalkHTML(f, el, d):
             WalkHTML(f, e, d+1)
 
    elif isinstance(el, Parameter):
-      el_link="link='false'"
-      if el.connectible:
-         el_link=''
-      el_range=''
-      if el.mn != None and el.mx != None:
-         el_range="range='[%s, %s]'" % (str(el.mn), str(el.mx))
-      el_default="default='%s'" % str(el.default)
-      if el.ptype == 'rgb' and not isinstance(el, AOV):
-         el_default="default='rgb(%d, %d, %d)'" % (int(pow(el.default[0],1/2.2) * 255), int(pow(el.default[1],1/2.2) * 255), int(pow(el.default[2],1/2.2) * 255))
-      el_fig=""
-      if el.fig != None and el.figc != None:
-         el_fig = "fig='%s' figc='%s'" % (el.fig, el.figc)
-      writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s %s></div>"
-               % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link, el_fig), d)
+      WriteHTMLParam(f, el, d)
 
 def WalkHTMLRoot(f, el, d):
    if isinstance(el, Group):
@@ -1036,8 +1234,7 @@ def WalkHTMLRoot(f, el, d):
       writei(f, "</div> <!-- end expander %s -->" % el.name, d)
 
    elif isinstance(el, Parameter):
-      writei(f, "<div class='param' name='%s' label='%s' type='%s' default='%s' desc='%s'></div>"
-               % (el.name, el.label, el.ptype, el.default, el.description), d)
+      WriteHTMLParam(f, el, d)
 
 def WriteHTML(sd, fn):
    f = open(fn, 'w')
@@ -1056,7 +1253,7 @@ def WriteHTML(sd, fn):
    <script src="../js/param.js"></script>
 </head>
 
-<header class="navigation" role="banner">
+<header class="navigationnofix fixed" role="banner">
   <div class="navigation-wrapper">
     <a href="index.html" class="logo">
       <img src="img/als-logo-white.svg" alt="Logo Image">
@@ -1083,6 +1280,7 @@ def WriteHTML(sd, fn):
                <li><a href="alPattern.html">alPattern</a></li>
                <li><a href="alTriplanar.html">alTriplanar</a></li>
                <li><a href="alBlackbody.html">alBlackbody</a></li>
+               <li><a href="alFlake.html">alFlake</a></li>
             </ul>
             </li>
             <li class="nav-link more"><a href="javascript:void(0)">Utilities</a>
@@ -1096,7 +1294,9 @@ def WriteHTML(sd, fn):
                <li><a href="alSwitchFloat.html">alSwitchFloat</a></li>
                <li><a href="alSwitchColor.html">alSwitchColor</a></li>
                <li><a href="alCache.html">alCache</a></li>
+               <li><a href="alCurvature.html">alCurvature</a></li>
                <li><a href="alInputVector.html">alInputVector</a></li>
+               <li><a href="alInputScalar.html">alInputScalar</a></li>
                <li><a href="alJitterColor.html">alJitterColor</a></li>
       </ul>
     </nav>
@@ -1106,8 +1306,9 @@ def WriteHTML(sd, fn):
 
 <body>
    <div class='shader-content'>
+   <div style='background-image: url(img/%s_banner.jpg); height: 300px; background-size: cover; background-repeat: no-repeat; background-position: center top; padding-bottom:0; margin-top: 60px; background-color: #6E7982;'></div>
       <div class='article-block'>
-         <article class='type-system-sans'>
+         <article class='type-system-sans-dark'>
             <p class='type'>%s</p>
             <h2>%s</h2>
             <p>%s This document is a reference guide to the parameters.</p>
@@ -1117,7 +1318,7 @@ def WriteHTML(sd, fn):
       <div class='parameter-block'>
       <div class='parameter-content'>
 """
-   % (sd.name, sd.name, sd.intro, sd.description)
+   % (sd.name, sd.name, sd.name, sd.intro, sd.description)
    )
 
    # parameters
@@ -1173,14 +1374,16 @@ if __name__ == '__main__':
 
    WriteMTD(ui, sys.argv[2])  
    WriteAETemplate(ui, sys.argv[3])
-   WriteSPDL(ui, sys.argv[4])
-   WriteArgs(ui, sys.argv[5])
+   WriteAEXML(ui, sys.argv[4])
+   WriteNEXML(ui, sys.argv[5])
+   WriteSPDL(ui, sys.argv[6])
+   WriteArgs(ui, sys.argv[7])
 
    # C4DtoA resource files
    name = os.path.basename(os.path.splitext(sys.argv[1])[0])
-   build_dir = sys.argv[6] if len(sys.argv) > 6 else os.path.abspath("")
+   build_dir = sys.argv[8] if len(sys.argv) > 6 else os.path.abspath("")
    WriteC4DtoAResourceFiles(ui, name, build_dir)
 
    # HTML
-   WriteHTML(ui, sys.argv[7])
+   WriteHTML(ui, sys.argv[9])
 

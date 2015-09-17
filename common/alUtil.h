@@ -11,7 +11,7 @@
 
 #include <ai.h>
 
-#define IMPORTANCE_EPS 0.001f
+#define IMPORTANCE_EPS 1e-5f
 
 inline AtRGB rgb(float f)
 {
@@ -135,6 +135,15 @@ inline AtRGB lerp(const AtRGB& a, const AtRGB& b, const float t)
    r.r = lerp( a.r, b.r, t );
    r.g = lerp( a.g, b.g, t );
    r.b = lerp( a.b, b.b, t );
+   return r;
+}
+
+inline AtVector lerp(const AtVector& a, const AtVector& b, const float t)
+{
+   AtVector r;
+   r.x = lerp( a.x, b.x, t );
+   r.y = lerp( a.y, b.y, t );
+   r.z = lerp( a.z, b.z, t );
    return r;
 }
 
@@ -895,6 +904,9 @@ inline int rand0n(int n)
 #define ALS_RAY_SSS 1
 #define ALS_RAY_DUAL 2
 #define ALS_RAY_HAIR 3
+
+#define ALS_CONTEXT_NONE 0
+#define ALS_CONTEXT_LAYER 1
 
 #define VAR(x) #x << ": " << x
 #define VARL(x) std::cerr << #x << ": " << x << "\n"

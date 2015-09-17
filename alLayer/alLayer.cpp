@@ -202,12 +202,14 @@ shader_evaluate
 		if (debug == kLayer1) mix = 0.0f;
 		else if (debug == kLayer2) mix = 1.0f;
 
+        int als_raytype = ALS_RAY_UNDEFINED;
+        AiStateGetMsgInt("als_raytype", &als_raytype);
 
-		if (mix >= (1.0f-IMPORTANCE_EPS))
+		if (als_raytype != ALS_RAY_SSS && mix >= (1.0f-IMPORTANCE_EPS))
 		{
 			result = AiShaderEvalParamRGB(p_layer2);
 		}
-		else if (mix <= IMPORTANCE_EPS)
+		else if (als_raytype != ALS_RAY_SSS && mix <= IMPORTANCE_EPS)
 		{
 			result = AiShaderEvalParamRGB(p_layer1);
 		}
@@ -215,6 +217,7 @@ shader_evaluate
 		{
             if (sg->Rt & AI_RAY_CAMERA) // handle aovs
             {
+                AiStateSetMsgInt("als_context", ALS_CONTEXT_LAYER);
                 // RGB AOVs
                 AtRGB tmp[NUM_AOVs];
                 memset(tmp, 0, sizeof(AtRGB)*NUM_AOVs);
@@ -261,9 +264,11 @@ shader_evaluate
                     }
                     AiAOVSetRGBA(sg, data->aovs_rgba[i].c_str(), lerp(tmp_rgba[i], tmp_rgba2, mix));
                 }
+                AiStateSetMsgInt("als_context", ALS_CONTEXT_NONE);
             }
             else // just layer the results
             {
+                AiStateSetMsgInt("als_context", ALS_CONTEXT_LAYER);
                 AtRGB deepGroupTmp1[NUM_LIGHT_GROUPS];
                 AtRGB deepGroupTmp2[NUM_LIGHT_GROUPS];
                 memset(deepGroupTmp1, 0, sizeof(AtRGB) * NUM_LIGHT_GROUPS);
@@ -284,8 +289,7 @@ shader_evaluate
                         deepGroupPtr[i] = lerp(deepGroupTmp1[i], deepGroupTmp2[i], mix);
                     }
                 }
-                
-                
+                AiStateSetMsgInt("als_context", ALS_CONTEXT_NONE); 
             }
 		}
 	}

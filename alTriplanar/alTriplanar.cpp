@@ -48,9 +48,11 @@ static const char* triplanarTilingNames[] =
 
 enum alTriplanarParams
 {
+    p_input,
     p_space,
     p_normal,
     p_tiling,
+    p_frequency,
     p_texture,
     p_blendSoftness,
     p_cellSoftness,
@@ -65,14 +67,17 @@ enum alTriplanarParams
     p_rotz,
     p_rotjitterx,
     p_rotjittery,
-    p_rotjitterz
+    p_rotjitterz,
+    p_mipMapBias
 };
 
 node_parameters
 {
-	AiParameterENUM("space", 0, triplanarSpaceNames);
+	AiParameterRGB("input", 0.0f, 0.0f, 0.0f);
+    AiParameterENUM("space", 0, triplanarSpaceNames);
     AiParameterENUM("normal", 0, triplanarNormalNames);
     AiParameterENUM("tiling", 0, triplanarTilingNames);
+    AiParameterFLT("frequency", 1.0f);
     AiParameterSTR("texture", "");
     AiParameterFLT("blendSoftness", 0.1);
     AiParameterFLT("cellSoftness", 0.1);
@@ -88,6 +93,7 @@ node_parameters
     AiParameterFLT("rotjitterx", 1.0f);
     AiParameterFLT("rotjittery", 1.0f);
     AiParameterFLT("rotjitterz", 1.0f);
+    AiParameterINT("mipMapBias", 0);
 }
 
 node_loader
@@ -127,6 +133,8 @@ node_finish
 
 node_update
 {
+    ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
+    data->textureparams->mipmap_bias = params[p_mipMapBias].INT;
 
 }
 
@@ -191,14 +199,17 @@ void getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int sp
 		*dPdy = AiShaderGlobalsTransformVector(sg, sg->dPdy, AI_WORLD_TO_OBJECT);
         break;
     case NS_PREF:
-        if (!(AiUDataGetPnt("Pref", P) && AiUDataGetVec("Nref", N))){
+        if (!AiUDataGetPnt("Pref", P)){
+            AiMsgWarning("[alTriplanar] could not get Pref");
             // TODO: Output warning about not finding the correct data.
             *P = sg->Po;
             *N = AiShaderGlobalsTransformNormal(sg, baseN, AI_WORLD_TO_OBJECT);
 			*dPdx = AiShaderGlobalsTransformVector(sg, sg->dPdx, AI_WORLD_TO_OBJECT);
 			*dPdy = AiShaderGlobalsTransformVector(sg, sg->dPdy, AI_WORLD_TO_OBJECT);	
         } else {
+            AiMsgWarning("[alTriplanar got Pref]");
 			AiUDataGetDxyDerivativesPnt("Pref", dPdx, dPdy);
+            *N = AiV3Normalize(AiV3Cross(*dPdx, *dPdy));
 		}
         break;
     default:
@@ -227,7 +238,7 @@ void computeBlendWeights(const AtVector N, int space, float blendSoftness, float
     }
 }
 
-inline void rotateUVs(AtPoint &P, float degrees){
+void rotateUVs(AtPoint &P, float degrees){
     AtVector orientVectorX;
     const double d2r = 1. / 360. * AI_PI * 2;
     double phi = d2r * degrees;
@@ -245,7 +256,7 @@ inline void rotateUVs(AtPoint &P, float degrees){
     AiV3RotateToFrame(P, orientVectorX, orientVectorY, orientVectorZ);
 }
 
-inline AtRGB tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector dPdy,
+AtRGBA tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector dPdy,
 						 const AtPoint &scale, const AtPoint &offset,
                          float *weights, const AtPoint &rot, AtShaderGlobals *sg,
                          AtTextureHandle *handle, AtTextureParams *params){
@@ -316,20 +327,20 @@ inline AtRGB tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector 
     }
 
     if(textureAccessX && textureAccessY && textureAccessZ){
-        AtRGB result = AI_RGB_BLACK;
-        result += textureResult[0].rgb() * weights[0];
-        result += textureResult[1].rgb() * weights[1];
-        result += textureResult[2].rgb() * weights[2];
+        AtRGBA result = AI_RGBA_BLACK;
+        result += textureResult[0] * weights[0];
+        result += textureResult[1] * weights[1];
+        result += textureResult[2] * weights[2];
         return result;
     }
     else {
         // Something went wrong during lookup.
         // TODO: Log the error
-        return AiColorCreate(1.f, 0.0f, 0.f);
+        return AI_RGBA_RED;
     }
 }
 
-inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx, float dvdy,
+bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx, float dvdy,
 							const float cellSoftness, float rot, float rotjitter,
                             AtShaderGlobals *sg, AtTextureHandle *handle,
                             AtTextureParams *params, AtRGBA *textureResult){
@@ -410,7 +421,7 @@ inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx
     return success;
 }
 
-inline AtRGB tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVector &dPdy,
+AtRGBA tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVector &dPdy,
 						   const AtPoint &scale, const AtPoint &offset,
                            float *weights, float cellSoftness,
                            const AtPoint &rot, const AtPoint &rotjitter, AtShaderGlobals *sg,
@@ -479,27 +490,32 @@ inline AtRGB tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVecto
     }
 
     if(textureAccessX && textureAccessY && textureAccessZ){
-        AtRGB result = AI_RGB_BLACK;
-        result += textureResult[0].rgb() * weights[0];
-        result += textureResult[1].rgb() * weights[1];
-        result += textureResult[2].rgb() * weights[2];
+        AtRGBA result = AI_RGBA_BLACK;
+        result += textureResult[0] * weights[0];
+        result += textureResult[1] * weights[1];
+        result += textureResult[2] * weights[2];
         return result;
     }
     else {
         // Something went wrong during lookup.
         // TODO: Log the error
-        return AiColorCreate(1.f, 0.0f, 0.f);
+        return AI_RGBA_RED;
     }
 }
 
 shader_evaluate
 {
-        // get shader parameters
+    // get shader parameters
+
+    AtRGB input = AiShaderEvalParamRGB(p_input);
+
 	int space = AiShaderEvalParamInt(p_space);
 
     int normal = AiShaderEvalParamInt(p_normal);
 
     int tiling = AiShaderEvalParamInt(p_tiling);
+
+    float frequency = AiShaderEvalParamFlt(p_frequency);
 
     float blendSoftness = AiShaderEvalParamFlt(p_blendSoftness);
     blendSoftness = CLAMP(blendSoftness, 0.f, 1.f);
@@ -541,8 +557,9 @@ shader_evaluate
     float weights[3];
     computeBlendWeights(N, space, blendSoftness, weights);
 
+    P *= frequency;
         // compute texture values
-    AtRGB result = AI_RGB_RED;
+    AtRGBA result = AI_RGBA_RED;
     switch(tiling){
         case TM_CELLNOISE:
             result = tileCellnoise(P, dPdx, dPdy, scale, offset, weights, cellSoftness, rot, rotjitter, sg, data->texturehandle, data->textureparams);
@@ -552,10 +569,10 @@ shader_evaluate
             break;
         default:
             // TODO: We should never end up here. Log the error to inform the shader writer.
-            result = AI_RGB_BLUE;
+            result = AI_RGBA_BLUE;
             break;
     }
-    sg->out.RGB = result;
+    sg->out.RGB = lerp(input, result.rgb(), result.a);
 
 		// clean up after ourselves
 	SGC.restoreSG(sg);

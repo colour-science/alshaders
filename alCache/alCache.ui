@@ -6,7 +6,7 @@ ui.shader({
         'description':'Useful for optimizing complex networks where you know that multiple evaluations of a particular subnet are slowing your render down.',
         'output':'rgb',
         'maya_name':'alCache',
-        'maya_classification':'texture',
+        'maya_classification':'utility/other',
         'maya_id':'0x00116417',
         'maya_swatch':True,
         'maya_matte':False,
@@ -20,5 +20,5 @@ ui.shader({
         'houdini_icon': 'SOP_subnet'
 })
 
-ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), description='The network you plug in here will be evaluated once and then have its result cached if it is reused in multiple outputs.')
+ui.parameter('input', 'rgb', (0.0, 0.0, 0.0), description='The network you plug in here will be evaluated once and then have its result cached if it is reused in multiple outputs.', mayane=True)
 
