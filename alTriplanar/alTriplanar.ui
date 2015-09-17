@@ -39,15 +39,15 @@ ui.parameter('normal', 'enum', 'geometric', 'Normal', enum_names=[
 ui.parameter('tiling', 'enum', 'regular', 'Tiling', enum_names=[
         "regular",
         "cellnoise"
-], description='Tiling pattern. regular gives a regular grid, cellnoise gives a random pattern.', fig='alTriplanar_tiling', figc='Tiling set to cellnoise and regular')
+], description='Tiling pattern. regular gives a regular grid, cellnoise gives a random pattern.', fig='alTriplanar_tiling', figc='Tiling set to [cellnoise,cellnoise,regular]')
 
-ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the pattern. Higher numbers give more repetions, lower numbers give less.', fig='alTriplanar_frequency', figc='Frequency at 0.5, 1.0, 2.0')
+ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the pattern. Higher numbers give more repetions, lower numbers give less.', fig='alTriplanar_frequency', figc='Frequency at [0.5,1.0,2.0]')
 
 ui.parameter('mipMapBias', 'int', 0, 'Mip map bias', description='Biases the lookup into the texture to select a higher or lower mipmap level. Positive numbers select a higher (blurrier) level, negative numbers select a lower (sharper) level. Be careful: pushing the lookup too low will cause aliasing if your camera samples are not high enough and could cause excessive texture IO which can lead to massive slowdowns when using large textures.')
 
 with uigen.group(ui, 'Blending', False, 'Use these parameters to soften the blend of the image between projection planes and between cells.'):
-    ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', mn=0, mx=1, description='The softness of the blends.', fig='alTriplanar_blend', figc='Blend softness at 0.0, 0.1, 0.5')
-    ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', mn=0, mx=1, description='The softness of the cell borders.', fig='alTriplanar_cell', figc='Cell softness at 0.0, 0.1, 0.5')
+    ui.parameter('blendSoftness', 'float', 0.1, 'Blend Softness', mn=0, mx=1, description='The softness of the blends.', fig='alTriplanar_blend', figc='Blend softness at [0.0,0.1,0.5]')
+    ui.parameter('cellSoftness', 'float', 0.1, 'Cell Softness', mn=0, mx=1, description='The softness of the cell borders.', fig='alTriplanar_cell', figc='Cell softness at [0.0,0.1,0.5]')
 
 with uigen.group(ui, 'Positioning', True, 'Use these parameters to control the scale and placement of the image.'):
     ui.parameter('scalex', 'float', 1.0, 'X Scale')

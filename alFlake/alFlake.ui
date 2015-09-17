@@ -22,7 +22,7 @@ ui.shader({
 })
 
 ui.parameter('space', 'enum', 'tangent', enum_names=['tangent', 'world'], description='Select the space for normal computation. When world is selected you should plug the output of this node directly into the normal override parameter of your desired lobe on alSurface. When tangent is selected you should use this as a tangent-space normal map with the regular Arnold bump shader.')
-ui.parameter('amount', 'float', 0.7, 'Amount', description='Proportion of the surface that is covered by flakes', mn=0.0, mx=1.0, fig='alFlake_amount', figc='Amount at 0.0, 0.5, 1.0')
-ui.parameter('size', 'float', 0.01, 'Size', description='Size of the flakes', fig='alFlake_size', figc='Size at 0.01, 0.05, 0.1')
-ui.parameter('divergence', 'float', .5, 'Divergence', description='How much the flake normals diverge from the surface normal.', mn=0.0, mx=1.0, fig='alFlake_divergence', figc='Divergence at 0.1, 0.5, 1.0')
+ui.parameter('amount', 'float', 0.7, 'Amount', description='Proportion of the surface that is covered by flakes', mn=0.0, mx=1.0, fig='alFlake_amount', figc='Amount at [0.0,0.5,1.0]')
+ui.parameter('size', 'float', 0.01, 'Size', description='Size of the flakes', fig='alFlake_size', figc='Size at [0.01,0.05,0.1]')
+ui.parameter('divergence', 'float', .5, 'Divergence', description='How much the flake normals diverge from the surface normal.', mn=0.0, mx=1.0, fig='alFlake_divergence', figc='Divergence at [0.1,0.5,1.0]')
 ui.parameter('P', 'vector', (0.0, 0.0, 0.0), 'P', description='Connect a point here to override the space used for flake calculation.', mayane=True)

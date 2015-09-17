@@ -1296,16 +1296,17 @@ def WriteHTML(sd, fn):
             <ul class="nav navbar-nav navbar-right">
                
                <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Home</a>
+                  <a href="index.html" class="dropdown-toggle" data-toggle="dropdown">Home</a>
                   <ul class="dropdown-menu" role="menu">
                      <li><a href="index.html#downloads">Download</a></li>
                      <li><a href="index.html#installation">Install</a></li>
                      <li><a href="index.html#learn">Learn</a></li>
+                     <li><a href="index.html#contribute">Contribute</a></li>
                   </ul>
                </li>
 
                <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Reference</a>
+                  <a href="reference.html" class="dropdown-toggle" data-toggle="dropdown">Reference</a>
                   <ul class="dropdown-menu">
                      <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Surfaces</a>
@@ -1326,7 +1327,7 @@ def WriteHTML(sd, fn):
                            <li><a href="alFlowNoise.html">al FlowNoise</a></li>
                            <li><a href="alTriplanar.html">al Triplanar</a></li>
                            <li><a href="alFlake.html">al Flake</a></li>
-                           <li><a href="alBlackbody.html">al Cel</a></li>
+                           <li><a href="alBlackbody.html">al Blackbody</a></li>
                            <li><a href="alPattern.html">al Pattern</a></li>
                            <li><a href="alCurvature.html">al Curvature</a></li>
                         </ul>
@@ -1346,6 +1347,7 @@ def WriteHTML(sd, fn):
                            <li><a href="alCache.html">al Cache</a></li>
                            <li><a href="alJitterColor.html">al JitterColor</a></li>
                            <li><a href="alInputVector.html">al InputVector</a></li>
+                           <li><a href="alInputScalar.html">al InputScalar</a></li>
                         </ul>
                      </li>
                   </ul>

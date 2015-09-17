@@ -26,13 +26,13 @@ ui.parameter('space', 'enum', 'world', 'Space', enum_names=[
 	"Pref",
 	"UV"
 ], description='Space in which to calculate the noise pattern. For best results, use UV.')
-ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.', fig='alFlowNoise_frequency', figc='Frequency at 1, 2, 4')
-ui.parameter('octaves', 'int', 4, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.', fig='alFlowNoise_octaves', figc='Octaves at 1, 2, 4')
-ui.parameter('lacunarity', 'float', 2.172, 'Lacunarity', description='How much the frequency is increased with each octave.', fig='alFlowNoise_lacunarity', figc='Lacunarity at 1.0, 1.5, 2.172')
-ui.parameter('gain', 'float', 0.5, 'Gain', description='How much the intensity of the noise is scaled with each object.', fig='alFlowNoise_gain', figc='Gain at 0.25, 0.5, 0.75')
-ui.parameter('angle', 'float', 0.0, 'Angle', description='Animate this to control the rolling motion of the noise.', fig='alFlowNoise_angle', figc='Angle at 0, 1, 2')
-ui.parameter('advection', 'float', 0.25, 'Advection', description='Controls how much the smaller noise features are swept along with the larger ones.', fig='alFlowNoise_advection', figc='Advection at 0.0, 0.25, 0.5')
-ui.parameter('turbulent', 'bool', False, 'Turbulent', connectible=False, description='Enable this to switch from fBM to Turbulent noise.', fig='alFlowNoise_turbulent', figc='Turbulent off and on (Input min is -1 when off, 0 when on')
+ui.parameter('frequency', 'float', 1.0, 'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.', fig='alFlowNoise_frequency', figc='Frequency at [1,2,4]')
+ui.parameter('octaves', 'int', 4, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.', fig='alFlowNoise_octaves', figc='Octaves at [1,2,4]')
+ui.parameter('lacunarity', 'float', 2.172, 'Lacunarity', description='How much the frequency is increased with each octave.', fig='alFlowNoise_lacunarity', figc='Lacunarity at [1.0,1.5,2.172]')
+ui.parameter('gain', 'float', 0.5, 'Gain', description='How much the intensity of the noise is scaled with each object.', fig='alFlowNoise_gain', figc='Gain at [0.25,0.5,0.75]')
+ui.parameter('angle', 'float', 0.0, 'Angle', description='Animate this to control the rolling motion of the noise.', fig='alFlowNoise_angle', figc='Angle at [0,1,2]')
+ui.parameter('advection', 'float', 0.25, 'Advection', description='Controls how much the smaller noise features are swept along with the larger ones.', fig='alFlowNoise_advection', figc='Advection at [0.0,0.25,0.5]')
+ui.parameter('turbulent', 'bool', False, 'Turbulent', connectible=False, description='Enable this to switch from fBM to Turbulent noise.', fig='alFlowNoise_turbulent', figc='Turbulent [off,off,on]')
 
 uigen.remapControls(ui)
 
