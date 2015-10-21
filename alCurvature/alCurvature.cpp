@@ -158,8 +158,10 @@ shader_evaluate
 			float dist2 = AiV3Dot(L, L);
 			if (dist2 > t2) continue;
 			Sample& s = psamp[count];
-			s.qi = hitpoint->P;
-			s.wi = SQR(MAX(AiV3Dot(s.qi, pi) / t2 - 1.0f, 0.0f));
+			// set qi to be relative to the shading point to avoid weirdness close to the origin
+			// for that same reason move the whole calculation away from the origin
+			s.qi = hitpoint->P - pi + AiVector(10,10,10);
+			s.wi = SQR(dist2 / t2 - 1.0f);
 			s.ni = hitpoint->N;
 			assert(AiIsFinite(s.wi));
 			count++;

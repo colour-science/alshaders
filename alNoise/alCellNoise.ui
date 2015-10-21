@@ -26,15 +26,15 @@ ui.parameter('space', 'enum', 'world',  'Space', enum_names=[
 	"Pref",
 	"UV"
 ], description='Space in which to calculate the noise pattern.')
-ui.parameter('frequency', 'float', 1.0 ,'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.', fig='alCellNoise_frequency', figc='Frequency at 1, 2, 4')
+ui.parameter('frequency', 'float', 1.0 ,'Frequency', description='Frequency of the noise pattern. Larger numbers make it smaller, lower numbers make it bigger.', fig='alCellNoise_frequency', figc='Frequency at [1,2,4]')
 ui.parameter('mode', 'enum', 'features', 'Mode', enum_names=[
 	"features",
 	"chips"
-], description='Features allows you to measure the distance to features to create veiny textures, chips simply puts a random color in each block.', fig='alCellNoise_mode', figc='Mode set to features and chips')
-ui.parameter('randomness', 'float', 1.0, 'Randomness', description='How much randomness is added to the cel positions.', fig='alCellNoise_randomness', figc='Randomness at 0.0, 0.5, 1.0')
+], description='Features allows you to measure the distance to features to create veiny textures, chips simply puts a random color in each block.', fig='alCellNoise_mode', figc='Mode set to [features,features,chips]')
+ui.parameter('randomness', 'float', 1.0, 'Randomness', description='How much randomness is added to the cel positions.', fig='alCellNoise_randomness', figc='Randomness at [0.0,0.5,1.0]')
 with uigen.group(ui, 'Features', False, None):
-	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.', fig='alCellNoise_octaves', figc='Octaves set to 1, 2, 4')
-	ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.', fig='alCellNoise_lacunarity', figc='Lacunarity at 1.0, 1.5, 2.121')
+	ui.parameter('octaves', 'int', 1, 'Octaves', connectible=False, description='Number of octaves to calculate. Higher numbers give more detail but take longer to compute.', fig='alCellNoise_octaves', figc='Octaves set to [1,2,4]')
+	ui.parameter('lacunarity', 'float', 2.121, 'Lacunarity', description='How much the frequency is increased with each octave.', fig='alCellNoise_lacunarity', figc='Lacunarity at [1.0,1.5,2.121]')
 
 	uigen.remapControls(ui)
 

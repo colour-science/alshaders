@@ -3,9 +3,15 @@ BINARY DISTRIBUTION
 Simply copy the files from the subdirectories to the relevant subdirectories of your MtoA installation (or somewhere in
 the appropriate paths):
 
-For MtoA
+For MtoA (in-place install)
 - Libraries and MTD files found in the 'bin' directory go somewhere in your ARNOLD_PLUGIN_PATH or in 'shaders' under your MtoA installation directory
 - *.py interface templates found in the 'ae' directory go somwhere in your MTOA_TEMPLATES_PATH or in 'scripts/mtoa/ui/ae' under your MtoA installation directory
+
+For MtoA (custom install - necessary for Maya 2016 and above)
+- Extract the package to an alShaders folder somewhere on your filesystem.
+- Set the ARNOLD_PLUGIN_PATH variable to include {ALSHADERS_INSTALL}/bin
+- Set the MTOA_TEMPLATES_PATH variable to include {ALSHADERS_INSTALL}/ae
+- Set the MAYA_CUSTOM_TEMPLATE_PATH variable to include {ALSHADERS_INSTALL}/aexml
 
 For C4DtoA
 - Libraries and MTD files found in the 'bin' directory go somewhere in your ARNOLD_PLUGIN_PATH or in 'shaders' under your C4DtoA installation directory

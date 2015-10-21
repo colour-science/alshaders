@@ -6,7 +6,7 @@ project(alShaders)
 
 set(ALS_MAJOR_VERSION 1)
 set(ALS_MINOR_VERSION 0)
-set(ALS_PATCH_VERSION 0rc10)
+set(ALS_PATCH_VERSION 0rc11)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
 
 set(CMAKE_BUILD_TYPE RELEASE)
@@ -22,6 +22,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_definitions( "-W3 -D_CRT_SECURE_NO_WARNINGS -wd4005 -wd4996 -wd4305 -wd4244 -nologo" )
 else()
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden -DNDEBUG")
+    # set(CMAKE_CXX_FLAGS_DEBUG "-fsanitize=address -fno-omit-frame-pointer")
 endif()
 
 # check if we have a local cmake include file and include it if we do

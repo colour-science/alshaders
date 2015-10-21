@@ -136,6 +136,10 @@ struct ShaderData
     float aov_refraction_clamp;
     float aov_emission_clamp;
     float aov_light_group_clamp[NUM_LIGHT_GROUPS];
+
+    bool transmissionCausticPaths;
+    bool specular1CausticPaths;
+    bool specular2CausticPaths;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0

@@ -67,7 +67,8 @@ enum alTriplanarParams
     p_rotz,
     p_rotjitterx,
     p_rotjittery,
-    p_rotjitterz
+    p_rotjitterz,
+    p_mipMapBias
 };
 
 node_parameters
@@ -92,6 +93,7 @@ node_parameters
     AiParameterFLT("rotjitterx", 1.0f);
     AiParameterFLT("rotjittery", 1.0f);
     AiParameterFLT("rotjitterz", 1.0f);
+    AiParameterINT("mipMapBias", 0);
 }
 
 node_loader
@@ -131,6 +133,8 @@ node_finish
 
 node_update
 {
+    ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
+    data->textureparams->mipmap_bias = params[p_mipMapBias].INT;
 
 }
 
@@ -195,14 +199,17 @@ void getProjectionGeometry(const AtNode* node, const AtShaderGlobals *sg, int sp
 		*dPdy = AiShaderGlobalsTransformVector(sg, sg->dPdy, AI_WORLD_TO_OBJECT);
         break;
     case NS_PREF:
-        if (!(AiUDataGetPnt("Pref", P) && AiUDataGetVec("Nref", N))){
+        if (!AiUDataGetPnt("Pref", P)){
+            AiMsgWarning("[alTriplanar] could not get Pref");
             // TODO: Output warning about not finding the correct data.
             *P = sg->Po;
             *N = AiShaderGlobalsTransformNormal(sg, baseN, AI_WORLD_TO_OBJECT);
 			*dPdx = AiShaderGlobalsTransformVector(sg, sg->dPdx, AI_WORLD_TO_OBJECT);
 			*dPdy = AiShaderGlobalsTransformVector(sg, sg->dPdy, AI_WORLD_TO_OBJECT);	
         } else {
+            AiMsgWarning("[alTriplanar got Pref]");
 			AiUDataGetDxyDerivativesPnt("Pref", dPdx, dPdy);
+            *N = AiV3Normalize(AiV3Cross(*dPdx, *dPdy));
 		}
         break;
     default:
@@ -231,7 +238,7 @@ void computeBlendWeights(const AtVector N, int space, float blendSoftness, float
     }
 }
 
-inline void rotateUVs(AtPoint &P, float degrees){
+void rotateUVs(AtPoint &P, float degrees){
     AtVector orientVectorX;
     const double d2r = 1. / 360. * AI_PI * 2;
     double phi = d2r * degrees;
@@ -249,7 +256,7 @@ inline void rotateUVs(AtPoint &P, float degrees){
     AiV3RotateToFrame(P, orientVectorX, orientVectorY, orientVectorZ);
 }
 
-inline AtRGBA tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector dPdy,
+AtRGBA tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector dPdy,
 						 const AtPoint &scale, const AtPoint &offset,
                          float *weights, const AtPoint &rot, AtShaderGlobals *sg,
                          AtTextureHandle *handle, AtTextureParams *params){
@@ -333,7 +340,7 @@ inline AtRGBA tileRegular(const AtPoint &P, const AtVector &dPdx, const AtVector
     }
 }
 
-inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx, float dvdy,
+bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx, float dvdy,
 							const float cellSoftness, float rot, float rotjitter,
                             AtShaderGlobals *sg, AtTextureHandle *handle,
                             AtTextureParams *params, AtRGBA *textureResult){
@@ -414,7 +421,7 @@ inline bool lookupCellNoise(float u, float v, float dudx, float dudy, float dvdx
     return success;
 }
 
-inline AtRGBA tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVector &dPdy,
+AtRGBA tileCellnoise(const AtPoint &P, const AtVector &dPdx, const AtVector &dPdy,
 						   const AtPoint &scale, const AtPoint &offset,
                            float *weights, float cellSoftness,
                            const AtPoint &rot, const AtPoint &rotjitter, AtShaderGlobals *sg,

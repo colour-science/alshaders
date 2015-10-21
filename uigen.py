@@ -81,14 +81,16 @@ class Parameter(UiElement):
    short_description = ''
    presets = None
    mayane = False
+   ui = ''
 
-   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None, presets={}, mayane=False):
+   def __init__(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc=None, presets={}, mayane=False, ui=''):
       self.name = name
       self.ptype = ptype
       self.default = default
       self.description = description
       self.presets = presets
       self.mayane = mayane
+      self.ui = ui
 
       if description is not None:
          if len(description) > 150:
@@ -205,8 +207,8 @@ class ShaderDef:
    def endGroup(self):
       self.current_parent = self.current_parent.parent
 
-   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None, presets=None, mayane=False):
-      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc, presets, mayane)
+   def parameter(self, name, ptype, default, label=None, description=None, mn=None, mx=None, smn=None, smx=None, connectible=True, enum_names=None, fig=None, figc = None, presets=None, mayane=False, ui=''):
+      p = Parameter(name, ptype, default, label, description, mn, mx, smn, smx, connectible, enum_names, fig, figc, presets, mayane, ui)
       if not self.current_parent.children:
          self.current_parent.children = [p]
       else:
@@ -909,6 +911,9 @@ def WriteMTD(sd, fn):
       WriteMTDParam(f, "softmax", "float", p.smx, 2)               
       WriteMTDParam(f, "desc", "string", p.description, 2)
       WriteMTDParam(f, "linkable", "bool", p.connectible, 2)
+      if p.ui == 'file':
+         WriteMTDParam(f, "c4d.gui_type", "int", 3, 2)
+         WriteMTDParam(f, "houdini.type", "string", "file:image", 2)
 
    for a in sd.aovs:
       writei(f, '[attr %s]' % a.name, 1)
@@ -1200,30 +1205,28 @@ def WriteHTMLParam(f, el, d):
    writei(f, "<div class='param' name='%s' label='%s' type='%s'%s desc='%s' %s %s %s %s></div>"
             % (el.name, el.label, el.ptype, el_default, el.description, el_range, el_link, el_fig, el_presets), d)
 
-def WalkHTML(f, el, d):
+def WalkHTML(f, el, parent_name, d):
    if isinstance(el, Group):
-      writei(f, "<h3 class='section'><span>%s</span></h3>" % el.name, d)
+      writei(f, "<h3 class='section'><span class='section-header subsection-header' id='%s_%s'>%s</span></h3>" % (parent_name.replace(" ", "_"), el.name.replace(" ", "_"), el.name), d)
       writei(f, "<div class='section-desc'>%s</div>" % el.description, d)
       if el.children:
          for e in el.children:
-            WalkHTML(f, e, d+1)
+            WalkHTML(f, e, el.name, d+1)
 
    elif isinstance(el, Parameter):
       WriteHTMLParam(f, el, d)
 
 def WalkHTMLRoot(f, el, d):
    if isinstance(el, Group):
-      expand_class='expander-trigger'
-      if el.collapse:
-         expand_class='expander-trigger expander-hidden'
+      expand_class='expander-trigger section-header'
       writei(f, "<div class='expander'>", d)
-      writei(f, "<div class='%s'>%s</div>" % (expand_class, el.name), d)
+      writei(f, "<div class='%s' id='%s'>%s</div>" % (expand_class, el.name.replace(" ", "_"), el.name), d)
       writei(f, "<div class='expander-content'>", d)
       writei(f, "<div class='section-desc'>%s</div>" % el.description, d)
 
       if el.children:
          for e in el.children:
-            WalkHTML(f, e, d+1)
+            WalkHTML(f, e, el.name, d+1)
 
       writei(f, "</div> <!-- end expander-content %s -->" % el.name, d)
       writei(f, "</div> <!-- end expander %s -->" % el.name, d)
@@ -1237,83 +1240,182 @@ def WriteHTML(sd, fn):
    f.write(
       """
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-   <meta charset='utf-8'>
-   <title>%s Reference Guide</title>
-   <link rel="stylesheet" href="../css/app.css">
-   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-   <script src="../js/navbar.js"></script>
-   <script src="../js/tabs.js"></script>
-   <script src="../js/param.js"></script>
-</head>
-
-<header class="navigationnofix fixed" role="banner">
-  <div class="navigation-wrapper">
-    <a href="index.html" class="logo">
-      <img src="img/als-logo-white.svg" alt="Logo Image">
-    </a>
-    <a href="javascript:void(0)" class="navigation-menu-button" id="js-mobile-menu"><i class="fa fa-bars fa-2x"></i></a>
-    <nav role="navigation">
-      <ul id="js-navigation-menu" class="navigation-menu show">
-        <li class="nav-link"><a href="index.html">Home</a></li>
-            <li class="nav-link"><a href="javascript:void(0)">Tutorials</a></li>
-            <li class="nav-link more"><a href="javascript:void(0)">Surfaces</a>
-            <ul class="submenu">
-               <li><a href="alSurface.html">alSurface</a></li>
-               <li><a href="alLayer.html">alLayer</a></li>
-               <li><a href="alHair.html">alHair</a></li>
-               <li><a href="alCel.html">alCel</a></li>
-            </ul>
-            </li>
-            <li class="nav-link more"><a href="javascript:void(0)">Textures</a>
-            <ul class="submenu">
-               <li><a href="alFractal.html">alFractal</a></li>
-               <li><a href="alCellNoise.html">alCellNoise</a></li>
-               <li><a href="alGaborNoise.html">alGaborNoise</a></li>
-               <li><a href="alFlowNoise.html">alFlowNoise</a></li>
-               <li><a href="alPattern.html">alPattern</a></li>
-               <li><a href="alTriplanar.html">alTriplanar</a></li>
-               <li><a href="alBlackbody.html">alBlackbody</a></li>
-               <li><a href="alFlake.html">alFlake</a></li>
-            </ul>
-            </li>
-            <li class="nav-link more"><a href="javascript:void(0)">Utilities</a>
-            <ul class="submenu">
-               <li><a href="alCombineFloat.html">alCombineFloat</a></li>
-               <li><a href="alCombineColor.html">alCombineColor</a></li>
-               <li><a href="alRemapFloat.html">alRemapFloat</a></li>
-               <li><a href="alRemapColor.html">alRemapColor</a></li>
-               <li><a href="alLayerFloat.html">alLayerFloat</a></li>
-               <li><a href="alLayerColor.html">alLayerColor</a></li>
-               <li><a href="alSwitchFloat.html">alSwitchFloat</a></li>
-               <li><a href="alSwitchColor.html">alSwitchColor</a></li>
-               <li><a href="alCache.html">alCache</a></li>
-               <li><a href="alCurvature.html">alCurvature</a></li>
-               <li><a href="alInputVector.html">alInputVector</a></li>
-               <li><a href="alInputScalar.html">alInputScalar</a></li>
-               <li><a href="alJitterColor.html">alJitterColor</a></li>
-      </ul>
-    </nav>
-    
-  </div>
-</header>
-
-<body>
-   <div class='shader-content'>
-   <div style='background-image: url(img/%s_banner.jpg); height: 300px; background-size: cover; background-repeat: no-repeat; background-position: center top; padding-bottom:0; margin-top: 60px; background-color: #6E7982;'></div>
-      <div class='article-block'>
-         <article class='type-system-sans-dark'>
-            <p class='type'>%s</p>
-            <h2>%s</h2>
-            <p>%s This document is a reference guide to the parameters.</p>
-         </article>
-      </div> <!-- end article-block -->
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="description" content="">
+   <meta name="author" content="">
    
-      <div class='parameter-block'>
+   <title>%s Reference Guide</title>
+
+   <link rel="icon" 
+      type="image/png" 
+      href="img/als.png">
+   
+   <!-- CSS -->
+   <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+   <link href="assets/css/simpletextrotator.css" rel="stylesheet">
+   <link href="assets/css/font-awesome.min.css" rel="stylesheet">
+   <link href="assets/css/et-line-font.css" rel="stylesheet">
+   <link href="assets/css/magnific-popup.css" rel="stylesheet">
+   <link href="assets/css/flexslider.css" rel="stylesheet">
+   <link href="assets/css/owl.carousel.css" rel="stylesheet">
+   <link href="assets/css/animate.css" rel="stylesheet">
+   <link href="assets/css/style.css" rel="stylesheet">
+
+   <link href="css/param.css" rel="stylesheet">
+</head>
+<body data-spy="scroll" data-target="#parameter-scroll-spy" data-offset="20">
+
+   <!-- Preloader -->
+   <div class="page-loader">
+      <div class="loader">Loading...</div>
+   </div>
+
+   <!-- Navigation start -->
+   <nav class="navbar navbar-custom navbar-fixed-top" role="navigation">
+
+      <div class="container">
+   
+         <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#custom-collapse">
+               <span class="sr-only">Toggle navigation</span>
+               <span class="icon-bar"></span>
+               <span class="icon-bar"></span>
+               <span class="icon-bar"></span>
+            </button>
+
+            <a class="navbar-brand" href="index.html">
+                        <img src="img/als-logo-white.svg" width="20" height="20" style="float:left">
+                        &nbsp;alShaders</a>
+         </div>
+   
+         <div class="collapse navbar-collapse" id="custom-collapse">
+   
+            <ul class="nav navbar-nav navbar-right">
+               
+               <li class="dropdown">
+                  <a href="index.html" class="dropdown-toggle" data-toggle="dropdown">Home</a>
+                  <ul class="dropdown-menu" role="menu">
+                     <li><a href="index.html#downloads">Download</a></li>
+                     <li><a href="index.html#installation">Install</a></li>
+                     <li><a href="index.html#learn">Learn</a></li>
+                     <li><a href="index.html#contribute">Contribute</a></li>
+                  </ul>
+               </li>
+
+               <li class="dropdown">
+                  <a href="reference.html" class="dropdown-toggle" data-toggle="dropdown">Reference</a>
+                  <ul class="dropdown-menu">
+                     <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Surfaces</a>
+                        <ul class="dropdown-menu">
+                           <li><a href="alSurface.html">al Surface</a></li>
+                           <li><a href="alHair.html">al Hair</a></li>
+                           <li><a href="alLayer.html">al Layer</a></li>
+                           <li><a href="alCel.html">al Cel</a></li>
+                        </ul>
+                     </li>
+
+                     <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Textures</a>
+                        <ul class="dropdown-menu">
+                           <li><a href="alFractal.html">al Fractal</a></li>
+                           <li><a href="alCellNoise.html">al CellNoise</a></li>
+                           <li><a href="alGaborNoise.html">al GaborNoise</a></li>
+                           <li><a href="alFlowNoise.html">al FlowNoise</a></li>
+                           <li><a href="alTriplanar.html">al Triplanar</a></li>
+                           <li><a href="alFlake.html">al Flake</a></li>
+                           <li><a href="alBlackbody.html">al Blackbody</a></li>
+                           <li><a href="alPattern.html">al Pattern</a></li>
+                           <li><a href="alCurvature.html">al Curvature</a></li>
+                        </ul>
+                     </li>
+
+                     <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Utilities</a>
+                        <ul class="dropdown-menu">
+                           <li><a href="alCombineColor.html">al CombineColor</a></li>
+                           <li><a href="alCombineFloat.html">al CombineFloat</a></li>
+                           <li><a href="alLayerColor.html">al LayerColor</a></li>
+                           <li><a href="alLayerFloat.html">al LayerFloat</a></li>
+                           <li><a href="alRemapColor.html">al RemapColor</a></li>
+                           <li><a href="alRemapFloat.html">al RemapFloat</a></li>
+                           <li><a href="alSwitchColor.html">al SwitchColor</a></li>
+                           <li><a href="alSwitchFloat.html">al SwitchFloat</a></li>
+                           <li><a href="alCache.html">al Cache</a></li>
+                           <li><a href="alJitterColor.html">al JitterColor</a></li>
+                           <li><a href="alInputVector.html">al InputVector</a></li>
+                           <li><a href="alInputScalar.html">al InputScalar</a></li>
+                        </ul>
+                     </li>
+                  </ul>
+               </li>
+
+   
+               <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tutorials</a>
+                  <ul class="dropdown-menu" role="menu">
+                     <li><a href="#">Coming soon...</a></li>
+                  </ul>
+               </li>
+   
+               <li><a href="#">Blog</a></li>
+
+               <li><a href="http://bitbucket.org/anderslanglands/alshaders"><i class="fa fa-bitbucket"></i></a></li>
+   
+               <li><a>&nbsp;</a></li>
+               
+   
+            </ul>
+         </div>
+   
+      </div>
+
+   </nav>
+   <!-- Navigation end -->
+
+   
+   <!-- Wrapper start -->
+   <div class="main">
+
+      <!-- Header section start -->
+      <section class="module bg-dark bg-dark-60" data-background="img/%s_banner.jpg">
+         <div class="container">
+
+            <div class="row">
+
+               <div class="col-sm-6 col-sm-offset-3">
+
+                  <h1 class="module-title font-alt">%s</h1>
+                  <div class="module-subtitle font-serif mb-0">
+                     %s
+                  </div>
+
+               </div>
+
+            </div><!-- .row -->
+
+         </div>
+      </section>
+      <!-- Header section end -->
+
+      <!-- Divider -->
+      <hr class="divider-d">
+      <!-- Divider -->
+
+      <section class="module">
+         <div class="container">
+
+            <div class="row">
+
+            <nav class="col-sm-3 scrollspy" id="parameter-scroll-spy"> </nav>
+
+      <div id="parameters" class='parameter-block'>
       <div class='parameter-content'>
 """
-   % (sd.name, sd.name, sd.name, sd.intro, sd.description)
+   % (sd.name, sd.name, sd.name, sd.intro)
    )
 
    # parameters
@@ -1324,8 +1426,62 @@ def WriteHTML(sd, fn):
 """
       </div> <!-- end parameter-content -->
       </div> <!-- end parameter-block -->
-   </div> <!-- end shader-content -->
+
+      </div></div></section>
+
+      <!-- Footer start -->
+      <footer class="footer bg-dark">
+         <div class="container">
+   
+            <div class="row">
+   
+               <div class="col-sm-6">
+                  <p class="copyright font-alt">&#xa9; 2015 <a href="index.html">Anders Langlands</a>, All Rights Reserved.</p>
+               </div>
+   
+               <div class="col-sm-6">
+                  <div class="footer-social-links">
+                     <a href="http://bitbucket.org/anderslanglands/alshaders"><i class="fa fa-bitbucket"></i></a>
+                  </div>
+               </div> 
+   
+            </div><!-- .row -->
+   
+         </div>
+      </footer>
+      <!-- Footer end -->
+   
+   </div>
+   <!-- Wrapper start -->
+   
+   <!-- Scroll-up -->
+   <div class="scroll-up">
+      <a href="#totop"><i class="fa fa-angle-double-up"></i></a>
+   </div>
+   
+   <!-- Javascript files -->
+   <script src="assets/js/jquery-2.1.3.min.js"></script>
+   <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+   <script src="assets/js/jquery.mb.YTPlayer.min.js"></script>
+   <script src="assets/js/appear.js"></script>
+   <script src="assets/js/jquery.simple-text-rotator.min.js"></script>
+   <script src="assets/js/jqBootstrapValidation.js"></script>
+   <script src="http://maps.google.com/maps/api/js?sensor=true"></script>
+   <script src="assets/js/gmaps.js"></script>
+   <script src="assets/js/isotope.pkgd.min.js"></script>
+   <script src="assets/js/imagesloaded.pkgd.js"></script>
+   <script src="assets/js/jquery.flexslider-min.js"></script>
+   <script src="assets/js/jquery.magnific-popup.min.js"></script>
+   <script src="assets/js/jquery.fitvids.js"></script>
+   <script src="assets/js/smoothscroll.js"></script>
+   <script src="assets/js/wow.min.js"></script>
+   <script src="assets/js/owl.carousel.min.js"></script>
+   <script src="assets/js/contact.js"></script>
+   <script src="assets/js/custom.js"></script>
+   <script src="js/param.js"></script>
+   <script src="js/scrollspy.js"> </script>
 </body>
+</html>
 """
 )
 

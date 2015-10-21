@@ -12,6 +12,7 @@ package.py
 test/*.nk.autosave
 test/*.nk~
 *.pyc
+.ycm_extra_conf.py
 /alShaders.includes
 /alShaders.files
 /alShaders.creator.user
