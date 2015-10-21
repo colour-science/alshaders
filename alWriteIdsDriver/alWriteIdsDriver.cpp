@@ -15,7 +15,7 @@ AI_DRIVER_NODE_EXPORT_METHODS(alWriteIdsDriver);
 
 struct FloatAOVs
 {
-    int values [WI_NUM_FLT_AOVS];
+    float values [WI_NUM_FLT_AOVS];
 };
 
 typedef struct {
