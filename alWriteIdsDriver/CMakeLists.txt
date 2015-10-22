@@ -1,10 +1,10 @@
-set(SHADER alWriteIdsDriver)
+set(DRIVER alWriteIdsDriver)
 
-set(SRC ${SHADER}.cpp)
+set(SRC ${DRIVER}.cpp)
 
-add_library(${SHADER} SHARED ${SRC})
+add_library(${DRIVER} SHARED ${SRC})
 
-target_link_libraries(${SHADER} ai)
-set_target_properties(${SHADER} PROPERTIES PREFIX "")
+target_link_libraries(${DRIVER} ai)
+set_target_properties(${DRIVER} PROPERTIES PREFIX "")
 
-install(TARGETS ${SHADER} DESTINATION ${CMAKE_INSTALL_EXEC_PREFIX}/plugins)
+install(TARGETS ${DRIVER} DESTINATION ${DSO_INSTALL_DIR})

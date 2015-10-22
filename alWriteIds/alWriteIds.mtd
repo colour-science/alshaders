@@ -1,8 +1,8 @@
 ##############################################################################
 [node alWriteIds]
-houdini.label STRING "AOV Write Ids"
+houdini.label STRING "Al AOV Write Ids"
 houdini.icon STRING "VOP_shadinglayer"
-houdini.category STRING "AOV"
+houdini.category STRING "alShaders"
 
 [attr passthrough]
 houdini.label STRING "Passthrough"
