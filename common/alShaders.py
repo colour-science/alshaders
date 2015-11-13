@@ -42,22 +42,23 @@ class alShadersTemplate(ShaderAETemplate):
         pann = self.params[pname].annotation
         presets = self.params[pname].presets
         precision = self.params[pname].precision
+        controlName = pname + 'Ctrl'
         l = plabel
         if presets is not None:
             l = unicode(plabel) + u' \u1392'
-        self.controls[pname] = pm.attrFieldSliderGrp(pname + 'Ctrl', attribute=attr, label=l, annotation=pann, precision=precision)
+        pm.attrFieldSliderGrp(controlName, attribute=attr, label=l, annotation=pann, precision=precision)
         if presets is not None:
-            pm.attrFieldSliderGrp(self.controls[pname], edit=True)
+            pm.attrFieldSliderGrp(controlName, edit=True)
             pm.popupMenu()
             for k in sorted(presets, key=presets.get):
-                pm.menuItem(label=k, command=pm.Callback(setPresetFlt, self.controls[pname], presets[k]))
-
+                pm.menuItem(label=k, command=pm.Callback(setPresetFlt, controlName, presets[k]))
 
     def customUpdateFlt(self, attr):
-        print "updating %s" % attr
+        print "updating attr %s" % attr
         pname = attr.split('.')[-1]
         ptype = self.params[pname].ptype
-        pm.attrFieldSliderGrp(self.controls[pname], edit=True, attribute=attr)
+        controlName = pname + 'Ctrl'
+        pm.attrFieldSliderGrp(controlName, edit=True, attribute=attr)
 
     def customCreateRgb(self, attr):
         pname = attr.split('.')[-1]
@@ -65,21 +66,23 @@ class alShadersTemplate(ShaderAETemplate):
         plabel = self.params[pname].label
         pann = self.params[pname].annotation
         presets = self.params[pname].presets
+        controlName = pname + 'Ctrl'
+
         l = plabel
         if presets is not None:
             l = unicode(plabel) + u' \u1392'
-        self.controls[pname] = pm.attrColorSliderGrp(pname + 'Ctrl', attribute=attr, label=l, annotation=pann)
+        pm.attrColorSliderGrp(controlName, attribute=attr, label=l, annotation=pann)
         if presets is not None:
-            pm.attrColorSliderGrp(self.controls[pname], edit=True)
+            pm.attrColorSliderGrp(controlName, edit=True)
             pm.popupMenu()
             for k in sorted(presets):
-                pm.menuItem(label=k, command=pm.Callback(setPresetRgb, self.controls[pname], presets[k]))
+                pm.menuItem(label=k, command=pm.Callback(setPresetRgb, controlName, presets[k]))
 
     def customUpdateRgb(self, attr):
         pname = attr.split('.')[-1]
         ptype = self.params[pname].ptype
-        pm.attrColorSliderGrp(self.controls[pname], edit=True, attribute=attr)
-
+        controlName = pname + 'Ctrl'
+        pm.attrColorSliderGrp(controlName, edit=True, attribute=attr)
 
     def addCustomFlt(self, param):
         self.addCustom(param, self.customCreateFlt, self.customUpdateFlt)
@@ -113,5 +116,3 @@ class alShadersTemplate(ShaderAETemplate):
         self.endLayout() # end Clamp
 
         self.endLayout() # end Remap
-
-    
