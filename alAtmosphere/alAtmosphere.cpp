@@ -128,7 +128,13 @@ shader_evaluate
         const float H_r = 7994 * units;
         const float H_m = 1200 * units;
         // calculated for 680, 550, 440 with n = 1.000276 and N = 2.504e25
-        const AtRGB beta_R = AiColor(4.7e-6, 10.9e-6, 26.9e-6) / units;
+        //   const AtRGB beta_R = AiColor(4.7e-6, 10.9e-6, 26.9e-6) / units;
+        const AtRGB beta_R =
+            AiColor(
+                rayleigh_scattering_coefficient(1.000276, 2.504e25, 680e-9),
+                rayleigh_scattering_coefficient(1.000276, 2.504e25, 550e-9),
+                rayleigh_scattering_coefficient(1.000276, 2.504e25, 440e-9)) /
+            units;
         const float beta_M = 21e-6 * aerosol_density / units;
         const float sun_intensity = 20;
 

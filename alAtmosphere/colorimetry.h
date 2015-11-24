@@ -4,15 +4,11 @@
 #include <cmath>
 #include <cassert>
 #include <vector>
-#include <OpenEXR/ImathVec.h>
-#include <OpenEXR/ImathMatrix.h>
+#include "math_util.h"
 
 #define slyassert(x, m) assert((x) && m)
 namespace sly
 {
-using Imath::V2f;
-using Imath::V3f;
-using Imath::M33f;
 
 /**
  * @brief Explicit RGB tristimulus struct
@@ -97,7 +93,6 @@ inline RGB pow(RGB c, float e)
     return RGB(powf(c.r, e), powf(c.g, e), powf(c.b, e));
 }
 
-inline float lerp(float a, float b, float t) { return (1 - t) * a + t * b; }
 inline RGB lerp(RGB a, RGB b, float t) { return (1 - t) * a + t * b; }
 
 inline float hmin(RGB c) { return std::min(c.r, std::min(c.g, c.b)); }

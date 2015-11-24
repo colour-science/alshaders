@@ -1,4 +1,4 @@
--std=c++03
+-std=c++14
 -stdlib=libstdc++
 -I/Users/anders/vfx/arnold/4.2.8.0/include
 -I/Users/anders/code/alShaders
