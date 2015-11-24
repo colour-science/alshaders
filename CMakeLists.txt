@@ -4,6 +4,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/share)
 
 project(alShaders)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(ALS_MAJOR_VERSION 1)
 set(ALS_MINOR_VERSION 0)
 set(ALS_PATCH_VERSION 0rc12)
@@ -14,7 +16,8 @@ set(CMAKE_VERBOSE_MAKEFILE FALSE)
 set(CMAKE_SKIP_RPATH TRUE)
 
 # Fix to stop crash on OSX < 10.9
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
+# set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
+add_definitions("-std=c++14 -stdlib=libc++ -Wno-deprecated-register")
 
 # Compiler flags
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -71,7 +74,7 @@ message("Katana Args will be installed to: \n\t${ARGS_INSTALL_DIR}")
 include_directories(common)
 
 # Set the list of subdirectories to recurse into to find stuff to build
-set(SUBDIRECTORIES 
+set(SUBDIRECTORIES
         alSurface
         alRemap
         alCombine
@@ -89,6 +92,7 @@ set(SUBDIRECTORIES
         alCache
         alCel
         alFlake
+        alAtmosphere
         common
 )
 
@@ -134,7 +138,7 @@ endforeach()
 # add top-level files
 INSTALL(FILES README INSTALL DESTINATION ${INSTALL_DIR})
 
-# 
+#
 configure_file(
     "${PROJECT_SOURCE_DIR}/package.in.py"
     "${PROJECT_SOURCE_DIR}/package.py"
@@ -144,4 +148,3 @@ configure_file(
     "${PROJECT_SOURCE_DIR}/test.in.py"
     "${PROJECT_SOURCE_DIR}/test.py"
 )
-

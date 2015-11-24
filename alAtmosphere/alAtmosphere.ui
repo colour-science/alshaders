@@ -1,0 +1,34 @@
+import uigen
+
+ui.shader({
+   'name':'alAtmosphere',
+   'intro':'Renders planetary atmospheres',
+   'description':'',
+   'output':'rgb',
+   'maya_name':'alAtmosphere',
+   'maya_classification':'shader/volume/atmosphere',
+   'maya_id':'0x00116422',
+   'maya_swatch':True,
+   'maya_matte':False,
+   'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',
+   'soft_name':'ALS_Atmosphere',
+   'soft_classification':'texture',
+   'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alAtmosphere.html',
+   'houdini_icon':'SHELF_fire'
+})
+
+ui.parameter('units', 'float', 0.01, 'Units', description='Number of 3D units in a meter. The default of 0.01 specifies that the 3D scene units are centimeters')
+ui.parameter('mode', 'enum', 'sky', 'Mode', enum_names=[
+  "sky",
+  "planet"
+], description='mode')
+ui.parameter('camera_height', 'float', 2, 'Camera height')
+ui.parameter('earth_center', 'vector', (0, -6360000, 0), 'Earth center')
+ui.parameter('earth_radius', 'float', 6360000, 'Earth radius')
+ui.parameter('atmos_radius', 'float', 6420000, 'Atmosphere radius')
+ui.parameter('sun_direction', 'vector', (0, -1, 0), 'Sun direction')
+ui.parameter('aerosol_density', 'float', 1, 'Aerosol density')
+
