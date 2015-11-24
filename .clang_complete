@@ -1,0 +1,13 @@
+-std=c++03
+-stdlib=libstdc++
+-I/Users/anders/vfx/arnold/4.2.8.0/include
+-I/Users/anders/code/alShaders
+-I/Users/anders/code/alShaders/common
+-I/Users/anders/vfx/platform/2015/include
+-Wno-deprecated-register
+-I/Applications/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1
+-I/usr/local/include
+-I/Applications/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/7.0.0/include
+-I/Applications/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include
+-I/usr/include
+-Wno-reorder

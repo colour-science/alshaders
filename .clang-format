@@ -1,0 +1,61 @@
+---
+Language:        Cpp
+# BasedOnStyle:  Google
+AccessModifierOffset: -3
+ConstructorInitializerIndentWidth: 4
+AlignEscapedNewlinesLeft: true
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: All
+AlwaysBreakAfterDefinitionReturnType: false
+AlwaysBreakTemplateDeclarations: true
+AlwaysBreakBeforeMultilineStrings: true
+BreakBeforeBraces: Allman
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializersBeforeComma: false
+BinPackParameters: true
+BinPackArguments: true
+ColumnLimit:     80
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+DerivePointerAlignment: true
+ExperimentalAutoDetectBinPacking: false
+IndentCaseLabels: false
+IndentWrappedFunctionNames: false
+IndentFunctionDeclarationAfterType: false
+KeepEmptyLinesAtTheStartOfBlocks: true
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: None
+ObjCSpaceAfterProperty: false
+ObjCSpaceBeforeProtocolList: false
+PenaltyBreakBeforeFirstCallParameter: 1
+PenaltyBreakComment: 300
+PenaltyBreakString: 1000
+PenaltyBreakFirstLessLess: 120
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 200
+PointerAlignment: Left
+SpacesBeforeTrailingComments: 2
+Cpp11BracedListStyle: true
+Standard:        Auto
+IndentWidth:     4
+TabWidth:        8
+UseTab:          Never
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInAngles:  false
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpaceAfterCStyleCast: false
+SpacesInContainerLiterals: true
+SpaceBeforeAssignmentOperators: true
+ContinuationIndentWidth: 4
+CommentPragmas:  '^ IWYU pragma:'
+ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
+SpaceBeforeParens: ControlStatements
+DisableFormat:   false
+...
