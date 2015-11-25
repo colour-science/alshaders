@@ -31,4 +31,4 @@ ui.parameter('earth_radius', 'float', 6360000, 'Earth radius')
 ui.parameter('atmos_radius', 'float', 6420000, 'Atmosphere radius')
 ui.parameter('sun_direction', 'vector', (0, -1, 0), 'Sun direction')
 ui.parameter('aerosol_density', 'float', 1, 'Aerosol density')
-
+ui.parameter('exposure', 'float', -41.5, 'Exposure')

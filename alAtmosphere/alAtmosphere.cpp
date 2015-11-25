@@ -1,18 +1,31 @@
-#include "colorimetry.h"
+#include "spectrum.h"
 #include "Color.h"
 #include "alUtil.h"
 #include <ai.h>
 
+using sly::HeroSpectrum;
+using sly::HeroWavelengths;
+
 AI_SHADER_NODE_EXPORT_METHODS(alAtmosphere);
 
-double rayleigh_scattering_coefficient(double eta, double N, double lambda)
+double rayleigh_scattering_coefficient(double eta, double N,
+                                       double lambda_meters)
 {
     return (8.0 * pow(AI_PI, 3.0) * pow((pow(eta, 2.0) - 1.0), 2.0)) /
-           (3.0 * N * pow(lambda, 4));
+           (3.0 * N * pow(lambda_meters, 4));
 }
+
+double planck_blackbody(double temp, double lambda_meters)
+{
+    return (3.74183e-16 * pow(lambda_meters, -5.0)) /
+           (exp(1.4388e-2 / (lambda_meters * temp)) - 1.0);
+}
+
+AtRGB sly_to_ai(const sly::RGB& c) { return AiColor(c.r, c.g, c.b); }
 
 struct ShaderData
 {
+    int AA_samples2;
 };
 
 enum alAtmosphereParams
@@ -24,7 +37,8 @@ enum alAtmosphereParams
     p_earth_radius,
     p_atmos_radius,
     p_sun_direction,
-    p_aerosol_density
+    p_aerosol_density,
+    p_exposure
 };
 
 const char* mode_names[] = {"sky", "planet", NULL};
@@ -39,6 +53,7 @@ node_parameters
     AiParameterFLT("atmos_radius", 6420000);
     AiParameterVEC("sun_direction", 0, -1, 0);
     AiParameterFLT("aerosol_density", 1);
+    AiParameterFLT("exposure", -41.5);
 }
 
 node_loader
@@ -56,6 +71,7 @@ node_initialize
 {
     ShaderData* data = (ShaderData*)new ShaderData();
     AiNodeSetLocalData(node, data);
+    sly::SampledSpectrum::init();
 }
 
 node_finish
@@ -65,7 +81,12 @@ node_finish
     AiNodeSetLocalData(node, NULL);
 }
 
-node_update { /*ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);*/}
+node_update
+{
+    ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
+    AtNode* options = AiUniverseGetOptions();
+    data->AA_samples2 = SQR(AiNodeGetInt(options, "AA_samples"));
+}
 
 bool ray_sphere(AtVector o, AtVector d, AtVector c, float r, float& t0,
                 float& t1)
@@ -90,13 +111,17 @@ bool ray_sphere(AtVector o, AtVector d, AtVector c, float r, float& t0,
 
 shader_evaluate
 {
-    /*ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);*/
+    ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 
     // Ci is the color of the surface that we've hit (only available in volume
     // context). For shadows this (I think) represents the transmission so
     // by setting sg->out.RGB we can specify the attenuation along the ray
     AtRGB Ci = sg->Ci;
     sg->out.RGB = Ci;
+
+    sly::ColorSpaceRGB color_space = sly::Primaries::Rec709;
+    const sly::SpectralPowerDistribution& spd_white =
+        HeroSpectrum::getIlluminant(color_space.wp);
 
     // Vo is the output volume radiance, in other words in-scattering
     sg->Vo = AI_RGB_BLACK;
@@ -125,18 +150,34 @@ shader_evaluate
         AtVector sun_direction =
             -AiV3Normalize(AiShaderEvalParamVec(p_sun_direction));
         float aerosol_density = AiShaderEvalParamFlt(p_aerosol_density);
+        float exposure = AiShaderEvalParamFlt(p_exposure);
         const float H_r = 7994 * units;
         const float H_m = 1200 * units;
-        // calculated for 680, 550, 440 with n = 1.000276 and N = 2.504e25
-        //   const AtRGB beta_R = AiColor(4.7e-6, 10.9e-6, 26.9e-6) / units;
-        const AtRGB beta_R =
-            AiColor(
-                rayleigh_scattering_coefficient(1.000276, 2.504e25, 680e-9),
-                rayleigh_scattering_coefficient(1.000276, 2.504e25, 550e-9),
-                rayleigh_scattering_coefficient(1.000276, 2.504e25, 440e-9)) /
-            units;
-        const float beta_M = 21e-6 * aerosol_density / units;
+
+#define ATMOS_SPECTRAL
+#ifdef ATMOS_SPECTRAL
+        HeroSpectrum beta_R;
+        HeroSpectrum sun_radiance;
+        float u = (float(sg->si) + drand48()) / float(data->AA_samples2);
+        HeroWavelengths hw = sly::sample_hero_wavelength(u);
+        for (int i = 0; i < 4; ++i)
+        {
+            beta_R[i] = rayleigh_scattering_coefficient(1.000276, 2.504e25,
+                                                        hw[i] * 1e-9);
+            sun_radiance[i] = sly::Illuminant::D65.value(hw[i]);
+        }
+
+        const float sun_intensity = 1;
+#else
+        HeroSpectrum beta_R;
+        HeroSpectrum sun_radiance(1);
+        beta_R[0] = rayleigh_scattering_coefficient(1.000276, 2.504e25, 680e-9);
+        beta_R[1] = rayleigh_scattering_coefficient(1.000276, 2.504e25, 550e-9);
+        beta_R[2] = rayleigh_scattering_coefficient(1.000276, 2.504e25, 440e-9);
         const float sun_intensity = 20;
+#endif
+        beta_R /= units;
+        const float beta_M = 21e-6 * aerosol_density / units;
 
         float t0, t1;
         if (ray_sphere(sg->Ro, sg->Rd, earth_center, atmos_radius, t0, t1))
@@ -177,8 +218,8 @@ shader_evaluate
             float t = t0;
             float optical_depth_r = 0;
             float optical_depth_m = 0;
-            AtRGB sum_in_r = AI_RGB_BLACK;
-            AtRGB sum_in_m = AI_RGB_BLACK;
+            HeroSpectrum sum_in_r;
+            HeroSpectrum sum_in_m;
             for (int i = 0; i < num_samples; ++i)
             {
                 AtVector position = sg->Ro + sg->Rd * (t + drand48() * ds);
@@ -229,12 +270,12 @@ shader_evaluate
                 }
                 if (j == num_light_samples)
                 {
-                    AtRGB tau_r =
+                    HeroSpectrum tau_r =
                         beta_R * (optical_depth_r + optical_depth_light_r);
                     float tau_m = beta_M * 1.1f *
                                   (optical_depth_m + optical_depth_light_m);
-                    AtRGB tau = tau_r + tau_m;
-                    AtRGB attenuation = exp(-tau);
+                    HeroSpectrum tau = tau_r + tau_m;
+                    HeroSpectrum attenuation = exp(-tau);
                     sum_in_r += h_r * attenuation;
                     sum_in_m += h_m * attenuation;
                 }
@@ -243,19 +284,38 @@ shader_evaluate
             }
 
             // compute total in-scattering
-            AtRGB inscattering_rayleigh =
-                sum_in_r * phase_R * beta_R * sun_intensity;
-            AtRGB inscattering_mie =
-                sum_in_m * phase_M * beta_M * sun_intensity;
-            AtRGB inscattering = inscattering_rayleigh + inscattering_mie;
+            HeroSpectrum inscattering_rayleigh =
+                sum_in_r * phase_R * beta_R * sun_intensity * sun_radiance;
+            HeroSpectrum inscattering_mie =
+                sum_in_m * phase_M * beta_M * sun_intensity * sun_radiance;
+            HeroSpectrum inscattering =
+                inscattering_rayleigh + inscattering_mie;
 
             // compute attenuation from full optical depth along camera ray
-            AtRGB tau =
+            HeroSpectrum tau =
                 beta_R * optical_depth_r + beta_M * 1.1f * optical_depth_m;
-            AtRGB attenuation = exp(-tau);
+            HeroSpectrum attenuation = exp(-tau);
+#ifdef ATMOS_SPECTRAL
+            // convert inscattering and attenuation to RGB to apply
+            // std::cerr << "conversion: " << hw << std::endl;
+            sly::RGB inscattering_rgb = inscattering.toRGB(
+                sly::Primaries::Rec709, hw, sly::WhitePoint::ONE);
+            sly::RGB attenuation_rgb = inscattering.toRGB(
+                sly::Primaries::Rec709, hw, sly::WhitePoint::ONE);
 
-            sg->Vo = inscattering;
-            sg->out.RGB = Ci * attenuation;
+            AtRGB inscattering_atrgb =
+                sly_to_ai(inscattering_rgb) * pow(2, exposure);
+            AtRGB attenuation_atrgb =
+                sly_to_ai(attenuation_rgb) * pow(2, exposure);
+            ;
+#else
+            AtRGB inscattering_atrgb =
+                AiColor(inscattering[0], inscattering[1], inscattering[2]);
+            AtRGB attenuation_atrgb =
+                AiColor(attenuation[0], attenuation[1], attenuation[2]);
+#endif
+            sg->Vo = inscattering_atrgb;
+            sg->out.RGB = Ci * attenuation_atrgb;
         }
     }
 }

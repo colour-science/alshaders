@@ -380,6 +380,12 @@ struct HeroWavelengths
     const float& operator[](size_t i) const { return lambda[i]; }
 };
 
+inline std::ostream& operator<<(std::ostream& os, const HeroWavelengths& hw)
+{
+    os << "(" << hw[0] << ", " << hw[1] << ", " << hw[2] << ", " << hw[3]
+       << ")";
+}
+
 class SampledSpectrum : public CoefficientSpectrum<SpectrumSamples>
 {
  public:
@@ -825,6 +831,7 @@ inline HeroWavelengths sample_hero_wavelength(float u)
         hw[j] = fmodf(lambda_h - lambda_min + float(j) * 0.25f * lambda_bar,
                       lambda_bar) +
                 lambda_min;
+        slyassert(isfinite(hw[j]), "wavelength was not finite");
     }
 
     return hw;
