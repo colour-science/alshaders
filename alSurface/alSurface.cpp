@@ -1230,9 +1230,11 @@ shader_evaluate
                             outOpacity.r = fast_exp(-z * als_sigma_t.r);
                             outOpacity.g = fast_exp(-z * als_sigma_t.g);
                             outOpacity.b = fast_exp(-z * als_sigma_t.b);
-                            outOpacity = -log(outOpacity) * (1.0f - kt);
+                            outOpacity = -log(outOpacity);
                         }
 
+                        // 'add' the extra opacity due to transmission colour and fresnel
+                        outOpacity = 1.0f - ((1.0f - outOpacity) * kt * transmissionColor);
                     }
                     else
                     {
