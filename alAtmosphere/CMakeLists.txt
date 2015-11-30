@@ -1,5 +1,6 @@
 set(SHADER alAtmosphere)
-set(SRC ${SHADER}.cpp colorimetry.cpp spectrum.cpp)
+# set(SRC ${SHADER}.cpp colorimetry.cpp spectrum.cpp)
+set(SRC ${SHADER}.cpp)
 set(UI ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.ui)
 set(MTD ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.mtd)
 set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
@@ -10,11 +11,12 @@ set(KARGS ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.args)
 set(C4DRES ${CMAKE_CURRENT_BINARY_DIR}/C4DtoA)
 set(HTML ${CMAKE_SOURCE_DIR}/docs/${SHADER}.html)
 
-link_directories(/Users/anders/vfx/platform/2015_libcpp/lib)
-include_directories(/Users/anders/vfx/platform/2015/include)
+# link_directories(/Users/anders/vfx/platform/2015_libcpp/lib)
+# link_directories(/Users/anders/vfx/platform/2015/lib)
+# include_directories(/Users/anders/vfx/platform/2015/include)
 add_library(${SHADER} SHARED ${SRC})
 
-target_link_libraries(${SHADER} ai Iex)
+target_link_libraries(${SHADER} ai)
 set_target_properties(${SHADER} PROPERTIES PREFIX "")
 
 add_custom_command(OUTPUT ${MTD} COMMAND python ARGS ${CMAKE_SOURCE_DIR}/uigen.py ${UI} ${MTD} ${AE} ${AEXML} ${NEXML} ${SPDL} ${KARGS} ${CMAKE_CURRENT_BINARY_DIR} ${HTML} DEPENDS ${UI})

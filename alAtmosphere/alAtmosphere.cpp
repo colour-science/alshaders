@@ -1,10 +1,17 @@
-#include "spectrum.h"
-#include "Color.h"
 #include "alUtil.h"
 #include <ai.h>
 
-using sly::HeroSpectrum;
+// #define ATMOS_SPECTRAL
+#ifdef ATMOS_SPECTRAL
+#include "spectrum.h"
+#include "Color.h"
+// using sly::HeroSpectrum;
 using sly::HeroWavelengths;
+typedef sly::HeroSpectrum Spectrum;
+AtRGB sly_to_ai(const sly::RGB& c) { return AiColor(c.r, c.g, c.b); }
+#else
+typedef AtRGB Spectrum;
+#endif
 
 AI_SHADER_NODE_EXPORT_METHODS(alAtmosphere);
 
@@ -20,8 +27,6 @@ double planck_blackbody(double temp, double lambda_meters)
     return (3.74183e-16 * pow(lambda_meters, -5.0)) /
            (exp(1.4388e-2 / (lambda_meters * temp)) - 1.0);
 }
-
-AtRGB sly_to_ai(const sly::RGB& c) { return AiColor(c.r, c.g, c.b); }
 
 struct ShaderData
 {
@@ -71,7 +76,9 @@ node_initialize
 {
     ShaderData* data = (ShaderData*)new ShaderData();
     AiNodeSetLocalData(node, data);
+#ifdef ATMOS_SPECTRAL
     sly::SampledSpectrum::init();
+#endif
 }
 
 node_finish
@@ -109,6 +116,53 @@ bool ray_sphere(AtVector o, AtVector d, AtVector c, float r, float& t0,
     return true;
 }
 
+void integrate_light_segment(AtVector position, AtVector sun_direction,
+                             AtVector earth_center, float earth_radius,
+                             float atmos_radius, Spectrum beta_R, float beta_M,
+                             float H_r, float H_m, float h_r, float h_m,
+                             float optical_depth_r, float optical_depth_m,
+                             Spectrum& sum_in_r, Spectrum& sum_in_m)
+{
+    // check the distance from the current position to the edge of
+    // the
+    // armosphere
+    const int num_light_samples = 8;
+    float t0, t1;
+    ray_sphere(position, sun_direction, earth_center, atmos_radius, t0, t1);
+    float ds_l = t1 / float(num_light_samples);
+    float t_l = 0;
+    float optical_depth_light_r = 0;
+    float optical_depth_light_m = 0;
+    int j = 0;
+
+    for (; j < num_light_samples; ++j)
+    {
+        AtVector position_light =
+            position + sun_direction * (t_l + drand48() * ds_l);
+        float height_light =
+            AiV3Length(position_light - earth_center) - earth_radius;
+        if (height_light < 0) break;
+
+        optical_depth_light_r += exp(-height_light / H_r) * ds_l;
+        optical_depth_light_m += exp(-height_light / H_m) * ds_l;
+
+        t_l += ds_l;
+    }
+    if (j == num_light_samples)
+    {
+        Spectrum tau_r = beta_R * (optical_depth_r + optical_depth_light_r);
+        float tau_m = beta_M * 1.1f * (optical_depth_m + optical_depth_light_m);
+        Spectrum tau = tau_r + tau_m;
+        Spectrum attenuation = exp(-tau);
+        sum_in_r += h_r * attenuation;
+        sum_in_m += h_m * attenuation;
+    }
+}
+
+float sample_exponential(float sigma, float u) { return -log(1 - u) / sigma; }
+
+float pdf_exponential(float sigma, float x) { return sigma * exp(-sigma * x); }
+
 shader_evaluate
 {
     ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
@@ -118,11 +172,11 @@ shader_evaluate
     // by setting sg->out.RGB we can specify the attenuation along the ray
     AtRGB Ci = sg->Ci;
     sg->out.RGB = Ci;
-
+#ifdef ATMOS_SPECTRAL
     sly::ColorSpaceRGB color_space = sly::Primaries::Rec709;
     const sly::SpectralPowerDistribution& spd_white =
-        HeroSpectrum::getIlluminant(color_space.wp);
-
+        Spectrum::getIlluminant(color_space.wp);
+#endif
     // Vo is the output volume radiance, in other words in-scattering
     sg->Vo = AI_RGB_BLACK;
 
@@ -154,10 +208,9 @@ shader_evaluate
         const float H_r = 7994 * units;
         const float H_m = 1200 * units;
 
-#define ATMOS_SPECTRAL
 #ifdef ATMOS_SPECTRAL
-        HeroSpectrum beta_R;
-        HeroSpectrum sun_radiance;
+        Spectrum beta_R;
+        Spectrum sun_radiance;
         float u = (float(sg->si) + drand48()) / float(data->AA_samples2);
         HeroWavelengths hw = sly::sample_hero_wavelength(u);
         for (int i = 0; i < 4; ++i)
@@ -169,8 +222,8 @@ shader_evaluate
 
         const float sun_intensity = 1;
 #else
-        HeroSpectrum beta_R;
-        HeroSpectrum sun_radiance(1);
+        Spectrum beta_R;
+        Spectrum sun_radiance = AiColor(1);
         beta_R[0] = rayleigh_scattering_coefficient(1.000276, 2.504e25, 680e-9);
         beta_R[1] = rayleigh_scattering_coefficient(1.000276, 2.504e25, 550e-9);
         beta_R[2] = rayleigh_scattering_coefficient(1.000276, 2.504e25, 440e-9);
@@ -184,6 +237,7 @@ shader_evaluate
         {
             float mu = AiV3Dot(sun_direction, sg->Rd);
             float phase_R = 3 / (16 * AI_PI) * (1 + mu * mu);
+            // float phase_R = 3.0 / 8.0 * (1 + SQR(mu));
             float g = 0.76;
             float phase_M = 3 / (8 * AI_PI) * ((1 - g * g) * (1 + mu * mu)) /
                             ((2 + g * g) * pow(1 + g * g - 2 * g * mu, 1.5));
@@ -218,8 +272,10 @@ shader_evaluate
             float t = t0;
             float optical_depth_r = 0;
             float optical_depth_m = 0;
-            HeroSpectrum sum_in_r;
-            HeroSpectrum sum_in_m;
+            Spectrum sum_in_r;
+            sum_in_r[0] = sum_in_r[1] = sum_in_r[2] = 0;
+            Spectrum sum_in_m;
+            sum_in_m[0] = sum_in_m[1] = sum_in_m[2] = 0;
             for (int i = 0; i < num_samples; ++i)
             {
                 AtVector position = sg->Ro + sg->Rd * (t + drand48() * ds);
@@ -243,58 +299,26 @@ shader_evaluate
                     continue;
                 }
 
-                // check the distance from the current position to the edge of
-                // the
-                // armosphere
-                ray_sphere(position, sun_direction, earth_center, atmos_radius,
-                           t0, t1);
-                float ds_l = t1 / float(num_light_samples);
-                float t_l = 0;
-                float optical_depth_light_r = 0;
-                float optical_depth_light_m = 0;
-                int j = 0;
-
-                for (; j < num_light_samples; ++j)
-                {
-                    AtVector position_light =
-                        position + sun_direction * (t_l + drand48() * ds_l);
-                    float height_light =
-                        AiV3Length(position_light - earth_center) -
-                        earth_radius;
-                    if (height_light < 0) break;
-
-                    optical_depth_light_r += exp(-height_light / H_r) * ds_l;
-                    optical_depth_light_m += exp(-height_light / H_m) * ds_l;
-
-                    t_l += ds_l;
-                }
-                if (j == num_light_samples)
-                {
-                    HeroSpectrum tau_r =
-                        beta_R * (optical_depth_r + optical_depth_light_r);
-                    float tau_m = beta_M * 1.1f *
-                                  (optical_depth_m + optical_depth_light_m);
-                    HeroSpectrum tau = tau_r + tau_m;
-                    HeroSpectrum attenuation = exp(-tau);
-                    sum_in_r += h_r * attenuation;
-                    sum_in_m += h_m * attenuation;
-                }
+                // integrate single-scattering
+                integrate_light_segment(
+                    position, sun_direction, earth_center, earth_radius,
+                    atmos_radius, beta_R, beta_M, H_r, H_m, h_r, h_m,
+                    optical_depth_r, optical_depth_m, sum_in_r, sum_in_m);
 
                 t += ds;
             }
 
             // compute total in-scattering
-            HeroSpectrum inscattering_rayleigh =
+            Spectrum inscattering_rayleigh =
                 sum_in_r * phase_R * beta_R * sun_intensity * sun_radiance;
-            HeroSpectrum inscattering_mie =
+            Spectrum inscattering_mie =
                 sum_in_m * phase_M * beta_M * sun_intensity * sun_radiance;
-            HeroSpectrum inscattering =
-                inscattering_rayleigh + inscattering_mie;
+            Spectrum inscattering = inscattering_rayleigh + inscattering_mie;
 
             // compute attenuation from full optical depth along camera ray
-            HeroSpectrum tau =
+            Spectrum tau =
                 beta_R * optical_depth_r + beta_M * 1.1f * optical_depth_m;
-            HeroSpectrum attenuation = exp(-tau);
+            Spectrum attenuation = exp(-tau);
 #ifdef ATMOS_SPECTRAL
             // convert inscattering and attenuation to RGB to apply
             // std::cerr << "conversion: " << hw << std::endl;
@@ -306,7 +330,7 @@ shader_evaluate
             AtRGB inscattering_atrgb =
                 sly_to_ai(inscattering_rgb) * pow(2, exposure);
             AtRGB attenuation_atrgb =
-                sly_to_ai(attenuation_rgb) * pow(2, exposure);
+                sly_to_ai(attenuation_rgb);  // * pow(2, exposure);
             ;
 #else
             AtRGB inscattering_atrgb =

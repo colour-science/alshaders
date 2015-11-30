@@ -17,7 +17,7 @@ set(CMAKE_SKIP_RPATH TRUE)
 
 # Fix to stop crash on OSX < 10.9
 # set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
-add_definitions("-std=c++14 -stdlib=libc++ -Wno-deprecated-register")
+# add_definitions("-std=c++14 -stdlib=libc++ -Wno-deprecated-register")
 
 # Compiler flags
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
