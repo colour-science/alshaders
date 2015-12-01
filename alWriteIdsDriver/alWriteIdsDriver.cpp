@@ -1,51 +1,54 @@
-#include <fstream>
 #include <cassert>
-#include <unordered_map>
+#include <string.h>
+#include <fstream>
+#include <map>
 #include <vector>
-#include <array>
 
 #include <ai.h>
 
 #include <ids.h>
-#include <mtrace.h>
 
 using namespace WriteIds;
 
 AI_DRIVER_NODE_EXPORT_METHODS(alWriteIdsDriver);
+
 
 struct FloatAOVs
 {
     float values [WI_NUM_FLT_AOVS];
 };
 
+typedef std::map<const char*, FloatAOVs> CstringsToFloatAOVsMap;
+typedef std::vector< std::pair<const char*, int> > NameAndTypePairVector;
+
 typedef struct {
     bool wrongOutputs;
-    std::vector< std::pair<const char*, int> > outputs;
-    std::unordered_map<const char*, FloatAOVs> cStringsToAtFloatIdsMap;
+    NameAndTypePairVector outputs;
+    CstringsToFloatAOVsMap cStringToFloatAOVsMap;
 } DriverData;
 
 node_loader
 {
-   if (i>0)
+    if (i>0)
       return false;
-   node->methods = alWriteIdsDriver;
-   node->output_type = AI_TYPE_NONE;
-   node->name = "driver_ids";
-   node->node_type = AI_NODE_DRIVER;
-   strcpy(node->version, AI_VERSION);
-   return true;
+    node->methods = alWriteIdsDriver;
+    node->output_type = AI_TYPE_NONE;
+    node->name = "driver_ids";
+    node->node_type = AI_NODE_DRIVER;
+    strcpy(node->version, AI_VERSION);
+    return true;
 }
 
 node_parameters
 {
-   AiParameterSTR("filename", "shapeName.ids");
+    AiParameterSTR("filename", "shapeName.ids");
 }
 
 node_initialize
 {
     DriverData *data = new DriverData();
-   static const char *required_aovs[] = { "FLOAT Z", "FLOAT A", NULL };
-   AiRawDriverInitialize(node, required_aovs, true,  data);
+    static const char *required_aovs[] = { "FLOAT Z", "FLOAT A", NULL };
+    AiRawDriverInitialize(node, required_aovs, true,  data);
 }
 
 node_update
@@ -100,7 +103,7 @@ driver_open
         data->wrongOutputs = false;
 
         std::string infoStr = "";
-        for (auto it = data->outputs.begin(); it != data->outputs.end(); ++it)
+        for (NameAndTypePairVector::iterator it = data->outputs.begin(); it != data->outputs.end(); ++it)
         {
             infoStr += "\"";
             infoStr += AiParamGetTypeName(it->second);
@@ -108,11 +111,11 @@ driver_open
             infoStr += it->first;
             infoStr += " ";
         }
-        MTRACE(AiMsgInfo, node, "correct aov outputs found in this order -- %s", infoStr.c_str());
+        AiMsgInfo("[alWriteIdsDriver] correct aov outputs found in this order -- %s", infoStr.c_str());
     }
     else
     {
-        MTRACE(AiMsgWarning, node, "exactly one pointer and two float aov outputs were not specified - ignoring all outputs");
+        AiMsgWarning("[alWriteIdsDriver] exactly one pointer and two float aov outputs were not specified - ignoring all outputs");
         data->wrongOutputs = true;
     }
 }
@@ -139,7 +142,7 @@ driver_process_bucket
 bool AOVSampleIteratorHasAllAOVValues(const AtAOVSampleIterator* iter, std::vector< std::pair<const char*, int> >& outputs)
 {
     bool result = false;
-    for (auto it = outputs.begin(); it != outputs.end(); ++it)
+    for (NameAndTypePairVector::iterator it = outputs.begin(); it != outputs.end(); ++it)
     {
         if (!AiAOVSampleIteratorHasAOVValue(iter, it->first, it->second))
         {
@@ -170,7 +173,7 @@ driver_write_bucket
                     {
                         int nflt = 0;
                         std::pair<const char*, FloatAOVs> mapping;
-                        for (auto it = data->outputs.begin(); it != data->outputs.end(); ++it)
+                        for (NameAndTypePairVector::iterator it = data->outputs.begin(); it != data->outputs.end(); ++it)
                         {
                             switch(it->second)
                             {
@@ -190,7 +193,7 @@ driver_write_bucket
                             }
                         }
                         // Inserted only if string key is not equivalent to the key of any other element already in the container
-                        data->cStringsToAtFloatIdsMap.insert(mapping);
+                        data->cStringToFloatAOVsMap.insert(mapping);
                     }
                 }
             }
@@ -212,13 +215,13 @@ driver_close
     }
     catch(std::ofstream::failure &writeErr)
     {
-        MTRACE(AiMsgWarning, node, "failed to open %s (%s)", filename.c_str(), writeErr.what());
+        AiMsgWarning("[alWriteIdsDriver] failed to open %s (%s)", filename.c_str(), writeErr.what());
     }
     assert(idsOutFileStream.is_open() && "File is not opened");
 
     if (idsOutFileStream.is_open())
     {
-        for ( auto it = data->cStringsToAtFloatIdsMap.begin(); it != data->cStringsToAtFloatIdsMap.end(); ++it )
+        for ( CstringsToFloatAOVsMap::iterator it = data->cStringToFloatAOVsMap.begin(); it != data->cStringToFloatAOVsMap.end(); ++it )
         {
             idsOutFileStream  << it->first << " ";
             for(int i = 0; i < WI_NUM_FLT_AOVS; i++)
@@ -228,7 +231,7 @@ driver_close
             idsOutFileStream <<  std::endl;
         }
         idsOutFileStream.close();
-        MTRACE(AiMsgInfo, node, "wrote id mappings to file %s", filename.c_str());
+        AiMsgInfo("[alWriteIdsDriver] wrote id mappings to file %s", filename.c_str());
     }
 }
 

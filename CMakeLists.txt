@@ -25,21 +25,6 @@ else()
     # set(CMAKE_CXX_FLAGS_DEBUG "-fsanitize=address -fno-omit-frame-pointer")
 endif()
 
-# Enable C++11 (C++0x)
-# Various compiler versions of gcc and clang use different flags to specify C++11 support,
-# namely older ones accept -std=c++0x and newer one -std=c++11. The below snippets detects
-# which is the right one for the compiler being used and adds the flag to the CXX_FLAGS.
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-else()
-        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
-
 # check if we have a local cmake include file and include it if we do
 # this is useful for setting our arnold location as an alternative to
 # environment variables
@@ -104,10 +89,16 @@ set(SUBDIRECTORIES
         alCache
         alCel
         alFlake
-        alWriteIds
-        alWriteIdsDriver
         common
 )
+
+# alWriteIds requires the new hash function on AtString types that was added in 4.2.8
+if ((DEFINED ARNOLD_VERSION) AND (${ARNOLD_VERSION} VERSION_GREATER "4.2.7"))
+    set(SUBDIRECTORIES ${SUBDIRECTORIES} alWriteIds alWriteIdsDriver)
+    message("Added alWriteIds & alWriteIdsDriver as ARNOLD_VERSION \"${ARNOLD_VERSION}\" is greater than the required \"4.2.7\"")
+else()
+    message(warning "Skipped alWriteIds & alWriteIdsDriver as ARNOLD_VERSION \"${ARNOLD_VERSION}\" is not greater than the required \"4.2.7\"")
+endif()
 
 # define shader build function
 function(build_shader)

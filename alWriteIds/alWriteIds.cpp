@@ -1,9 +1,9 @@
 #include <cassert>
+#include <string.h>
 
 #include <ai.h>
 
 #include <ids.h>
-#include <mtrace.h>
 
 using namespace WriteIds;
 
@@ -125,7 +125,7 @@ node_update // static void Update(AtNode* node, AtParamValue* params)
             data->writeIdsFunc = writeIdsFromShaderNodeNameAtStringHashes;
             break;
         default:
-            MTRACE(AiMsgWarning, node, "Unknown string option, defaulting to shape node name");
+            AiMsgWarning("[alWriteIds] Unknown string option, defaulting to shape node name");
             data->writeIdsFunc = writeIdFromShapeNodeNameAtStringHash;
             break;
     }
@@ -160,6 +160,6 @@ node_loader
     node->output_type = AI_TYPE_RGBA;
     node->name        = "alWriteIds";
     node->node_type   = AI_NODE_SHADER;
-    std::strcpy(node->version, AI_VERSION);
+    strcpy(node->version, AI_VERSION);
     return true;
 }
