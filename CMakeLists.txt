@@ -16,6 +16,8 @@ set(CMAKE_SKIP_RPATH TRUE)
 # Fix to stop crash on OSX < 10.9
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 # Compiler flags
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # Disable some of the bullshit warnings MSVC wants to barf
