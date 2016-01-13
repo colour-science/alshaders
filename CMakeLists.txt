@@ -134,7 +134,7 @@ foreach(SUBDIR ${SUBDIRECTORIES})
 endforeach()
 
 # add top-level files
-INSTALL(FILES README INSTALL DESTINATION ${INSTALL_DIR})
+INSTALL(FILES README INSTALL common/alsUtil.mel DESTINATION ${INSTALL_DIR})
 
 # 
 configure_file(
