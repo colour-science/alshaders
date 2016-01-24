@@ -105,11 +105,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
 
     AtRay ray;
     AtScrSample scrs;
-    DiffusionSample& samp = dmd->samples[dmd->sss_depth];
-    samp.S = sg->P - dmd->Po;
-    samp.r = AiV3Length(samp.S);
-    dmd->maxdist -= samp.r;
-    samp.Rd = AI_RGB_BLACK;
+
 
     // There are a few contexts in which we can be called here:
     // 1) Intersecting same object with same shader
@@ -127,10 +123,16 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     }
 
     // if we're in a layered context and running a different shader from the one that's tracing for sss, just return to let the other shader handle it
-    if (als_context == ALS_CONTEXT_LAYER && ((sg->psg && sg->psg->shader != sg->shader) || dmd->shader_orig != sg->shader))
+    if (als_context == ALS_CONTEXT_LAYER && (dmd->shader_orig != sg->shader))
     {
         return;
     }
+
+    DiffusionSample& samp = dmd->samples[dmd->sss_depth];
+    samp.S = sg->P - dmd->Po;
+    samp.r = AiV3Length(samp.S);
+    dmd->maxdist -= samp.r;
+    samp.Rd = AI_RGB_BLACK;
 
     // if we're not using trace sets to explicitly define what objects we want to trace against, then assume we only want to trace against ourselves
     // or if we're not doing sss in this shader, just continue the ray
