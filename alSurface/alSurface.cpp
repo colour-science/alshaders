@@ -18,6 +18,7 @@
 
 AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 
+/*
 #define GlossyMISBRDF AiCookTorranceMISBRDF
 #define GlossyMISPDF AiCookTorranceMISPDF
 #define GlossyMISSample AiCookTorranceMISSample
@@ -25,8 +26,16 @@ AI_SHADER_NODE_EXPORT_METHODS(alSurfaceMtd)
 #define GlossyMISBRDF_wrap AiCookTorranceMISBRDF_wrap
 #define GlossyMISPDF_wrap AiCookTorranceMISPDF_wrap
 #define GlossyMISSample_wrap AiCookTorranceMISSample_wrap
+*/
 
-#define GlossyMISCreateData AiCookTorranceMISCreateData
+#define GlossyMISBRDF AiMicrofacetMISBRDF
+#define GlossyMISPDF AiMicrofacetMISPDF
+#define GlossyMISSample AiMicrofacetMISSample
+
+#define GlossyMISBRDF_wrap AiMicrofacetMISBRDF_wrap
+#define GlossyMISPDF_wrap AiMicrofacetMISPDF_wrap
+#define GlossyMISSample_wrap AiMicrofacetMISSample_wrap
+#define GlossyMISCreateData AiMicrofacetMISCreateData
 
 #define NUM_ID_AOVS 8
 static const char* id_names[NUM_ID_AOVS] = {
@@ -46,6 +55,8 @@ enum FresnelModes
    FM_DIELECTRIC = 0,
    FM_METALLIC
 };
+
+static const char* distribution_names[] = {"beckmann", "ggx", NULL};
 
 enum alSurfaceParams
 {
@@ -108,6 +119,7 @@ enum alSurfaceParams
    p_specular1IndirectClamp,
    p_specular1CausticPaths,
    p_specular1InternalDirect,
+   p_specular1Distribution,
 
    p_specular2Strength,
    p_specular2Color,
@@ -125,6 +137,7 @@ enum alSurfaceParams
    p_specular2IndirectClamp,
    p_specular2CausticPaths,
    p_specular2InternalDirect,
+   p_specular2Distribution,
 
    // transmission
    p_transmissionStrength,
@@ -245,10 +258,12 @@ enum SssMode
 {
    SSSMODE_CUBIC = 0,
    SSSMODE_DIFFUSION = 1,
-   SSSMODE_DIRECTIONAL
+   SSSMODE_DIRECTIONAL = 2,
+   SSSMODE_EMPIRICAL = 3
 };
 
-const char* SssModeNames[] = {"cubic", "diffusion", "directional", NULL};
+const char* SssModeNames[] = {"cubic", "diffusion", "directional", "empirical",
+                              NULL};
 
 enum Debug
 {
@@ -343,6 +358,8 @@ node_parameters
    AiParameterFLT("specular1IndirectClamp", 0.0f);
    AiParameterBOOL("specular1CausticPaths", false);
    AiParameterBOOL("specular1InternalDirect", true);
+   AiParameterENUM("specular1Distribution", AI_MICROFACET_BECKMANN,
+                   distribution_names);
 
    AiParameterFLT("specular2Strength", 0.0f);
    AiParameterRGB("specular2Color", 1.0f, 1.0f, 1.0f);
@@ -360,6 +377,8 @@ node_parameters
    AiParameterFLT("specular2IndirectClamp", 0.0f);
    AiParameterBOOL("specular2CausticPaths", false);
    AiParameterBOOL("specular2InternalDirect", true);
+   AiParameterENUM("specular2Distribution", AI_MICROFACET_BECKMANN,
+                   distribution_names);
 
    AiParameterFLT("transmissionStrength", 0.0f);
    AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f);
@@ -1652,6 +1671,8 @@ shader_evaluate
    int count = 0;
 
    // Begin illumination calculation
+   int specular1Distribution = AiShaderEvalParamInt(p_specular1Distribution);
+   int specular2Distribution = AiShaderEvalParamInt(p_specular2Distribution);
 
    // Create the BRDF data structures for MIS
    // {
@@ -1659,7 +1680,8 @@ shader_evaluate
    AtVector Nfold = sg->Nf;
    sg->N = sg->Nf = specular1Normal;
    void* mis;
-   mis = GlossyMISCreateData(sg, &U1, &V1, roughness_x, roughness_y);
+   mis = GlossyMISCreateData(sg, specular1Distribution, &U1, 0, roughness_x,
+                             roughness_y);
    BrdfData_wrap brdfw;
    brdfw.brdf_data = mis;
    brdfw.sg = sg;
@@ -1687,7 +1709,8 @@ shader_evaluate
 
    sg->N = sg->Nf = specular2Normal;
    void* mis2;
-   mis2 = GlossyMISCreateData(sg, &U2, &V2, roughness2_x, roughness2_y);
+   mis2 = GlossyMISCreateData(sg, specular2Distribution, &U2, 0, roughness2_x,
+                              roughness2_y);
    BrdfData_wrap brdfw2;
    brdfw2.brdf_data = mis2;
    brdfw2.sg = sg;
@@ -2987,6 +3010,18 @@ shader_evaluate
 #else
          result_sss = AiSSSPointCloudLookupCubic(sg, radius);
 #endif
+      }
+      else if (data->sssMode == SSSMODE_EMPIRICAL)
+      {
+         AtRGB radius = max(rgb(0.0001),
+                            sssRadius * sssRadiusColor / (sssDensityScale * 7));
+         AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+         AtRGB result_sss_direct = AI_RGB_BLACK;
+         AtRGB result_sss_indirect = AI_RGB_BLACK;
+         AtRGB c = AI_RGB_WHITE;
+         AiBSSRDFEmpirical(sg, result_sss_direct, result_sss_indirect,
+                           &radius.r, &c.r, weights, 3);
+         result_sss = result_sss_direct + result_sss_indirect;
       }
       else
       {
