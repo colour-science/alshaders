@@ -1,0 +1,31 @@
+##############################################################################
+[node alWriteIds]
+houdini.label STRING "Al AOV Write Ids"
+houdini.icon STRING "VOP_shadinglayer"
+houdini.category STRING "alShaders"
+
+[attr passthrough]
+houdini.label STRING "Passthrough"
+desc STRING "A passthrough color to trigger evaluation of this shader."
+
+[attr string]
+houdini.label STRING "String"
+linkable BOOL false
+desc STRING "The Arnold string to identify with two floats"
+
+[attr aov_string]
+houdini.label STRING "AOV String Name"
+linkable BOOL false
+desc STRING "Name of STRING type AOV to write Arnold string to"
+
+[attr aov_idFloat1]
+houdini.label STRING "AOV Id Float 1 Name"
+linkable BOOL false
+desc STRING "Name of first FLOAT type AOV to write ID to"
+
+[attr aov_idFloat2]
+houdini.label STRING "AOV Id Float 2 Name"
+linkable BOOL false
+desc STRING "Name of second FLOAT type AOV to write ID to"
+
+##############################################################################

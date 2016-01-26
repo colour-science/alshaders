@@ -94,6 +94,14 @@ set(SUBDIRECTORIES
         common
 )
 
+# alWriteIds requires the new hash function on AtString types that was added in 4.2.8
+if ((DEFINED ARNOLD_VERSION) AND (${ARNOLD_VERSION} VERSION_GREATER "4.2.7"))
+    set(SUBDIRECTORIES ${SUBDIRECTORIES} alWriteIds alWriteIdsDriver)
+    message("Added alWriteIds & alWriteIdsDriver as ARNOLD_VERSION \"${ARNOLD_VERSION}\" is greater than the required \"4.2.7\"")
+else()
+    message(warning "Skipped alWriteIds & alWriteIdsDriver as ARNOLD_VERSION \"${ARNOLD_VERSION}\" is not greater than the required \"4.2.7\"")
+endif()
+
 # define shader build function
 function(build_shader)
     foreach(SHADER ${ARGV})
