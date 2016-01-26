@@ -581,6 +581,13 @@ struct HairBsdf
         AB(theta_r, sp.alpha_R, sp.beta_R*B_WIDTH_SCALE, A_b, B_b);
         AB(theta_r, sp.alpha_TT, sp.beta_TT*F_WIDTH_SCALE, A_f, B_f);
 
+        opacity = AiShaderEvalParamRGB(p_opacity);
+        float geo_opacity = 1.0f;
+        if (AiUDataGetFlt("geo_opacity", &geo_opacity))
+        {
+            opacity *= geo_opacity;
+        }
+
         AtRGB dyeColor = clamp(AiShaderEvalParamRGB(p_dyeColor), AI_RGB_BLACK, AI_RGB_WHITE);
         float melanin = AiShaderEvalParamFlt(p_melanin);
         
@@ -1771,6 +1778,8 @@ struct HairBsdf
     AtRGB deepGroupsSpecular2[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsDiffuse[NUM_LIGHT_GROUPS];
     AtRGB deepGroupsTransmission[NUM_LIGHT_GROUPS];
+
+    AtRGB opacity;
 };
 
 node_loader
@@ -1857,15 +1866,10 @@ shader_evaluate
     // Get parameters
     hb.evaluateParameters(sg, data);
 
-    AtRGB opacity = AiShaderEvalParamRGB(p_opacity);
-    float geo_opacity = 1.0f;
-    if (AiUDataGetFlt("geo_opacity", &geo_opacity))
-    {
-        opacity *= geo_opacity;
-    }
-    if (AiShaderGlobalsApplyOpacity(sg, opacity))
+    
+    if (AiShaderGlobalsApplyOpacity(sg, hb.opacity))
       return;
-    opacity = sg->out_opacity;
+    hb.opacity = sg->out_opacity;
 
     AiStateSetMsgBool("als_hitHair", true);
 
@@ -1887,7 +1891,7 @@ shader_evaluate
             als_sigma_bar_f += hb.sp.beta_R2 + hb.sp.beta_TRT2 + hb.sp.beta_TT2;
             AiStateSetMsgRGB("als_sigma_bar_f", als_sigma_bar_f);
 
-            als_hairNumIntersections+=minh(opacity);
+            als_hairNumIntersections+=minh(hb.opacity);
             AiStateSetMsgFlt("als_hairNumIntersections", als_hairNumIntersections);
 
             sg->out_opacity = AI_RGB_BLACK;
@@ -1902,9 +1906,9 @@ shader_evaluate
 
     // early-out regardless if we're in a shadow ray, or if opacity is zero
 #if AI_VERSION_MINOR_NUM >= 2
-    if (sg->Rt & AI_RAY_SHADOW || AiColorIsZero(opacity) || AiShaderGlobalsIsObjectMatte(sg)) return; 
+    if (sg->Rt & AI_RAY_SHADOW || AiColorIsZero(hb.opacity) || AiShaderGlobalsIsObjectMatte(sg)) return; 
 #else
-    if (sg->Rt & AI_RAY_SHADOW || AiColorIsZero(opacity)) return; 
+    if (sg->Rt & AI_RAY_SHADOW || AiColorIsZero(hb.opacity)) return; 
 #endif
     // early out if we're a hair-hair glossy ray and the ray depth says we should be calculating dual scattering only
     if (sg->Rr_gloss > data->dual_depth && als_raytype == ALS_RAY_HAIR) 
@@ -1928,7 +1932,7 @@ shader_evaluate
 
     // Write shader result
     hb.writeResult(sg);
-    sg->out_opacity = opacity;
+    sg->out_opacity = hb.opacity;
 }
 
 
