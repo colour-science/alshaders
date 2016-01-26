@@ -1355,9 +1355,9 @@ def WriteHTML(sd, fn):
 
    
                <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tutorials</a>
+                  <a href="tutorials.html" class="dropdown-toggle" data-toggle="dropdown">Tutorials</a>
                   <ul class="dropdown-menu" role="menu">
-                     <li><a href="#">Coming soon...</a></li>
+                     <li><a href="tut_skin1.html">Skin Shading - Part 1</a></li>
                   </ul>
                </li>
    
