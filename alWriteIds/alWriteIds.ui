@@ -1,0 +1,27 @@
+import uigen
+
+ui.shader({
+   'name':'alWriteIds',
+   'intro':'Generates a Rec709 color from the blackbody spectrum for the given temperature.',
+   'description':'Useful for fire, lava, light colors and any self-illuminated object.',
+   'output':'rgb',
+   'maya_name':'alWriteIds',
+   'maya_classification':'shader/utility',
+   'maya_id':'0x00116420',
+   'maya_swatch':True,
+   'maya_matte':False,
+   'maya_bump':False,
+   'c4d_classification':'texture',
+   'c4d_menu':'texture',
+   'soft_name':'ALS_WriteIds',
+   'soft_classification':'texture',
+   'soft_version':1,
+   'help_url':'http://www.anderslanglands.com/alshaders/alWriteIds.html',
+   'houdini_icon':'SHELF_fire'
+})
+
+ui.parameter('passthrough', 'rgb', (0.0, 0.0, 0.0), 'Passthrough', description='Plug your surface in here to trigger shader evaluation', mayane=True)
+ui.parameter('string', 'enum', 'Shape Node Name', 'String', enum_names=['Shape Node Name', 'Procedural Node Name', 'Shader Node Name'])
+ui.parameter('aov_string', 'string', 'id.shapeName', 'AOV string')
+ui.parameter('aov_idFloat1', 'string', 'id.shapeName1', 'AOV string')
+ui.parameter('aov_idFloat2', 'string', 'id.shapeName2', 'AOV string')
