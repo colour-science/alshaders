@@ -581,15 +581,9 @@ struct HairBsdf
         AB(theta_r, sp.alpha_R, sp.beta_R*B_WIDTH_SCALE, A_b, B_b);
         AB(theta_r, sp.alpha_TT, sp.beta_TT*F_WIDTH_SCALE, A_f, B_f);
 
-        opacity = AiShaderEvalParamRGB(p_opacity);
-        float geo_opacity = 1.0f;
-        if (AiUDataGetFlt("geo_opacity", &geo_opacity))
-        {
-            opacity *= geo_opacity;
-        }
-
         AtRGB dyeColor = clamp(AiShaderEvalParamRGB(p_dyeColor), AI_RGB_BLACK, AI_RGB_WHITE);
         float melanin = AiShaderEvalParamFlt(p_melanin);
+        opacity = AiShaderEvalParamFlt(p_opacity);
         
         float randomHue = AiShaderEvalParamFlt(p_randomHue) * 0.1f;
         float randomSaturation = AiShaderEvalParamFlt(p_randomSaturation);
@@ -1866,7 +1860,11 @@ shader_evaluate
     // Get parameters
     hb.evaluateParameters(sg, data);
 
-    
+    float geo_opacity = 1.0f;
+    if (AiUDataGetFlt("geo_opacity", &geo_opacity))
+    {
+        hb.opacity *= geo_opacity;
+    }
     if (AiShaderGlobalsApplyOpacity(sg, hb.opacity))
       return;
     hb.opacity = sg->out_opacity;
