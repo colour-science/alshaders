@@ -95,7 +95,7 @@ enum WriteIdsParams
 
 node_parameters // static void Parameters(AtList* params, AtMetaDataStore* mds)
 {
-    AiParameterRGBA("passthrough", 0.0f, 0.0f, 0.0f, 1.0f);
+    AiParameterRGB("passthrough", 0.0f, 0.0f, 0.0f);
     AiParameterENUM("string", WI_SHAPE_NAME, stringOptionsNames);
     for (int i = 0; i < WI_NUM_AOVS; i++)
     {
@@ -145,7 +145,7 @@ node_finish // static void Finish(AtNode* node)
 
 shader_evaluate // static void Evaluate(AtNode* node, AtShaderGlobals* sg)
 {
-    sg->out.RGBA = AiShaderEvalParamRGBA(p_passthrough);
+    sg->out.RGB = AiShaderEvalParamRGB(p_passthrough);
     if (!(sg->Rt & AI_RAY_CAMERA)) { return; }
     ShaderData* data = reinterpret_cast<ShaderData*>(AiNodeGetLocalData(node));
     writeIdsToFloatAOVs(sg, data);
@@ -157,7 +157,7 @@ node_loader
         return false;
 
     node->methods     = alWriteIds;
-    node->output_type = AI_TYPE_RGBA;
+    node->output_type = AI_TYPE_RGB;
     node->name        = "alWriteIds";
     node->node_type   = AI_NODE_SHADER;
     strcpy(node->version, AI_VERSION);

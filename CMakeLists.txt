@@ -6,7 +6,7 @@ project(alShaders)
 
 set(ALS_MAJOR_VERSION 1)
 set(ALS_MINOR_VERSION 0)
-set(ALS_PATCH_VERSION 0rc13)
+set(ALS_PATCH_VERSION 0rc14)
 set(ALS_VERSION "${ALS_MAJOR_VERSION}.${ALS_MINOR_VERSION}.${ALS_PATCH_VERSION}")
 
 set(CMAKE_BUILD_TYPE RELEASE)
@@ -91,16 +91,9 @@ set(SUBDIRECTORIES
         alCache
         alCel
         alFlake
+        #alWriteIds
         common
 )
-
-# alWriteIds requires the new hash function on AtString types that was added in 4.2.8
-if ((DEFINED ARNOLD_VERSION) AND (${ARNOLD_VERSION} VERSION_GREATER "4.2.7"))
-    set(SUBDIRECTORIES ${SUBDIRECTORIES} alWriteIds alWriteIdsDriver)
-    message("Added alWriteIds & alWriteIdsDriver as ARNOLD_VERSION \"${ARNOLD_VERSION}\" is greater than the required \"4.2.7\"")
-else()
-    message(warning "Skipped alWriteIds & alWriteIdsDriver as ARNOLD_VERSION \"${ARNOLD_VERSION}\" is not greater than the required \"4.2.7\"")
-endif()
 
 # define shader build function
 function(build_shader)
