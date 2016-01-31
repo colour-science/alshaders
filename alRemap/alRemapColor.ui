@@ -31,4 +31,4 @@ with uigen.group(ui, 'Contrast', description='Scales the contrast of the input s
 
 ui.parameter('gain', 'float', 1.0, 'Gain', description='Gain multiplier to apply to the input.')
 ui.parameter('exposure', 'float', 0.0, 'Exposure', description='Exposure adjustment to apply to the input, i.e. input * 2^exposure.')
-ui.parameter('mask', 'float', 1.0, 'Mask', description='Use this to mask off the adjustment. This can be useful for only adjusting a certain region of a texture for instance.')
+ui.parameter('mask', 'float', 1.0, 'Mask', description='Use this to mask off the adjustment. This can be useful for only adjusting a certain region of a texture for instance.', mayane=True)

@@ -7,13 +7,15 @@ AI_SHADER_NODE_EXPORT_METHODS(alRemapFloatMtd)
 enum alRemapParams
 {
 	p_input,
-	REMAP_FLOAT_PARAM_ENUM
+	REMAP_FLOAT_PARAM_ENUM,
+   p_mask
 };
 
 node_parameters
 {
 	AiParameterFLT("input", 0.0f);
 	REMAP_FLOAT_PARAM_DECLARE;
+   AiParameterFLT("mask", 1.0f);
 }
 
 node_loader
@@ -45,10 +47,16 @@ node_update
 shader_evaluate
 {
 	float input = AiShaderEvalParamFlt(p_input);
+   float mask = AiShaderEvalParamFlt(p_mask);
 
-	RemapFloat r = REMAP_FLOAT_CREATE;
+   float result = input;
+   if (mask > 0.0f)
+   {
+	  RemapFloat r = REMAP_FLOAT_CREATE;
+     result = lerp(input, r.remap(input), mask);
+   }
 
-	sg->out.FLT = r.remap(input);
+	sg->out.FLT = result;
 }
 
 

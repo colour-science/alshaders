@@ -4,7 +4,7 @@ ui.shader({
 	'name':'alRemapFloat',
 	'intro':'Controls to adjust a float value',
    'description':'Essential for tuning just about any float value in your network.',
-	'output':'rgb',
+	'output':'float',
 	'maya_name':'alRemapFloat',
 	'maya_classification':'utility/color',
 	'maya_id':'0x0011640C',
@@ -23,3 +23,5 @@ ui.shader({
 ui.parameter('input', 'float', 0.0, 'Input', description='Input value to remap.', mayane=True)
 
 uigen.remapControls(ui)
+
+ui.parameter('mask', 'float', 1.0, 'Mask', description='Use this to mask off the adjustment. This can be useful for only adjusting a certain region of a texture for instance.', mayane=True)
