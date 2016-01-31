@@ -1269,9 +1269,11 @@ def WriteHTML(sd, fn):
 <body data-spy="scroll" data-target="#parameter-scroll-spy" data-offset="20">
 
    <!-- Preloader -->
+   <!--
    <div class="page-loader">
       <div class="loader">Loading...</div>
    </div>
+   -->
 
    <?php 
       $path = $_SERVER['DOCUMENT_ROOT'];
