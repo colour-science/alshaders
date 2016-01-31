@@ -1251,20 +1251,20 @@ def WriteHTML(sd, fn):
 
    <link rel="icon" 
       type="image/png" 
-      href="img/als.png">
+      href="/common/img/als.png">
    
    <!-- CSS -->
-   <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-   <link href="assets/css/simpletextrotator.css" rel="stylesheet">
-   <link href="assets/css/font-awesome.min.css" rel="stylesheet">
-   <link href="assets/css/et-line-font.css" rel="stylesheet">
-   <link href="assets/css/magnific-popup.css" rel="stylesheet">
-   <link href="assets/css/flexslider.css" rel="stylesheet">
-   <link href="assets/css/owl.carousel.css" rel="stylesheet">
-   <link href="assets/css/animate.css" rel="stylesheet">
-   <link href="assets/css/style.css" rel="stylesheet">
+   <link href="/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+   <link href="/assets/css/simpletextrotator.css" rel="stylesheet">
+   <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+   <link href="/assets/css/et-line-font.css" rel="stylesheet">
+   <link href="/assets/css/magnific-popup.css" rel="stylesheet">
+   <link href="/assets/css/flexslider.css" rel="stylesheet">
+   <link href="/assets/css/owl.carousel.css" rel="stylesheet">
+   <link href="/assets/css/animate.css" rel="stylesheet">
+   <link href="/assets/css/style.css" rel="stylesheet">
 
-   <link href="css/param.css" rel="stylesheet">
+   <link href="/css/param.css" rel="stylesheet">
 </head>
 <body data-spy="scroll" data-target="#parameter-scroll-spy" data-offset="20">
 
@@ -1273,108 +1273,11 @@ def WriteHTML(sd, fn):
       <div class="loader">Loading...</div>
    </div>
 
-   <!-- Navigation start -->
-   <nav class="navbar navbar-custom navbar-fixed-top" role="navigation">
-
-      <div class="container">
-   
-         <div class="navbar-header">
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#custom-collapse">
-               <span class="sr-only">Toggle navigation</span>
-               <span class="icon-bar"></span>
-               <span class="icon-bar"></span>
-               <span class="icon-bar"></span>
-            </button>
-
-            <a class="navbar-brand" href="index.html">
-                        <img src="img/als-logo-white.svg" width="20" height="20" style="float:left">
-                        &nbsp;alShaders</a>
-         </div>
-   
-         <div class="collapse navbar-collapse" id="custom-collapse">
-   
-            <ul class="nav navbar-nav navbar-right">
-               
-               <li class="dropdown">
-                  <a href="index.html" class="dropdown-toggle" data-toggle="dropdown">Home</a>
-                  <ul class="dropdown-menu" role="menu">
-                     <li><a href="index.html#downloads">Download</a></li>
-                     <li><a href="index.html#installation">Install</a></li>
-                     <li><a href="index.html#learn">Learn</a></li>
-                     <li><a href="index.html#contribute">Contribute</a></li>
-                  </ul>
-               </li>
-
-               <li class="dropdown">
-                  <a href="reference.html" class="dropdown-toggle" data-toggle="dropdown">Reference</a>
-                  <ul class="dropdown-menu">
-                     <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Surfaces</a>
-                        <ul class="dropdown-menu">
-                           <li><a href="alSurface.html">al Surface</a></li>
-                           <li><a href="alHair.html">al Hair</a></li>
-                           <li><a href="alLayer.html">al Layer</a></li>
-                           <li><a href="alCel.html">al Cel</a></li>
-                        </ul>
-                     </li>
-
-                     <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Textures</a>
-                        <ul class="dropdown-menu">
-                           <li><a href="alFractal.html">al Fractal</a></li>
-                           <li><a href="alCellNoise.html">al CellNoise</a></li>
-                           <li><a href="alGaborNoise.html">al GaborNoise</a></li>
-                           <li><a href="alFlowNoise.html">al FlowNoise</a></li>
-                           <li><a href="alTriplanar.html">al Triplanar</a></li>
-                           <li><a href="alFlake.html">al Flake</a></li>
-                           <li><a href="alBlackbody.html">al Blackbody</a></li>
-                           <li><a href="alPattern.html">al Pattern</a></li>
-                           <li><a href="alCurvature.html">al Curvature</a></li>
-                        </ul>
-                     </li>
-
-                     <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Utilities</a>
-                        <ul class="dropdown-menu">
-                           <li><a href="alCombineColor.html">al CombineColor</a></li>
-                           <li><a href="alCombineFloat.html">al CombineFloat</a></li>
-                           <li><a href="alLayerColor.html">al LayerColor</a></li>
-                           <li><a href="alLayerFloat.html">al LayerFloat</a></li>
-                           <li><a href="alRemapColor.html">al RemapColor</a></li>
-                           <li><a href="alRemapFloat.html">al RemapFloat</a></li>
-                           <li><a href="alSwitchColor.html">al SwitchColor</a></li>
-                           <li><a href="alSwitchFloat.html">al SwitchFloat</a></li>
-                           <li><a href="alCache.html">al Cache</a></li>
-                           <li><a href="alJitterColor.html">al JitterColor</a></li>
-                           <li><a href="alInputVector.html">al InputVector</a></li>
-                           <li><a href="alInputScalar.html">al InputScalar</a></li>
-                        </ul>
-                     </li>
-                  </ul>
-               </li>
-
-   
-               <li class="dropdown">
-                  <a href="tutorials.html" class="dropdown-toggle" data-toggle="dropdown">Tutorials</a>
-                  <ul class="dropdown-menu" role="menu">
-                     <li><a href="tut_skin1.html">Skin Shading - Part 1</a></li>
-                  </ul>
-               </li>
-   
-               <li><a href="#">Blog</a></li>
-
-               <li><a href="http://bitbucket.org/anderslanglands/alshaders"><i class="fa fa-bitbucket"></i></a></li>
-   
-               <li><a>&nbsp;</a></li>
-               
-   
-            </ul>
-         </div>
-   
-      </div>
-
-   </nav>
-   <!-- Navigation end -->
+   <?php 
+      $path = $_SERVER['DOCUMENT_ROOT'];
+      $path .= "/common/include_nav_header.php";
+      include($path); 
+   ?>
 
    
    <!-- Wrapper start -->
@@ -1429,27 +1332,11 @@ def WriteHTML(sd, fn):
 
       </div></div></section>
 
-      <!-- Footer start -->
-      <footer class="footer bg-dark">
-         <div class="container">
-   
-            <div class="row">
-   
-               <div class="col-sm-6">
-                  <p class="copyright font-alt">&#xa9; 2015 <a href="index.html">Anders Langlands</a>, All Rights Reserved.</p>
-               </div>
-   
-               <div class="col-sm-6">
-                  <div class="footer-social-links">
-                     <a href="http://bitbucket.org/anderslanglands/alshaders"><i class="fa fa-bitbucket"></i></a>
-                  </div>
-               </div> 
-   
-            </div><!-- .row -->
-   
-         </div>
-      </footer>
-      <!-- Footer end -->
+      <?php 
+      $path = $_SERVER['DOCUMENT_ROOT'];
+      $path .= "/common/include_footer.php";
+      include($path); 
+   ?>
    
    </div>
    <!-- Wrapper start -->
@@ -1460,26 +1347,26 @@ def WriteHTML(sd, fn):
    </div>
    
    <!-- Javascript files -->
-   <script src="assets/js/jquery-2.1.3.min.js"></script>
-   <script src="assets/bootstrap/js/bootstrap.min.js"></script>
-   <script src="assets/js/jquery.mb.YTPlayer.min.js"></script>
-   <script src="assets/js/appear.js"></script>
-   <script src="assets/js/jquery.simple-text-rotator.min.js"></script>
-   <script src="assets/js/jqBootstrapValidation.js"></script>
+   <script src="/assets/js/jquery-2.1.3.min.js"></script>
+   <script src="/assets/bootstrap/js/bootstrap.min.js"></script>
+   <script src="/assets/js/jquery.mb.YTPlayer.min.js"></script>
+   <script src="/assets/js/appear.js"></script>
+   <script src="/assets/js/jquery.simple-text-rotator.min.js"></script>
+   <script src="/assets/js/jqBootstrapValidation.js"></script>
    <script src="http://maps.google.com/maps/api/js?sensor=true"></script>
-   <script src="assets/js/gmaps.js"></script>
-   <script src="assets/js/isotope.pkgd.min.js"></script>
-   <script src="assets/js/imagesloaded.pkgd.js"></script>
-   <script src="assets/js/jquery.flexslider-min.js"></script>
-   <script src="assets/js/jquery.magnific-popup.min.js"></script>
-   <script src="assets/js/jquery.fitvids.js"></script>
-   <script src="assets/js/smoothscroll.js"></script>
-   <script src="assets/js/wow.min.js"></script>
-   <script src="assets/js/owl.carousel.min.js"></script>
-   <script src="assets/js/contact.js"></script>
-   <script src="assets/js/custom.js"></script>
-   <script src="js/param.js"></script>
-   <script src="js/scrollspy.js"> </script>
+   <script src="/assets/js/gmaps.js"></script>
+   <script src="/assets/js/isotope.pkgd.min.js"></script>
+   <script src="/assets/js/imagesloaded.pkgd.js"></script>
+   <script src="/assets/js/jquery.flexslider-min.js"></script>
+   <script src="/assets/js/jquery.magnific-popup.min.js"></script>
+   <script src="/assets/js/jquery.fitvids.js"></script>
+   <script src="/assets/js/smoothscroll.js"></script>
+   <script src="/assets/js/wow.min.js"></script>
+   <script src="/assets/js/owl.carousel.min.js"></script>
+   <script src="/assets/js/contact.js"></script>
+   <script src="/assets/js/custom.js"></script>
+   <script src="/js/param.js"></script>
+   <script src="/js/scrollspy.js"> </script>
    <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
