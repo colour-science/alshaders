@@ -1448,20 +1448,23 @@ shader_evaluate
    // Grab the roughness from the previous surface and make sure we're slightly
    // rougher than it to avoid glossy-glossy fireflies
    float alsPreviousRoughness = 0.0f;
-   AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
-   if (data->do_rr && sg->Rr > 0)
+   if (sg->Rr > 0)
    {
-      roughness_x = std::max(
-          roughness_x, alsPreviousRoughness * specular1RoughnessDepthScale);
-      roughness_y = std::max(
-          roughness_y, alsPreviousRoughness * specular1RoughnessDepthScale);
-      roughness2_x = std::max(
-          roughness2_x, alsPreviousRoughness * specular2RoughnessDepthScale);
-      roughness2_y = std::max(
-          roughness2_y, alsPreviousRoughness * specular2RoughnessDepthScale);
-      transmissionRoughness =
-          std::max(transmissionRoughness,
-                   alsPreviousRoughness * transmissionRoughnessDepthScale);
+	   AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
+	   if (data->do_rr)
+	   {
+		   roughness_x = std::max(
+			   roughness_x, alsPreviousRoughness * specular1RoughnessDepthScale);
+		   roughness_y = std::max(
+			   roughness_y, alsPreviousRoughness * specular1RoughnessDepthScale);
+		   roughness2_x = std::max(
+			   roughness2_x, alsPreviousRoughness * specular2RoughnessDepthScale);
+		   roughness2_y = std::max(
+			   roughness2_y, alsPreviousRoughness * specular2RoughnessDepthScale);
+		   transmissionRoughness =
+			   std::max(transmissionRoughness,
+			   alsPreviousRoughness * transmissionRoughnessDepthScale);
+	   }
    }
 
    // clamp roughnesses

@@ -102,7 +102,7 @@ struct MicrofacetTransmission
    inline AtVector2 sampleSlope(float cos_theta, float u1, float u2) const
    {
       static const float INV_SQRT_PI = 0.5641895835477563f;
-      cos_theta = std::max(1e-6f, cos_theta);
+      cos_theta = std::max(cos_theta, 1e-6f);
       const float cos_theta2 = SQR(cos_theta);
       const float tan_theta = sqrtf(1.0f - cos_theta2) / cos_theta;
       const float cot_theta = 1.0f / tan_theta;
