@@ -35,7 +35,7 @@ def setPresetRgb(ctrl, value):
 class alShadersTemplate(ShaderAETemplate):
 
     def customCreateFlt(self, attr):
-        print "creating %s" % attr
+        # print "creating %s" % attr
         pname = attr.split('.')[-1]
         ptype = self.params[pname].ptype
         plabel = self.params[pname].label
@@ -45,16 +45,21 @@ class alShadersTemplate(ShaderAETemplate):
         controlName = pname + 'Ctrl'
         l = plabel
         if presets is not None:
-            l = unicode(plabel) + u' \u1392'
+            l += ' <span>&#8801;</span>' # fix unicode problem in Windows using html
         pm.attrFieldSliderGrp(controlName, attribute=attr, label=l, annotation=pann, precision=precision)
         if presets is not None:
-            pm.attrFieldSliderGrp(controlName, edit=True)
-            pm.popupMenu()
+            # pm.attrFieldSliderGrp(controlName, edit=True)
+            # pm.popupMenu()
+            # for k in sorted(presets, key=presets.get):
+            #     pm.menuItem(label=k, command=pm.Callback(setPresetFlt, controlName, presets[k]))
+            attrChildren = pm.layout(controlName, query=True, childArray=True)
+            pm.popupMenu(button=1, parent=attrChildren[0])
             for k in sorted(presets, key=presets.get):
                 pm.menuItem(label=k, command=pm.Callback(setPresetFlt, controlName, presets[k]))
 
+
     def customUpdateFlt(self, attr):
-        print "updating attr %s" % attr
+        # print "updating attr %s" % attr
         pname = attr.split('.')[-1]
         ptype = self.params[pname].ptype
         controlName = pname + 'Ctrl'
@@ -70,11 +75,13 @@ class alShadersTemplate(ShaderAETemplate):
 
         l = plabel
         if presets is not None:
-            l = unicode(plabel) + u' \u1392'
+            l += ' <span>&#8801;</span>' # fix unicode problem in Windows using html
         pm.attrColorSliderGrp(controlName, attribute=attr, label=l, annotation=pann)
         if presets is not None:
-            pm.attrColorSliderGrp(controlName, edit=True)
-            pm.popupMenu()
+            # pm.attrColorSliderGrp(controlName, edit=True)
+            # pm.popupMenu()
+            attrChildren = pm.layout(controlName, query=True, childArray=True)
+            pm.popupMenu(button=1, parent=attrChildren[0])
             for k in sorted(presets):
                 pm.menuItem(label=k, command=pm.Callback(setPresetRgb, controlName, presets[k]))
 
