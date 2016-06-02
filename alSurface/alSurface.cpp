@@ -1450,21 +1450,21 @@ shader_evaluate
    float alsPreviousRoughness = 0.0f;
    if (sg->Rr > 0)
    {
-	   AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
-	   if (data->do_rr)
-	   {
-		   roughness_x = std::max(
-			   roughness_x, alsPreviousRoughness * specular1RoughnessDepthScale);
-		   roughness_y = std::max(
-			   roughness_y, alsPreviousRoughness * specular1RoughnessDepthScale);
-		   roughness2_x = std::max(
-			   roughness2_x, alsPreviousRoughness * specular2RoughnessDepthScale);
-		   roughness2_y = std::max(
-			   roughness2_y, alsPreviousRoughness * specular2RoughnessDepthScale);
-		   transmissionRoughness =
-			   std::max(transmissionRoughness,
-			   alsPreviousRoughness * transmissionRoughnessDepthScale);
-	   }
+      AiStateGetMsgFlt("alsPreviousRoughness", &alsPreviousRoughness);
+      if (data->do_rr)
+      {
+         roughness_x = std::max(
+             roughness_x, alsPreviousRoughness * specular1RoughnessDepthScale);
+         roughness_y = std::max(
+             roughness_y, alsPreviousRoughness * specular1RoughnessDepthScale);
+         roughness2_x = std::max(
+             roughness2_x, alsPreviousRoughness * specular2RoughnessDepthScale);
+         roughness2_y = std::max(
+             roughness2_y, alsPreviousRoughness * specular2RoughnessDepthScale);
+         transmissionRoughness =
+             std::max(transmissionRoughness,
+                      alsPreviousRoughness * transmissionRoughnessDepthScale);
+      }
    }
 
    // clamp roughnesses
@@ -1776,6 +1776,7 @@ shader_evaluate
 
    AtVector Nforig = sg->Nf;
    AtVector Norig = sg->N;
+
    if (do_glossy_direct)
    {
       AtRGB LspecularDirect = AI_RGB_BLACK;
@@ -1784,6 +1785,7 @@ shader_evaluate
       {
          sg->N = sg->Nf = specular1Normal;
       }
+
       AiLightsPrepare(sg);
       while (AiLightsGetSample(sg))
       {
@@ -1812,9 +1814,12 @@ shader_evaluate
             result_glossyDirect += LspecularDirect;
          }
       }
+
       sg->Nf = Nforig;
       sg->N = Norig;
+
       if (data->specular1NormalConnected) AiLightsResetCache(sg);
+
       if (brdfw.ns > 0.0f)
       {
          kti = 1.0f - (maxh(brdfw.kr_int) / brdfw.ns * maxh(specular1Color));
