@@ -19,3 +19,5 @@ test/*.nk~
 /alShaders.creator
 /alShaders.config
 docs
+*.swp
+*/*.swp
