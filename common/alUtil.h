@@ -884,12 +884,12 @@ inline bool AiIsFinite(const AtVector& v)
 
 inline bool isValidColor(AtRGB c)
 {
-   return AiIsFinite(c) && c.r >= 0.0f && c.g >= 0.0f && c.b >= 0.0f;
+   return AiIsFinite(c) && c.r > -AI_EPSILON && c.g > -AI_EPSILON && c.b > -AI_EPSILON;
 }
 
 inline bool isPositiveReal(float f)
 {
-   return AiIsFinite(f) && f >= 0.0f;
+   return AiIsFinite(f) && f > -AI_EPSILON;
 }
 
 /// Generate a random integer in the range [0,n)
