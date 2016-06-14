@@ -3023,13 +3023,36 @@ shader_evaluate
       {
          AtRGB radius = max(rgb(0.0001),
                             sssRadius * sssRadiusColor / (sssDensityScale * 7));
-         AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+
          AtRGB result_sss_direct = AI_RGB_BLACK;
          AtRGB result_sss_indirect = AI_RGB_BLACK;
-         AtRGB c = AI_RGB_WHITE;
-         AiBSSRDFEmpirical(sg, result_sss_direct, result_sss_indirect,
-                           &radius.r, &c.r, weights, 3);
-         result_sss = result_sss_direct + result_sss_indirect;
+         if (sssWeight2 == 0.0f && sssWeight3 == 0.0f)
+         {
+            AtRGB weights[3] = {AI_RGB_RED, AI_RGB_GREEN, AI_RGB_BLUE};
+            AtRGB c = AI_RGB_WHITE;
+            AiBSSRDFEmpirical(sg, result_sss_direct, result_sss_indirect,
+                              &radius.r, &c.r, weights, 3);
+            result_sss = result_sss_direct + result_sss_indirect;
+         }
+         else 
+         {
+            AtRGB r2 = max(rgb(0.0001),
+                           sssRadius2 * sssRadiusColor2 / sssDensityScale);
+            AtRGB r3 = max(rgb(0.0001),
+                           sssRadius3 * sssRadiusColor3 / sssDensityScale);
+            AtRGB weights[9] = {
+                AI_RGB_RED * sssWeight1,   AI_RGB_GREEN * sssWeight1,
+                AI_RGB_BLUE * sssWeight1,  AI_RGB_RED * sssWeight2,
+                AI_RGB_GREEN * sssWeight2, AI_RGB_BLUE * sssWeight2,
+                AI_RGB_RED * sssWeight3,   AI_RGB_GREEN * sssWeight3,
+                AI_RGB_BLUE * sssWeight3};
+            float r[9] = {radius.r, radius.g, radius.b, r2.r, r2.g,
+                          r2.b,     r3.r,     r3.g,     r3.b};
+            AtRGB c[3] = {AI_RGB_WHITE, AI_RGB_WHITE, AI_RGB_WHITE};
+            AiBSSRDFEmpirical(sg, result_sss_direct, result_sss_indirect,
+                              r, &c[0].r, weights, 9);
+            result_sss = result_sss_direct + result_sss_indirect;
+         }
       }
       else
       {
