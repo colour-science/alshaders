@@ -44,7 +44,7 @@ enum alHairParams
     p_transmissionColor,
     p_transmissionRolloff,
     p_opacity,
-    //p_dualDepth,
+    p_dualDepth,
     p_densityFront,
     p_densityBack,
     p_specular1WidthScale,
@@ -190,7 +190,7 @@ node_parameters
     AiParameterRGB("transmissionColor", 1.0f, 1.0f, 1.0f);
     AiParameterFlt("transmissionRolloff", 10.0f);
     AiParameterRGB("opacity", 1.0f, 1.0f, 1.0f);
-    //AiParameterInt("dualDepth", 0);
+    AiParameterInt("dualDepth", 0);
     AiParameterFlt("diffuseForward", 0.7f);
     AiParameterFlt("diffuseBack", 0.7f);
     AiParameterFlt("specular1WidthScale", 1.0f);
@@ -327,8 +327,7 @@ struct HairBsdf
 
             glintStrength = params[p_glintStrength].FLT;
 
-            //dual_depth = params[p_dualDepth].INT;
-            dual_depth = 0;
+            dual_depth = params[p_dualDepth].INT;
 
             sampleLobesIndividually = false;
 

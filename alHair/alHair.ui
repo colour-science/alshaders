@@ -107,7 +107,7 @@ with uigen.group(ui, 'AOVs', description='Use these parameters to change the nam
    ui.aov('aov_id_8', 'rgb', 'ID [8]', description='Set the name of the AOV that contains ID 8.')
 
 with uigen.group(ui, 'Advanced'):
-   # ui.parameter('dualDepth', 'int', 0, 'Brute force bounces', description='Number of brute-force, inter-hair bounces to calculate before falling back to dual scattering. THIS PARAMETER IS DEPRECATED AND WILL BE REMOVED IN A FUTURE RELEASE.')
+   ui.parameter('dualDepth', 'int', 0, 'Brute force bounces', description='Number of brute-force, inter-hair bounces to calculate before falling back to dual scattering. THIS PARAMETER IS DEPRECATED AND WILL BE REMOVED IN A FUTURE RELEASE.')
    ui.parameter('diffuseIndirectStrength', 'float', 0.0, 'Diffuse indirect strength', description='Multiplier on the intensity of the indirect diffuse illumination. The default value of 0 disables indirect illumination on the hair since in most cases you don\'t need it and it can be quite expensive.')
    ui.parameter('extraSamplesDiffuse', 'int', 0, 'Diffuse extra samples', description='Number of extra samples to take when calculating indirect diffuse illumination.')
    ui.parameter('glossyIndirectStrength', 'float', 0.0, 'Glossy indirect strength', description='Multiplier on the intensity of the indirect glossy illumination. The default value of 0 disables indirect illumination on the hair since in most cases you don\'t need it and it can be quite expensive.')
