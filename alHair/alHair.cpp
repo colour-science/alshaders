@@ -1213,9 +1213,9 @@ struct HairBsdf
                 // calculate result
                 const float p = HairGlossyPdf(this, &wi_ray.dir);
                 const AtRGB f_R = Hair_Bsdf_R(this, &wi_ray.dir) / p;
-                const AtRGB f_TT = Hair_Bsdf_R(this, &wi_ray.dir) / p;
-                const AtRGB f_TRT = Hair_Bsdf_R(this, &wi_ray.dir) / p;
-                const AtRGB f_TRTg = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                const AtRGB f_TT = Hair_Bsdf_TT(this, &wi_ray.dir) / p;
+                const AtRGB f_TRT = Hair_Bsdf_TRT(this, &wi_ray.dir) / p;
+                const AtRGB f_TRTg = Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
                 result_R_indirect += scrs.color * (f_R + f_TT + f_TRT + f_TRTg) * AI_ONEOVERPI;
 
                 if (deepGroupPtr && hit)
@@ -1315,9 +1315,9 @@ struct HairBsdf
                 // calculate result
                 const float p = HairGlossyPdf(this, &wi_ray.dir);
                 const AtRGB f_R = Hair_Bsdf_R(this, &wi_ray.dir) / p;
-                const AtRGB f_TT = Hair_Bsdf_R(this, &wi_ray.dir) / p;
-                const AtRGB f_TRT = Hair_Bsdf_R(this, &wi_ray.dir) / p;
-                const AtRGB f_TRTg = Hair_Bsdf_R(this, &wi_ray.dir) / p;
+                const AtRGB f_TT = Hair_Bsdf_TT(this, &wi_ray.dir) / p;
+                const AtRGB f_TRT = Hair_Bsdf_TRT(this, &wi_ray.dir) / p;
+                const AtRGB f_TRTg = Hair_Bsdf_TRTg(this, &wi_ray.dir) / p;
                 result_R_indirect += scrs.color * (f_R + f_TT + f_TRT + f_TRTg) * AI_ONEOVERPI;
                 //result_TT_indirect += scrs.color * f_TT;
                 //result_TRT_indirect += scrs.color * f_TRT;
