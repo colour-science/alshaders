@@ -56,6 +56,9 @@ enum alLayerParams
    p_aov_id_6,
    p_aov_id_7,
    p_aov_id_8,
+   p_aov_crypto_asset,
+   p_aov_crypto_object,
+   p_aov_crypto_material,
    p_aov_shadow_group_1,
    p_aov_shadow_group_2,
    p_aov_shadow_group_3,
@@ -123,6 +126,9 @@ node_parameters
    AiParameterStr("aov_id_6", "id_6");
    AiParameterStr("aov_id_7", "id_7");
    AiParameterStr("aov_id_8", "id_8");
+   AiParameterStr("aov_crypto_asset", "crypto_asset");
+   AiParameterStr("aov_crypto_object", "crypto_object");
+   AiParameterStr("aov_crypto_material", "crypto_material");
    AiParameterStr("aov_shadow_group_1", "shadow_group_1");
    AiParameterStr("aov_shadow_group_2", "shadow_group_2");
    AiParameterStr("aov_shadow_group_3", "shadow_group_3");

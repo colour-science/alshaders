@@ -71,6 +71,7 @@ message("Katana Args will be installed to: \n\t${ARGS_INSTALL_DIR}")
 
 # Include common files
 include_directories(common)
+include_directories(${CMAKE_SOURCE_DIR})
 
 # Set the list of subdirectories to recurse into to find stuff to build
 set(SUBDIRECTORIES 
@@ -91,7 +92,7 @@ set(SUBDIRECTORIES
         alCache
         alCel
         alFlake
-        #alWriteIds
+        cryptomatte
         common
 )
 

@@ -169,6 +169,9 @@ with uigen.group(ui, 'IDs', description='Whatever you plug in or set in the ID p
 # end IDs
 
 with uigen.group(ui, 'AOVs', description='Use these parameters to change the name of the AOVs that the shader writes'):
+   ui.parameter('crypto_asset_override', 'string', '', 'Crypto asset override', description='Overide the cryptomatte asset string for this shader')
+   ui.parameter('crypto_object_override', 'string', '', 'Crypto object override', description='Overide the cryptomatte object string for this shader')
+   ui.parameter('crypto_material_override', 'string', '', 'Crypto material override', description='Overide the cryptomatte material string for this shader')
    ui.parameter('standardCompatibleAOVs', 'bool', False, 'Write standard AOVs only', description='Enable this to combine the AOVs into only the set that the standard shader outputs.')
    ui.parameter('transmitAovs', 'bool', False, 'Transmit AOVs', description='When enabled on all surfaces in the scene, this will pull the AOVs through transmissive objects, so glass objects etc. will get the diffuse AOV of the objects they refract.')
    ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color', description='Set the name of the AOV that contains the final diffuse color of the surface.')
@@ -227,6 +230,9 @@ with uigen.group(ui, 'AOVs', description='Use these parameters to change the nam
    ui.aov('aov_id_6', 'rgb', 'ID [6]', description='Set the name of the AOV that contains ID 6.')
    ui.aov('aov_id_7', 'rgb', 'ID [7]', description='Set the name of the AOV that contains ID 7.')
    ui.aov('aov_id_8', 'rgb', 'ID [8]', description='Set the name of the AOV that contains ID 8.')
+   ui.aov('aov_crypto_asset', 'rgb', 'Crypto Asset', description='Set the name of the cryptomatte asset AOV')
+   ui.aov('aov_crypto_object', 'rgb', 'Crypto Object', description='Set the name of the cryptomatte object AOV')
+   ui.aov('aov_crypto_material', 'rgb', 'Crypto Material', description='Set the name of the cryptomatte material AOV')
    ui.aov('aov_shadow_group_1', 'rgba', 'Shadow group [1]', description='Set the name of the AOV that contains the shadowing contribution from light group 1.')
    ui.aov('aov_shadow_group_2', 'rgba', 'Shadow group [2]', description='Set the name of the AOV that contains the shadowing contribution from light group 2.')
    ui.aov('aov_shadow_group_3', 'rgba', 'Shadow group [3]', description='Set the name of the AOV that contains the shadowing contribution from light group 3.')

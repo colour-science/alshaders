@@ -13,6 +13,7 @@
 #include "fresnel.h"
 #include "microfacet.h"
 #include "sss.h"
+#include "cryptomatte/cryptomatte.h"
 
 #define RR_BOUNCES
 
@@ -199,6 +200,9 @@ enum alSurfaceParams
    p_aov_id_6,
    p_aov_id_7,
    p_aov_id_8,
+   p_aov_crypto_asset,
+   p_aov_crypto_object,
+   p_aov_crypto_material,
 
    p_aov_shadow_group_1,
    p_aov_shadow_group_2,
@@ -250,6 +254,10 @@ enum alSurfaceParams
    p_aov_light_group_6_clamp,
    p_aov_light_group_7_clamp,
    p_aov_light_group_8_clamp,
+
+   p_crypto_asset_override,
+   p_crypto_object_override,
+   p_crypto_material_override,
 
    p_bump
 };
@@ -439,6 +447,9 @@ node_parameters
    AiParameterStr("aov_id_6", "id_6");
    AiParameterStr("aov_id_7", "id_7");
    AiParameterStr("aov_id_8", "id_8");
+   AiParameterStr("aov_crypto_asset", "crypto_asset");
+   AiParameterStr("aov_crypto_object", "crypto_object");
+   AiParameterStr("aov_crypto_material", "crypto_material");
    AiParameterStr("aov_shadow_group_1", "shadow_group_1");
    AiParameterStr("aov_shadow_group_2", "shadow_group_2");
    AiParameterStr("aov_shadow_group_3", "shadow_group_3");
@@ -490,6 +501,10 @@ node_parameters
    AiParameterFlt("aov_light_group_6_clamp", 0.0f);
    AiParameterFlt("aov_light_group_7_clamp", 0.0f);
    AiParameterFlt("aov_light_group_8_clamp", 0.0f);
+
+   AiParameterStr("crypto_asset_override", "");
+   AiParameterStr("crypto_object_override", "");
+   AiParameterStr("crypto_material_override", "");
 }
 
 #ifdef MSVC
@@ -522,6 +537,10 @@ node_initialize
    data->perm_table_spec2 = NULL;
    data->perm_table_backlight = NULL;
    data->perm_table_sss = NULL;
+   data->aovarr_crypto_asset = AiArrayAllocate(99, 1, AI_TYPE_STRING);
+   data->aovarr_crypto_object = AiArrayAllocate(99, 1, AI_TYPE_STRING);
+   data->aovarr_crypto_material = AiArrayAllocate(99, 1, AI_TYPE_STRING);
+   AiCritSecInit(&data->crypto_cs);
 };
 
 node_finish
@@ -542,6 +561,8 @@ node_finish
       delete[] data -> perm_table_spec2;
       delete[] data -> perm_table_backlight;
       delete[] data -> perm_table_sss;
+
+      AiCritSecClose(&data->crypto_cs);
 
       AiNodeSetLocalData(node, NULL);
       delete data;
@@ -972,6 +993,13 @@ node_update
    data->aov_light_group_clamp[7] = params[p_aov_light_group_8_clamp].FLT;
    if (data->aov_light_group_clamp[7] == 0.0f)
       data->aov_light_group_clamp[7] = AI_INFINITE;
+
+   data->crypto_asset_override = params[p_crypto_asset_override].STR;
+   data->crypto_object_override = params[p_crypto_object_override].STR;
+   data->crypto_material_override = params[p_crypto_material_override].STR;
+   AiCritSecEnter(&data->crypto_cs);
+	create_cryptomatte_aovs_filters_and_outputs(data->aovs[k_aov_crypto_asset], data->aovs[k_aov_crypto_object], data->aovs[k_aov_crypto_material], data->aovarr_crypto_asset, data->aovarr_crypto_object, data->aovarr_crypto_material);
+   AiCritSecLeave(&data->crypto_cs);
 
    // caustic flags
    data->specular1CausticPaths = params[p_specular1CausticPaths].BOOL;
@@ -3335,6 +3363,44 @@ shader_evaluate
             }
          }
 
+         // Cryptomatte
+         bool aov_ca_en = AiAOVEnabled(data->aovs[k_aov_crypto_asset].c_str(), AI_TYPE_RGB);
+         bool aov_co_en = AiAOVEnabled(data->aovs[k_aov_crypto_object].c_str(), AI_TYPE_RGB);
+         bool aov_cm_en = AiAOVEnabled(data->aovs[k_aov_crypto_material].c_str(), AI_TYPE_RGB);
+         if (aov_ca_en || aov_co_en || aov_cm_en)
+         {
+            AtRGB mdl_hash_clr;
+            AtRGB obj_hash_clr;
+            AtRGB mat_hash_clr;
+            //hash_object_rgb(sg, true [>stip mat ns<], &mdl_hash_clr, &obj_hash_clr, &mat_hash_clr, data->crypto_asset_override.c_str(), data->crypto_object_override.c_str(), data->crypto_material_override.c_str());
+            hash_object_rgb(sg, true /*stip mat ns*/, &mdl_hash_clr, &obj_hash_clr, &mat_hash_clr, "", "", "");
+
+            if (aov_ca_en) {
+               write_array_of_AOVs(sg, data->aovarr_crypto_asset, &mdl_hash_clr);
+            }
+            if (aov_co_en) {
+               write_array_of_AOVs(sg, data->aovarr_crypto_object, &obj_hash_clr);
+            }
+            if (aov_cm_en) {
+               write_array_of_AOVs(sg, data->aovarr_crypto_material, &mat_hash_clr);
+            }
+
+            //mdl_hash_clr.r /= 8.0f;
+            //obj_hash_clr.r /= 8.0f;
+            //mat_hash_clr.r /= 8.0f;
+
+            //AiAOVSetRGBA(sg, data->am_data->aov_autoasset.c_str(), AiRGBtoRGBA( mdl_hash_clr ));		
+            //AiAOVSetRGBA(sg, data->am_data->aov_autoobject.c_str(), AiRGBtoRGBA( obj_hash_clr ));
+            //AiAOVSetRGBA(sg, data->am_data->aov_automaterial.c_str(), AiRGBtoRGBA( mat_hash_clr ));
+            
+            mdl_hash_clr.r = 0.0f;
+            obj_hash_clr.r = 0.0f;
+            mat_hash_clr.r = 0.0f;
+
+            AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_asset].c_str(), AiRGBtoRGBA(mdl_hash_clr));		
+            AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_object].c_str(), AiRGBtoRGBA(obj_hash_clr));
+            AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_material].c_str(), AiRGBtoRGBA(mat_hash_clr));
+         }
          // write data AOVs
          AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
          AiAOVSetRGB(sg, data->aovs[k_uv].c_str(), uv);

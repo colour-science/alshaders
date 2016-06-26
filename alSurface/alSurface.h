@@ -140,6 +140,14 @@ struct ShaderData
     bool transmissionCausticPaths;
     bool specular1CausticPaths;
     bool specular2CausticPaths;
+
+    std::string crypto_asset_override;
+    std::string crypto_object_override;
+    std::string crypto_material_override;
+    AtArray* aovarr_crypto_asset;
+    AtArray* aovarr_crypto_object;
+    AtArray* aovarr_crypto_material;
+    AtCritSec crypto_cs;
 };
 
 #define RAND_STREAM_ALSURFACE_RR_PERMUTE 0

@@ -1,5 +1,5 @@
 set(SHADER alSurface)        
-set(SRC ${SHADER}.cpp sss.cpp ../common/alUtil.cpp ../common/Color.cpp ../common/fresnel.cpp)
+set(SRC ${SHADER}.cpp sss.cpp ../common/alUtil.cpp ../common/Color.cpp ../common/fresnel.cpp ../cryptomatte/MurmurHash3.cpp)
 set(UI ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.ui)
 set(MTD ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.mtd)
 set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)

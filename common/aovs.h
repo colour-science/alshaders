@@ -2,7 +2,7 @@
 // aovs.h
 
 #define NUM_LIGHT_GROUPS 8
-#define NUM_AOVs 33
+#define NUM_AOVs 36
 #define NUM_AOVs_RGBA 8
 
 #define REGISTER_AOVS \
@@ -40,6 +40,9 @@ data->aovs.push_back(params[p_aov_id_5].STR); \
 data->aovs.push_back(params[p_aov_id_6].STR); \
 data->aovs.push_back(params[p_aov_id_7].STR); \
 data->aovs.push_back(params[p_aov_id_8].STR); \
+data->aovs.push_back(params[p_aov_crypto_asset].STR); \
+data->aovs.push_back(params[p_aov_crypto_object].STR); \
+data->aovs.push_back(params[p_aov_crypto_material].STR); \
 assert(NUM_AOVs == data->aovs.size() && "NUM_AOVs does not match size of aovs array!"); \
 for (size_t i=0; i < data->aovs.size(); ++i) \
     	AiAOVRegister(data->aovs[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY); \
@@ -91,6 +94,9 @@ enum AovIndices
     k_id_6,
     k_id_7,
     k_id_8,
+    k_aov_crypto_asset,
+    k_aov_crypto_object,
+    k_aov_crypto_material
 };
 
 enum AovRGBIndices
