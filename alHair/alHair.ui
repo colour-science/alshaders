@@ -74,6 +74,9 @@ with uigen.group(ui, 'IDs', description='Whatever you plug in or set in the ID p
       ui.parameter('id%d'%i, 'rgb', (0.0, 0.0, 0.0), description='Color to be output in id_%d AOV.' % i, mayane=True)
 
 with uigen.group(ui, 'AOVs', description='Use these parameters to change the name of the AOVs that the shader writes'):
+   ui.parameter('crypto_asset_override', 'string', '', 'Crypto asset override', description='Overide the cryptomatte asset string for this shader')
+   ui.parameter('crypto_object_override', 'string', '', 'Crypto object override', description='Overide the cryptomatte object string for this shader')
+   ui.parameter('crypto_material_override', 'string', '', 'Crypto material override', description='Overide the cryptomatte material string for this shader')
    ui.aov('aov_diffuse_color', 'rgb', 'Diffuse color', description='Set the name of the AOV that contains the final color of the hair.')
    ui.aov('aov_direct_diffuse', 'rgb', 'Direct diffuse', description='Set the name of the AOV that contains the final direct diffuse illumination.')
    ui.aov('aov_indirect_diffuse', 'rgb', 'Indirect diffuse', description='Set the name of the AOV that contains the final indirect diffuse illumination.')
@@ -105,6 +108,9 @@ with uigen.group(ui, 'AOVs', description='Use these parameters to change the nam
    ui.aov('aov_id_6', 'rgb', 'ID [6]', description='Set the name of the AOV that contains ID 6.')
    ui.aov('aov_id_7', 'rgb', 'ID [7]', description='Set the name of the AOV that contains ID 7.')
    ui.aov('aov_id_8', 'rgb', 'ID [8]', description='Set the name of the AOV that contains ID 8.')
+   ui.aov('aov_crypto_asset', 'rgb', 'Crypto Asset', description='Set the name of the cryptomatte asset AOV')
+   ui.aov('aov_crypto_object', 'rgb', 'Crypto Object', description='Set the name of the cryptomatte object AOV')
+   ui.aov('aov_crypto_material', 'rgb', 'Crypto Material', description='Set the name of the cryptomatte material AOV')
 
 with uigen.group(ui, 'Advanced'):
    ui.parameter('dualDepth', 'int', 0, 'Brute force bounces', description='Number of brute-force, inter-hair bounces to calculate before falling back to dual scattering. THIS PARAMETER IS DEPRECATED AND WILL BE REMOVED IN A FUTURE RELEASE.')
