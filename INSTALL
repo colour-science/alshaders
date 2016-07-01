@@ -32,6 +32,10 @@ For Katana
 For HtoA
 - Copy the libraries and .mtd files in the 'bin' directory to HtoA/arnold/plugins or anywhere else in your ARNOLD_PLUGIN_PATH
 
+For Nuke 
+- Copy the contents of the nuke directory your your ~/.nuke directory.
+- NB: If you already have a ~/.nuke/init.py then copy-paste the contents of the included init.py into your own rather than replacing it
+
 SOURCE DISTRIBUTION
 -------------------
 This project uses CMake >= 2.8 to build. It has been tested on Mac OS X >=10.7, Windows 7 with MSVC++2010 and Centos6.5 with gcc4.2.1
