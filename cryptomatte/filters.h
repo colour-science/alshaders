@@ -28,20 +28,11 @@ static const char* filterEnumNames[] =
 
 
 float gaussian(AtPoint2 p, float width) {
-	/* matches Arnold's exactly. */
-		/* Sharpness=2 is good for width 2, sigma=1/sqrt(8) for the width=4,sharpness=4 case */
-	// const float sigma = 0.5f;
-	// const float sharpness = 1.0f / (2.0f * sigma * sigma);
-
 	p /= (width * 0.5f);
 	float dist_squared = (p.x * p.x + p.y * p.y) ;
 	if (dist_squared >  (1.0f)) {
 		return 0.0f;
 	}
-
-	// const float normalization_factor = 1;
-	// Float weight = normalization_factor * expf(-dist_squared * sharpness);
-
 	float weight = expf(-dist_squared * 2.0f); // was: 
 
 	if (weight > 0.0f) {
