@@ -17,7 +17,10 @@ enum CombineOpEnum
 	CO_ADD,
 	CO_DIVIDE,
 	CO_SUBTRACT,
-	CO_LERP
+	CO_LERP,
+   CO_DOT,
+   CO_DISTANCE,
+   CO_CROSS
 };
 
 static const char* combineOpNames[] =
@@ -27,6 +30,9 @@ static const char* combineOpNames[] =
 	"divide 1/2",
 	"subtract 1-2",
 	"lerp(1, 2, 3)",
+   "dot(1, 2)",
+   "distance(1 -> 2)",
+   "cross(1, 2)",
 	NULL
 };
 
@@ -68,6 +74,8 @@ shader_evaluate
 {
     AtRGB input1;
     AtRGB input2;
+    AtVector v1, v2, v;
+    float d;
 	float input3 = AiShaderEvalParamFlt(p_input3);
 	int combineOp = AiShaderEvalParamInt(p_combineOp);
 
@@ -105,6 +113,30 @@ shader_evaluate
             f = lerp(input1, input2, input3);
         }
 		break;
+   case CO_DOT:
+        input1 = AiShaderEvalParamRGB(p_input1);
+        input2 = AiShaderEvalParamRGB(p_input2);
+        v1 = aivec(input1.r, input1.g, input1.b);
+        v2 = aivec(input2.r, input2.g, input2.b);
+        d = AiV3Dot(v1, v2);
+        f = AiColor(d, d, d);
+        break;
+   case CO_DISTANCE:
+        input1 = AiShaderEvalParamRGB(p_input1);
+        input2 = AiShaderEvalParamRGB(p_input2);
+        v1 = aivec(input1.r, input1.g, input1.b);
+        v2 = aivec(input2.r, input2.g, input2.b);
+        d = AiV3Length(v2 - v1);
+        f = AiColor(d, d, d);
+        break;
+   case CO_CROSS:
+        input1 = AiShaderEvalParamRGB(p_input1);
+        input2 = AiShaderEvalParamRGB(p_input2);
+        v1 = aivec(input1.r, input1.g, input1.b);
+        v2 = aivec(input2.r, input2.g, input2.b);
+        v = AiV3Cross(v1, v2);
+        f = AiColor(v.x, v.y, v.z);
+        break;
 	default:
 		f = input1;
 		break;

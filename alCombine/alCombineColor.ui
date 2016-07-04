@@ -27,4 +27,7 @@ ui.parameter('combineOp', 'enum',  'multiply 1*2', 'Combine Op', enum_names=["mu
 	"add 1+2",
 	"divide 1/2",
 	"subtract 1-2",
-	"lerp(1, 2, 3)"], description='The operation to use to combine inputs 1 and 2.')
+   "lerp(1, 2, 3)"
+   "dot(1, 2)",
+   "distance(1 -> 2)",
+   "cross(1, 2)"], description='The operation to use to combine inputs 1 and 2.')
