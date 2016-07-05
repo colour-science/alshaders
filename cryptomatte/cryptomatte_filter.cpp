@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <vector>
 #include "filters.h"
+#include <cstring>
 
 
 ///////////////////////////////////////////////
