@@ -4,6 +4,8 @@
 #include <map>
 #include <ctime>
 #include "MurmurHash3.h"
+#include <cstdio>
+#include <limits>
 
 #define NOMINMAX // lets you keep using std::min
 
@@ -254,8 +256,8 @@ void hash_name_rgb(char * name, AtColor* out_color) {
     uint32_t m3hash = 0;
     MurmurHash3_x86_32(name, (uint32_t) strlen(name), 0, &m3hash);
     out_color->r = hash_to_float(m3hash);
-    out_color->g = ((float) ((m3hash << 8)) /  (float) UINT32_MAX);
-    out_color->b = ((float) ((m3hash << 16)) / (float) UINT32_MAX);
+    out_color->g = ((float) ((m3hash << 8)) /  (float) std::numeric_limits<uint32_t>::max());
+    out_color->b = ((float) ((m3hash << 16)) / (float) std::numeric_limits<uint32_t>::max());
 }
 
 const char* get_objects_shader_name(AtArray* shaders, AtUInt32 index = 0) {
