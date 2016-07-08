@@ -655,7 +655,7 @@ void create_cryptomatte_aovs_filters_and_outputs(AutomatteData * data) {
             ///////////////////////////////////////////////
 
             if (!AiNodeIs(driver, "driver_exr")) {
-                AiMsgError("Cryptomatte Error: Can only write Cryptomatte to EXR files.");
+                AiMsgWarning("Cryptomatte Error: Can only write Cryptomatte to EXR files.");
                 return;
             }
 
@@ -853,7 +853,7 @@ void create_cryptomatte_aovs_filters_and_outputs(const std::string& aov_cryptoas
             ///////////////////////////////////////////////
 
             if (!AiNodeIs(driver, "driver_exr")) {
-                AiMsgError("Cryptomatte Error: Can only write Cryptomatte to EXR files.");
+                AiMsgWarning("Cryptomatte Error: Can only write Cryptomatte to EXR files.");
                 return;
             }
 
