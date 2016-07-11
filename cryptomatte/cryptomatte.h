@@ -380,7 +380,8 @@ typedef std::map<std::string,float>             md_map_type ;
 typedef std::map<std::string,float>::iterator   md_map_iterator_type;
 
 
-void write_metadata(AtNode * driver, std::string cryptomatte_name, md_map_type * map) {   
+
+void write_metadata(AtNode * driver, std::string cryptomatte_name, md_map_type * map, int preferred_num) {   
     AtArray * orig_md = AiNodeGetArray( driver, "custom_attributes");
     const AtUInt32 orig_num_entries = orig_md == NULL ? 0 : orig_md->nelements;
 
@@ -391,12 +392,11 @@ void write_metadata(AtNode * driver, std::string cryptomatte_name, md_map_type *
 
     std::string prefix("STRING cryptomatte/");
     bool prefix_legal = false; // prefix is legal if it's not already used. For instance, "STRING cryptomatte/0/"
-    int prefix_num = 0;
+    int prefix_num = preferred_num;
     char prefix_num_c[32];
     while (!prefix_legal) {
         sprintf(prefix_num_c, "%d", prefix_num);
         std::string prefix_candidate = prefix + std::string(prefix_num_c) + std::string("/");
-        prefix_num++;
         prefix_legal = true; // assume innocence,
         for (AtUInt32 i=0; i<orig_num_entries; i++) {
             std::string entry(AiArrayGetStr(orig_md, i));
@@ -406,6 +406,8 @@ void write_metadata(AtNode * driver, std::string cryptomatte_name, md_map_type *
         }
         if (prefix_legal)
             prefix = prefix_candidate;
+        else
+            prefix_num = std::max(prefix_num + 1, 3); // skip to 3, so that asset, material and object are always 0, 1, 2
     }
 
     metadata_hash = prefix + std::string("hash MurmurHash3_32");
@@ -562,9 +564,9 @@ void build_and_write_metadata(AtNode* driver_asset, AtNode* driver_object, AtNod
     }
     AiNodeIteratorDestroy(shader_iterator);
 
-    write_metadata(driver_asset, aov_asset, &map_md_asset);
-    write_metadata(driver_object, aov_object, &map_md_object);
-    write_metadata(driver_material, aov_material, &map_md_material);
+    write_metadata(driver_object, aov_object, &map_md_object, 0);
+    write_metadata(driver_material, aov_material, &map_md_material, 1);
+    write_metadata(driver_asset, aov_asset, &map_md_asset, 2);
 
     AiMsgInfo("Cryptomatte manifest created - %f seconds", (float( clock () - metadata_start_time ) /  CLOCKS_PER_SEC));
 }
