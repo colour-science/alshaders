@@ -605,15 +605,18 @@ void create_cryptomatte_aovs_filters_and_outputs(AutomatteData * data) {
         memset(temp_string, 0, sizeof(temp_string));
         strncpy(temp_string, output_string, output_string_chars);
 
-        char * aov_name;
-        char * aov_type_name;
-        char * filter_name;
-        char * driver_name;
-
-        aov_name = strtok (temp_string," "); 
-        aov_type_name = strtok (NULL," "); 
-        filter_name = strtok (NULL," "); 
-        driver_name = strtok (NULL," "); 
+        char *c0, *c1, *c2, *c3, *c4;        
+        c0 = strtok (temp_string," ");
+        c1 = strtok (NULL," ");
+        c2 = strtok (NULL," ");
+        c3 = strtok (NULL," ");
+        c4 = strtok (NULL," ");   
+        
+        bool short_output = (c4 == NULL);
+        char * aov_name =      short_output ? c0 : c1;
+        char * aov_type_name = short_output ? c1 : c2;
+        char * filter_name =   short_output ? c2 : c3;
+        char * driver_name =   short_output ? c3 : c4;
 
         size_t aov_len = strlen(aov_name);
 
@@ -803,15 +806,18 @@ void create_cryptomatte_aovs_filters_and_outputs(const std::string& aov_cryptoas
         memset(temp_string, 0, sizeof(temp_string));
         strncpy(temp_string, output_string, output_string_chars);
 
-        char * aov_name;
-        char * aov_type_name;
-        char * filter_name;
-        char * driver_name;
-
-        aov_name = strtok (temp_string," "); 
-        aov_type_name = strtok (NULL," "); 
-        filter_name = strtok (NULL," "); 
-        driver_name = strtok (NULL," "); 
+        char *c0, *c1, *c2, *c3, *c4;        
+        c0 = strtok (temp_string," ");
+        c1 = strtok (NULL," ");
+        c2 = strtok (NULL," ");
+        c3 = strtok (NULL," ");
+        c4 = strtok (NULL," ");   
+        
+        bool short_output = (c4 == NULL);
+        char * aov_name =      short_output ? c0 : c1;
+        char * aov_type_name = short_output ? c1 : c2;
+        char * filter_name =   short_output ? c2 : c3;
+        char * driver_name =   short_output ? c3 : c4;
 
         size_t aov_len = strlen(aov_name);
 
