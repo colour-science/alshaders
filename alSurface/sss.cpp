@@ -131,7 +131,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     DiffusionSample& samp = dmd->samples[dmd->sss_depth];
     samp.S = sg->P - dmd->Po;
     samp.r = AiV3Length(samp.S);
-    dmd->maxdist -= samp.r;
+    dmd->maxdist -= sg->Rl;
     samp.Rd = AI_RGB_BLACK;
 
     // if we're not using trace sets to explicitly define what objects we want to trace against, then assume we only want to trace against ourselves
