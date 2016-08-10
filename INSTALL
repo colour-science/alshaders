@@ -34,7 +34,7 @@ For HtoA
 
 For Nuke 
 - Copy the contents of the nuke directory your your ~/.nuke directory.
-- NB: If you already have a ~/.nuke/init.py then copy-paste the contents of the included init.py into your own rather than replacing it
+- NB: If you already have a ~/.nuke/init.py or menu.py then copy-paste the contents of the included init.py and menu.py into your own rather than replacing it
 
 SOURCE DISTRIBUTION
 -------------------
