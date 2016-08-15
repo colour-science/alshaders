@@ -77,7 +77,10 @@ node_update {
 }
 
 filter_output_type {
-	return AI_TYPE_RGBA;
+	if (input_type == AI_TYPE_VECTOR)
+		return AI_TYPE_RGBA;
+	else
+		return AI_TYPE_NONE;
 }
 
 
@@ -123,8 +126,6 @@ filter_pixel {
 	AtNode * camera = AiUniverseGetCamera();
 	float camera_far_clip = AiNodeGetFlt(camera, "far_clip");
 	
-	AtRGBA val = AI_RGBA_BLACK;
-
 	float (*filter)(AtPoint2, float);
 
 
@@ -197,7 +198,6 @@ filter_pixel {
 	float total_weight = 0.0f;
 	float sample_weight;
 	AtPoint2 offset;
-	AtRGBA color;
 
 	///////////////////////////////////////////////
 	//
@@ -239,15 +239,18 @@ filter_pixel {
 		float z = 0.0f;
 		bool traced_bg = false;
 
-		color = AiAOVSampleIteratorGetRGBA(iterator);
+		AtVector sample_value = AiAOVSampleIteratorGetVec(iterator);
 		while (AiAOVSampleIteratorGetNextDepth(iterator)) {
+			// sample.x is the ID
+			// sample.y is unused
+			// sample.z is the opacity
+
 			if (depth_counter > 0)
-				color = AiAOVSampleIteratorGetRGBA(iterator);
+				sample_value = AiAOVSampleIteratorGetVec(iterator);
 			depth_counter++;
 			z = AiAOVSampleIteratorGetAOVFlt(iterator, "Z");
 
-			float sub_sample_opacity = color.b;
-			color.b = 0.0f;
+			float sub_sample_opacity = sample_value.z;
 
 			// so if our sample is 80% opaque, and iterative transparency indicates that 10% opacity is left over, we'll get 8% of that sample. 
 			float sub_sample_weight = sub_sample_opacity * iterative_transparency_weight * sample_weight;  
@@ -255,7 +258,7 @@ filter_pixel {
 
 			quota -= sub_sample_weight;
 			total_weight += sub_sample_weight;
-			write_to_samples_map(&vals, color.r, sub_sample_weight);
+			write_to_samples_map(&vals, sample_value.x, sub_sample_weight);
 
 			traced_bg = traced_bg || (z == camera_far_clip);
 
@@ -266,25 +269,26 @@ filter_pixel {
 			}
 		}
 		
-		AtRGBA exhaustion_color = AI_RGBA_BLACK;
+		if (quota > 0.0) {
+			float exhaustion_ID;
+			if (traced_bg) {
+				// died with weight left for a good reason (hit the BG)
+				exhaustion_ID = 0.0;
+			} else if (depth_counter >= auto_transparency_depth) {
+				// died with weight left for a good reason (ran out of transparency depth)
+				exhaustion_ID = sample_value.x;
+			} else if (depth_counter == 0) {
+				// this happens with volume shaders, for some reason. 
+				exhaustion_ID = sample_value.x;
+			} else {
+				// died with weight left for no good reason
+				exhaustion_ID = 0.0;
+			}
 
-		if (traced_bg) {
-			// died with weight left for a good reason (hit the BG)
-			exhaustion_color = AI_RGBA_BLACK;
-		} else if (depth_counter >= auto_transparency_depth) {
-			// died with weight left for a good reason (ran out of transparency depth)
-			exhaustion_color = color;
-		} else if (depth_counter == 0) {
-			// this happens with volume shaders, for some reason. 
-			exhaustion_color = color;
-		} else {
-			// died with weight left for no good reason
-			exhaustion_color = AI_RGBA_BLACK;
+			total_weight += quota;
+
+			write_to_samples_map(&vals, exhaustion_ID, quota);
 		}
-
-		total_weight += quota;
-
-		write_to_samples_map(&vals, exhaustion_color.r, quota);
     }
 
 
@@ -300,8 +304,8 @@ filter_pixel {
 
 	sw_map_iterator_type vals_iter;
 	
-	std::vector<std::pair<float, float> > all_vals;
-	std::vector<std::pair<float, float> >::iterator all_vals_iter;
+	std::vector<std::pair<float, float>> all_vals;
+	std::vector<std::pair<float, float>>::iterator all_vals_iter;
 
 	for (vals_iter = vals.begin(); vals_iter != vals.end(); ++vals_iter) {
 		all_vals.push_back(*vals_iter);

@@ -1542,13 +1542,13 @@ struct HairBsdf
                hash_object_rgb(sg, true /*stip mat ns*/, &mdl_hash_clr, &obj_hash_clr, &mat_hash_clr, "", "", "");
 
                if (aov_ca_en) {
-                  write_array_of_AOVs(sg, data->aovarr_crypto_asset, &mdl_hash_clr);
+                  write_array_of_AOVs(sg, data->aovarr_crypto_asset, mdl_hash_clr.r);
                }
                if (aov_co_en) {
-                  write_array_of_AOVs(sg, data->aovarr_crypto_object, &obj_hash_clr);
+                  write_array_of_AOVs(sg, data->aovarr_crypto_object, obj_hash_clr.r);
                }
                if (aov_cm_en) {
-                  write_array_of_AOVs(sg, data->aovarr_crypto_material, &mat_hash_clr);
+                  write_array_of_AOVs(sg, data->aovarr_crypto_material, mat_hash_clr.r);
                }
 
                mdl_hash_clr.r = 0.0f;
