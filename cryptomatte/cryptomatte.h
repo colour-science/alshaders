@@ -41,17 +41,6 @@ const int MAX_CRYPTOMATTE_DEPTH = 99;
 unsigned char g_pointcloud_instance_verbosity = 0;
 
 
-// UINT64 djb2_hash(char *name) {
-//     UINT32 len = strlen(name);
-//     UINT64 hash = 5381;
-//     for (UINT32 i=0; i<len; i++)
-//         hash = (hash << 5) + hash + ((unsigned char) name[i]);
-//     for (UINT32 i=0; i<16; i++)
-//         hash = (hash << 5) + hash;
-//     return hash ;
-// }
-
-
 bool sitoa_pointcloud_instance_handling(const char *obj_full_name, char *obj_name_out) {
     if (g_pointcloud_instance_verbosity == 0 || strstr(obj_full_name, ".SItoA.Instance.") == NULL)  {
         return false;
@@ -309,17 +298,20 @@ void hash_object_rgb(AtShaderGlobals* sg, bool strip_mat_ns,
 
 
 
-void write_array_of_AOVs(AtShaderGlobals * sg, AtArray * names, AtColor *color) {
+void write_array_of_AOVs(AtShaderGlobals * sg, AtArray * names, float id) {
+    AtVector val;
+    val.x = id; 
+    val.y = 0.0f;
+    val.z = AiColorToGrey(sg->out_opacity);
+
     for (AtUInt32 i=0; i < names->nelements; i++) {
         const char * aovName = AiArrayGetStr( names, i);
         if (aovName == NULL) {
             return;
         }
-        AtRGBA aovColor = AiRGBtoRGBA( *color );
-        aovColor.b = AiColorToGrey(sg->out_opacity);
 
         if (strlen(aovName) > 0) {
-            AiAOVSetRGBA(sg, aovName, aovColor);
+            AiAOVSetVec(sg, aovName, val);
         } else {
             return;
         }
@@ -736,7 +728,7 @@ void create_cryptomatte_aovs_filters_and_outputs(const std::string& aov_cryptoas
                     AiNodeSetFlt(filter, "width", aFilter_width);
                     AiNodeSetStr(filter, "mode", "double_rgba");
 
-                    AiAOVRegister(aov_rank_name, AI_TYPE_RGB, AI_AOV_BLEND_NONE);
+                    AiAOVRegister(aov_rank_name, AI_TYPE_VECTOR, AI_AOV_BLEND_NONE);
 
                     // Add an output to the render globals, or make a list of outputs to add, and register an AOV
                     char new_output_string[MAX_STRING_LENGTH * 8];
@@ -744,7 +736,7 @@ void create_cryptomatte_aovs_filters_and_outputs(const std::string& aov_cryptoas
 
                     strcat(new_output_string, aov_rank_name );
                     strcat(new_output_string, " " );
-                    strcat(new_output_string, "RGBA" );
+                    strcat(new_output_string, "VECTOR" );
                     strcat(new_output_string, " " );
                     strcat(new_output_string, filter_rank_name );
                     strcat(new_output_string, " " );
