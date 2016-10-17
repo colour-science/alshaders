@@ -14,6 +14,7 @@ struct ShaderData
    std::vector<std::string> aovs;
    std::vector<std::string> aovs_rgba;
    bool standardAovs;
+   CryptomatteData* cryptomatte;
 };
 
 enum alLayerParams
@@ -159,6 +160,7 @@ node_loader
 node_initialize
 {
    ShaderData* data = new ShaderData;
+   data->cryptomatte = new CryptomatteData();
    AiNodeSetLocalData(node, data);
 }
 
@@ -167,6 +169,8 @@ node_finish
    if (AiNodeGetLocalData(node))
    {
       ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
+      if (data->cryptomatte)
+         delete data->cryptomatte;
       AiNodeSetLocalData(node, NULL);
       delete data;
    }
@@ -178,8 +182,9 @@ node_update
 
    // set up AOVs
    REGISTER_AOVS
-
    data->standardAovs = params[p_standardAovs].BOOL;
+   data->cryptomatte->setup_all(AiNodeGetStr(node, "aov_crypto_asset"), 
+      AiNodeGetStr(node, "aov_crypto_object"), AiNodeGetStr(node, "aov_crypto_material"));
 }
 
 shader_evaluate
@@ -307,4 +312,6 @@ shader_evaluate
 
    sg->out.RGB = result;
    sg->out_opacity = result_opacity;
+
+   data->cryptomatte->do_cryptomattes(sg, node, -1, -1, -1);
 }
