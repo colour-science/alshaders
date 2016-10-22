@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include "cryptomatte/cryptomatte.h"
 
 #include "aovs.h"
 
