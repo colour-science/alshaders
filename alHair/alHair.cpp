@@ -147,10 +147,7 @@ enum AovIndices
     k_id_5,
     k_id_6,
     k_id_7,
-    k_id_8,
-    k_aov_crypto_asset,
-    k_aov_crypto_object,
-    k_aov_crypto_material
+    k_id_8
 };
 
 #define NUM_ID_AOVS 8
@@ -261,12 +258,12 @@ node_parameters
     AiParameterStr("aov_id_6", "id_6");
     AiParameterStr("aov_id_7", "id_7");
     AiParameterStr("aov_id_8", "id_8");
-   AiParameterStr("crypto_asset_override", "");
-   AiParameterStr("crypto_object_override", "");
-   AiParameterStr("crypto_material_override", "");
-   AiParameterStr("aov_crypto_asset", "crypto_asset");
-   AiParameterStr("aov_crypto_object", "crypto_object");
-   AiParameterStr("aov_crypto_material", "crypto_material");
+    AiParameterStr("crypto_asset_override", "");
+    AiParameterStr("crypto_object_override", "");
+    AiParameterStr("crypto_material_override", "");
+    AiParameterStr("aov_crypto_asset", "crypto_asset");
+    AiParameterStr("aov_crypto_object", "crypto_object");
+    AiParameterStr("aov_crypto_material", "crypto_material");
 }
 
 #define B_WIDTH_SCALE 2.0f
@@ -382,20 +379,9 @@ struct HairBsdf
             aovs.push_back(params[p_aov_id_5].STR); 
             aovs.push_back(params[p_aov_id_6].STR); 
             aovs.push_back(params[p_aov_id_7].STR); 
-            aovs.push_back(params[p_aov_id_8].STR); 
-            aovs.push_back(params[p_aov_crypto_asset].STR);
-            aovs.push_back(params[p_aov_crypto_object].STR);
-            aovs.push_back(params[p_aov_crypto_material].STR);
+            aovs.push_back(params[p_aov_id_8].STR);
             for (size_t i=0; i < aovs.size(); ++i)
                 AiAOVRegister(aovs[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-
-            crypto_asset_override = params[p_crypto_asset_override].STR;
-            crypto_object_override = params[p_crypto_object_override].STR;
-            crypto_material_override = params[p_crypto_material_override].STR;
-
-            AiCritSecEnter(&crypto_cs);
-	         create_cryptomatte_aovs_filters_and_outputs(aovs[k_aov_crypto_asset], aovs[k_aov_crypto_object], aovs[k_aov_crypto_material], aovarr_crypto_asset, aovarr_crypto_object, aovarr_crypto_material);
-            AiCritSecLeave(&crypto_cs);
 
             delete ds;
             ds = new DualScattering;
@@ -473,14 +459,8 @@ struct HairBsdf
         std::map<AtNode*, int> lightGroups;
 
         std::string uparam, vparam;
-        std::string crypto_asset_override;
-        std::string crypto_object_override;
-        std::string crypto_material_override;
-        AtArray* aovarr_crypto_asset;
-        AtArray* aovarr_crypto_object;
-        AtArray* aovarr_crypto_material;
 
-        AtCritSec crypto_cs;
+        CryptomatteData* cryptomatte;
     };
 
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
@@ -1530,36 +1510,7 @@ struct HairBsdf
                 AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), deepGroupPtr[i]);
             }
             
-            // Cryptomatte
-            bool aov_ca_en = AiAOVEnabled(data->aovs[k_aov_crypto_asset].c_str(), AI_TYPE_RGB);
-            bool aov_co_en = AiAOVEnabled(data->aovs[k_aov_crypto_object].c_str(), AI_TYPE_RGB);
-            bool aov_cm_en = AiAOVEnabled(data->aovs[k_aov_crypto_material].c_str(), AI_TYPE_RGB);
-            if (aov_ca_en || aov_co_en || aov_cm_en)
-            {
-               AtRGB mdl_hash_clr;
-               AtRGB obj_hash_clr;
-               AtRGB mat_hash_clr;
-               hash_object_rgb(sg, true /*stip mat ns*/, &mdl_hash_clr, &obj_hash_clr, &mat_hash_clr, "", "", "");
-
-               if (aov_ca_en) {
-                  write_array_of_AOVs(sg, data->aovarr_crypto_asset, mdl_hash_clr.r);
-               }
-               if (aov_co_en) {
-                  write_array_of_AOVs(sg, data->aovarr_crypto_object, obj_hash_clr.r);
-               }
-               if (aov_cm_en) {
-                  write_array_of_AOVs(sg, data->aovarr_crypto_material, mat_hash_clr.r);
-               }
-
-               mdl_hash_clr.r = 0.0f;
-               obj_hash_clr.r = 0.0f;
-               mat_hash_clr.r = 0.0f;
-
-               AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_asset].c_str(), AiRGBtoRGBA(mdl_hash_clr));		
-               AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_object].c_str(), AiRGBtoRGBA(obj_hash_clr));
-               AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_material].c_str(), AiRGBtoRGBA(mat_hash_clr));
-            }
-
+            data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, p_crypto_object_override, p_crypto_material_override);
         }
 
         sg->out.RGB =   result_R_direct +
@@ -1715,10 +1666,7 @@ node_loader
 node_initialize
 {
     HairBsdf::ShaderData* data = new HairBsdf::ShaderData;
-    AiCritSecInit(&data->crypto_cs);
-    data->aovarr_crypto_asset = AiArrayAllocate(99, 1, AI_TYPE_STRING);
-    data->aovarr_crypto_object = AiArrayAllocate(99, 1, AI_TYPE_STRING);
-    data->aovarr_crypto_material = AiArrayAllocate(99, 1, AI_TYPE_STRING);
+    data->cryptomatte = new CryptomatteData();
     AiNodeSetLocalData(node, data);
 }
 
@@ -1727,7 +1675,8 @@ node_finish
     if (AiNodeGetLocalData(node))
     {
         HairBsdf::ShaderData* data = (HairBsdf::ShaderData*)AiNodeGetLocalData(node);
-        AiCritSecClose(&data->crypto_cs);
+        if (data->cryptomatte)
+            delete data->cryptomatte;
         delete data;
     }
 }
@@ -1766,6 +1715,8 @@ node_update
     AiAOVRegister("light_group_7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("light_group_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 
+    data->cryptomatte->setup_all(AiNodeGetStr(node, "aov_crypto_asset"), 
+        AiNodeGetStr(node, "aov_crypto_object"), AiNodeGetStr(node, "aov_crypto_material"));
     // Get all the light nodes in the scene and try and find their light group parameter
     // we'll store this based on the light pointer for fast access during rendering
     AtNodeIterator* it = AiUniverseGetNodeIterator(AI_NODE_LIGHT);

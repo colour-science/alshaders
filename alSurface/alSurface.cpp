@@ -13,7 +13,6 @@
 #include "fresnel.h"
 #include "microfacet.h"
 #include "sss.h"
-#include "cryptomatte/cryptomatte.h"
 
 #define RR_BOUNCES
 
@@ -537,10 +536,8 @@ node_initialize
    data->perm_table_spec2 = NULL;
    data->perm_table_backlight = NULL;
    data->perm_table_sss = NULL;
-   data->aovarr_crypto_asset = AiArrayAllocate(99, 1, AI_TYPE_STRING);
-   data->aovarr_crypto_object = AiArrayAllocate(99, 1, AI_TYPE_STRING);
-   data->aovarr_crypto_material = AiArrayAllocate(99, 1, AI_TYPE_STRING);
-   AiCritSecInit(&data->crypto_cs);
+
+   data->cryptomatte = new CryptomatteData();
 };
 
 node_finish
@@ -562,7 +559,8 @@ node_finish
       delete[] data -> perm_table_backlight;
       delete[] data -> perm_table_sss;
 
-      AiCritSecClose(&data->crypto_cs);
+      if (data->cryptomatte)
+         delete data->cryptomatte;
 
       AiNodeSetLocalData(node, NULL);
       delete data;
@@ -994,12 +992,8 @@ node_update
    if (data->aov_light_group_clamp[7] == 0.0f)
       data->aov_light_group_clamp[7] = AI_INFINITE;
 
-   data->crypto_asset_override = params[p_crypto_asset_override].STR;
-   data->crypto_object_override = params[p_crypto_object_override].STR;
-   data->crypto_material_override = params[p_crypto_material_override].STR;
-   AiCritSecEnter(&data->crypto_cs);
-	create_cryptomatte_aovs_filters_and_outputs(data->aovs[k_aov_crypto_asset], data->aovs[k_aov_crypto_object], data->aovs[k_aov_crypto_material], data->aovarr_crypto_asset, data->aovarr_crypto_object, data->aovarr_crypto_material);
-   AiCritSecLeave(&data->crypto_cs);
+   data->cryptomatte->setup_all(AiNodeGetStr(node, "aov_crypto_asset"), 
+      AiNodeGetStr(node, "aov_crypto_object"), AiNodeGetStr(node, "aov_crypto_material"));
 
    // caustic flags
    data->specular1CausticPaths = params[p_specular1CausticPaths].BOOL;
@@ -3364,35 +3358,8 @@ shader_evaluate
          }
 
          // Cryptomatte
-         bool aov_ca_en = AiAOVEnabled(data->aovs[k_aov_crypto_asset].c_str(), AI_TYPE_RGB);
-         bool aov_co_en = AiAOVEnabled(data->aovs[k_aov_crypto_object].c_str(), AI_TYPE_RGB);
-         bool aov_cm_en = AiAOVEnabled(data->aovs[k_aov_crypto_material].c_str(), AI_TYPE_RGB);
-         if (aov_ca_en || aov_co_en || aov_cm_en)
-         {
-            AtRGB mdl_hash_clr;
-            AtRGB obj_hash_clr;
-            AtRGB mat_hash_clr;
-            //hash_object_rgb(sg, true [>stip mat ns<], &mdl_hash_clr, &obj_hash_clr, &mat_hash_clr, data->crypto_asset_override.c_str(), data->crypto_object_override.c_str(), data->crypto_material_override.c_str());
-            hash_object_rgb(sg, true /*stip mat ns*/, &mdl_hash_clr, &obj_hash_clr, &mat_hash_clr, "", "", "");
+         data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, p_crypto_object_override, p_crypto_material_override);
 
-            if (aov_ca_en) {
-               write_array_of_AOVs(sg, data->aovarr_crypto_asset, mdl_hash_clr.r);
-            }
-            if (aov_co_en) {
-               write_array_of_AOVs(sg, data->aovarr_crypto_object, obj_hash_clr.r);
-            }
-            if (aov_cm_en) {
-               write_array_of_AOVs(sg, data->aovarr_crypto_material, mat_hash_clr.r);
-            }
-            
-            mdl_hash_clr.r = 0.0f;
-            obj_hash_clr.r = 0.0f;
-            mat_hash_clr.r = 0.0f;
-
-            AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_asset].c_str(), AiRGBtoRGBA(mdl_hash_clr));		
-            AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_object].c_str(), AiRGBtoRGBA(obj_hash_clr));
-            AiAOVSetRGBA(sg, data->aovs[k_aov_crypto_material].c_str(), AiRGBtoRGBA(mat_hash_clr));
-         }
          // write data AOVs
          AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
          AiAOVSetRGB(sg, data->aovs[k_uv].c_str(), uv);

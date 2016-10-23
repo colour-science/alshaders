@@ -5,14 +5,15 @@
 #
 #
 
+__version__ = "1.1.0"
+
 import nuke
 import struct
-
 
 def setup_cryptomatte_ui():
     if nuke.GUI:
         toolbar = nuke.menu("Nodes")
-        automatte_menu = toolbar.addMenu("Cryptomatte", "cryptomatte_logo.png")
+        automatte_menu = toolbar.addMenu("Cryptomatte", "cryptomatte_logo.png",index=-1)
         automatte_menu.addCommand("Cryptomatte", "import cryptomatte_utilities as cu; cu.cryptomatte_create_gizmo();")
         automatte_menu.addCommand("Decryptomatte All", "import cryptomatte_utilities as cu; cu.decryptomatte_all();")
         automatte_menu.addCommand("Decryptomatte Selection", "import cryptomatte_utilities as cu; cu.decryptomatte_selected();")
@@ -36,6 +37,8 @@ except ImportError:
 
 def mm3hash_float(name):
     hash_32 = mmh3.hash(name)
+    if hash_32 < 0:
+        hash_32 = (-hash_32 - 1) ^ 0xFFFFFFFF
 
     mantissa = hash_32 & ((1 << 23) - 1)
     exp = (hash_32 >> 23) & ((1 << 8) - 1)
@@ -80,26 +83,38 @@ class CryptomatteInfo(object):
         if not node_in:
             return
 
-        exr_metadata_dict = node_in.metadata()
+        exr_metadata_dict = node_in.metadata() or {}
 
         prefix = "exr/cryptomatte/"
+        default_selection = None
         for key, value in exr_metadata_dict.iteritems():
             if not key.startswith(prefix): 
                 continue
-            numbered_key = key[len(prefix):] # ex: "exr/cryptomatte/0/name" --> "0/name"
-            num = int(numbered_key.split("/")[0])  # ex: "0/name" --> 0
-            partial_key = numbered_key.split("/")[1]  # ex: "0/name" --> "name"
-            if num not in self.cryptomattes:
-                self.cryptomattes[num] = {}
-            self.cryptomattes[num][partial_key] = value
+            numbered_key = key[len(prefix):] # ex: "exr/cryptomatte/ae93ba3/name" --> "ae93ba3/name"
+            metadata_id = numbered_key.split("/")[0]  # ex: "ae93ba3/name" --> ae93ba3
+            partial_key = numbered_key.split("/")[1]  # ex: "ae93ba3/name" --> "name"
+            if metadata_id not in self.cryptomattes:
+                self.cryptomattes[metadata_id] = {}
+            self.cryptomattes[metadata_id][partial_key] = value
 
-            if self.selection == None:
-                self.selection = num
+            if default_selection is None:
+                default_selection = metadata_id
 
-        for num, value in self.cryptomattes.iteritems():
-            name = value["name"]
+        for metadata_id, value in self.cryptomattes.iteritems():
+            name = value.get("name", "") 
             channels = self._identify_channels(name)
-            self.cryptomattes[num]["channels"] = channels
+            self.cryptomattes[metadata_id]["channels"] = channels
+
+        self.selection = default_selection
+
+        if self.nuke_node.Class() == "Cryptomatte":
+            selection_name = node_in.knob("cryptoLayer").getValue()
+            if not selection_name:
+                return
+
+            valid_selection = self.set_selection(selection_name)
+            if not valid_selection and not self.nuke_node.knob("cryptoLayerLock").getValue():
+                self.selection = default_selection
 
     def is_valid(self):
         """Checks that the selection is valid."""
@@ -114,16 +129,15 @@ class CryptomatteInfo(object):
         return True
 
     def set_selection(self, selection):
-        """ sets the selection (eg. cryptoObject) based on either the name
-        or an integer.
+        """ sets the selection (eg. cryptoObject) based on the name. 
+        Returns true if successful. 
         """
-        if selection is int:
-            self.selection = selection
-        elif selection is str:
-            for num in self.cryptomattes:
-                if self.cryptomattes[num]["name"] == selection:
-                    self.selection = num
-                    return
+        for num in self.cryptomattes:
+            if self.cryptomattes[num]["name"] == selection:
+                self.selection = num
+                return True
+        self.selection = None
+        return False
 
     def get_cryptomatte_names(self):
         """ gets the names of the cryptomattes contained the file, which
@@ -140,8 +154,8 @@ class CryptomatteInfo(object):
         """
 
         channel_list = []
-        if "crypto" in self.nuke_node.Class().lower():
-            # nuke_node might a keyer gizmo
+        if self.nuke_node.Class() == "Cryptomatte":
+            # nuke_node is a keyer gizmo
             channel_list = self.nuke_node.node('Input1').channels()
         else:
             # nuke_node might a read node
@@ -170,7 +184,10 @@ class CryptomatteInfo(object):
         import struct
 
         num = self.selection
-        manifest = json.loads(self.cryptomattes[num].get("manifest", "{}"))
+        try:
+            manifest = json.loads(self.cryptomattes[num].get("manifest", "{}"))
+        except:
+            manifest = {}
         from_names = {}
         from_ids = {}
 
@@ -201,7 +218,7 @@ class CryptomatteInfo(object):
         """
         global g_cryptomatte_manf_from_IDs
         manf_cache = g_cryptomatte_manf_from_IDs
-        if (manf_cache is dict and ID_value in manf_cache):
+        if (type(manf_cache) is dict and ID_value in manf_cache):
             return g_cryptomatte_manf_from_IDs[ID_value]
         elif self.selection != None:
             self.parse_manifest()
@@ -254,12 +271,12 @@ def cryptomatte_create_gizmo():
 
 
 def cryptomatte_knob_changed_event(node = None, knob = None):
-    if knob.name() == "inputChange":
+    if knob.name() == "inputChange" or knob.name() == "cryptoLayer" or knob.name() == "cryptoLayerLock":
         cinfo = CryptomatteInfo(node)
         _update_cryptomatte_gizmo(node, cinfo)
 
     elif knob.name() == "pickerAdd":
-        if node.knob("pickerAdd").getValue()[2] == 0.0:
+        if _get_knob_channel_value(node.knob("pickerAdd"), 2) == 0.0:
             return
         cinfo = CryptomatteInfo(node)
         keyed_object = _update_gizmo_keyed_object(node, cinfo, True, "pickerAdd")
@@ -271,7 +288,7 @@ def cryptomatte_knob_changed_event(node = None, knob = None):
 
     elif knob.name() == "pickerRemove":
         cinfo = CryptomatteInfo(node)
-        if node.knob("pickerRemove").getValue()[2] == 0.0:
+        if _get_knob_channel_value(node.knob("pickerRemove"), 2) == 0.0:
             return
         keyed_object = _update_gizmo_keyed_object(node, cinfo, True, "pickerRemove")
         node.knob("pickerAdd").setValue([0,0,0])
@@ -361,6 +378,7 @@ def _set_keyer_channels(gizmo, cryptomatte_channels):
 
 
 def _set_channels(gizmo, cryptomatte_channels):
+    gizmo.knob("cryptoLayer").setValue(cryptomatte_channels[0])
     gizmo.knob("previewChannel").setValue(cryptomatte_channels[0])
     gizmo.knob("in00").setValue(cryptomatte_channels[1])
 
@@ -368,7 +386,7 @@ def _set_channels(gizmo, cryptomatte_channels):
 def _update_cryptomatte_gizmo(gizmo, cinfo, force=False):
     if _cancel_update(gizmo, force):
         return
-    if (not cinfo.is_valid()):
+    if not cinfo.is_valid():
         return
     cryptomatte_channels = cinfo.get_channels()
     if not cryptomatte_channels:
@@ -463,6 +481,10 @@ def unload_manifest(node):
         source_node = node
 
     cinfo = CryptomatteInfo(node)
+    if not cinfo.is_valid():
+        nuke.message("Gizmo's cryptomatte selection is not valid or no cryptomattes are available. ")
+        return
+
     names_to_IDs = cinfo.parse_manifest();
 
     if not names_to_IDs:
@@ -568,22 +590,19 @@ def set_text_knob(gizmo, text_knob_name, text):
         gizmo.knob(text_knob_name).setValue(text)
 
 
-def _update_gizmo_keyed_object(gizmo, cinfo, force=False, color_knob_name="ColorKey", text_knob_name="keyedName"):
-    def _get_color_key_value(gizmo, color_knob_name):
-        color = gizmo.knob(color_knob_name).getValue()
-        if type(color) is list:
-            return single_precision(color[2])
-        if type(color) is float:
-            return single_precision(color)
-        else:
-            return 0.0
+def _get_knob_channel_value(knob, c_index):
+    try:
+        return knob.getValue()[c_index]
+    except:
+        return 0.0
 
+def _update_gizmo_keyed_object(gizmo, cinfo, force=False, color_knob_name="ColorKey", text_knob_name="keyedName"):
     if _cancel_update(gizmo, force):
         return None
     if not gizmo.knob(text_knob_name):
         return None
 
-    ID_value = _get_color_key_value(gizmo, color_knob_name)
+    ID_value = _get_knob_channel_value(gizmo.knob(color_knob_name), 2)
 
     if ID_value == 0.0:
         set_text_knob(gizmo, text_knob_name, "Background (Value is 0.0)")
@@ -618,7 +637,6 @@ def _matteList_modify(gizmo, name, remove):
 
     def _matteList_set_remove(name, matte_names):
         if name in matte_names:
-            print "removing", name
             matte_names.remove(name)
 
     def _matteList_set_to_text(gizmo, matte_names):
