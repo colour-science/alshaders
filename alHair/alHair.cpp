@@ -496,7 +496,8 @@ struct HairBsdf
     /// Parameter evaluation. This should be called after opacity() and before anything else.
     inline void evaluateParameters(AtShaderGlobals* sg, ShaderData* data)
     {
-        // save v coord 
+        // save uv coord 
+        float u = sg->u;
         float v = sg->v;
 
         // replace uvs
@@ -680,6 +681,9 @@ struct HairBsdf
 #if AI_VERSION_MINOR_NUM >= 8
         AiStateUnsetMsgPnt2(maya_ramp_uv_override);
 #endif
+        // restore saved uv coords for hygiene
+        sg->u = u;
+        sg->v = v;
     }
 
     inline void AB(float theta_r, float alpha, float beta, float& A, float& B)
