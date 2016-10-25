@@ -538,13 +538,13 @@ struct DualScattering
                     + g(geo.theta_h - sp.alpha_TT, sp.beta_TT2 + sigma_f2.r) * lr->N_G_TT[ng_idx]
                     + g(geo.theta_h - sp.alpha_TRT, sp.beta_TRT2 + sigma_f2.r) * lr->N_G_TRT[ng_idx];
 
-        result.g =  g(geo.theta_h - sp.alpha_R, sp.beta_R2 + sigma_f2.g) * lr->N_G_R[ng_idx]
-                    + g(geo.theta_h - sp.alpha_TT, sp.beta_TT2 + sigma_f2.g) * lr->N_G_TT[ng_idx]
-                    + g(geo.theta_h - sp.alpha_TRT, sp.beta_TRT2 + sigma_f2.g) * lr->N_G_TRT[ng_idx];
+        result.g =  g(geo.theta_h - sp.alpha_R, sp.beta_R2 + sigma_f2.g) * lg->N_G_R[ng_idx]
+                    + g(geo.theta_h - sp.alpha_TT, sp.beta_TT2 + sigma_f2.g) * lg->N_G_TT[ng_idx]
+                    + g(geo.theta_h - sp.alpha_TRT, sp.beta_TRT2 + sigma_f2.g) * lg->N_G_TRT[ng_idx];
 
-        result.b =  g(geo.theta_h - sp.alpha_R, sp.beta_R2 + sigma_f2.b) * lr->N_G_R[ng_idx]
-                    + g(geo.theta_h - sp.alpha_TT, sp.beta_TT2 + sigma_f2.b) * lr->N_G_TT[ng_idx]
-                    + g(geo.theta_h - sp.alpha_TRT, sp.beta_TRT2 + sigma_f2.b) * lr->N_G_TRT[ng_idx];
+        result.b =  g(geo.theta_h - sp.alpha_R, sp.beta_R2 + sigma_f2.b) * lb->N_G_R[ng_idx]
+                    + g(geo.theta_h - sp.alpha_TT, sp.beta_TT2 + sigma_f2.b) * lb->N_G_TT[ng_idx]
+                    + g(geo.theta_h - sp.alpha_TRT, sp.beta_TRT2 + sigma_f2.b) * lb->N_G_TRT[ng_idx];
 
         assert(isValidColor(result));
         return result * geo.inv_cos_theta_d2;
