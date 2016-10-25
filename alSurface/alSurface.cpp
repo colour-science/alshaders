@@ -1705,8 +1705,9 @@ shader_evaluate
    AtVector Nfold = sg->Nf;
    sg->N = sg->Nf = specular1Normal;
    void* mis;
-   mis = GlossyMISCreateData(sg, specular1Distribution, &U1, 0, roughness_x,
-                             roughness_y);
+   mis = GlossyMISCreateData(sg, specular1Distribution, &U1, 0,
+                             std::max(roughness_x, 1e-3f),
+                             std::max(roughness_y, 1e-3f));
    BrdfData_wrap brdfw;
    brdfw.brdf_data = mis;
    brdfw.sg = sg;
@@ -1734,8 +1735,9 @@ shader_evaluate
 
    sg->N = sg->Nf = specular2Normal;
    void* mis2;
-   mis2 = GlossyMISCreateData(sg, specular2Distribution, &U2, 0, roughness2_x,
-                              roughness2_y);
+   mis2 = GlossyMISCreateData(sg, specular2Distribution, &U2, 0,
+                              std::max(roughness2_x, 1e-3f),
+                              std::max(roughness2_y, 1e-3f));
    BrdfData_wrap brdfw2;
    brdfw2.brdf_data = mis2;
    brdfw2.sg = sg;
