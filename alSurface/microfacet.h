@@ -58,6 +58,7 @@ inline float fast_log2(float x)
 
 #ifdef _WIN32
 // thanks Windows!
+#if (_MSC_VER < 1800) // VS2013 has erff
 float erff(float x)
 {
     // constants
@@ -80,6 +81,7 @@ float erff(float x)
 
     return sign*y;
 }
+#endif
 #endif
 
 inline float fast_ierf(float x)
