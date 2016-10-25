@@ -23,7 +23,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # Disable some of the bullshit warnings MSVC wants to barf
     add_definitions( "-W3 -D_CRT_SECURE_NO_WARNINGS -wd4005 -wd4996 -wd4305 -wd4244 -nologo" )
 else()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto -fvisibility=hidden -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fvisibility=hidden -DNDEBUG")
     # set(CMAKE_CXX_FLAGS_DEBUG "-fsanitize=address -fno-omit-frame-pointer")
 endif()
 
