@@ -167,6 +167,7 @@ class ShaderDef:
    soft_classification = None
    help_url = None
    houdini_icon = None
+   houdini_category = None
    soft_version = 1
    hierarchy_depth = 0
    root = None
@@ -253,6 +254,8 @@ class ShaderDef:
          self.help_url = 'https://bitbucket.org/anderslanglands/alshaders/wiki/Home'
       if 'houdini_icon' in d.keys():
          self.houdini_icon = d['houdini_icon']
+      if 'houdini_category' in d.keys():
+         self.houdini_category = d['houdini_category']
 
 
    #all groups need unique ident in houdini
@@ -339,7 +342,7 @@ def WriteAETemplate(sd, fn):
    writei(f, 'import pymel.core as pm', 0)
    writei(f, 'from alShaders import *\n', 0)
 
-   writei(f, 'class AE%sTemplate(alShadersTemplate):' % sd.name, 0)
+   writei(f, 'class AE%sTemplate(alShadersTemplate):' % sd.maya_name, 0)
    writei(f, 'controls = {}', 1)
    writei(f, 'params = {}', 1)
    
@@ -456,15 +459,15 @@ def WriteAEXML(sd, fn):
    writei(f, '<?xml version="1.0" encoding="UTF-8"?>', 0)
    writei(f, '<templates>', 1)
 
-   writei(f, '<template name="AE%s">' % sd.name, 1)
-   writei(f, '<label>%s</label>' % sd.name, 2)
+   writei(f, '<template name="AE%s">' % sd.maya_name, 1)
+   writei(f, '<label>%s</label>' % sd.maya_name, 2)
    writei(f, '<description>%s</description>' % sd.description, 2)
 
    for e in sd.root.children:
       WalkAEXMLAttributes(e, f, 2)
    writei(f, '</template>', 1)
 
-   writei(f, '<view name="Lookdev" template="AE%s">' % sd.name, 2)
+   writei(f, '<view name="Lookdev" template="AE%s">' % sd.maya_name, 2)
    for e in sd.root.children:
       WalkAEXMLGroups(e, f, 3)
    writei(f, '</view>', 2)
@@ -476,13 +479,13 @@ def WriteNEXML(sd, fn):
    writei(f, '<?xml version="1.0" encoding="UTF-8"?>', 0)
    writei(f, '<templates>', 1)
 
-   writei(f, '<template name="NE%s">' % sd.name, 1)
+   writei(f, '<template name="NE%s">' % sd.maya_name, 1)
    WriteNEOutputAttr(sd, f, 2)
    for e in sd.root.children:
       WalkNEXMLAttributes(e, f, 2)
    writei(f, '</template>', 1)
 
-   writei(f, '<view name="NEDefault" template="NE%s">' % sd.name, 2)
+   writei(f, '<view name="NEDefault" template="NE%s">' % sd.maya_name, 2)
    WriteNEOutputProp(sd, f, 2)
    for e in sd.root.children:
       WalkNEXMLView(e, f, 2)
@@ -858,13 +861,14 @@ def WriteMDTHeader(sd, f):
    if sd.c4d_classification: writei(f, 'c4d.classification STRING "%s"' % sd.c4d_classification, 1)
    if sd.c4d_menu: writei(f, 'c4d.menu STRING "%s"' % sd.c4d_menu, 1)
    if sd.c4d_command_id: writei(f, 'c4d.command_id INT %s' % sd.c4d_command_id, 1)
-   writei(f, 'maya.name STRING "%s"' % sd.name, 1)
+   writei(f, 'maya.name STRING "%s"' % sd.maya_name, 1)
    writei(f, 'maya.classification STRING "%s"' % sd.maya_classification, 1)
    writei(f, 'maya.id INT %s' % sd.maya_id, 1)
    #writei(f, 'houdini.label STRING "%s"' % sd.name, 1)
    if sd.houdini_icon is not None:
       writei(f, 'houdini.icon STRING "%s"' % sd.houdini_icon, 1)
-   writei(f, 'houdini.category STRING "alShaders"' ,1)
+   hcat = ("alShaders" if sd.houdini_category is None else sd.houdini_category)
+   writei(f, 'houdini.category STRING "%s"' % hcat ,1)
    writei(f, 'houdini.help_url STRING "%s"' % sd.help_url ,1)
 
    WriteHoudiniHeader(sd, f)
