@@ -201,8 +201,9 @@ inline float gaborEvaluate(GaborParams& gp, const AtVector& x, int seed=0)
 inline float gabor(const AtVector& P, GaborParams& gp)
 {
     if (gp.do_filter)
+    {
         // gaborSetupFilter(...);
-        ;
+    }
 
     /// TODO: if we're happy with the parameters being constant, the scale calculation can be moved into the param constructor
     float result = gaborEvaluate(gp, P);

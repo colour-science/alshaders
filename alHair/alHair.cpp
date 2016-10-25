@@ -464,7 +464,7 @@ struct HairBsdf
     };
 
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
-    node(n), data(d), numBlendHairs(2), density_front(0.7f), density_back(0.7f), _sg(sg)
+    numBlendHairs(2), density_front(0.7f), density_back(0.7f), node(n), data(d), _sg(sg)
     {
         depth = sg->Rr;
 

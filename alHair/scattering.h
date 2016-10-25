@@ -426,7 +426,7 @@ struct ScatteringLut
 struct DualScattering
 {
     DualScattering()
-    : _cachemisses(0.0), _cachelookups(0.0), _lutgen_time(0.0)
+    : _lutgen_time(0.0), _cachemisses(0.0), _cachelookups(0.0)
     {
         AiCritSecInit(&_cs);
         for (int i=0; i < DS_MASTER_LUT_SZ; ++i)

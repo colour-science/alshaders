@@ -68,7 +68,7 @@ shader_evaluate
 {
    int input = AiShaderEvalParamInt(p_input);
    const char* userName = AiShaderEvalParamStr(p_userName);
-   float result;
+   float result = 0.0f;
 
    // first select the input vector to use
    switch(input)

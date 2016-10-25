@@ -66,8 +66,8 @@ node_update
 
 shader_evaluate
 {
-    float input1;
-    float input2;
+    float input1 = 0.0f;
+    float input2 = 0.0f;
 	float input3 = AiShaderEvalParamFlt(p_input3);
 	int combineOp = AiShaderEvalParamInt(p_combineOp);
 
