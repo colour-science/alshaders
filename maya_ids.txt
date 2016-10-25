@@ -31,3 +31,4 @@
 0x0011641E - alInputScalar
 0x0011641F - alFlake
 0x00116420 - cryptomatte_filter
+0x00116421 - cryptomatte_aov
