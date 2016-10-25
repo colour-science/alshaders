@@ -304,8 +304,8 @@ filter_pixel {
 
 	sw_map_iterator_type vals_iter;
 	
-	std::vector<std::pair<float, float>> all_vals;
-	std::vector<std::pair<float, float>>::iterator all_vals_iter;
+	std::vector<std::pair<float, float> > all_vals;
+	std::vector<std::pair<float, float> >::iterator all_vals_iter;
 
 	for (vals_iter = vals.begin(); vals_iter != vals.end(); ++vals_iter) {
 		all_vals.push_back(*vals_iter);

@@ -128,7 +128,11 @@ unsigned char g_pointcloud_instance_verbosity = 0;  // to do: remove this.
 ///////////////////////////////////////////////
 
 #define CACHE_LINE  64
+#if defined(_WIN32) or defined(_MSC_VER)
 #define CACHE_ALIGN __declspec(align(CACHE_LINE))
+#else
+#define CACHE_ALIGN __attribute__((aligned(CACHE_LINE)))
+#endif
 
 struct CACHE_ALIGN CryptomatteCache {
     AtNode * object;        //       8 bytes
@@ -174,7 +178,7 @@ void safe_copy_to_buffer(char buffer[MAX_STRING_LENGTH], const char* c) {
 
 
 bool string_has_content(const char * c) {
-    return c != NULL && c[0] != NULL;
+    return c != NULL && c[0] != '\0';
 }
 
 
@@ -493,7 +497,7 @@ void write_metadata_to_driver(AtNode * driver, std::string cryptomatte_name, man
     const size_t max_entries = 100000;
     size_t metadata_entries = map_entries;
     if (map_entries > max_entries) {
-        AiMsgWarning("Cryptomatte: %d entries in manifest, limiting to %d", map_entries, max_entries);
+        AiMsgWarning("Cryptomatte: %lu entries in manifest, limiting to %lu", map_entries, max_entries);
         metadata_entries = max_entries;
     }
 
@@ -737,7 +741,7 @@ AtArray* init_user_cryptomatte_data() {
                 AiArraySetStr(uc_aov_array, 0, AiNodeGetStr(renderOptions, CRYPTO_USER_AOV_PARAM));
             }
 
-            if (uc_src_type == AI_TYPE_ARRAY || uc_aov_cat != AI_USERDEF_CONSTANT) {
+            if (uc_src_type == AI_TYPE_ARRAY || uc_src_cat != AI_USERDEF_CONSTANT) {
                 // array type or non-constant means you AiNodeGet an array
                 AtArray *a = AiNodeGetArray(renderOptions, CRYPTO_USER_SRC_PARAM);
                 uc_src_array = a ? AiArrayCopy(a) : NULL;
