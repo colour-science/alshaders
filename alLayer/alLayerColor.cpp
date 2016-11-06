@@ -13,27 +13,43 @@ const char* param_names[] =
 	"layer1",
 	"layer1a",
    "layer1blend",
+    "layer1name",
+    "layer1enabled",
 	"layer2",
 	"layer2a",
    "layer2blend",
+    "layer2name",
+    "layer2enabled",
 	"layer3",
 	"layer3a",
    "layer3blend",
+    "layer3name",
+    "layer3enabled",
 	"layer4",
 	"layer4a",
    "layer4blend",
+    "layer4name",
+    "layer4enabled",
 	"layer5",
 	"layer5a",
    "layer5blend",
+    "layer5name",
+    "layer5enabled",
 	"layer6",
 	"layer6a",
    "layer6blend",
+    "layer6name",
+    "layer6enabled",
 	"layer7",
 	"layer7a",
    "layer7blend",
+    "layer7name",
+    "layer7enabled",
 	"layer8",
 	"layer8a",
    "layer8blend"
+    "layer8name",
+    "layer8enabled",
 };
 
 enum BlendModes
@@ -101,27 +117,43 @@ node_parameters
 	AiParameterRGB("layer1", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("layer1a", 0.0f);
    AiParameterEnum("layer1blend", 0, BlendModeNames);
+    AiParameterStr("layer1name", "");
+    AiParameterBool("layer1enabled", true);
 	AiParameterRGB("layer2", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("layer2a", 0.0f);
    AiParameterEnum("layer2blend", 0, BlendModeNames);
+    AiParameterStr("layer2name", "");
+    AiParameterBool("layer2enabled", true);
 	AiParameterRGB("layer3", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("layer3a", 0.0f);
    AiParameterEnum("layer3blend", 0, BlendModeNames);
+    AiParameterStr("layer3name", "");
+    AiParameterBool("layer3enabled", true);
 	AiParameterRGB("layer4", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("layer4a", 0.0f);
    AiParameterEnum("layer4blend", 0, BlendModeNames);
+    AiParameterStr("layer4name", "");
+    AiParameterBool("layer4enabled", true);
 	AiParameterRGB("layer5", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("layer5a", 0.0f);
    AiParameterEnum("layer5blend", 0, BlendModeNames);
+    AiParameterStr("layer5name", "");
+    AiParameterBool("layer5enabled", true);
 	AiParameterRGB("layer6", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("layer6a", 0.0f);
    AiParameterEnum("layer6blend", 0, BlendModeNames);
+    AiParameterStr("layer6name", "");
+    AiParameterBool("layer6enabled", true);
 	AiParameterRGB("layer7", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("layer7a", 0.0f);
    AiParameterEnum("layer7blend", 0, BlendModeNames);
+    AiParameterStr("layer7name", "");
+    AiParameterBool("layer7enabled", true);
 	AiParameterRGB("layer8", 0.0f, 0.0f, 0.0f);
 	AiParameterFlt("layer8a", 0.0f);
    AiParameterEnum("layer8blend", 0, BlendModeNames);
+    AiParameterStr("layer8name", "");
+    AiParameterBool("layer8enabled", true);
 }
 
 node_loader
@@ -153,6 +185,8 @@ node_finish
 	AiNodeSetLocalData(node, NULL);
 }
 
+#define PARAMS_PER_LAYER 5
+
 node_update
 {
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
@@ -162,8 +196,8 @@ node_update
 	for (int i=0; i < NUM_LAYERS; ++i)
 	{
 		// if the alpha is either linked or non-zero, layer is active
-		if (AiNodeIsLinked(node, param_names[i*3+1]) ||
-			params[i*3+1].FLT != 0.0f)
+		if (AiNodeIsLinked(node, param_names[i*PARAMS_PER_LAYER+1]) ||
+			params[i*PARAMS_PER_LAYER+1].FLT != 0.0f)
 		{
 			data->max_layer = i;
 		}
@@ -390,10 +424,14 @@ shader_evaluate
 
 	for (int i=0; i <= data->max_layer; ++i)
 	{
-		AtRGB layerVal = AiShaderEvalParamRGB(i*3);
-		float layerAlpha = AiShaderEvalParamFlt(i*3+1);
-      int layerBlend = AiShaderEvalParamInt(i*3+2);
-		result = blend(result, layerVal, layerAlpha, layerBlend);
+		AtRGB layerVal = AiShaderEvalParamRGB(i*PARAMS_PER_LAYER);
+		float layerAlpha = AiShaderEvalParamFlt(i*PARAMS_PER_LAYER+1);
+        int layerBlend = AiShaderEvalParamInt(i*PARAMS_PER_LAYER+2);
+        bool layerEnabled = AiShaderEvalParamBool(i*PARAMS_PER_LAYER+4);
+        if (layerEnabled)
+        {
+            result = blend(result, layerVal, layerAlpha, layerBlend);
+        }
 	}
 
 	sg->out.RGB = result;
