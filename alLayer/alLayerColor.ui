@@ -48,27 +48,17 @@ blend_modes = [
    "Phoenix"
 ]
 
-ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Layer 1', description='The background layer (will be blended over black if its alpha is not 1.', mayane=True)
-ui.parameter('layer1a', 'float', 0.0, 'Layer 1 Alpha', description='The alpha of the background layer', mayane=True)
-ui.parameter('layer1blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='Blend mode for the background layer.', mayane=True)
-ui.parameter('layer2', 'rgb', (0.0, 0.0, 0.0), 'Layer 2', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.', mayane=True)
-ui.parameter('layer2a', 'float', 0.0, 'Layer 2 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer2blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer3', 'rgb', (0.0, 0.0, 0.0), 'Layer 3', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.', mayane=True)
-ui.parameter('layer3a', 'float', 0.0, 'Layer 3 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer3blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer4', 'rgb', (0.0, 0.0, 0.0), 'Layer 4', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.', mayane=True)
-ui.parameter('layer4a', 'float', 0.0, 'Layer 4 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer4blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer5', 'rgb', (0.0, 0.0, 0.0), 'Layer 5', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.', mayane=True)
-ui.parameter('layer5a', 'float', 0.0, 'Layer 5 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer5blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer6', 'rgb', (0.0, 0.0, 0.0), 'Layer 6', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.', mayane=True)
-ui.parameter('layer6a', 'float', 0.0, 'Layer 6 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer6blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer7', 'rgb', (0.0, 0.0, 0.0), 'Layer 7', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.', mayane=True)
-ui.parameter('layer7a', 'float', 0.0, 'Layer 7 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer7blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer8', 'rgb', (0.0, 0.0, 0.0), 'Layer 8', description='The color plugged in here will be blended over the layers below according to its alpha and blend mode.', mayane=True)
-ui.parameter('layer8a', 'float', 0.0, 'Layer 8 Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
-ui.parameter('layer8blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.', mayane=True)
+with uigen.group(ui, 'Background', False, description='The background layer will be blended over black if its alpha is not 1'):
+    ui.parameter('layer1name', 'string', '', 'Name', description='A descriptive name for this layer')
+    ui.parameter('layer1enabled', 'bool', True, 'Enabled', description='Toggle this layer on or off')
+    ui.parameter('layer1', 'rgb', (0.0, 0.0, 0.0), 'Input', description='The background layer (will be blended over black if its alpha is not 1.', mayane=True)
+    ui.parameter('layer1a', 'float', 0.0, 'Alpha', description='The alpha of the background layer', mayane=True)
+    ui.parameter('layer1blend', 'enum', 'normal', 'Mode', enum_names = blend_modes, description='Blend mode for the background layer.', mayane=True)
+
+for i in range(2,9):
+    with uigen.group(ui, 'Layer %d' % i, False, description='This layer will be blended over lower-numbered layers'):
+        ui.parameter('layer%dname' % i, 'string', '', 'Name', description='A descriptive name for this layer')
+        ui.parameter('layer%denabled' % i, 'bool', True, 'Enabled', description='Toggle this layer on or off')
+        ui.parameter('layer%d' % i, 'rgb', (0.0, 0.0, 0.0), 'Input', description='The color to be layered', mayane=True)
+        ui.parameter('layer%da' % i, 'float', 0.0, 'Alpha', description='The alpha used to blend this layer over the layers below.', mayane=True)
+        ui.parameter('layer%dblend' % i, 'enum', 'normal', 'Mode', enum_names = blend_modes, description='The blend mode used to blend this layer over the layers below.', mayane=True)
