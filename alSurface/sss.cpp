@@ -156,7 +156,7 @@ void alsIrradiateSample(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSamp
     matchNormals(Nref, sg->Ngf);
     matchNormals(Nref, sg->Ns);
 
-    void* brdf_data = AiOrenNayarMISCreateData(sg, 0.0f);
+    //void* brdf_data = AiOrenNayarMISCreateData(sg, 0.0f);
     AiLightsPrepare(sg);
     AtRGB result_direct = AI_RGB_BLACK;
     AtUInt32 old_fi = sg->fi;
@@ -359,7 +359,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     }
     while (AiSamplerGetSample(sampit, samples))
     {
-        float dx, dy;
+        float dx = 0.0f, dy = 0.0f;
 
         AtVector Wsss, Usss, Vsss, Usss_1, Vsss_1, Usss_2, Vsss_2;
         float c_axis = 1.0f, c_axis_1, c_axis_2;
@@ -420,7 +420,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
             Vsss_2 = V;
         }
 
-        float r_disk[3];
+        float r_disk[3] = {0.0f, 0.0f, 0.0f};
         for (int i=0; i < numComponents; ++i)
         {
             if (samples[1] < comp_cdf[i+1])

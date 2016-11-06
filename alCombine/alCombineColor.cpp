@@ -72,14 +72,14 @@ node_update
 
 shader_evaluate
 {
-    AtRGB input1;
-    AtRGB input2;
+    AtRGB input1 = AI_RGB_BLACK;
+    AtRGB input2 = AI_RGB_BLACK;
     AtVector v1, v2, v;
     float d;
 	float input3 = AiShaderEvalParamFlt(p_input3);
 	int combineOp = AiShaderEvalParamInt(p_combineOp);
 
-    AtRGB f;
+    AtRGB f = AI_RGB_BLACK;
 	switch(combineOp)
 	{
 	case CO_MULTIPLY:

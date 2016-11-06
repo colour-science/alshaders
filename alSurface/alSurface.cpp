@@ -1767,7 +1767,8 @@ shader_evaluate
    sg->N = Nold;
    sg->Nf = Nfold;
 
-   sg->Nf = sg->Nf = diffuseNormal;
+   //sg->Nf = sg->Nf = diffuseNormal;
+   sg->Nf = diffuseNormal; // or should that be: sg->N = sg->Nf = diffuseNormal?
    void* dmis = AiOrenNayarMISCreateData(sg, diffuseRoughness);
 
    if (do_backlight) sg->fhemi = false;
