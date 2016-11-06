@@ -299,7 +299,9 @@ struct HairBsdf
     {
         ShaderData()
         : sampler_glossy(NULL), sampler_diffuse(NULL), ds(NULL)
-        {}
+        {
+            _last_sp.shape = -1.0f;
+        }
 
         ~ShaderData()
         {
@@ -310,8 +312,6 @@ struct HairBsdf
 
         void update(AtParamValue* params)
         {
-            AtUInt32 t0 = AiMsgUtilGetElapsedTime();
-
             AtNode *options   = AiUniverseGetOptions();
             int glossy_samples = std::max(0, AiNodeGetInt(options, "GI_glossy_samples") + params[p_extraSamplesGlossy].INT);
             int diffuse_samples = std::max(0, AiNodeGetInt(options, "GI_diffuse_samples") + params[p_extraSamplesDiffuse].INT);
@@ -382,53 +382,60 @@ struct HairBsdf
             aovs.push_back(params[p_aov_id_8].STR);
             for (size_t i=0; i < aovs.size(); ++i)
                 AiAOVRegister(aovs[i].c_str(), AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
-
-            delete ds;
-            ds = new DualScattering;
-
-            ScatteringParams sp;
-            sp.alpha_R = alpha_R;
-            sp.beta_R = beta_R;
-            sp.beta_R2 = beta_R2;
-            sp.alpha_TT = alpha_TT;
-            sp.beta_TT = beta_TT;
-            sp.beta_TT2 = beta_TT2;
-            sp.alpha_TRT = alpha_TRT;
-            sp.beta_TRT = beta_TRT;
-            sp.beta_TRT2 = beta_TRT2;
-            sp.gamma_TT = gamma_TT;
-            sp.gamma_g = gamma_g;
-            sp.ior = 1.55f;
-            sp.phi_g = 35.0f;
-            sp.shape = 0.0f;
-
-            int num_threads = AiNodeGetInt(options, "threads");
-            LutgenThreadData* thread_data = new LutgenThreadData[num_threads];
-            void** threads = new void*[num_threads];
-
-            int chunk_size = (DS_MASTER_LUT_SZ / num_threads)+1;
-            int start = 0;
-            float time = AiMsgUtilGetElapsedTime();
-            for (int i=0; i < num_threads; ++i)
-            {
-               thread_data[i].ds = ds;
-               thread_data[i].sp = &sp;
-               thread_data[i].start = start;
-               thread_data[i].end = std::min(start + chunk_size, DS_MASTER_LUT_SZ);
-               start += chunk_size;
-               threads[i] = AiThreadCreate(LutgenThreadFunc, &thread_data[i], AI_PRIORITY_HIGH);
-            }
-
-            for (int i=0; i < num_threads; ++i)
-            {
-               AiThreadWait(threads[i]);
-            }
-
-            delete[] thread_data;
-
-            time = AiMsgUtilGetElapsedTime() - time;
-            AiMsgInfo("[alHair] lutgen time on %d threads: %.2fs", num_threads, time/1000.0f);
             
+            // Only update dual scattering LUTs if we're actually using dual scattering
+            if (params[p_diffuseScatteringMode].INT == DUAL)
+            {
+                delete ds;
+                ds = new DualScattering;
+
+                ScatteringParams sp;
+                sp.alpha_R = alpha_R;
+                sp.beta_R = beta_R;
+                sp.beta_R2 = beta_R2;
+                sp.alpha_TT = alpha_TT;
+                sp.beta_TT = beta_TT;
+                sp.beta_TT2 = beta_TT2;
+                sp.alpha_TRT = alpha_TRT;
+                sp.beta_TRT = beta_TRT;
+                sp.beta_TRT2 = beta_TRT2;
+                sp.gamma_TT = gamma_TT;
+                sp.gamma_g = gamma_g;
+                sp.ior = 1.55f;
+                sp.phi_g = 35.0f;
+                sp.shape = 0.0f;
+
+                if (sp != _last_sp)
+                {
+                    int num_threads = AiNodeGetInt(options, "threads");
+                    LutgenThreadData* thread_data = new LutgenThreadData[num_threads];
+                    void** threads = new void*[num_threads];
+
+                    int chunk_size = (DS_MASTER_LUT_SZ / num_threads)+1;
+                    int start = 0;
+                    float time = AiMsgUtilGetElapsedTime();
+                    for (int i=0; i < num_threads; ++i)
+                    {
+                    thread_data[i].ds = ds;
+                    thread_data[i].sp = &sp;
+                    thread_data[i].start = start;
+                    thread_data[i].end = std::min(start + chunk_size, DS_MASTER_LUT_SZ);
+                    start += chunk_size;
+                    threads[i] = AiThreadCreate(LutgenThreadFunc, &thread_data[i], AI_PRIORITY_HIGH);
+                    }
+
+                    for (int i=0; i < num_threads; ++i)
+                    {
+                    AiThreadWait(threads[i]);
+                    }
+
+                    delete[] thread_data;
+
+                    time = AiMsgUtilGetElapsedTime() - time;
+                    AiMsgInfo("[alHair] lutgen time on %d threads: %.2fs", num_threads, time/1000.0f);
+                    _last_sp = sp;
+                }
+            }
         }
 
         AtSampler* sampler_glossy;
@@ -461,6 +468,7 @@ struct HairBsdf
         std::string uparam, vparam;
 
         CryptomatteData* cryptomatte;
+        ScatteringParams _last_sp;
     };
 
     HairBsdf(AtNode* n, AtShaderGlobals* sg, ShaderData* d) :
@@ -1390,7 +1398,7 @@ struct HairBsdf
 
                 SctGeo geo(wi_ray.dir, theta_r, phi_r, U, V, W);
 
-                float p = 1.0f / ((pdf_Sf(geo) + pdf_Sb(geo)) * 0.5f);
+                // float p = 1.0f / ((pdf_Sf(geo) + pdf_Sb(geo)) * 0.5f);
 
                 AiStateSetMsgFlt("als_hairNumIntersections", 0);
                 AiStateSetMsgRGB("als_T_f", AI_RGB_WHITE);
@@ -1406,7 +1414,7 @@ struct HairBsdf
                 AiStateGetMsgRGB("als_sigma_bar_f", &sigma_f);
 
                 float directFraction = 1.0f - std::min(als_hairNumIntersections, float(numBlendHairs))/float(numBlendHairs);
-                AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
+                // AtRGB occlusion = AI_RGB_WHITE - scrs.opacity;
 
                 T_f = pow(data->ds->forward_attenuation(sp, geo.theta_i), als_hairNumIntersections);
                 assert(AiIsFinite(T_f));

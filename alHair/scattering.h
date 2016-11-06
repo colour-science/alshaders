@@ -118,6 +118,31 @@ struct ScatteringParams
     AtRGB absorption;
     AtRGB dabsorption;
     float shape;
+
+    bool operator!=(const ScatteringParams& r)
+    {
+        // this is a horrible way of doing this.
+        return ior != r.ior &&
+        beta_R != r.beta_R &&
+        beta_R2 != r.beta_R2 &&
+        alpha_R != r.alpha_R &&
+        alpha_R_offset != r.alpha_R_offset &&
+        beta_TT != r.beta_TT &&
+        beta_TT2 != r.beta_TT2 &&
+        alpha_TT != r.alpha_TT &&
+        alpha_TT_offset != r.alpha_TT_offset &&
+        beta_TRT != r.beta_TRT &&
+        beta_TRT2 != r.beta_TRT2 &&
+        alpha_TRT != r.alpha_TRT &&
+        alpha_TRT_offset != r.alpha_TRT_offset &&
+        gamma_TT != r.gamma_TT &&
+        gamma_g != r.gamma_g &&
+        hairColor != r.hairColor &&
+        phi_g != r.phi_g &&
+        absorption != r.absorption &&
+        dabsorption != r.dabsorption &&
+        shape != r.shape;
+    }
 };
 
 struct SctGeo
