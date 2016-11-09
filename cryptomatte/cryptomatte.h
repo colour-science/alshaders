@@ -985,7 +985,7 @@ private:
             }
 
             char mat_name[MAX_STRING_LENGTH] = "";
-            cachable = cachable && get_material_name(sg, sg->Op, shader, this->globals.strip_mat_ns, mat_override, mat_name);
+            cachable = get_material_name(sg, sg->Op, shader, this->globals.strip_mat_ns, mat_override, mat_name) && cachable;
             hash_name_rgb(mat_name, mat_hash_clr);
 
             if (cachable) {
