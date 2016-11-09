@@ -53,7 +53,8 @@ How to add cryptomatte to a shader:
     you can set those to -1. 
 
     One gotcha here is that if AiShaderGlobalsApplyOpacity() is going to be called, 
-    it should be called before doing cryptomattes. 
+    it should be called before doing cryptomattes, and if there is an early out for
+    full transparency, do_cryptomattes should be called anyway. 
 
 */
 
