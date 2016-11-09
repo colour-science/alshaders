@@ -885,8 +885,10 @@ public:
     // }
 
     void do_cryptomattes(AtShaderGlobals *sg, AtNode * node, int p_override_asset, int p_override_object, int p_override_material ) {
-        this->do_standard_cryptomattes(sg, node, p_override_asset, p_override_object, p_override_material);
-        this->do_user_cryptomattes(sg);
+        if (sg->Rt & AI_RAY_CAMERA) {
+            this->do_standard_cryptomattes(sg, node, p_override_asset, p_override_object, p_override_material);
+            this->do_user_cryptomattes(sg);
+        }
     }
 
 private:
