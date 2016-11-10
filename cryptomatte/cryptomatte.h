@@ -129,7 +129,7 @@ unsigned char g_pointcloud_instance_verbosity = 0;  // to do: remove this.
 ///////////////////////////////////////////////
 
 #define CACHE_LINE  64
-#if defined(_WIN32) or defined(_MSC_VER)
+#if defined(_WIN32) || defined(_MSC_VER)
 #define CACHE_ALIGN __declspec(align(CACHE_LINE))
 #else
 #define CACHE_ALIGN __attribute__((aligned(CACHE_LINE)))
