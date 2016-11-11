@@ -120,15 +120,8 @@ filter_pixel {
 	int rank =        AiShaderEvalParamInt (p_rank);
 	float width =     AiShaderEvalParamFlt (p_width);
 	int main_filter = AiShaderEvalParamEnum(p_filter);
-
-	AtNode * renderOptions = AiUniverseGetOptions();
-	int auto_transparency_depth = AiNodeGetInt(renderOptions, "auto_transparency_depth");
-
-	AtNode * camera = AiUniverseGetCamera();
-	float camera_far_clip = AiNodeGetFlt(camera, "far_clip");
 	
 	float (*filter)(AtPoint2, float);
-
 
 	///////////////////////////////////////////////
 	//
@@ -193,7 +186,6 @@ filter_pixel {
 	///////////////////////////////////////////////
 
 	sw_map_type vals;
-
 
 	int total_samples = 0;
 	float total_weight = 0.0f;
