@@ -54,10 +54,11 @@ node_loader {
 }
 
 node_initialize {
+	// Z is still required despite the values themselves not being used. 
 	static const char* necessary_aovs[] = {
 		"FLOAT Z", 
 		NULL 
-	};
+	}; 
 	AiFilterInitialize(node, true, necessary_aovs, NULL);
 }
 
@@ -119,15 +120,8 @@ filter_pixel {
 	int rank =        AiShaderEvalParamInt (p_rank);
 	float width =     AiShaderEvalParamFlt (p_width);
 	int main_filter = AiShaderEvalParamEnum(p_filter);
-
-	AtNode * renderOptions = AiUniverseGetOptions();
-	int auto_transparency_depth = AiNodeGetInt(renderOptions, "auto_transparency_depth");
-
-	AtNode * camera = AiUniverseGetCamera();
-	float camera_far_clip = AiNodeGetFlt(camera, "far_clip");
 	
 	float (*filter)(AtPoint2, float);
-
 
 	///////////////////////////////////////////////
 	//
@@ -193,7 +187,6 @@ filter_pixel {
 
 	sw_map_type vals;
 
-
 	int total_samples = 0;
 	float total_weight = 0.0f;
 	float sample_weight;
@@ -220,7 +213,7 @@ filter_pixel {
 		//
 		///////////////////////////////////////////////
 
-		if (!AiAOVSampleIteratorHasValue(iterator))	{			
+		if (!AiAOVSampleIteratorHasValue(iterator))	{
 			total_weight += sample_weight;
 			write_to_samples_map(&vals, 0.0f, sample_weight);
 			continue;
@@ -232,64 +225,36 @@ filter_pixel {
 		//		Samples with values, depth or no depth
 		//
 		///////////////////////////////////////////////
-
+		
 		float quota = sample_weight;
 		float iterative_transparency_weight = 1.0f;
-		int depth_counter = 0;
-		float z = 0.0f;
-		bool traced_bg = false;
+		int depth = 0;
+		AtVector sample_value = AI_V3_ZERO;
 
-		AtVector sample_value = AiAOVSampleIteratorGetVec(iterator);
+		// getting value here redundantly is a workaround for an issue prior to Arnold 4.14 with volume shaders. 
+		sample_value = AiAOVSampleIteratorGetVec(iterator); 
+
+		total_weight += quota;
 		while (AiAOVSampleIteratorGetNextDepth(iterator)) {
 			// sample.x is the ID
 			// sample.y is unused
 			// sample.z is the opacity
+			sample_value = AiAOVSampleIteratorGetVec(iterator);
+			const float sub_sample_opacity = sample_value.z;
+			const float sub_sample_weight = sub_sample_opacity * iterative_transparency_weight * sample_weight;
 
-			if (depth_counter > 0)
-				sample_value = AiAOVSampleIteratorGetVec(iterator);
-			depth_counter++;
-			z = AiAOVSampleIteratorGetAOVFlt(iterator, "Z");
-
-			float sub_sample_opacity = sample_value.z;
-
-			// so if our sample is 80% opaque, and iterative transparency indicates that 10% opacity is left over, we'll get 8% of that sample. 
-			float sub_sample_weight = sub_sample_opacity * iterative_transparency_weight * sample_weight;  
-			iterative_transparency_weight *= (1.0f - sub_sample_opacity); // so if the current sub sample is 80% opaque, it means 20% of the weight will remain for the next subsample
+			// so if the current sub sample is 80% opaque, it means 20% of the weight will remain for the next subsample
+			iterative_transparency_weight *= (1.0f - sub_sample_opacity); 
 
 			quota -= sub_sample_weight;
-			total_weight += sub_sample_weight;
 			write_to_samples_map(&vals, sample_value.x, sub_sample_weight);
-
-			traced_bg = traced_bg || (z == camera_far_clip);
-
-			if (quota < 0.0f) {
-				// of questionable use
-				quota = 0.0f;
-				break;
-			}
 		}
 		
-		if (quota > 0.0) {
-			float exhaustion_ID;
-			if (traced_bg) {
-				// died with weight left for a good reason (hit the BG)
-				exhaustion_ID = 0.0;
-			} else if (depth_counter >= auto_transparency_depth) {
-				// died with weight left for a good reason (ran out of transparency depth)
-				exhaustion_ID = sample_value.x;
-			} else if (depth_counter == 0) {
-				// this happens with volume shaders, for some reason. 
-				exhaustion_ID = sample_value.x;
-			} else {
-				// died with weight left for no good reason
-				exhaustion_ID = 0.0;
-			}
-
-			total_weight += quota;
-
-			write_to_samples_map(&vals, exhaustion_ID, quota);
+		if (quota != 0.0) {
+			// the remaining values gets allocated to the last sample 
+			write_to_samples_map(&vals, sample_value.x, quota);
 		}
-    }
+	}
 
 
 	///////////////////////////////////////////////
