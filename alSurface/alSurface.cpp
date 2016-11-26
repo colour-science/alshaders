@@ -2577,7 +2577,18 @@ shader_evaluate
       float samples[2];
       float kt;
       AtRay wi_ray;
-      sg->N = sg->Nf = transmissionNormal;
+      if (data->transmissionNormalConnected)
+      {
+          if (AiV3Dot(sg->N, transmissionNormal) < 0.0f)
+            sg->N = -transmissionNormal;
+          else
+            sg->N = transmissionNormal;
+
+          if (AiV3Dot(sg->Nf, transmissionNormal) < 0.0f)
+            sg->Nf = -transmissionNormal;
+          else
+            sg->Nf = transmissionNormal;
+      }
       AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
       AtVector wi, R;
       AtScrSample sample;
