@@ -49,7 +49,7 @@ const char* param_names[] =
 	"layer8a",
    "layer8blend"
     "layer8name",
-    "layer8enabled",
+    "layer8enabled"
 };
 
 enum BlendModes
@@ -154,6 +154,8 @@ node_parameters
    AiParameterEnum("layer8blend", 0, BlendModeNames);
     AiParameterStr("layer8name", "");
     AiParameterBool("layer8enabled", true);
+
+    AiParameterBool("clamp_result", true);
 }
 
 node_loader
@@ -230,20 +232,26 @@ inline AtRGB softlight(const AtRGB& l1, const AtRGB& l2)
    return result;
 }
 
-inline float colordodgef(float l1, float l2)
+inline float colordodgef(float l1, float l2, bool clamp_result)
 {
    if (l2 == 1.0f)
+   {
       return l2;
-   else 
-      return std::min(l1 / (1.0f - l2), 1.0f);
+   }
+   else
+   {
+     float result = l1 / (1.0f - l2);
+     if (clamp_result) result = std::min(result, 1.0f);
+     return result;
+   }
 }
 
-inline AtRGB colordodge(const AtRGB& l1, const AtRGB& l2)
+inline AtRGB colordodge(const AtRGB& l1, const AtRGB& l2, bool clamp_result)
 {
    AtRGB result;
    for (int i=0; i < 3; ++i)
    {
-      result[i] = colordodgef(l1[i], l2[i]);
+     result[i] = colordodgef(l1[i], l2[i], clamp_result);
    }
 
    return result;
@@ -268,21 +276,23 @@ inline AtRGB colorburn(const AtRGB& l1, const AtRGB& l2)
    return result;
 }
 
-inline AtRGB linearlight(const AtRGB& l1, const AtRGB& l2)
+ inline AtRGB linearlight(const AtRGB& l1, const AtRGB& l2, bool clamp_result)
 {
    AtRGB result;
    for (int i=0; i < 3; ++i)
    {
       if (l2[i] < 0.5f)
-         result[i] = std::max(l1[i] + 2.0f * l2[i] - 1.0f, 0.0f);
+         result[i] = l1[i] + 2.0f * l2[i] - 1.0f;
       else
-         result[i] = std::min(l1[i] + 2.0f * (l2[i] - 0.5f), 1.0f);
+        result[i] = l1[i] + 2.0f * (l2[i] - 0.5f);
    }
+
+   if (clamp_result) result = clamp(result, AI_RGB_BLACK, AI_RGB_WHITE);
 
    return result;
 }
 
-inline AtRGB vividlight(const AtRGB& l1, const AtRGB& l2)
+inline AtRGB vividlight(const AtRGB& l1, const AtRGB& l2, bool clamp_result)
 {
    AtRGB result;
    for (int i=0; i < 3; ++i)
@@ -290,7 +300,7 @@ inline AtRGB vividlight(const AtRGB& l1, const AtRGB& l2)
       if (l2[i] < 0.5f)
          result[i] = colorburnf(l1[i], 2.0f * l2[i]);
       else
-         result[i] = colordodgef(l1[i], 2.0f * (l2[i] - 0.5f));
+        result[i] = colordodgef(l1[i], 2.0f * (l2[i] - 0.5f), clamp_result);
    }
 
    return result;
@@ -310,9 +320,9 @@ inline AtRGB pinlight(const AtRGB& l1, const AtRGB& l2)
    return result;
 }
 
-inline AtRGB hardmix(const AtRGB& l1, const AtRGB& l2)
+inline AtRGB hardmix(const AtRGB& l1, const AtRGB& l2, bool clamp_result)
 {
-   AtRGB result = vividlight(l1, l2);
+   AtRGB result = vividlight(l1, l2, clamp_result);
    for (int i=0; i < 3; ++i)
    {
       result[i] < 0.5f ? result[i] = 0.0f : result[i] = 1.0f;
@@ -321,7 +331,7 @@ inline AtRGB hardmix(const AtRGB& l1, const AtRGB& l2)
    return result;
 }
 
-inline AtRGB reflect(const AtRGB& l1, const AtRGB& l2)
+inline AtRGB reflect(const AtRGB& l1, const AtRGB& l2, bool clamp_result)
 {
    AtRGB result;
    for (int i=0; i < 3; ++i)
@@ -329,13 +339,15 @@ inline AtRGB reflect(const AtRGB& l1, const AtRGB& l2)
       if (l2[i] == 1.0f)
          result[i] = l2[i];
       else
-         result[i] = std::min(SQR(l1[i]) / (1.0f - l2[i]), 1.0f);
+         result[i] = SQR(l1[i]) / (1.0f - l2[i]);
    }
+
+   if (clamp_result) result = clamp(result, AI_RGB_BLACK, AI_RGB_WHITE);
 
    return result;
 }
 
-AtRGB blend(const AtRGB& l1, const AtRGB& l2, float a, int mode)
+AtRGB blend(const AtRGB& l1, const AtRGB& l2, float a, int mode, bool clamp_result)
 {
    AtRGB result;
    switch(mode)
@@ -354,11 +366,13 @@ AtRGB blend(const AtRGB& l1, const AtRGB& l2, float a, int mode)
       break;
    case BM_ADD:
    case BM_LINEARDODGE:
-      result = min(l1 + l2, AI_RGB_WHITE);
+      result = l1 + l2;
+      if (clamp_result) result = min(result, AI_RGB_WHITE);
       break;
    case BM_SUBTRACT:
    case BM_LINEARBURN:
-      result = max(l1 + l2 - AI_RGB_WHITE, AI_RGB_BLACK);
+      result = l1 + l2 - AI_RGB_WHITE;
+      if (clamp_result) result = max(result, AI_RGB_BLACK);
       break;
    case BM_DIFFERENCE:
       result = fabs(l1 - l2);
@@ -382,28 +396,28 @@ AtRGB blend(const AtRGB& l1, const AtRGB& l2, float a, int mode)
       result = overlay(l2, l1);
       break;
    case BM_COLORDODGE:
-      result = colordodge(l1, l2);
+      result = colordodge(l1, l2, clamp_result);
       break;
    case BM_COLORBURN:
       result = colorburn(l1, l2);
       break;
    case BM_LINEARLIGHT:
-      result = linearlight(l1, l2);
+     result = linearlight(l1, l2, clamp_result);
       break;
    case BM_VIVIDLIGHT:
-      result = vividlight(l1, l2);
+     result = vividlight(l1, l2, clamp_result);
       break;
    case BM_PINLIGHT:
       result = pinlight(l1, l2);
       break;
    case BM_HARDMIX:
-      result = hardmix(l1, l2);
+     result = hardmix(l1, l2, clamp_result);
       break;
    case BM_REFLECT:
-      result = reflect(l1, l2);
+     result = reflect(l1, l2, clamp_result);
       break;
    case BM_GLOW:
-      result = reflect(l2, l1);
+     result = reflect(l2, l1, clamp_result);
       break;
    case BM_PHOENIX:
       result = min(l1, l2) - max(l1, l2) + AI_RGB_WHITE;
@@ -421,6 +435,7 @@ shader_evaluate
 	ShaderData* data = (ShaderData*)AiNodeGetLocalData(node);
 
 	AtRGB result = AI_RGB_BLACK;
+    bool clamp_result = AiShaderEvalParamBool(8*PARAMS_PER_LAYER);
 
 	for (int i=0; i <= data->max_layer; ++i)
 	{
@@ -430,7 +445,7 @@ shader_evaluate
         bool layerEnabled = AiShaderEvalParamBool(i*PARAMS_PER_LAYER+4);
         if (layerEnabled)
         {
-            result = blend(result, layerVal, layerAlpha, layerBlend);
+          result = blend(result, layerVal, layerAlpha, layerBlend, clamp_result);
         }
 	}
 
