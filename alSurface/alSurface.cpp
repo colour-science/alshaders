@@ -2632,6 +2632,7 @@ shader_evaluate
                   AiStateSetMsgFlt("alsPreviousRoughness", 0.0f);
                   AiTrace(&wi_ray, &sample);
                   AtRGB transmittance = AI_RGB_WHITE;
+                  bool hit = !AiColorIsZero(sample.opacity);
 
                   if (maxh(sigma_t) > 0.0f && !inside)
                   {
@@ -2646,7 +2647,7 @@ shader_evaluate
                   assert(AiIsFinite(result_transmission));
                   // accumulate the lightgroup contributions calculated by the
                   // child shader
-                  if (doDeepGroups)
+                  if (doDeepGroups && hit)
                   {
                      for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
                      {
@@ -2695,7 +2696,8 @@ shader_evaluate
             // AiSamplerGetSample(sampit, samples);
             AtRGB throughput = path_throughput * kti;
             AiStateSetMsgRGB("als_throughput", throughput);
-            bool hit = AiTrace(&wi_ray, &sample);
+            AiTrace(&wi_ray, &sample);
+            bool hit = !AiColorIsZero(sample.opacity);
 
             AtRGB transmittance = AI_RGB_WHITE;
             if (maxh(sigma_t) > 0.0f && !inside)
@@ -2770,6 +2772,7 @@ shader_evaluate
                   AiStateSetMsgFlt("alsPreviousRoughness",
                                    transmissionRoughness);
                   AiTrace(&wi_ray, &sample);
+                  bool hit = !AiColorIsZero(sample.opacity);
                   AtRGB transmittance = AI_RGB_WHITE;
                   if (maxh(sigma_t) > 0.0f && !inside)
                   {
@@ -2784,7 +2787,7 @@ shader_evaluate
                   assert(AiIsFinite(result_transmission));
                   // accumulate the lightgroup contributions calculated by the
                   // child shader
-                  if (doDeepGroups)
+                  if (doDeepGroups && hit)
                   {
                      for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
                      {
