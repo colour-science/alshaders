@@ -3261,6 +3261,8 @@ shader_evaluate
                    }
                }
            }
+         // Cryptomatte
+         data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, p_crypto_object_override, p_crypto_material_override);
       }
       else
       {
