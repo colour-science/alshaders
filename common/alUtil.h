@@ -437,9 +437,9 @@ inline AtRGB fast_exp(AtRGB c)
 
 inline AtRGB pow(AtRGB c, float e)
 {
-    c.r = powf(c.r, e);
-    c.g = powf(c.g, e);
-    c.b = powf(c.b, e);
+    c.r = c.r > 0 ? powf(c.r, e) : 0;
+    c.g = c.g > 0 ? powf(c.g, e) : 0;
+    c.b = c.b > 0 ? powf(c.b, e) : 0;
     return c;
 }
 

@@ -71,7 +71,10 @@ shader_evaluate
 	if (mask > 0.0f)
 	{
 		// gamma
-		result = pow(input, 1.0f/gamma);
+		if(gamma != 1.0f)
+		{
+			result = pow(input, 1.0f/gamma);
+		}
 
 		// saturation
 		if (saturation != 1.0f)
