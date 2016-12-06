@@ -1520,9 +1520,7 @@ struct HairBsdf
             for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
             {
                 AiAOVSetRGB(sg, data->aovs[k_light_group_1+i].c_str(), deepGroupPtr[i]);
-            }
-            
-            data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, p_crypto_object_override, p_crypto_material_override);
+            }            
         }
 
         sg->out.RGB =   result_R_direct +
@@ -1758,8 +1756,12 @@ shader_evaluate
     {
         hb.opacity *= geo_opacity;
     }
-    if (AiShaderGlobalsApplyOpacity(sg, hb.opacity))
+
+    const bool transp_early_out = AiShaderGlobalsApplyOpacity(sg, hb.opacity);
+    data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, p_crypto_object_override, p_crypto_material_override);
+    if (transp_early_out)
       return;
+
     hb.opacity = sg->out_opacity;
 
     AiStateSetMsgBool("als_hitHair", true);

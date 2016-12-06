@@ -48,6 +48,8 @@ blend_modes = [
    "Phoenix"
 ]
 
+ui.parameter('clamp_result', 'bool', True, 'Clamp', description='Clamp the result of the blend operations')
+
 with uigen.group(ui, 'Background', False, description='The background layer will be blended over black if its alpha is not 1'):
     ui.parameter('layer1name', 'string', '', 'Name', description='A descriptive name for this layer')
     ui.parameter('layer1enabled', 'bool', True, 'Enabled', description='Toggle this layer on or off')

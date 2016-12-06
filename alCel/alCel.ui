@@ -24,7 +24,6 @@ with uigen.group(ui, 'Shading', False):
 	ui.parameter('surfaceShader', 'rgb', (0.0, 0.0, 0.0), 'Surface shader', description='Connect an alSurface shader here to have its diffuse component run through the ramp for cel shading.', mayane=True)
 	ui.parameter('diffuseDirectStrength', 'float', 0.75, 'Diffuse strength', description='A multiplier on the diffuse component before being passed through the ramp. This is useful to bring your diffuse illumination into the 0-1 range required by the ramp.', mayane=True)
 	ui.parameter('diffuseRamp', 'rgb', (0.0, 0.0, 0.0), 'Diffuse ramp', description='Plug a MayaRamp node here to control the cel shading colors.', mayane=True)
-	ui.parameter('diffuseColorRamp', 'rgb', (1.0, 1.0, 1.0), 'Diffuse color ramp', description='Plug a MayaRamp node here to tint the diffuse shading.', mayane=True)
 	ui.parameter('diffuseIndirectStrength', 'float', 1.0, 'Indirect diffuse strength', description='Multipler on the strength of the indirect diffuse illumination.', mayane=True)
 	ui.parameter('diffuseIndirectSaturation', 'float', 1.0, 'Indirect diffuse saturation', description='Controls the saturation of the indirect diffuse illumination. It can be useful to increase this for more stylized effects.', mayane=True)
 	ui.parameter('diffuseIndirectTint', 'rgb', (1.0, 1.0, 1.0), 'Indirect diffuse tint', description='Color tint on the indirect diffuse illumination.', mayane=True)

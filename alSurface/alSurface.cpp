@@ -1203,7 +1203,7 @@ shader_evaluate
       result_directGroup[i] = AI_RGB_BLACK;
    bool doDeepGroups = !data->standardAovs;
    bool transmitAovs =
-       data->transmitAovs && (!data->standardAovs) && (!doDeepGroups);
+       data->transmitAovs;
 
    if (doDeepGroups && (sg->Rt & AI_RAY_CAMERA))
    {
@@ -1223,19 +1223,22 @@ shader_evaluate
          doDeepGroups = false;
    }
 
+   // If we're in a camera ray, try and allocate the array for transmitting the AOVs, if transmitAovs is enabled
    AtRGB* transmittedAovPtr = NULL;
-   if (transmitAovs && (sg->Rt & AI_RAY_CAMERA))
+   if ((sg->Rt & AI_RAY_CAMERA))
    {
-      transmittedAovPtr =
-          (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB) * NUM_AOVs);
-      memset(transmittedAovPtr, 0, sizeof(AtRGB) * NUM_AOVs);
-      AiStateSetMsgPtr("als_transmittedAovPtr", transmittedAovPtr);
+     if (transmitAovs)
+     {
+         transmittedAovPtr =
+             (AtRGB*)AiShaderGlobalsQuickAlloc(sg, sizeof(AtRGB) * NUM_AOVs);
+         memset(transmittedAovPtr, 0, sizeof(AtRGB) * NUM_AOVs);
+         AiStateSetMsgPtr("als_transmittedAovPtr", transmittedAovPtr);
+     }
    }
-   else if (transmitAovs)
+   else // otherwise, we're in a secondary ray so turn on transmitAovs if it has been turned on upstream
    {
-      if (!AiStateGetMsgPtr("als_transmittedAovPtr",
-                            (void**)&transmittedAovPtr))
-         transmitAovs = false;
+      transmitAovs = AiStateGetMsgPtr("als_transmittedAovPtr",
+                                      (void**)&transmittedAovPtr);
    }
 
    // get path throughput so far
@@ -2577,7 +2580,18 @@ shader_evaluate
       float samples[2];
       float kt;
       AtRay wi_ray;
-      // sg->N = sg->Nf = transmissionNormal;
+      if (data->transmissionNormalConnected)
+      {
+          if (AiV3Dot(sg->N, transmissionNormal) < 0.0f)
+            sg->N = -transmissionNormal;
+          else
+            sg->N = transmissionNormal;
+
+          if (AiV3Dot(sg->Nf, transmissionNormal) < 0.0f)
+            sg->Nf = -transmissionNormal;
+          else
+            sg->Nf = transmissionNormal;
+      }
       AiMakeRay(&wi_ray, AI_RAY_REFRACTED, &sg->P, NULL, AI_BIG, sg);
       AtVector wi, R;
       AtScrSample sample;
@@ -2632,6 +2646,7 @@ shader_evaluate
                   AiStateSetMsgFlt("alsPreviousRoughness", 0.0f);
                   AiTrace(&wi_ray, &sample);
                   AtRGB transmittance = AI_RGB_WHITE;
+                  bool hit = !AiColorIsZero(sample.opacity);
 
                   if (maxh(sigma_t) > 0.0f && !inside)
                   {
@@ -2646,7 +2661,7 @@ shader_evaluate
                   assert(AiIsFinite(result_transmission));
                   // accumulate the lightgroup contributions calculated by the
                   // child shader
-                  if (doDeepGroups)
+                  if (doDeepGroups && hit)
                   {
                      for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
                      {
@@ -2779,6 +2794,7 @@ shader_evaluate
                   AiStateSetMsgFlt("alsPreviousRoughness",
                                    transmissionRoughness);
                   AiTrace(&wi_ray, &sample);
+                  bool hit = !AiColorIsZero(sample.opacity);
                   AtRGB transmittance = AI_RGB_WHITE;
                   if (maxh(sigma_t) > 0.0f && !inside)
                   {
@@ -2793,7 +2809,7 @@ shader_evaluate
                   assert(AiIsFinite(result_transmission));
                   // accumulate the lightgroup contributions calculated by the
                   // child shader
-                  if (doDeepGroups)
+                  if (doDeepGroups && hit)
                   {
                      for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
                      {
@@ -3232,6 +3248,29 @@ shader_evaluate
             if (transmittedAovPtr[i] != AI_RGB_BLACK)
                AiAOVSetRGB(sg, data->aovs[i].c_str(), transmittedAovPtr[i]);
          }
+         if (doDeepGroups)
+           {
+             AtRGB deepGroups[NUM_LIGHT_GROUPS];
+             memset(deepGroups, 0, sizeof(AtRGB) * NUM_LIGHT_GROUPS);
+             for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
+               {
+                 deepGroups[i] = deepGroupsDiffuse[i] + deepGroupsGlossy[i] +
+                   deepGroupsGlossy2[i] +
+                   deepGroupsTransmission[i] +
+                   deepGroupsBacklight[i] + deepGroupsSss[i] +
+                   lightGroupsDirect[i];
+
+                 if (deepGroups[i] != AI_RGB_BLACK)
+                   {
+                     deepGroups[i] =
+                       min(deepGroups[i], rgb(data->aov_light_group_clamp[i]));
+                     AiAOVSetRGB(sg, data->aovs[k_light_group_1 + i].c_str(),
+                                 deepGroups[i]);
+                   }
+               }
+           }
+         // Cryptomatte
+         data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, p_crypto_object_override, p_crypto_material_override);
       }
       else
       {
@@ -3392,7 +3431,7 @@ shader_evaluate
                               lightGroupsDirect[i];
          }
       }
-      else if (transmitAovs)
+      if (transmitAovs)
       {
          if (do_transmission)
          {
