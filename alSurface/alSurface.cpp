@@ -2692,40 +2692,49 @@ shader_evaluate
          }
          else  // total internal reflection
          {
-            // AiSamplerGetSample(sampit, samples);
-            AtRGB throughput = path_throughput * kti;
-            AiStateSetMsgRGB("als_throughput", throughput);
-            bool hit = AiTrace(&wi_ray, &sample);
+            if (sg->Rr_refr < data->GI_refraction_depth)
+            {
+                AtRGB throughput = path_throughput * kti;
+                AiStateSetMsgRGB("als_throughput", throughput);
+                bool hit = AiTrace(&wi_ray, &sample);
 
-            AtRGB transmittance = AI_RGB_WHITE;
-            if (maxh(sigma_t) > 0.0f && !inside)
-            {
-               transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
-               transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
-               transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
-            }
-            result_transmission +=
-                min(sample.color * transmittance, rgb(data->transmissionClamp));
-            assert(AiIsFinite(result_transmission));
-            // accumulate the lightgroup contributions calculated by the child
-            // shader
-            if (doDeepGroups && hit)
-            {
-               for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
-               {
-                  deepGroupsTransmission[i] +=
-                      min(deepGroupPtr[i] * transmittance,
-                          rgb(data->transmissionClamp));
-               }
-            }
+                AtRGB transmittance = AI_RGB_WHITE;
+                if (maxh(sigma_t) > 0.0f && !inside)
+                {
+                  transmittance.r = fast_exp(float(-sample.z) * sigma_t.r);
+                  transmittance.g = fast_exp(float(-sample.z) * sigma_t.g);
+                  transmittance.b = fast_exp(float(-sample.z) * sigma_t.b);
+                }
+                result_transmission +=
+                    min(sample.color * transmittance, rgb(data->transmissionClamp));
+                assert(AiIsFinite(result_transmission));
+                // accumulate the lightgroup contributions calculated by the child
+                // shader
+                if (doDeepGroups && hit)
+                {
+                  for (int i = 0; i < NUM_LIGHT_GROUPS; ++i)
+                  {
+                      deepGroupsTransmission[i] +=
+                          min(deepGroupPtr[i] * transmittance,
+                              rgb(data->transmissionClamp));
+                  }
+                }
 
-            if (transmitAovs)
-            {
-               for (int i = 0; i < NUM_AOVs; ++i)
-               {
-                  childAovs[i] += transmittedAovPtr[i] * transmittance;
-               }
+                if (transmitAovs)
+                {
+                  for (int i = 0; i < NUM_AOVs; ++i)
+                  {
+                      childAovs[i] += transmittedAovPtr[i] * transmittance;
+                  }
+                }
             }
+            else  // trace the background if we've hit the refraction depth
+                  // limit
+              {
+                AiTraceBackground(&wi_ray, &sample);
+                result_transmission +=
+                  min(sample.color, rgb(data->transmissionClamp));
+              }
          }
       }
       else
