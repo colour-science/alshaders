@@ -513,9 +513,6 @@ struct HairBsdf
         static const AtString maya_ramp_uv_override("maya_ramp_uv_override");
         if (AiUDataGetFlt(data->uparam.c_str(), &s) && AiUDataGetFlt(data->vparam.c_str(), &t))
         {
-            sg->u = s;
-            sg->v = t;
-
             // set the hair u, v coords so other shaders (e.g. ramp) can use them
         AtPoint2 hair_uv = AiPoint2(sg->u, sg->v);
 #if AI_VERSION_MINOR_NUM >= 6
@@ -523,6 +520,10 @@ struct HairBsdf
 #else
         AiStateSetMsgPnt2("maya_ramp_uv_override", hair_uv);
 #endif
+
+        sg->u = s;
+        sg->v = t;
+
         }
         
 
