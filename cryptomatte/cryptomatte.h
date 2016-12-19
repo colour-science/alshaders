@@ -1146,6 +1146,8 @@ private:
             AiNodeSetStr(driver, "compression", "zip");
         }
         
+        AiAOVRegister(aov_name, AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+
         ///////////////////////////////////////////////
         //      Create filters and outputs as needed 
         for (int i=0; i<this->globals.aov_depth; i++) {
