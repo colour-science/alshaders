@@ -1364,6 +1364,11 @@ shader_evaluate
    }
    sg->out_opacity = opacity;
 
+   // do cryptomattes before early out for fully transparent but after opacity is set
+   data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, 
+                                      p_crypto_object_override, 
+                                      p_crypto_material_override);
+
    // early out if we're fully transparent or the object is matte
    if (AiColorIsZero(opacity) ||
        (AiShaderGlobalsIsObjectMatte(sg) && (sg->Rt & AI_RAY_CAMERA)))
@@ -3269,8 +3274,6 @@ shader_evaluate
                    }
                }
            }
-         // Cryptomatte
-         data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, p_crypto_object_override, p_crypto_material_override);
       }
       else
       {
@@ -3407,9 +3410,6 @@ shader_evaluate
                   AiAOVSetRGB(sg, data->aovs[k_id_1 + i].c_str(), tmp);
             }
          }
-
-         // Cryptomatte
-         data->cryptomatte->do_cryptomattes(sg, node, p_crypto_asset_override, p_crypto_object_override, p_crypto_material_override);
 
          // write data AOVs
          AtRGB uv = AiColorCreate(sg->u, sg->v, 0.0f);
