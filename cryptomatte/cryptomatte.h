@@ -222,6 +222,39 @@ bool sitoa_pointcloud_instance_handling(const char *obj_full_name, char obj_name
     return true;
 }
 
+void mtoa_strip_namespaces(const char *obj_full_name, char obj_name_out[MAX_STRING_LENGTH]) {
+    char *to = obj_name_out;
+    size_t len = 0;
+    size_t sublen = 0;
+    const char *from = obj_full_name;
+    const char *end = from + strlen(obj_full_name);
+    const char *found = strchr(from, '|');
+    const char *sep = NULL;
+
+    while (found != NULL) {
+        sep = strchr(from, ':');
+        if (sep != NULL && sep < found) {
+            from = sep + 1;
+        }
+        sublen = found - from;
+        memmove(to, from, sublen);
+        to[sublen] = '|';
+
+        len += sublen + 1;
+        to += sublen + 1;
+        from = found + 1;
+
+        found = strchr(from, '|');
+    }
+
+    sep = strchr(from, ':');
+    if (sep != NULL && sep < end) {
+        from = sep + 1;
+    }
+    sublen = end - from;
+    memmove(to, from, sublen);
+    to[sublen] = '\0';
+}
 
 void get_clean_object_name(const char *obj_full_name, char obj_name_out[MAX_STRING_LENGTH], 
                            char nsp_name_out[MAX_STRING_LENGTH], bool strip_obj_ns) 
@@ -252,8 +285,7 @@ void get_clean_object_name(const char *obj_full_name, char obj_name_out[MAX_STRI
     if (nsp_separator != NULL) {
         if (strip_obj_ns) {
             if (!preempt_object_name) {
-                char *obj_name_start = nsp_separator + 1;
-                memmove(obj_name_out, obj_name_start, strlen(obj_name_start));
+                mtoa_strip_namespaces(nsp_name, obj_name_out);
             }
         } else {
             if (!preempt_object_name)
@@ -1110,7 +1142,7 @@ private:
         int new_ouputs = 0;
 
         if (!AiNodeIs(driver, "driver_exr")) {
-            AiMsgWarning("Cryptomatte Error: Can only write Cryptomatte to EXR files.");
+            AiMsgDebug("Cryptomatte: Can only write Cryptomatte to EXR files (%s : %s).", AiNodeEntryGetName(AiNodeGetNodeEntry(driver)), AiNodeGetName(driver));
             return new_ouputs;
         }
 
