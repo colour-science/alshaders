@@ -98,6 +98,14 @@ enum alHairParams
     p_aov_light_group_6,
     p_aov_light_group_7,
     p_aov_light_group_8,
+    p_aov_light_group_9,
+    p_aov_light_group_10,
+    p_aov_light_group_11,
+    p_aov_light_group_12,
+    p_aov_light_group_13,
+    p_aov_light_group_14,
+    p_aov_light_group_15,
+    p_aov_light_group_16,
     p_aov_id_1,
     p_aov_id_2,
     p_aov_id_3,
@@ -140,6 +148,14 @@ enum AovIndices
     k_light_group_6,
     k_light_group_7,
     k_light_group_8,
+    k_light_group_9,
+    k_light_group_10,
+    k_light_group_11,
+    k_light_group_12,
+    k_light_group_13,
+    k_light_group_14,
+    k_light_group_15,
+    k_light_group_16,
     k_id_1,
     k_id_2,
     k_id_3,
@@ -250,6 +266,14 @@ node_parameters
     AiParameterStr("aov_light_group_6", "light_group_6");
     AiParameterStr("aov_light_group_7", "light_group_7");
     AiParameterStr("aov_light_group_8", "light_group_8");
+    AiParameterStr("aov_light_group_9", "light_group_9");
+    AiParameterStr("aov_light_group_10", "light_group_10");
+    AiParameterStr("aov_light_group_11", "light_group_11");
+    AiParameterStr("aov_light_group_12", "light_group_12");
+    AiParameterStr("aov_light_group_13", "light_group_13");
+    AiParameterStr("aov_light_group_14", "light_group_14");
+    AiParameterStr("aov_light_group_15", "light_group_15");
+    AiParameterStr("aov_light_group_16", "light_group_16");
     AiParameterStr("aov_id_1", "id_1");
     AiParameterStr("aov_id_2", "id_2");
     AiParameterStr("aov_id_3", "id_3");
@@ -372,6 +396,14 @@ struct HairBsdf
             aovs.push_back(params[p_aov_light_group_6].STR); 
             aovs.push_back(params[p_aov_light_group_7].STR); 
             aovs.push_back(params[p_aov_light_group_8].STR); 
+            aovs.push_back(params[p_aov_light_group_9].STR); 
+            aovs.push_back(params[p_aov_light_group_10].STR); 
+            aovs.push_back(params[p_aov_light_group_11].STR); 
+            aovs.push_back(params[p_aov_light_group_12].STR); 
+            aovs.push_back(params[p_aov_light_group_13].STR); 
+            aovs.push_back(params[p_aov_light_group_14].STR); 
+            aovs.push_back(params[p_aov_light_group_15].STR); 
+            aovs.push_back(params[p_aov_light_group_16].STR); 
             aovs.push_back(params[p_aov_id_1].STR); 
             aovs.push_back(params[p_aov_id_2].STR); 
             aovs.push_back(params[p_aov_id_3].STR); 
@@ -1725,6 +1757,14 @@ node_update
     AiAOVRegister("light_group_6", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("light_group_7", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
     AiAOVRegister("light_group_8", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("light_group_9", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("light_group_10", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("light_group_11", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("light_group_12", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("light_group_13", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("light_group_14", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("light_group_15", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
+    AiAOVRegister("light_group_16", AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 
     data->cryptomatte->setup_all(AiNodeGetStr(node, "aov_crypto_asset"), 
         AiNodeGetStr(node, "aov_crypto_object"), AiNodeGetStr(node, "aov_crypto_material"));
@@ -1743,7 +1783,7 @@ node_update
 
 shader_evaluate
 {
-    
+
     // Get shader data
     HairBsdf::ShaderData* data = (HairBsdf::ShaderData*)AiNodeGetLocalData(node);
 

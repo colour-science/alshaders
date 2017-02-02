@@ -191,6 +191,14 @@ enum alSurfaceParams
    p_aov_light_group_6,
    p_aov_light_group_7,
    p_aov_light_group_8,
+   p_aov_light_group_9,
+   p_aov_light_group_10,
+   p_aov_light_group_11,
+   p_aov_light_group_12,
+   p_aov_light_group_13,
+   p_aov_light_group_14,
+   p_aov_light_group_15,
+   p_aov_light_group_16,
    p_aov_id_1,
    p_aov_id_2,
    p_aov_id_3,
@@ -211,6 +219,14 @@ enum alSurfaceParams
    p_aov_shadow_group_6,
    p_aov_shadow_group_7,
    p_aov_shadow_group_8,
+   p_aov_shadow_group_9,
+   p_aov_shadow_group_10,
+   p_aov_shadow_group_11,
+   p_aov_shadow_group_12,
+   p_aov_shadow_group_13,
+   p_aov_shadow_group_14,
+   p_aov_shadow_group_15,
+   p_aov_shadow_group_16,
 
    p_standardAovs,
    p_transmitAovs,
@@ -253,6 +269,15 @@ enum alSurfaceParams
    p_aov_light_group_6_clamp,
    p_aov_light_group_7_clamp,
    p_aov_light_group_8_clamp,
+
+   p_aov_light_group_9_clamp,
+   p_aov_light_group_10_clamp,
+   p_aov_light_group_11_clamp,
+   p_aov_light_group_12_clamp,
+   p_aov_light_group_13_clamp,
+   p_aov_light_group_14_clamp,
+   p_aov_light_group_15_clamp,
+   p_aov_light_group_16_clamp,
 
    p_crypto_asset_override,
    p_crypto_object_override,
@@ -438,6 +463,14 @@ node_parameters
    AiParameterStr("aov_light_group_6", "light_group_6");
    AiParameterStr("aov_light_group_7", "light_group_7");
    AiParameterStr("aov_light_group_8", "light_group_8");
+   AiParameterStr("aov_light_group_9", "light_group_9");
+   AiParameterStr("aov_light_group_10", "light_group_10");
+   AiParameterStr("aov_light_group_11", "light_group_11");
+   AiParameterStr("aov_light_group_12", "light_group_12");
+   AiParameterStr("aov_light_group_13", "light_group_13");
+   AiParameterStr("aov_light_group_14", "light_group_14");
+   AiParameterStr("aov_light_group_15", "light_group_15");
+   AiParameterStr("aov_light_group_16", "light_group_16");
    AiParameterStr("aov_id_1", "id_1");
    AiParameterStr("aov_id_2", "id_2");
    AiParameterStr("aov_id_3", "id_3");
@@ -457,6 +490,15 @@ node_parameters
    AiParameterStr("aov_shadow_group_6", "shadow_group_6");
    AiParameterStr("aov_shadow_group_7", "shadow_group_7");
    AiParameterStr("aov_shadow_group_8", "shadow_group_8");
+
+   AiParameterStr("aov_shadow_group_9", "shadow_group_9");
+   AiParameterStr("aov_shadow_group_10", "shadow_group_10");
+   AiParameterStr("aov_shadow_group_11", "shadow_group_11");
+   AiParameterStr("aov_shadow_group_12", "shadow_group_12");
+   AiParameterStr("aov_shadow_group_13", "shadow_group_13");
+   AiParameterStr("aov_shadow_group_14", "shadow_group_14");
+   AiParameterStr("aov_shadow_group_15", "shadow_group_15");
+   AiParameterStr("aov_shadow_group_16", "shadow_group_16");
 
    AiParameterBool("standardCompatibleAOVs", false);
    AiParameterBool("transmitAovs", false);
@@ -500,6 +542,14 @@ node_parameters
    AiParameterFlt("aov_light_group_6_clamp", 0.0f);
    AiParameterFlt("aov_light_group_7_clamp", 0.0f);
    AiParameterFlt("aov_light_group_8_clamp", 0.0f);
+   AiParameterFlt("aov_light_group_9_clamp", 0.0f);
+   AiParameterFlt("aov_light_group_10_clamp", 0.0f);
+   AiParameterFlt("aov_light_group_11_clamp", 0.0f);
+   AiParameterFlt("aov_light_group_12_clamp", 0.0f);
+   AiParameterFlt("aov_light_group_13_clamp", 0.0f);
+   AiParameterFlt("aov_light_group_14_clamp", 0.0f);
+   AiParameterFlt("aov_light_group_15_clamp", 0.0f);
+   AiParameterFlt("aov_light_group_16_clamp", 0.0f);
 
    AiParameterStr("crypto_asset_override", "");
    AiParameterStr("crypto_object_override", "");
@@ -637,6 +687,7 @@ node_update
    // we'll store this based on the light pointer for fast access during
    // rendering
    AtNodeIterator* it = AiUniverseGetNodeIterator(AI_NODE_LIGHT);
+
    while (!AiNodeIteratorFinished(it))
    {
       AtNode* light = AiNodeIteratorGetNext(it);
@@ -991,6 +1042,31 @@ node_update
    data->aov_light_group_clamp[7] = params[p_aov_light_group_8_clamp].FLT;
    if (data->aov_light_group_clamp[7] == 0.0f)
       data->aov_light_group_clamp[7] = AI_INFINITE;
+
+   data->aov_light_group_clamp[8] = params[p_aov_light_group_9_clamp].FLT;
+   if (data->aov_light_group_clamp[8] == 0.0f)
+      data->aov_light_group_clamp[8] = AI_INFINITE;
+   data->aov_light_group_clamp[9] = params[p_aov_light_group_10_clamp].FLT;
+   if (data->aov_light_group_clamp[9] == 0.0f)
+      data->aov_light_group_clamp[9] = AI_INFINITE;
+   data->aov_light_group_clamp[10] = params[p_aov_light_group_11_clamp].FLT;
+   if (data->aov_light_group_clamp[10] == 0.0f)
+      data->aov_light_group_clamp[10] = AI_INFINITE;
+   data->aov_light_group_clamp[11] = params[p_aov_light_group_12_clamp].FLT;
+   if (data->aov_light_group_clamp[11] == 0.0f)
+      data->aov_light_group_clamp[11] = AI_INFINITE;
+   data->aov_light_group_clamp[12] = params[p_aov_light_group_13_clamp].FLT;
+   if (data->aov_light_group_clamp[12] == 0.0f)
+      data->aov_light_group_clamp[12] = AI_INFINITE;
+   data->aov_light_group_clamp[13] = params[p_aov_light_group_14_clamp].FLT;
+   if (data->aov_light_group_clamp[13] == 0.0f)
+      data->aov_light_group_clamp[13] = AI_INFINITE;
+   data->aov_light_group_clamp[14] = params[p_aov_light_group_15_clamp].FLT;
+   if (data->aov_light_group_clamp[14] == 0.0f)
+      data->aov_light_group_clamp[14] = AI_INFINITE;
+   data->aov_light_group_clamp[15] = params[p_aov_light_group_16_clamp].FLT;
+   if (data->aov_light_group_clamp[15] == 0.0f)
+      data->aov_light_group_clamp[15] = AI_INFINITE;
 
    data->cryptomatte->setup_all(AiNodeGetStr(node, "aov_crypto_asset"), 
       AiNodeGetStr(node, "aov_crypto_object"), AiNodeGetStr(node, "aov_crypto_material"));
