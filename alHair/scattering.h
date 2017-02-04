@@ -185,6 +185,7 @@ struct ScatteringLut
                     float gamma_TT, float gamma_g, float phi_g, float absorption, float shape)
     {
         // precalculate scattering LUTs
+        //printf("Generating scattering LUT for %.2f [%.2f, %.2f, %.2f],[%.2f, %.2f, %.2f],[%.2f, %.2f, %.2f], %.5f, %.2f\n", ior, alpha_R, alpha_TT, alpha_TRT, beta_R2, beta_TT2, beta_TRT2, gamma_TT, gamma_g, phi_g, absorption, shape);
         float phi_step = AI_PI / (BS_NUMSTEPS-1);
         float theta_h_step = AI_PI / (BS_NUMSTEPS-1);
         int x, y=0;
@@ -305,6 +306,22 @@ struct ScatteringLut
 
             idx++;
         }
+        //printf("a_bar_f: [");
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", a_bar_f[i]);
+        //}
+        //printf("]\n");
+        //printf("alpha_f: [");
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", alpha_f[i]);
+        //}
+        //printf("]\n");
+        //printf("beta_f: [");
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", beta_f[i]);
+        //}
+        //printf("]\n");
+
 
         memset(A_b, 0, sizeof(float)*DS_NUMSTEPS);
         memset(delta_b, 0, sizeof(float)*DS_NUMSTEPS);
@@ -337,6 +354,22 @@ struct ScatteringLut
             assert(AiIsFinite(delta_b[i]));
             assert(AiIsFinite(sigma_b[i]));
         }
+
+        //printf("A_b: [");
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", A_b[i]);
+        //}
+        //printf("]\n");
+        //printf("delta_b: [");
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", delta_b[i]);
+        //}
+        //printf("]\n");
+        //printf("sigma_b: [");
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", sigma_b[i]);
+        //}
+        //printf("]\n");
 
         idx = 0;
         memset(N_G_R, 0, sizeof(float)*NG_NUMSTEPS*NG_NUMSTEPS);
@@ -384,6 +417,22 @@ struct ScatteringLut
                 N_G_TRT[ng_idx] *= phi_i_step;
             }
         }
+
+        //printf("NG_R: [");
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", N_G_R[i]);
+        //}
+        //printf("]\n");
+        //printf("NG_TT: [");
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", N_G_TT[i]);
+        //}
+        //printf("]\n");
+        //printf("NG_TRT: %.5f [", phi_g);
+        //for (int i = 0; i < 10; ++i) {
+            //printf("%.6f, ", N_G_TRT[i]);
+        //}
+        //printf("]\n");
     }
 
     // linearly interpolating accessors for the DS tables
@@ -488,9 +537,10 @@ struct DualScattering
                 _cachemisses++;
                 if (!_luts[idx])
                 {
+                    //printf("Generating idx %d for a %.5f s %.5f\n", idx, a, sigma);
                     float t0 = AiMsgUtilGetElapsedTime();
                     _luts[idx] = new ScatteringLut(sp.ior, sp.alpha_R, sp.alpha_TT, sp.alpha_TRT, sp.beta_R2, sp.beta_TT2,
-                                                        sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, sp.phi_g, sigma, sp.shape); 
+                                                        sp.beta_TRT2, sp.gamma_TT, sp.gamma_g, 0.611f, sigma, sp.shape); 
                     _lutgen_time += AiMsgUtilGetElapsedTime() - t0;
                     // _generated.push_back(idx);
                 }

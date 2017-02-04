@@ -301,6 +301,7 @@ struct HairBsdf
         : sampler_glossy(NULL), sampler_diffuse(NULL), ds(NULL)
         {
             _last_sp.shape = -1.0f;
+            _last_sp.ior = 0.0f;
         }
 
         ~ShaderData()
@@ -404,7 +405,7 @@ struct HairBsdf
                 sp.ior = 1.55f;
                 sp.phi_g = 35.0f;
                 sp.shape = 0.0f;
-
+#if 0
                 if (sp != _last_sp)
                 {
                     int num_threads = AiNodeGetInt(options, "threads");
@@ -435,6 +436,7 @@ struct HairBsdf
                     AiMsgInfo("[alHair] lutgen time on %d threads: %.2fs", num_threads, time/1000.0f);
                     _last_sp = sp;
                 }
+#endif
             }
         }
 
