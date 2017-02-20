@@ -124,7 +124,7 @@ void gaborSample(GaborParams& gp, const AtVector& x_c, LCG& rng, AtVector& omega
         float cos_omega_p = lerp(-1.0f, 1.0f, rng());
         float sin_omega_p = sqrtf(std::max(0.0f, 1.0f - SQR(cos_omega_p)));
         float sin_omega_t, cos_omega_t;
-        sincosf(omega_t, &sin_omega_t, &cos_omega_t);
+        sincosf_(omega_t, &sin_omega_t, &cos_omega_t);
         AiV3Create(omega, cos_omega_t*sin_omega_p, sin_omega_t*sin_omega_p, cos_omega_p);
         AiV3Normalize(omega);
     }
@@ -133,7 +133,7 @@ void gaborSample(GaborParams& gp, const AtVector& x_c, LCG& rng, AtVector& omega
         float omega_r = AiV3Length(gp.omega);
         float omega_t = AI_PITIMES2 * rng();
         float sin_omega_t, cos_omega_t;
-        sincosf(omega_t, &sin_omega_t, &cos_omega_t);
+        sincosf_(omega_t, &sin_omega_t, &cos_omega_t);
         AtVector omega_tt;
         AiV3Create(omega_tt, cos_omega_t, sin_omega_t, 0.0f);
         omega = omega_r * omega_tt;
