@@ -20,7 +20,7 @@
 #include "exr.h"
 #endif
 
-#define NUM_LIGHT_GROUPS 8
+#define NUM_LIGHT_GROUPS 16
 
 AI_SHADER_NODE_EXPORT_METHODS(alHair);
 
