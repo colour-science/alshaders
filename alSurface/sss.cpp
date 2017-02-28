@@ -484,7 +484,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
                 float f = r_disk[0] / pdf_sum;
                 result_sss += dmd->samples[i].Rd * f;
 
-                for (int g=0; g < 8; ++g)
+                for (int g=0; g < NUM_LIGHT_GROUPS; ++g)
                 {
                     lightGroupsDirect[g] += dmd->samples[i].lightGroupsDirect[g] * f;
                     assert(AiIsFinite(lightGroupsDirect[g]));
@@ -507,7 +507,7 @@ AtRGB alsDiffusion(AtShaderGlobals* sg, DirectionalMessageData* dmd, AtSampler* 
     }
 
     result_sss /= norm_factor;
-    for (int g=0; g < 8; ++g)
+    for (int g=0; g < NUM_LIGHT_GROUPS; ++g)
     {
         lightGroupsDirect[g] *= rgb(w) / norm_factor;
         lightGroupsIndirect[g] *= rgb(w) / norm_factor;
