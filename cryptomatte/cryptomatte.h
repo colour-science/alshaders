@@ -1169,14 +1169,17 @@ private:
             strcat(filter_rank_name, rank_number_string );
             strcat(aov_rank_name, rank_number_string );
             
-            if ( AiNodeLookUpByName( filter_rank_name ) == NULL) {
+            const bool nofilter = AiNodeLookUpByName( filter_rank_name ) == NULL;
+            if ( nofilter ) {
                 AtNode *filter = AiNode("cryptomatte_filter");
                 AiNodeSetStr(filter, "name", filter_rank_name);
                 AiNodeSetInt(filter, "rank", i*2);
                 AiNodeSetStr(filter, "filter", aFilter_filter);
                 AiNodeSetFlt(filter, "width", aFilter_width);
                 AiNodeSetStr(filter, "mode", "double_rgba");
+            }
 
+            if ( !AiAOVEnabled(aov_rank_name, AI_TYPE_VECTOR)) {
                 AiAOVRegister(aov_rank_name, AI_TYPE_VECTOR, AI_AOV_BLEND_NONE);
 
                 // Add an output to the render globals, or make a list of outputs to add, and register an AOV
