@@ -843,13 +843,11 @@ inline float solveCubic(float a, float b, float c, float d, float roots[3])
 }
 
 /// simultaneous sin and cos
-#ifndef __linux__
-inline void sincosf(float x, float* sx, float* cx)
+inline void sincosf_(float x, float* sx, float* cx)
 {
     *sx = sinf(x);
     *cx = sqrtf(1.0f - SQR(*sx));
 }
-#endif
 
 inline float wrap(float s, float period)
 {
