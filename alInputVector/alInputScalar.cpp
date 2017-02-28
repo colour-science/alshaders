@@ -84,8 +84,10 @@ shader_evaluate
       break;
    case IN_Rl:
       result = sg->Rl;
+      break;
    case IN_Rr:
       result = float(sg->Rr);
+      break;
    case IN_USER:
       AiUDataGetFlt(userName, &result);
       break;
