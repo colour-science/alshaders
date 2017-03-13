@@ -136,6 +136,14 @@ node_parameters
    AiParameterStr("aov_light_group_6", "light_group_6");
    AiParameterStr("aov_light_group_7", "light_group_7");
    AiParameterStr("aov_light_group_8", "light_group_8");
+   AiParameterStr("aov_light_group_9", "light_group_9");
+   AiParameterStr("aov_light_group_10", "light_group_10");
+   AiParameterStr("aov_light_group_11", "light_group_11");
+   AiParameterStr("aov_light_group_12", "light_group_12");
+   AiParameterStr("aov_light_group_13", "light_group_13");
+   AiParameterStr("aov_light_group_14", "light_group_14");
+   AiParameterStr("aov_light_group_15", "light_group_15");
+   AiParameterStr("aov_light_group_16", "light_group_16");
    AiParameterStr("aov_id_1", "id_1");
    AiParameterStr("aov_id_2", "id_2");
    AiParameterStr("aov_id_3", "id_3");
@@ -155,6 +163,14 @@ node_parameters
    AiParameterStr("aov_shadow_group_6", "shadow_group_6");
    AiParameterStr("aov_shadow_group_7", "shadow_group_7");
    AiParameterStr("aov_shadow_group_8", "shadow_group_8");
+   AiParameterStr("aov_shadow_group_9", "shadow_group_9");
+   AiParameterStr("aov_shadow_group_10", "shadow_group_10");
+   AiParameterStr("aov_shadow_group_11", "shadow_group_11");
+   AiParameterStr("aov_shadow_group_12", "shadow_group_12");
+   AiParameterStr("aov_shadow_group_13", "shadow_group_13");
+   AiParameterStr("aov_shadow_group_14", "shadow_group_14");
+   AiParameterStr("aov_shadow_group_15", "shadow_group_15");
+   AiParameterStr("aov_shadow_group_16", "shadow_group_16");
 
    AiParameterBool("standardCompatibleAOVs", false);
 
