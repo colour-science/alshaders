@@ -1,5 +1,6 @@
 #include <ai.h>
 #include <string>
+#include <unordered_set>
 #include <cstring>
 #include <map>
 #include <ctime>
@@ -1180,6 +1181,11 @@ private:
         
         AiAOVRegister(aov_name, AI_TYPE_RGB, AI_AOV_BLEND_OPACITY);
 
+        AtArray * outputs = AiNodeGetArray( AiUniverseGetOptions(), "outputs");
+        std::unordered_set<std::string> outputSet;
+        for (AtUInt32 i=0; i < outputs->nelements; i++)
+            outputSet.insert( std::string(AiArrayGetStr(outputs, i)));
+
         ///////////////////////////////////////////////
         //      Create filters and outputs as needed 
         for (int i=0; i<this->globals.aov_depth; i++) {
@@ -1211,22 +1217,17 @@ private:
                 AiNodeSetStr(filter, "mode", "double_rgba");
             }
 
-            if ( !AiAOVEnabled(aov_rank_name, AI_TYPE_VECTOR)) {
+            std::string new_output_str(aov_rank_name);
+            new_output_str += " " ;
+            new_output_str += "VECTOR" ;
+            new_output_str += " " ;
+            new_output_str += filter_rank_name ;
+            new_output_str += " " ;
+            new_output_str += AiNodeGetName(driver);
+
+            if (outputSet.find(new_output_str) == outputSet.end()) {
                 AiAOVRegister(aov_rank_name, AI_TYPE_VECTOR, AI_AOV_BLEND_NONE);
-
-                // Add an output to the render globals, or make a list of outputs to add, and register an AOV
-                char new_output_string[MAX_STRING_LENGTH * 8];
-                memset(new_output_string, 0, sizeof(new_output_string));
-
-                strcat(new_output_string, aov_rank_name );
-                strcat(new_output_string, " " );
-                strcat(new_output_string, "VECTOR" );
-                strcat(new_output_string, " " );
-                strcat(new_output_string, filter_rank_name );
-                strcat(new_output_string, " " );
-                strcat(new_output_string, AiNodeGetName(driver));
-
-                AiArraySetStr(tmp_new_outputs, output_offset + new_ouputs, new_output_string);
+                AiArraySetStr(tmp_new_outputs, output_offset + new_ouputs, new_output_str.c_str());
                 new_ouputs++;
             }
             AiArraySetStr(cryptoAOVs, i, aov_rank_name);
