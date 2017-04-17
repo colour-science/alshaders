@@ -3,8 +3,7 @@
 
 AI_SHADER_NODE_EXPORT_METHODS(alSwitchColorMtd)
 
-enum alSwitchParams
-{
+enum alSwitchParams {
     p_inputA,
     p_inputB,
     p_inputC,
@@ -17,8 +16,7 @@ enum alSwitchParams
     p_threshold
 };
 
-node_parameters
-{
+node_parameters {
     AiParameterRGB("inputA", 0.f, 0.f, 0.f);
     AiParameterRGB("inputB", 1.f, 1.f, 1.f);
     AiParameterRGB("inputC", 1.f, 0.f, 0.f);
@@ -27,49 +25,39 @@ node_parameters
     AiParameterRGB("inputF", 1.f, 1.f, 0.f);
     AiParameterRGB("inputG", 1.f, 0.f, 1.f);
     AiParameterRGB("inputH", 0.f, 1.f, 1.f);
-    AiParameterFLT("mix", 1.0f);
-    AiParameterFLT("threshold", 0.5f);
+    AiParameterFlt("mix", 1.0f);
+    AiParameterFlt("threshold", 0.5f);
 }
 
-node_loader
-{
-   if (i>0) return 0;
-   node->methods     = alSwitchColorMtd;
-   node->output_type = AI_TYPE_RGB;
-   node->name        = "alSwitchColor";
-   node->node_type   = AI_NODE_SHADER;
-   strcpy(node->version, AI_VERSION);
-   return true;
+node_loader {
+    if (i > 0)
+        return 0;
+    node->methods = alSwitchColorMtd;
+    node->output_type = AI_TYPE_RGB;
+    node->name = "alSwitchColor";
+    node->node_type = AI_NODE_SHADER;
+    strcpy(node->version, AI_VERSION);
+    return true;
 }
 
-node_initialize
-{
+node_initialize {}
 
-}
+node_finish {}
 
-node_finish
-{
+node_update {}
 
-}
-
-node_update
-{
-
-}
-
-shader_evaluate
-{
+shader_evaluate {
     float mix = AiShaderEvalParamFlt(p_mix);
     float threshold = AiShaderEvalParamFlt(p_threshold);
 
     int input = floorf(mix);
-    if (mix-input >= threshold) input++;
+    if (mix - input >= threshold)
+        input++;
     input = clamp(input, 0, 7);
 
     AtRGB result = AI_RGB_BLACK;
 
-    switch(input)
-    {
+    switch (input) {
     case 0:
         result = AiShaderEvalParamRGB(p_inputA);
         break;
@@ -100,7 +88,5 @@ shader_evaluate
         break;
     }
 
-    sg->out.RGB = result;
+    sg->out.RGB() = result;
 }
-
-

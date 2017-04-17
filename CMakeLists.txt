@@ -14,7 +14,8 @@ set(CMAKE_VERBOSE_MAKEFILE FALSE)
 set(CMAKE_SKIP_RPATH TRUE)
 
 # Fix to stop crash on OSX < 10.9
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.8)
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9)
+set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
@@ -75,7 +76,6 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 # Set the list of subdirectories to recurse into to find stuff to build
 set(SUBDIRECTORIES 
-        alSurface
         alRemap
         alCombine
         alNoise
@@ -84,15 +84,13 @@ set(SUBDIRECTORIES
         alCurvature
         alBlackbody
         alInputVector
-        alHair
         alColorSpace
         alTriplanar
         alSwitch
         alJitterColor
         alCache
-        alCel
         alFlake
-        cryptomatte
+        #        cryptomatte
         common
 )
 

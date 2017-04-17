@@ -3,8 +3,7 @@
 
 AI_SHADER_NODE_EXPORT_METHODS(alSwitchFloatMtd)
 
-enum alSwitchParams
-{
+enum alSwitchParams {
     p_inputA,
     p_inputB,
     p_inputC,
@@ -17,59 +16,48 @@ enum alSwitchParams
     p_threshold
 };
 
-node_parameters
-{
-    AiParameterFLT("inputA", 0.0f);
-    AiParameterFLT("inputB", 1.0f);
-    AiParameterFLT("inputC", .15f);
-    AiParameterFLT("inputD", .30f);
-    AiParameterFLT("inputE", .45f);
-    AiParameterFLT("inputF", .60f);
-    AiParameterFLT("inputG", .75f);
-    AiParameterFLT("inputH", .90f);
-    AiParameterFLT("mix", 1.0f);
-    AiParameterFLT("threshold", 0.5f);
+node_parameters {
+    AiParameterFlt("inputA", 0.0f);
+    AiParameterFlt("inputB", 1.0f);
+    AiParameterFlt("inputC", .15f);
+    AiParameterFlt("inputD", .30f);
+    AiParameterFlt("inputE", .45f);
+    AiParameterFlt("inputF", .60f);
+    AiParameterFlt("inputG", .75f);
+    AiParameterFlt("inputH", .90f);
+    AiParameterFlt("mix", 1.0f);
+    AiParameterFlt("threshold", 0.5f);
 }
 
-node_loader
-{
-   if (i>0) return 0;
-   node->methods     = alSwitchFloatMtd;
-   node->output_type = AI_TYPE_FLOAT;
-   node->name        = "alSwitchFloat";
-   node->node_type   = AI_NODE_SHADER;
-   strcpy(node->version, AI_VERSION);
-   return true;
+node_loader {
+    if (i > 0)
+        return 0;
+    node->methods = alSwitchFloatMtd;
+    node->output_type = AI_TYPE_FLOAT;
+    node->name = "alSwitchFloat";
+    node->node_type = AI_NODE_SHADER;
+    strcpy(node->version, AI_VERSION);
+    return true;
 }
 
-node_initialize
-{
+node_initialize {}
 
-}
+node_finish {}
 
-node_finish
-{
+node_update {}
 
-}
-
-node_update
-{
-
-}
-
-shader_evaluate
-{
+shader_evaluate {
     float mix = AiShaderEvalParamFlt(p_mix);
     float threshold = AiShaderEvalParamFlt(p_threshold);
 
     int input = floorf(mix);
-    if (mix-input >= threshold) input++;
+    if (mix - input >= threshold)
+        input++;
     input = clamp(input, 0, 7);
 
     float result = 0.0f;
 
-    switch(input)
-    {
+    switch (input) {
     case 0:
         result = AiShaderEvalParamFlt(p_inputA);
         break;
@@ -100,7 +88,5 @@ shader_evaluate
         break;
     }
 
-    sg->out.FLT = result;
+    sg->out.FLT() = result;
 }
-
-
