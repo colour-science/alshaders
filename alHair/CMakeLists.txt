@@ -1,5 +1,6 @@
 set(SHADER alHair)        
-set(SRC ${SHADER}.cpp ../cryptomatte/MurmurHash3.cpp)
+#set(SRC ${SHADER}.cpp ../cryptomatte/MurmurHash3.cpp)
+set(SRC ${SHADER}.cpp)
 set(UI ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER}.ui)
 set(MTD ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.mtd)
 set(AE ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}Template.py)
